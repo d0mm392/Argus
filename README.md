@@ -1,6 +1,6 @@
 # Argus
 
-Desktop-Assistent für Windows (Neuronen-Kugel mit Sprachsteuerung, Systemwache und KI). Hieß früher Jarvis.
+Desktop-Assistent für Windows (Neuronen-Kugel mit Sprachsteuerung, Systemwache und KI). 
 
 ## Installieren
 
