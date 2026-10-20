@@ -10,6 +10,8 @@ Desktop-Assistent für Windows (Neuronen-Kugel mit Sprachsteuerung, Systemwache 
 
 Für Antworten von Claude braucht Argus [Claude Code](https://claude.com/download) mit deinem eigenen Claude-Konto. Ohne Claude Code nutzt Argus eine lokale KI (Ollama), die es auf Wunsch selbst einrichtet.
 
+Für **Linux** gibt es ein AppImage, siehe [LINUX.md](LINUX.md).
+
 ## Updates
 
 Ein installiertes Argus prüft beim Start und alle 4 Stunden den Zweig `updates` und aktualisiert sich selbst. Installationen, die noch Jarvis heißen, ziehen beim nächsten Update automatisch um (Datenordner wird kopiert, der alte bleibt als Sicherung).
