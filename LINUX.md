@@ -29,7 +29,7 @@ APPIMAGE_EXTRACT_AND_RUN=1 ./Argus-*.AppImage
 
 ## Autostart
 
-In Argus unter Einstellungen → System „Mit dem System starten“ einschalten. Argus legt dann `~/.config/autostart/argus.desktop` an. Ausschalten entfernt die Datei wieder.
+In Argus unter Einstellungen → System „Mit Windows starten“ einschalten (der Name stammt noch von Windows, gemeint ist der Start beim Anmelden). Argus legt dann `~/.config/autostart/argus.desktop` an. Ausschalten entfernt die Datei wieder.
 
 ## Was anders ist als unter Windows
 
