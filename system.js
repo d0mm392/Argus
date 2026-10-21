@@ -289,7 +289,8 @@ function parseLHM(root) {
     if (leaf && (n.Type === "Fan" || /RPM/i.test(n.Value || ""))) {
       const v = num(n.Value);
       if (v === 0) stopped++;
-      if (v > 0) fans.push({ name: hw === "gpu" ? "GPU" + (/\d/.test(n.Text || "") ? " " + n.Text.replace(/\D+/g, "") : "") : (n.Text || "Lüfter").replace(/^Fan\s*/i, "Lüfter "), val: Math.round(v), unit: "rpm" });
+      // Grafikkarten- und CPU-Lüfter stehen im Leerlauf oft (Semi-Passiv): als „steht“ anzeigen, statt sie wegzulassen; unbelegte Mainboard-Anschlüsse bleiben verborgen
+      if (v > 0 || (v === 0 && (hw === "gpu" || hw === "cpu" || /cpu|gpu/i.test(n.Text || "")))) fans.push({ name: hw === "gpu" ? "GPU" + (/\d/.test(n.Text || "") ? " " + n.Text.replace(/\D+/g, "") : "") : (n.Text || "Lüfter").replace(/^Fan\s*/i, "Lüfter "), val: Math.round(v), unit: "rpm" });
     }
     if (leaf && hw && (n.Type === "Clock" || /MHz/i.test(n.Value || ""))) {
       const v = num(n.Value);
@@ -310,7 +311,7 @@ function parseLHM(root) {
   const out = { cpu: pick(cpu, [/package/i, /tctl|tdie/i, /core.*(max|average)/i, /ccd/i]), gpu: pick(gpu, [/gpu core/i, /^core$/i, /hot ?spot/i]), gpuName,
     cpuMHz, gpuMHz: gpuCore ? gpuCore.v : null, gpuLoad: gpuLoad == null ? null : Math.round(gpuLoad),
     // Drehzahlen zuerst; ohne Drehzahl die Ansteuerung in %; stehen alle Lüfter (Laptop im Leerlauf), eine Zeile „steht“
-    fans: (fans.length ? fans : ctrl.length ? ctrl : stopped ? [{ name: "Lüfter", val: 0, unit: "rpm" }] : []).slice(0, 6) };
+    fans: (fans.length ? fans.map((f, i) => ({ f, i, r: /cpu/i.test(f.name) ? 0 : /gpu/i.test(f.name) ? 2 : 1 })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.f) : ctrl.length ? ctrl : stopped ? [{ name: "Lüfter", val: 0, unit: "rpm" }] : []).slice(0, 12) };
   return out.cpu == null && out.gpu == null && !fans.length && !cpuMHz ? null : out;
 }
 const NVSMI = ["nvidia-smi", "C:\\Windows\\System32\\nvidia-smi.exe", "C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe"];

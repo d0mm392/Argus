@@ -215,7 +215,7 @@
     { key: "dc", w: "discord", name: "DISCORD", ang: 2.6, ph: 7.3,
       cycle: () => (market?.discord?.servers || []).filter((x) => !x.error).flatMap((x) => x.online.filter((m) => !dcVoiceOnly || m.voice).map((m) => m.name + (m.voice ? " · " + m.voice : m.game ? " · " + m.game : ""))).slice(0, 40), get: () => { const sv = (market?.discord?.servers || []).filter((x) => !x.error); return sv.length ? sv.reduce((n, x) => n + (x.count || 0), 0) : null; }, txt: (v) => v + " online",
       tip: () => (market?.discord?.servers || []).filter((x) => !x.error).map((x) => x.server + ": " + x.online.filter((m) => m.voice).map((m) => m.name + " (" + m.voice + ")").join(", ")).join("\n") || "", click: () => window.jarvis.setConfig({ newsOn: true }) },
-    ...[2.95, 0.12, 2.15, 0.98].map((ang, i) => ({ key: "fan" + i, w: "fans", name: "", ang, ph: 4 + i, get: () => fanOf(i)?.val,
+    ...[2.95, 0.12, 2.15, 0.98, 3.45, 6.0, 1.65, 5.5].map((ang, i) => ({ key: "fan" + i, w: "fans", name: "", ang, ph: 4 + i, get: () => fanOf(i)?.val,
       txt: (v) => (v === 0 ? "steht" : v + " " + (fanOf(i)?.unit || "rpm")), label: () => (fanOf(i)?.name || "Lüfter").replace(/#/g, "").replace(/\s+/g, " ") })),
   ];
   let widgets = {}, market = null, btcCur = "USD";
