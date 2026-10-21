@@ -1090,7 +1090,12 @@ function applyBounds(corner, animate = true) {
   else setBoundsNow(b);
 }
 // Ganz groß mit angedocktem Lagebild: das Panel lässt dessen Streifen frei, das Lagebild füllt ihn über die volle Höhe bzw. Breite
-function bigBox(wa) {
+// Automatisch ausgeblendete Taskleiste: Arbeitsbereich = ganzer Bildschirm, ein Fenster bis zum Rand fängt dann die Maus ab und die Leiste kommt nicht mehr hoch. Deshalb 3 px Rand lassen.
+function edgeSafe(wa) {
+  try { const d = screen.getDisplayMatching(wa).bounds; if (d.x === wa.x && d.y === wa.y && d.width === wa.width && d.height === wa.height) return { x: wa.x + 3, y: wa.y + 3, width: wa.width - 6, height: wa.height - 6 }; } catch {}
+  return wa;
+}
+function bigBox(wa) { wa = edgeSafe(wa);
   const d = config.newsDock, nb = config.newsBox;
   if (!d || !newsAlive() || !nb) return wa;
   const w = Math.min(Math.round(nb.width), Math.round(wa.width * 0.45)), h = Math.min(Math.round(nb.height), Math.round(wa.height * 0.45));
@@ -1107,7 +1112,8 @@ function panelBoxOk() {
 }
 // Panel immer ganz auf einen Bildschirm holen (Domi: Panel hing halb links draußen, Bedienelemente unerreichbar)
 function fitOnScreen(p) {
-  const a = screen.getDisplayMatching({ x: Math.round(p.x), y: Math.round(p.y), width: Math.round(p.width), height: Math.round(p.height) }).workArea;
+  let a = screen.getDisplayMatching({ x: Math.round(p.x), y: Math.round(p.y), width: Math.round(p.width), height: Math.round(p.height) }).workArea;
+  a = edgeSafe(a);
   const width = Math.min(Math.round(p.width), a.width), height = Math.min(Math.round(p.height), a.height);
   return { width, height, x: Math.max(a.x, Math.min(a.x + a.width - width, Math.round(p.x))), y: Math.max(a.y, Math.min(a.y + a.height - height, Math.round(p.y))) };
 }
