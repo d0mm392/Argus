@@ -1143,6 +1143,18 @@ function showMini() {
 }
 ipcMain.on("mini-restore", () => { setExpanded(true); });
 ipcMain.on("mini-move", (_e, x, y) => { if (miniWin && !miniWin.isDestroyed()) { miniWin.setPosition(Math.round(x), Math.round(y)); config.miniPos = { x: Math.round(x), y: Math.round(y) }; saveConfig(); } });
+// Nach dem Einblenden die YouTube-/Twitch-Flächen wieder anzeigen: beim Ausblenden wurden sie versteckt, die Oberfläche meldet ihre Lage aber nur bei Änderung. Ein 1-px-Anstoß zwingt das Neuzeichnen (sonst bleibt die Fläche schwarz).
+function reshowViews() {
+  if (!alive() || !expanded || !win.isVisible()) return;
+  for (const [v, r, set] of [[ytView, ytRect, (x) => { ytShown = x; }], [twView, twRect, (x) => { twShown = x; }]]) {
+    if (!v || !r) continue;
+    try {
+      const nb = { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
+      v.setBounds({ ...nb, width: nb.width + 1 }); v.setVisible(true); set(true);
+      setTimeout(() => { try { v.setBounds(nb); } catch {} }, 60);
+    } catch {}
+  }
+}
 function setExpanded(on, focus = true) {
   if (!alive()) return;
   // Kein Mini-Widget mehr: Panel offen oder Argus ausgeblendet (Tray, Strg+Umschalt+J)
@@ -1262,7 +1274,7 @@ async function createWindow(port) {
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
-  win.on("show", () => { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); });
+  win.on("show", () => { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); setTimeout(reshowViews, 200); });
   win.on("restore", () => { if (!expanded || !win.isVisible()) setExpanded(true); });
   win.on("closed", () => { stopAnim(); hideMini(); clearInterval(moveTimer); win = null; });
   // Oberfläche abgestürzt: für den Fehlerbericht merken und neu laden
