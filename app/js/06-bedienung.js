@@ -480,7 +480,7 @@
     for (const n of nodes) {
       const p = rot(n.x, n.y, n.z), s = proj(p);
       n.sx = s[0]; n.sy = s[1]; n.f = s[2]; n.sz = p[2];
-      n.flash *= Math.pow(0.15, dt);
+      n.flash *= Math.pow(0.15, dt * flashT);
       let nr = 0;
       if (inSphere && p[2] > -0.3) { const d = Math.hypot(n.sx - mx, n.sy - my); if (d < nearR) nr = (1 - d / nearR) ** 2; }
       n.near += (nr - n.near) * (1 - Math.exp(-dt * 9));
@@ -493,8 +493,8 @@
 
     // Mining-Kugel lebt: laufende Miner schicken ständig Impulse (mehr online = mehr Verkehr), neue Foreman-Meldung = Aufblitzen in Rot (Ausfall) oder Grün (zurück)
     if (orbMine && fmTotC && nodes.length) {
-      if (Math.random() < (3 + 12 * fmTotC.on / fmTotC.n) * dt * speedK * flashK) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 145) { nodes[i].flash = Math.max(nodes[i].flash, 0.55); spawnFrom(i, 145); } }
-      if (Math.random() < 2 * dt * flashK) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 4) { nodes[i].flash = 1; spawnFrom(i, 4); } }
+      if (Math.random() < (3 + 12 * fmTotC.on / fmTotC.n) * dt * speedK * flashK * flashT) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 145) { nodes[i].flash = Math.max(nodes[i].flash, 0.55); spawnFrom(i, 145); } }
+      if (Math.random() < 2 * dt * flashK * flashT) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 4) { nodes[i].flash = 1; spawnFrom(i, 4); } }
       const ev = farmData?.events?.[0];
       if (ev && ev[0] !== orbEvT) {
         if (orbEvT) { const h = ev[2] ? 4 : 145; for (let k = 0, kn = Math.round(24 * flashK); k < kn; k++) { const i = (Math.random() * nodes.length) | 0; nodes[i].flash = 1; spawnFrom(i, h); } coreAct = Math.max(coreAct, 0.9); }
@@ -526,7 +526,7 @@
     glass.addColorStop(1, `hsla(${stateHue},80%,60%,0.16)`);
     if (!openShape) { ctx.fillStyle = glass; outlinePath(); ctx.fill(); }
     if (shapeRim && !openShape) { ctx.strokeStyle = `hsla(${stateHue},70%,70%,0.28)`; ctx.lineWidth = 1; outlinePath(); ctx.stroke(); }
-    if (shape === "symbiont") drawSymbiont();
+    if (shape === "symbiont") { if (!flat2d) drawSymbiont(); }
     else if (SOLID_SHAPES.has(shape) && !flat2d) drawSolid();
     if (shape === "muenze") drawCoin();
     drawFolds(); drawStructure();

@@ -1,5 +1,5 @@
 # Meldet 8-mal pro Sekunde das vorderste Fenster (Programm, Klasse, Rechteck in Bildschirm-Pixeln), nur lesend.
-param([int]$Parent = 0)
+param([int]$Parent = 0, [string]$Apps = "")
 Add-Type -TypeDefinition @"
 using System; using System.Runtime.InteropServices; using System.Text;
 public static class W {
@@ -16,10 +16,25 @@ public static class W {
 }
 "@
 try { [void][W]::SetProcessDpiAwarenessContext([IntPtr](-4)) } catch { [void][W]::SetProcessDPIAware() }
-$names = @{}; $last = ""
+$names = @{}; $last = ""; $bg = @(); $tick = 0
+$appList = @($Apps -split "[,;]" | % { $_.Trim().ToLower() -replace "\.exe$", "" } | ? { $_ })
 while ($true) {
   if ($Parent -gt 0 -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break }
   $o = @{ none = $true }
+  # Gewünschte Programme auch dann finden, wenn sie gerade nicht vorn liegen (etwa direkt nach dem Start von Argus), einmal pro Sekunde
+  if ($appList.Count -gt 0 -and ($tick++ % 8) -eq 0) {
+    $nb = @()
+    foreach ($n in $appList) {
+      try {
+        $pr = Get-Process -Name $n -ErrorAction SilentlyContinue | ? { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+        if ($pr -and -not [W]::IsIconic($pr.MainWindowHandle)) {
+          $r2 = New-Object W+RECT
+          if ([W]::DwmGetWindowAttribute($pr.MainWindowHandle, 9, [ref]$r2, 16) -eq 0 -and ($r2.R - $r2.L) -gt 50) { $nb += @{ app = $n; l = $r2.L; t = $r2.T; r = $r2.R; b = $r2.B } }
+        }
+      } catch {}
+    }
+    $bg = $nb
+  }
   try {
     $h = [W]::GetForegroundWindow()
     if ($h -ne [IntPtr]::Zero -and -not [W]::IsIconic($h)) {
@@ -32,7 +47,8 @@ while ($true) {
       }
     }
   } catch {}
-  $j = $o | ConvertTo-Json -Compress
+  if ($appList.Count -gt 0) { $o.bg = @($bg) }
+  $j = $o | ConvertTo-Json -Compress -Depth 4
   if ($j -ne $last) { [Console]::Out.WriteLine($j); [Console]::Out.Flush(); $last = $j }
   Start-Sleep -Milliseconds 120
 }

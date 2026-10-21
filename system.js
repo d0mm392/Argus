@@ -315,15 +315,16 @@ function parseLHM(root) {
   return out.cpu == null && out.gpu == null && !fans.length && !cpuMHz ? null : out;
 }
 const NVSMI = ["nvidia-smi", "C:\\Windows\\System32\\nvidia-smi.exe", "C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe"];
-let nvsmi;
+let nvsmi, nvsmiFailAt = 0;
 function readNvidiaSmi() {
-  if (nvsmi === null) return Promise.resolve(null); // kein nvidia-smi gefunden, nicht weiter suchen
+  // Nicht gefunden oder Treiber gerade weg (Neustart, Treiberfehler): alle 60 s erneut versuchen statt nie wieder
+  if (nvsmi === null) { if (Date.now() - nvsmiFailAt < 60000) return Promise.resolve(null); nvsmi = undefined; }
   const tryOne = (i) => new Promise((resolve) => {
-    if (i >= NVSMI.length) { nvsmi = null; return resolve(null); }
+    if (i >= NVSMI.length) { nvsmi = null; nvsmiFailAt = Date.now(); return resolve(null); }
     const exe = nvsmi || NVSMI[i];
     if (exe.includes("\\") && !fs.existsSync(exe)) return resolve(tryOne(i + 1));
     execFile(exe, ["--query-gpu=temperature.gpu,name,clocks.gr,fan.speed,utilization.gpu", "--format=csv,noheader,nounits"], { timeout: 4000, windowsHide: true }, (err, out) => {
-      if (err) return nvsmi ? resolve(null) : resolve(tryOne(i + 1));
+      if (err) { if (nvsmi) { nvsmi = undefined; return resolve(null); } return resolve(tryOne(i + 1)); } // Pfad war bekannt, Aufruf scheiterte einmal: nächster Durchlauf sucht neu
       nvsmi = exe;
       const rows = out.trim().split(/\r?\n/).map((l) => l.split(",").map((x) => x.trim())).filter((r) => Number(r[0]) > 0);
       if (!rows.length) return resolve(null);
