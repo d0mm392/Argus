@@ -7,6 +7,8 @@ public static class W {
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr c);
@@ -16,7 +18,8 @@ public static class W {
 }
 "@
 try { [void][W]::SetProcessDpiAwarenessContext([IntPtr](-4)) } catch { [void][W]::SetProcessDPIAware() }
-$names = @{}; $last = ""; $bg = @(); $tick = 0
+$names = @{}; $last = ""; $bg = @(); $tick = 0; $trk = [IntPtr]::Zero
+$shell = "Progman|WorkerW|Shell_TrayWnd|Shell_SecondaryTrayWnd|NotifyIconOverflowWindow|TopLevelWindowForOverflowXamlIsland|Xaml_WindowedPopupClass|Windows.UI.Core.CoreWindow|ForegroundStaging|MultitaskingViewFrame|XamlExplorerHostIslandWindow"
 $appList = @($Apps -split "[,;]" | % { $_.Trim().ToLower() -replace "\.exe$", "" } | ? { $_ })
 while ($true) {
   if ($Parent -gt 0 -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break }
@@ -43,10 +46,13 @@ while ($true) {
       $r = New-Object W+RECT
       if ([W]::DwmGetWindowAttribute($h, 9, [ref]$r, 16) -eq 0) {
         if (-not $names.ContainsKey($pid2)) { $names[$pid2] = (Get-Process -Id $pid2 -ErrorAction SilentlyContinue).ProcessName }
+        if ($pid2 -ne $Parent -and $sb.ToString() -notmatch "^($shell)$" -and ($r.R - $r.L) -ge 200 -and ($r.B - $r.T) -ge 150) { $trk = $h }
         $o = @{ pid = $pid2; app = [string]$names[$pid2]; cls = $sb.ToString(); max = [W]::IsZoomed($h); l = $r.L; t = $r.T; r = $r.R; b = $r.B }
       }
     }
   } catch {}
+  # Verfolgtes Fenster minimiert, geschlossen oder unsichtbar: Argus soll die Aussparung schließen
+  if ($trk -ne [IntPtr]::Zero -and (-not [W]::IsWindow($trk) -or [W]::IsIconic($trk) -or -not [W]::IsWindowVisible($trk))) { $o.tg = $true }
   if ($appList.Count -gt 0) { $o.bg = @($bg) }
   $j = $o | ConvertTo-Json -Compress -Depth 4
   if ($j -ne $last) { [Console]::Out.WriteLine($j); [Console]::Out.Flush(); $last = $j }
