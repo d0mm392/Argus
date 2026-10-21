@@ -169,13 +169,15 @@
   // Direkt anfassen, ohne Anordnen-Modus: am Kopf (obere Kante) ziehen = verschieben, Ecke unten rechts = Größe,
   // sonst irgendwo kurz festhalten (0,35 s) und dann ziehen. Tasten, Felder und Bildlaufleiste bleiben normal bedienbar
   const NO_GRAB = "button, input, textarea, select, a, webview, iframe, .pg i, .mgrip, [contenteditable]";
-  function grabZone(el, e) {
-    const b = el.getBoundingClientRect();
-    if (e.clientX > b.right - 16 && e.clientY > b.bottom - 16) return "br";
-    if (el.scrollHeight > el.clientHeight + 2 && e.clientX > b.right - 12) return null; // Bildlaufleiste
-    // Ränder (6 px) von allen Seiten: Größe ändern
-    if (e.clientX < b.left + 6) return "l"; if (e.clientX > b.right - 6) return "r"; if (e.clientY > b.bottom - 6) return "b";
-    return e.clientY - b.top < 26 ? "head" : "body";
+  function grabZone(el, e, hRes) {
+    // Wie bei normalen Fenstern: alle vier Kanten (8 px) und alle Ecken (16 px) ändern die Größe; oben nur bei Fenstern mit freier Höhe
+    const b = el.getBoundingClientRect(), x = e.clientX, y = e.clientY, sb = el.scrollHeight > el.clientHeight + 2; // Bildlaufleiste rechts
+    const E = 8, C = 16, L = x < b.left + E, R = x > b.right - (sb ? 4 : E), B = y > b.bottom - E, T = hRes && y < b.top + E;
+    const cl = x < b.left + C, cr = x > b.right - C, ct = hRes && y < b.top + C, cb = y > b.bottom - C;
+    if (cb && cr) return "br"; if (cb && cl) return "bl"; if (ct && cr && !sb) return "tr"; if (ct && cl) return "tl";
+    if (sb && x > b.right - 14 && !R) return null; // Bildlaufleiste bleibt bedienbar
+    if (L) return "l"; if (R) return "r"; if (B) return "b"; if (T) return "t";
+    return y - b.top < 26 ? "head" : "body";
   }
   for (const [id, , hRes] of BLOCKS) {
     const el = $(id); let hold = null;
@@ -193,8 +195,8 @@
       // Notizblock besteht fast nur aus Textfeld: dort reicht kurzes Festhalten zum Verschieben (Tippen und Markieren gehen weiter)
       const inNote = e.target.id === "notesText";
       if (e.button !== 0 || !expanded || document.body.classList.contains("arrange") || (!inNote && e.target.closest(NO_GRAB))) return;
-      const z = inNote ? "body" : grabZone(el, e); if (!z) return;
-      if (z !== "body") { e.preventDefault(); begin(e, ["br", "l", "r", "b"].includes(z) ? z : ""); return; }
+      const z = inNote ? "body" : grabZone(el, e, hRes); if (!z) return;
+      if (z !== "body") { e.preventDefault(); begin(e, ["br", "bl", "tr", "tl", "l", "r", "b", "t"].includes(z) ? z : ""); return; }
       const sx = e.clientX, sy = e.clientY;
       const mv = (ev) => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) stop(); };
       const stop = () => { clearTimeout(hold); hold = null; window.removeEventListener("pointermove", mv, true); window.removeEventListener("pointerup", stop, true); };
@@ -203,8 +205,8 @@
     });
     el.addEventListener("pointermove", (e) => {
       if (arrSt || !expanded || document.body.classList.contains("arrange")) return;
-      const z = e.target.closest(NO_GRAB) ? null : grabZone(el, e);
-      el.style.cursor = z === "br" ? "nwse-resize" : z === "l" || z === "r" ? "ew-resize" : z === "b" ? "ns-resize" : z === "head" ? "grab" : "";
+      const z = e.target.closest(NO_GRAB) ? null : grabZone(el, e, hRes);
+      el.style.cursor = z === "br" || z === "tl" ? "nwse-resize" : z === "bl" || z === "tr" ? "nesw-resize" : z === "l" || z === "r" ? "ew-resize" : z === "b" || z === "t" ? "ns-resize" : z === "head" ? "grab" : "";
     });
   }
   // nach direktem Ziehen keinen Klick auslösen (z. B. Hinweis in der Systemwache)

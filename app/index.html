@@ -98,7 +98,11 @@
       <label class="row" title="Schneidet eine Ecke aus dem Argus-Fenster heraus. Dort liegt zum Beispiel das Discord-Popup mit den Kameras und bleibt oben, auch wenn du auf Argus klickst.">Aussparung in einer Ecke (für Popups anderer Programme) <input type="checkbox" id="setHoleOn"></label>
       
       
-      <label class="row" title="Wie rund die Ecken der Aussparung sind (0 = eckig).">Eckenradius der Aussparung <input type="range" id="setHoleRound" min="0" max="40" step="1" value="16"></label>
+      <label class="row" title="Wie rund die Ecken der Aussparung sind (0 = eckig).">Ecken der Aussparung (alle) <input type="range" id="setHoleRound" min="0" max="60" step="1" value="16"></label>
+      <label class="row" title="Rundung dieser Ecke einzeln einstellen (0 = eckig).">… Ecke oben links <input type="range" id="setHoleTL" min="0" max="60" step="1" value="16"></label>
+      <label class="row" title="Rundung dieser Ecke einzeln einstellen (0 = eckig).">… Ecke oben rechts <input type="range" id="setHoleTR" min="0" max="60" step="1" value="16"></label>
+      <label class="row" title="Rundung dieser Ecke einzeln einstellen (0 = eckig).">… Ecke unten rechts <input type="range" id="setHoleBR" min="0" max="60" step="1" value="16"></label>
+      <label class="row" title="Rundung dieser Ecke einzeln einstellen (0 = eckig).">… Ecke unten links <input type="range" id="setHoleBL" min="0" max="60" step="1" value="16"></label>
       <label class="row">Aussparung platzieren <button class="btn" type="button" id="setHolePlace">Verschieben / Größe …</button></label>
       <h4 data-tab="Panel und Medien">Notizblock</h4>
       <label class="row">Notizblock im Panel <input type="checkbox" id="setNotesOn"></label>

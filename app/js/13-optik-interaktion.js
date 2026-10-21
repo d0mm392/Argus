@@ -56,8 +56,8 @@
       if (tiltT !== time) { tiltT = time; tiltSR = stage.getBoundingClientRect(); }
       // Nähe zur Maus aus der ungekippten Lage rechnen; die Neigung zieht sanft nach, damit nichts flackert
       const cx = +m[1] + el.offsetWidth / 2 + tiltSR.left, cy = +m[2] + el.offsetHeight / 2 + tiltSR.top;
-      const dx = ptr.x - cx, dy = ptr.y - cy, near = Math.max(0, 1 - Math.hypot(dx, dy) / 340);
-      fy = Math.max(-1, Math.min(1, dx / 70)) * tiltK * near; fx = -Math.max(-1, Math.min(1, dy / 70)) * tiltK * near;
+      const hw = Math.max(70, el.offsetWidth * 0.5), dx = ptr.x - cx, dy = ptr.y - cy, near = Math.max(0, 1 - Math.hypot(dx, dy) / (340 + hw)); // breite Elemente (Beschriftungen) reagieren erst bei größerem Abstand voll
+      fy = Math.max(-1, Math.min(1, dx / hw)) * tiltK * near; fx = -Math.max(-1, Math.min(1, dy / 70)) * tiltK * near;
     }
     const k = 0.2; el._tf = el._tf || [0, 0]; el._tf[0] += (fx - el._tf[0]) * k; el._tf[1] += (fy - el._tf[1]) * k;
     if (Math.abs(el._tf[0]) < 0.05 && Math.abs(el._tf[1]) < 0.05 && !tiltX && !tiltY && !ex && !ey) { el._tf = null; return; }

@@ -77,12 +77,14 @@
   $("setFriendsStill").addEventListener("change", (e) => { friendsStill = e.target.checked; window.jarvis.setConfig({ friendsStill }); });
   { const hs = (k, v) => window.jarvis.setConfig({ [k]: v });
     $("setHoleOn").addEventListener("change", (e) => hs("holeOn", e.target.checked));
-    $("setHoleRound").addEventListener("input", (e) => { $("holeBox").style.borderRadius = e.target.value + "px"; hs("holeRound", +e.target.value); });
+    const hIds = ["setHoleTL", "setHoleTR", "setHoleBR", "setHoleBL"], hRad = () => hIds.map((id) => +$(id).value), hBox = () => { $("holeBox").style.borderRadius = hRad().map((v) => v + "px").join(" "); };
+    $("setHoleRound").addEventListener("input", (e) => { for (const id of hIds) $(id).value = e.target.value; hBox(); hs("holeRound", +e.target.value); hs("holeRadii", hRad()); });
+    for (const id of hIds) $(id).addEventListener("input", () => { hBox(); hs("holeRadii", hRad()); });
     $("setHolePlace").addEventListener("click", () => holePlace()); }
   $("setDcJoin").addEventListener("change", (e) => { dcJoinBot = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcJoinBot }); });
   $("setFriendsHold").addEventListener("change", (e) => { friendsHold = +e.target.value; window.jarvis.setConfig({ friendsHold }); });
   for (const [id, k] of [["setScaleAi", "ai"], ["setScaleStrata", "strata"]]) $(id).addEventListener("input", (e) => { const v = +e.target.value; if (Math.abs(v - 1) < 0.03) delete scales[k]; else scales[k] = v; clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ scales }), 400); });
-  window.jarvis.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; $("setHoleRound").value = c.holeRound ?? 16; $("holeBox").style.borderRadius = (c.holeRound ?? 16) + "px"; dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
+  window.jarvis.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; $("setHoleRound").value = c.holeRound ?? 16; { const rd = Array.isArray(c.holeRadii) ? c.holeRadii : [0, 1, 2, 3].map(() => c.holeRound ?? 16); ["setHoleTL", "setHoleTR", "setHoleBR", "setHoleBL"].forEach((id, i) => { $(id).value = rd[i] ?? 16; }); $("holeBox").style.borderRadius = [0, 1, 2, 3].map((i) => (rd[i] ?? 16) + "px").join(" "); } dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
   $("setWake").addEventListener("change", (e) => {
     const words = e.target.value.split(",").map((w) => w.trim().toLowerCase()).filter(Boolean);
     if (words.length) { WAKE = buildWake(words); window.jarvis.setConfig({ wakeWords: words }); }
