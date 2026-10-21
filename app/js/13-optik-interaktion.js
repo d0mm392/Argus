@@ -61,7 +61,9 @@
     }
     const k = 0.2; el._tf = el._tf || [0, 0]; el._tf[0] += (fx - el._tf[0]) * k; el._tf[1] += (fy - el._tf[1]) * k;
     if (Math.abs(el._tf[0]) < 0.05 && Math.abs(el._tf[1]) < 0.05 && !tiltX && !tiltY && !ex && !ey) { el._tf = null; return; }
-    el.style.transform += ` perspective(480px) rotateX(${(tiltX + ex + el._tf[0]).toFixed(1)}deg) rotateY(${(tiltY + ey + el._tf[1]).toFixed(1)}deg)`;
+    // Winkel auf 0,5° runden: sonst ändert jede Mausbewegung den Winkel minimal, und Text und Rahmen werden ständig neu gerastert (Flackern)
+    const q = (v) => (Math.round(v * 2) / 2).toFixed(1);
+    el.style.transform += ` perspective(480px) rotateX(${q(tiltX + ex + el._tf[0])}deg) rotateY(${q(tiltY + ey + el._tf[1])}deg)`;
   }
   let gTiltX = 0, gTiltY = 0; const gTiltSave = () => window.jarvis.setConfig({ gaugeTiltX: gTiltX, gaugeTiltY: gTiltY });
   $("setGaugeTiltX").addEventListener("input", (e) => { gTiltX = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
