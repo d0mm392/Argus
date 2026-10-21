@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "Argus",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
     "@ghostery/adblocker-electron": "^2.9.0",
