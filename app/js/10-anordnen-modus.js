@@ -216,7 +216,7 @@
     ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.();
   }
   $("arrangeBtn").addEventListener("click", () => setArrange(!document.body.classList.contains("arrange")));
-  // Fenster aus- und wieder einblenden (× im Anordnen-Modus, Liste in der Leiste, Einstellungen → Themes)
+  // Fenster aus- und wieder einblenden (× im Anordnen-Modus, Liste in der Leiste, Einstellungen → Panel und Medien)
   const MINE_IDS = ["mOver", "mTick", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
   let miningOn = true;
   const BLOCK_NAMES = { ...Object.fromEntries(BLOCKS.map(([id, n]) => [id, n])), strataBtn: "Strata-Knopf" };

@@ -31,7 +31,7 @@
     <div class="set-head"><b>Einstellungen</b><input type="search" id="setFind" placeholder="Suchen … (Maus über eine Zeile zeigt die Erklärung)" spellcheck="false" aria-label="Einstellungen durchsuchen"><button class="btn" type="button" id="setClose">Fertig</button></div>
     <div class="set-tabs" id="setTabs" role="tablist"></div>
     <div class="set-body">
-      <h4 data-tab="Themes">Lesbarkeit</h4>
+      <h4 data-tab="Aussehen">Lesbarkeit</h4>
       <label class="row">Schriftgröße der Einstellungen <input type="range" id="setZoom" min="0.9" max="1.6" step="0.05"></label>
       <label class="row">Schriftart von Argus <select id="setUiFont"><option value="">Standard</option><option value="Segoe UI">Segoe UI</option><option value="Bahnschrift">Bahnschrift</option><option value="Calibri">Calibri</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Georgia">Georgia (Serif)</option><option value="Consolas">Consolas (Mono)</option><option value="Cascadia Mono">Cascadia Mono</option><option value="Courier New">Courier New</option><option value="Arial">Arial</option></select></label>
       <label class="row" title="Skaliert alle Texte in Argus (Schrift in rem). Die Einstellungen haben zusätzlich ihre eigene Größe.">Schriftgröße in Argus <input type="range" id="setUiScale" min="80" max="150" step="5" data-unit=" %"></label>
@@ -39,7 +39,7 @@
       <label class="row">Statusanzeige (Leerlauf, Hört zu …) <input type="checkbox" id="setStatusOn"></label>
       <label class="row" hidden title="Aus: Das kleine Widget zeigt nur die Kugel mit CPU- und GPU-Temperatur. An: auch die übrigen Anzeigen und die Statusanzeige.">Mini-Widget zeigt alle Anzeigen <input type="checkbox" id="setMiniMore"></label>
       <div class="skin-pick" id="skinPick" hidden></div>
-      <h4 data-tab="Themes">Farbe und Form</h4>
+      <h4 data-tab="Kugel und Farbe">Farbe und Form</h4>
       <div class="set-note">Farbwelten setzen Grundfarbe, Fensterfarbe und Farbverteilung mit einem Klick. Darunter wählst du eigene Farben, die Form der Kugel und ihr Aussehen.</div>
       <div class="pal-pick" id="palPick"></div>
       <label class="row" title="Nur der Farbton der gewählten Farbe zählt (Kugel, Anzeigen, Akzente)">Eigene Grundfarbe <input type="color" id="setAccentHex"></label>
@@ -65,7 +65,7 @@
       <label class="row">Neuronen-Dichte <select id="setDens"><option value="0.5">Locker</option><option value="1">Normal</option><option value="1.5">Dicht</option><option value="2">Sehr dicht</option></select></label>
       <label class="row">Hirnregionen
         <select id="setRegions"><option value="bunt">Bunt</option><option value="thema">In der Grundfarbe</option></select></label>
-      <h4 data-tab="Themes">Buttons: Form und Material</h4>
+      <h4 data-tab="Aussehen">Buttons: Form und Material</h4>
       <div class="set-note">Gilt für die Anzeigen (CPU, GPU, Bitcoin …) und „Claude · Lokal“. Form und Material sind unabhängig wählbar.</div>
       <label class="row">Form <select id="setBtnShape"></select></label>
       <label class="row">Material <select id="setBtnLook"></select></label>
@@ -74,31 +74,31 @@
       <label class="row" title="Kommst du mit der Maus in die Nähe eines Buttons, neigt er sich leicht zum Zeiger. Weiter weg bleibt er so, wie du ihn eingestellt hast.">Buttons neigen sich zur Maus (nur in der Nähe) <input type="checkbox" id="setBtnTiltFollow"></label>
       <label class="row" title="Wie stark sich Buttons in der Nähe der Maus zu ihr neigen (Grad).">Stärke der Mausneigung <input type="range" id="setBtnTiltK" min="5" max="40" step="1" value="24"></label>
       <label class="row" title="Programm-Symbole um die Kugel pulsieren schneller und heller, je mehr Last das Programm hat">Programme schimmern nach Last <input type="checkbox" id="setShimmer"></label>
-      <h4 data-tab="Themes">Farbe des Fensters</h4>
+      <h4 data-tab="Aussehen">Farbe des Fensters</h4>
       <div class="set-note">Hintergrund von Panel, Einstellungen und Freundesliste.</div>
       <div class="swatches" id="winSwatches"></div>
       <label class="row">Wie die Kugel einfärben <input type="checkbox" id="setWinFollow"></label>
       <label class="row">Farbton <input type="range" id="setWinH" min="0" max="359" step="1"></label>
       <label class="row">Farbstärke <input type="range" id="setWinS" min="0" max="80" step="1"></label>
       <label class="row">Helligkeit <input type="range" id="setWinL" min="0" max="30" step="1"></label>
-      <h4 data-tab="Themes">Anzeigen an der Kugel</h4>
+      <h4 data-tab="Kugel und Farbe">Anzeigen an der Kugel</h4>
       <div id="widgetRows"></div>
-      <h4 data-tab="Themes">Programm-Symbole</h4>
+      <h4 data-tab="Kugel und Farbe">Programm-Symbole</h4>
       <div class="set-note">Welche laufenden Programme an der Kugel schweben. Neue Programme erscheinen hier, sobald sie laufen.</div>
       <div id="appRows"></div>
-      <h4 data-tab="Themes">3D-Optik</h4>
+      <h4 data-tab="Aussehen">3D-Optik</h4>
       <label class="row">Fenster und Knöpfe mit Tiefe (kippen leicht zur Maus) <input type="checkbox" id="setLook3d"></label>
       <label class="row" title="Wie stark Fenster zur Maus kippen. Über Knöpfen und Feldern kippt nichts.">Tiefe: Stärke des Kippens <input type="range" id="setLook3dK" min="0" max="100" step="5" data-unit=" %"></label>
-      <h4 data-tab="Panel">Fenster im Panel</h4>
+      <h4 data-tab="Panel und Medien">Fenster im Panel</h4>
       <div class="set-note">Abgehakte Fenster sind sichtbar. Im Anordnen-Modus blendet das × an einem Fenster es aus.</div>
       <div id="blockRows"></div>
-      <h4 data-tab="Themes">Aussparung (Popups anderer Programme)</h4>
+      <h4 data-tab="Aussehen">Aussparung (Popups anderer Programme)</h4>
       <label class="row" title="Schneidet eine Ecke aus dem Argus-Fenster heraus. Dort liegt zum Beispiel das Discord-Popup mit den Kameras und bleibt oben, auch wenn du auf Argus klickst.">Aussparung in einer Ecke (für Popups anderer Programme) <input type="checkbox" id="setHoleOn"></label>
       <label class="row" title="Die Aussparung passt sich automatisch dem Programm an, das du zuletzt benutzt hast, und wandert mit, wenn du es verschiebst oder vergrößerst. Klickst du wieder in Argus, bleibt sie beim letzten Programm. Windows.">Aussparung folgt dem Programm <input type="checkbox" id="setHoleFollow"></label>
       <label class="row" title="Nur diese Programme schneiden ein Loch (Namen ohne .exe, mit Komma getrennt, z. B. discord, chrome). Leer = jedes Programm.">Nur für Programme <input type="text" id="setHoleApps" placeholder="leer = alle" spellcheck="false"></label>
       <label class="row" title="Wie rund die Ecken der Aussparung sind (0 = eckig).">Eckenradius der Aussparung <input type="range" id="setHoleRound" min="0" max="40" step="1" value="16"></label>
       <label class="row">Aussparung platzieren <button class="btn" type="button" id="setHolePlace">Verschieben / Größe …</button></label>
-      <h4 data-tab="Themes">Notizblock</h4>
+      <h4 data-tab="Panel und Medien">Notizblock</h4>
       <label class="row">Notizblock im Panel <input type="checkbox" id="setNotesOn"></label>
       <label class="row">Schnellstart-Block im Panel (Programme per Klick starten) <input type="checkbox" id="setQuickOn"></label>
       <label class="row">Symbolgröße im Schnellstart <input type="range" id="setQuickSize" min="28" max="80" step="2" data-unit=" px"></label>
@@ -112,7 +112,7 @@
       <div class="set-note">Der Spiegel zeigt ein schon geöffnetes Fenster live im Panel, nur auf diesem PC. Das Original darf nicht minimiert sein (Windows liefert dann kein Bild). Das gewählte Fenster wird gemerkt und wieder gespiegelt, sobald es erscheint.</div>
       <label class="row">KI-Verlauf im Panel (welche KI, Werkzeuge, Dauer, Tokens) <input type="checkbox" id="setAiLog"></label>
       <div class="set-note">Ein freies Textfeld im Panel, z. B. für To-dos oder Miner-Nummern. Wird beim Tippen gespeichert, bleibt nur auf diesem PC. Im Anordnen-Modus verschiebst du ihn und änderst die Größe wie die anderen Fenster.</div>
-      <h4 data-tab="Themes">Hintergrund</h4>
+      <h4 data-tab="Aussehen">Hintergrund</h4>
       <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="funken">Funkenflug</option><option value="blasen">Blasen</option><option value="wellen">Wellen</option><option value="schnee">Schneefall</option><option value="regen">Regen</option><option value="gewitter">Gewitter</option><option value="nebel">Nebel</option><option value="wolken">Wolken</option><option value="sonne">Sonnenstaub</option><option value="wetter">Wetter am Standort (live)</option></select></label>
       <label class="row" data-bgfor="not:aus">Farbe <select id="setBgHue"><option value="auto">Automatisch (Zustandsfarbe)</option><option value="bunt">Regenbogen (wandert)</option><option value="210">Blau</option><option value="185">Cyan</option><option value="165">Türkis</option><option value="140">Grün</option><option value="68">Limette</option><option value="45">Gold</option><option value="25">Orange</option><option value="355">Rot</option><option value="320">Pink</option><option value="275">Violett</option><option value="custom">Eigener Farbton</option></select></label>
       <label class="row" data-bgfor="custom"><span>Eigener Farbton</span> <input type="range" id="setBgHueN" min="0" max="359" step="1"></label>
@@ -121,7 +121,7 @@
       <label class="row" data-bgfor="not:aus">Menge <input type="range" id="setBgAmt" min="0.3" max="2" step="0.1"></label>
       <label class="row" data-bgfor="sterne">Sternschnuppen <select id="setBgShoot"><option value="0">Keine</option><option value="0.4">Selten</option><option value="1">Normal</option><option value="3">Viele</option><option value="8">Sternenregen</option></select></label>
       <div class="set-note">Optionen, die nur zu einem Hintergrund gehören (Sternschnuppen bei Sternenhimmel), erscheinen nur, wenn dieser Hintergrund gewählt ist. Nordlicht: wehende Lichtbänder. Netzwerk: Knoten, die sich verbinden. Hash-Regen: fallende Hex-Zeichen wie Blöcke im Mining. Funkenflug: aufsteigende Glut. Wellen: weiche Sinuswellen. „Wetter“ zeigt, was draußen gerade los ist. Läuft mit 30 Bildern pro Sekunde und pausiert, wenn das Panel zu ist, Argus versteckt ist oder der Spielmodus greift.</div>
-      <h4 data-tab="Themes">Transparenz</h4>
+      <h4 data-tab="Aussehen">Transparenz</h4>
       <div id="opRows"></div>
       <h4 data-tab="Stimme und KI">Stimme</h4>
       <label class="row">Antworten vorlesen <input type="checkbox" id="setTts"></label>
@@ -152,7 +152,7 @@
       <label class="row ollama-only">Grafikkarte für lokale KI <select id="setGpu"><option value="voll">Voll (am schnellsten)</option><option value="sparsam">Sparsam (halbe Last)</option><option value="aus">Aus (nur Prozessor)</option></select></label>
       <label class="col ollama-only">Lokales Modell <input type="text" id="setModel" placeholder="qwen2.5:7b"></label>
       <label class="col">Claude API-Key <input type="password" id="setKey" placeholder="sk-ant-… (leer lassen = unverändert)"></label><button class="help-btn" type="button" data-help="apiKey">So geht’s</button>
-      <h4 data-tab="News &amp; Uhren">News &amp; Uhren (Kurs und Nachrichten)</h4>
+      <h4 data-tab="Panel und Medien">News &amp; Uhren (Kurs und Nachrichten)</h4>
       <label class="row">News-&amp;-Uhren-Fenster anzeigen <input type="checkbox" id="setNews"></label>
       <label class="row">Bitcoin-Kurs im Fenster <input type="checkbox" data-cat="btc"></label>
       <label class="row">Krypto-News (BTC-ECHO, Cointelegraph, CoinDesk) <input type="checkbox" data-cat="krypto"></label>
@@ -162,10 +162,13 @@
       <label class="row">Währung <select id="setCur"><option value="USD">US-Dollar</option><option value="EUR">Euro</option></select></label>
       <div class="col">Kurse neben der Kugel und in News &amp; Uhren (Bitcoin schaltest du oben bei den Anzeigen)<div class="coin-pick" id="setCoins"></div></div>
       <div class="set-note">Das Fenster an der oberen Leiste verschieben, an den Rändern in der Größe ändern. In der Nähe von Bildschirmrand oder Panel rastet es ein. Bündig am Panel angedockt wandert es mit, wenn du das Panel verschiebst; wegziehen dockt es ab. Der BTC-Kurs an der Kugel wird unter „Anzeigen an der Kugel“ geschaltet.</div>
-      <h4 data-tab="Mining">Mining-Seite</h4>
-      <div class="set-note">Eigene Seite nur fürs Mining, umschalten oben links (Start / Mining) oder mit Strg+1 / Strg+2. Jede Seite merkt sich ihre eigene Anordnung, auch die der Anzeigen.</div>
-      <label class="row" title="Aus: Alle Mining-Fenster, die Mining-Seite, die Mining-Einstellungen, der Miner-Report und die Abfragen bei OCEAN und Foreman verschwinden. Deine Einträge bleiben gespeichert."><b>Mining in Argus anzeigen</b> <input type="checkbox" id="setMiningOn" checked></label>
+      <h4 data-tab="Seiten">Seiten</h4>
+      <div class="set-note">Start ist immer da. Mining und Gaming schaltest du hier ein oder aus, darunter hat jede Seite ihre eigenen Einstellungen. Umschalten oben links oder mit Strg+1 / 2 / 3.</div>
       <label class="row">Mining-Seite verwenden <input type="checkbox" id="setPagesOn"></label>
+      <label class="row" title="Aus: Alle Mining-Fenster, die Mining-Seite, die Mining-Einstellungen, der Miner-Report und die Abfragen bei OCEAN und Foreman verschwinden. Deine Einträge bleiben gespeichert."><b>Mining in Argus anzeigen</b> <input type="checkbox" id="setMiningOn" checked></label>
+      <label class="row" title="Dritte Seite für Spiele: erkennt das laufende Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net …) und zeigt Infos und Tipps."><b>Gaming-Seite</b> <input type="checkbox" id="setGamingOn" checked></label>
+      <h4 data-tab="Seiten">Mining-Seite</h4>
+      <div class="set-note">Eigene Seite nur fürs Mining, umschalten oben links (Start / Mining) oder mit Strg+1 / Strg+2. Jede Seite merkt sich ihre eigene Anordnung, auch die der Anzeigen.</div>
       <label class="row">Kugel auf der Mining-Seite (zeigt die Miner: grün läuft, gelb heiß, rot offline) <input type="checkbox" id="setMineOrb"></label>
       <label class="row">Freundesliste auf der Mining-Seite <input type="checkbox" id="setPageFriends"></label>
       <label class="row">OCEAN-Wallets mit Foreman verschmelzen: eigene Anlage in den Farm-Fenstern und im Überblick (für Anlagen ohne Foreman; aus, wenn die Wallet zu einer Foreman-Farm gehört) <input type="checkbox" id="setOceanTotal"></label>
@@ -177,6 +180,9 @@
       <label class="row">Hashrate live: Höhe <input type="range" id="setLiveH" min="60" max="320" step="10" data-unit=" px"></label>
       <label class="row">„Seit letztem Ausfall“ in den Farm-Karten <input type="checkbox" id="setSinceOn"></label>
       <div class="set-note">Ticker, Heatmap und Hashrate live sind eigene Fenster: verschieben, Größe ändern, mit × schließen, über Rechtsklick oder Fenster im Panel zurückholen.</div>
+      <h4 data-tab="Seiten">Gaming-Seite</h4>
+      <div class="set-note">Erkennt das laufende Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net …) und zeigt Infos und Tipps.</div>
+      <label class="row">Spielmodus: Animationen pausieren, solange ein Programm im Vollbild läuft <input type="checkbox" id="setGameMode"></label>
       <h4 data-tab="Mining">Mining</h4>
       <label class="row">Mining-Block im Panel <input type="checkbox" id="setMineOn"></label>
       <label class="col">OCEAN-Wallets (eine pro Zeile, optional „Name = Adresse“, bis zu 5) <textarea id="setMineAddr" rows="3" spellcheck="false" placeholder="Farm 1 = bc1q…&#10;Farm 2 = 1…"></textarea></label><button class="help-btn" type="button" data-help="ocean">So geht’s</button>
@@ -192,21 +198,21 @@
       <div class="fm-px" id="fmPx"></div>
       <div class="set-actions"><button class="btn" type="button" id="fmAdd">+ Konto hinzufügen</button><button class="help-btn" type="button" data-help="foreman">So geht’s</button></div>
       <div class="set-note">Je Konto: Name, Client-ID und API-Schlüssel, bis zu 8. Beides steht in Foreman unter „API Information“ (wie für Pickaxe). Mehrere Konten wechseln im Block alle 20 Sekunden durch, dazu eine Seite „Gesamt“. Argus liest nur Hashrate, Temperatur, Lüfter und Status je Miner, alle 60 Sekunden, und meldet Ausfälle und Miner ab 90 °C. Die Schlüssel bleiben nur auf diesem PC und kommen nicht in die Sicherung.</div>
-      <h4 data-tab="News &amp; Uhren">Wetter</h4>
+      <h4 data-tab="Panel und Medien">Wetter</h4>
       <label class="row">Wetter-Block im Panel <input type="checkbox" id="setWxOn"></label>
       <label class="col">Weitere Orte (bis zu 3, einer pro Zeile) <textarea id="setWxPlaces" rows="3" spellcheck="false" placeholder="Berlin&#10;Asunción"></textarea></label>
       <div class="set-note">Mit mehreren Wallets oder Orten wechselt die Anzeige alle 20 Sekunden. Maus darauf hält sie an, die Punkte oben wählen direkt. Bei mehreren Wallets gibt es zusätzlich eine Seite „Gesamt“.</div>
       <div class="set-note">Standort über die Windows-Ortung (genau, braucht in Windows „Standort“ und „Desktop-Apps Zugriff erlauben“), sonst grob über den Internet-Anschluss. Wetter von Open-Meteo, ohne Konto. Die Anzeige an der Kugel schaltest du unter „Anzeigen an der Kugel“. Frag einfach „Brauche ich heute eine Jacke?“.</div>
-      <h4 data-tab="News &amp; Uhren">Weltuhren</h4>
+      <h4 data-tab="Panel und Medien">Weltuhren</h4>
       <label class="row">Weltuhren im Panel <input type="checkbox" id="setClocksOn"></label>
       <label class="col">Uhren (bis zu 10, eine pro Zeile: Name = Stadt, Land oder Zeitzone) <textarea id="setClocks" rows="4" spellcheck="false" placeholder="Deutschland = Berlin&#10;Farm = Asuncion&#10;Dubai"></textarea></label>
       <div class="set-note" id="clocksNote">Deine Ortszeit steht immer vorn. Zeitzonen im Format Kontinent/Stadt, z. B. Europe/Berlin, America/New_York, Asia/Dubai, America/Asuncion, Asia/Almaty.</div>
-      <h4 data-tab="Freunde und Medien">Steam</h4>
+      <h4 data-tab="Freunde">Steam</h4>
       <label class="row">Steam-Freunde anzeigen <input type="checkbox" id="setSteamOn"></label>
       <label class="col">Steam-API-Schlüssel <input type="password" id="setSteamKey" placeholder="leer lassen = unverändert"></label>
       <label class="col">Dein Steam-Profil (Link, Profilname oder SteamID) <input type="text" id="setSteamId" placeholder="https://steamcommunity.com/id/…"></label>
       <div class="set-note">Schlüssel kostenlos unter steamcommunity.com/dev/apikey holen (Domain: localhost). Profil und Freundesliste müssen öffentlich sein.</div><button class="help-btn" type="button" data-help="steam">So geht’s</button>
-      <h4 data-tab="Freunde und Medien">Discord</h4>
+      <h4 data-tab="Freunde">Discord</h4>
       <label class="row">Discord anzeigen <input type="checkbox" id="setDiscordOn"></label>
       <label class="row">Nur Leute im Sprachkanal zeigen <input type="checkbox" id="setDcVoice"></label>
       <label class="col">Discord-Server-IDs (mehrere mit Komma) <input type="text" id="setDiscord" placeholder="z. B. 123456789012345678"></label>
@@ -221,17 +227,16 @@
       <label class="row">Overlay-Platz <select id="setOvCorner"><option value="oben-links">Oben links</option><option value="oben-rechts">Oben rechts</option><option value="unten-links">Unten links</option><option value="unten-rechts">Unten rechts</option></select></label>
       <label class="row">Overlay-Art <select id="setOvMode"><option value="streamkit">Discord StreamKit (zeigt, wer spricht)</option><option value="einfach">Einfache Liste</option></select></label>
       <div class="set-note">Tipp: Rechtsklick auf deinen Namen in der Freundesliste trägt ihn hier ein. Das Overlay liegt über allem, Klicks gehen durch, und es erscheint bis zu 30 Sekunden nach dem Betreten des Kanals. StreamKit ist Discords offizielles Streamer-Overlay: Es leuchtet auf, wer spricht, und zeigt die echten Namen. Beim ersten Mal fragt die Discord-App einmal, ob StreamKit sich verbinden darf. Die Kamera zeigt Discord nirgends an.</div>
-      <h4 data-tab="Freunde und Medien">Freundesliste neben der Kugel</h4>
-      <div class="set-note">Ziehen verschiebt sie, die Ecke unten rechts ändert die Größe, Strg + Mausrad (oder gedrückt halten + Mausrad) die Schrift. Transparenz unter Themes.</div>
+      <h4 data-tab="Freunde">Freundesliste neben der Kugel</h4>
+      <div class="set-note">Ziehen verschiebt sie, die Ecke unten rechts ändert die Größe, Strg + Mausrad (oder gedrückt halten + Mausrad) die Schrift. Transparenz unter Aussehen.</div>
       <label class="row">Freundesliste anzeigen <input type="checkbox" id="setFriendsOn"></label>
-      <label class="row" title="Dritte Seite für Spiele: erkennt das laufende Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net …) und zeigt Infos und Tipps."><b>Gaming-Seite</b> <input type="checkbox" id="setGamingOn" checked></label>
       <label class="row" title="Steam und Discord bekommen je ein eigenes Fenster, einzeln verschiebbar und in der Größe änderbar.">Steam und Discord getrennt <input type="checkbox" id="setFriendsSplit"></label>
       <label class="row" title="Aus: Die Freundeslisten schweben leicht um ihren Platz. An: Sie stehen starr."><input type="checkbox" id="setFriendsStill" checked> Freundeslisten starr (nicht schweben)</label>
       <label class="row" title="Beitreten verschiebt dich per Bot in den Kanal, ohne dass Discord aufgeht. Geht nur, wenn du schon in einem Sprachkanal sitzt und der Bot das Recht Mitglieder verschieben hat."><input type="checkbox" id="setDcJoin"> „Beitreten“ per Bot (ohne Discord zu öffnen)</label>
       <label class="row" title="Ein Klick auf eine Person öffnet den Chat. Damit das Fenster dabei nicht wegrutscht, lässt es sich erst nach dem Halten verschieben.">Freundesliste verschieben erst nach <select id="setFriendsHold"><option value="0">Sofort ziehen</option><option value="1">1 Sekunde halten</option><option value="2">2 Sekunden halten</option><option value="3">3 Sekunden halten</option></select></label>
       <div class="set-actions"><button class="btn" type="button" id="setFriendsReset">Größe zurücksetzen</button></div>
       <div class="set-note" id="socialNote"></div>
-      <h4 data-tab="Themes">Auslastung in der Kugel</h4>
+      <h4 data-tab="Kugel und Farbe">Auslastung in der Kugel</h4>
       <label class="row">CPU-Kerne als Neuronen (feuern mit der Last) <input type="checkbox" data-viz="cores"></label>
       <label class="row">Glut im Kern nach Temperatur <input type="checkbox" data-viz="heat"></label>
       <label class="row">„Läuft gerade“ (Apple Music, Spotify …) an der Form <input type="checkbox" id="setMedia"></label>
@@ -249,7 +254,7 @@
       <div class="set-note" id="memNote"></div>
       <div class="set-note" id="indexNote"></div>
       <div class="set-actions"><button class="btn" type="button" id="setMemOpen">Gedächtnis-Ordner öffnen</button></div>
-      <h4 data-tab="Freunde und Medien">YouTube</h4>
+      <h4 data-tab="Panel und Medien">YouTube</h4>
       <label class="row">YouTube öffnen <select id="setYtMode"><option value="panel">Im Panel, unten links</option><option value="fenster">Als eigenes Fenster</option><option value="brave">In Brave (App-Fenster)</option></select></label>
       <label class="row">Werbung auf YouTube herausfiltern (wie Brave) <input type="checkbox" id="setYtNoAds"></label>
       <label class="row">Zusätzlich Werbelisten (kann schwarzes Bild verursachen) <input type="checkbox" id="setYtAdblock"></label>
@@ -258,7 +263,7 @@
       <label class="row" title="Rundet die Ecken des eingebetteten YouTube-Fensters, passend zu den anderen Fenstern. 0 = eckig.">YouTube: runde Ecken <input type="range" id="setYtRound" min="0" max="40" step="1" data-unit=" px"></label>
       <label class="row" title="Blendet die Kanten des eingebetteten YouTube-Fensters weich aus, damit es mit der Oberfläche verschmilzt. 0 = harte Kante. Der Rand verläuft in deiner Fensterfarbe.">YouTube: weiche Ränder (experimentell) <input type="range" id="setYtFeather" min="0" max="80" step="2" data-unit=" px"></label>
       <div class="set-note">Öffnen mit dem Knopf oben im Panel oder per Satz: „Öffne YouTube“, „Spiel Lofi auf YouTube“. Die Anmeldung bleibt gespeichert.</div>
-      <h4 data-tab="Freunde und Medien">Twitch</h4>
+      <h4 data-tab="Panel und Medien">Twitch</h4>
       <label class="row">Twitch öffnen <select id="setTwMode"><option value="panel">Im Panel</option><option value="fenster">Als eigenes Fenster</option></select></label>
       <label class="row" title="Kanalname oder Adresse, zum Beispiel shroud. Leer lassen = zuletzt gesehener Kanal.">Kanal öffnen <input type="text" id="setTwChan" placeholder="Kanalname" spellcheck="false"></label>
       <label class="row">Eigenes Twitch-Fenster immer im Vordergrund <input type="checkbox" id="setTwTop"></label>
@@ -276,7 +281,7 @@
       <label class="row">OCEAN: Worker-Ausfall, Rückkehr, Hashrate-Einbruch <input type="checkbox" id="setOceanNotify"></label>
       <label class="row">OCEAN: Auszahlung <input type="checkbox" id="setPayoutNotify"></label>
       <label class="row">News &amp; Uhren: Auffälligkeiten (Kurs, Fear &amp; Greed, Difficulty, Gebühren) <input type="checkbox" data-cat="alerts"></label>
-      <h4 data-tab="Report">Täglicher Miner-Report</h4>
+      <h4 data-tab="Mining">Täglicher Miner-Report</h4>
       <label class="row" title="Argus zählt über den Tag alle 5 Minuten, wie viele Miner je Anlage online sind. Am nächsten Tag öffnet sich ein Fenster mit Bestand, typisch online (Median), Spanne und welche Miner dauerhaft oder zeitweise offline waren. Kurze Aussetzer zählen als Schwankung.">Report vom Vortag als Fenster <input type="checkbox" id="setReportOn"></label>
       <label class="row">Messdaten aufbewahren <select id="setReportKeep"><option value="2">2 Tage</option><option value="7">7 Tage</option><option value="14">14 Tage</option><option value="30">30 Tage</option></select></label>
       <label class="row">Erscheint ab <select id="setReportHour"><option value="6">6 Uhr</option><option value="7">7 Uhr</option><option value="8">8 Uhr</option><option value="9">9 Uhr</option><option value="10">10 Uhr</option><option value="12">12 Uhr</option></select></label>
@@ -325,7 +330,6 @@
       <label class="row">Panel bei Fragen automatisch öffnen <input type="checkbox" id="setAutoOpen"></label>
       <label class="row">Mikrofon-Knopf an der kleinen Kugel <input type="checkbox" id="setMicFloat"></label>
       <label class="row" title="Rechtsklick auf ein Programm in der Systemwache öffnet ein Menü zum Beenden. Systemprogramme und Argus selbst sind geschützt.">Programme in der Systemwache per Rechtsklick beenden <input type="checkbox" id="setProcKill"></label>
-      <label class="row">Spielmodus: Animationen pausieren, solange ein Programm im Vollbild läuft <input type="checkbox" id="setGameMode"></label>
       <label class="row">Ausrichtlinien beim Ziehen (Alt gedrückt = frei) <input type="checkbox" id="setSnap"></label>
       <label class="row">Anzeigen und Symbole <select id="setSway"><option value="schweben">schweben hin und her</option><option value="leicht">schweben nur leicht</option><option value="fest">stehen fest</option></select></label>
       <div class="set-note">Anzeigen, Programm-Symbole, Mikrofon und Freundesliste lassen sich mit der Maus an eine andere Stelle ziehen. Dort bleiben sie und schweben weiter leicht. Doppelklick schickt sie zurück an ihren Standardplatz.</div>

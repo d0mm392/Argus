@@ -124,7 +124,7 @@
       parts.push(ch5);
       // Klick auf eine Person: ihr Profil in Discord öffnen, dort direkt „Nachricht“. Mit StreamKit: echte Namen, wer spricht, leuchtet grün
       const dm = (av, id) => { const x = id || /\/avatars\/(\d{15,22})\//.exec(av || "")?.[1]; return x ? `discord://-/users/${x}` : null; };
-      const noId = (e) => { e.stopPropagation(); if (!noClick) notice("Für den Chat braucht Argus die Discord-ID dieser Person: eigenen Discord-Bot eintragen (Einstellungen, Freunde und Medien)."); };
+      const noId = (e) => { e.stopPropagation(); if (!noClick) notice("Für den Chat braucht Argus die Discord-ID dieser Person: eigenen Discord-Bot eintragen (Einstellungen, Freunde)."); };
       if (lm?.length) for (const m of lm) {
         const bp = (botPeople.get(vid) || []).find((p) => p.name === m.name || p.user === m.name);
         const me = isMe(m.name) || (bp && isMe(bp.name, bp.user));
@@ -186,11 +186,11 @@
     }
     markTalk();
   }
-  // × oben rechts: Freundesliste ausblenden (wieder an: Einstellungen › Freunde und Medien)
+  // × oben rechts: Freundesliste ausblenden (wieder an: Einstellungen › Freunde)
   const frXel = [null, null];
   function frX(i = 0) {
     if (frXel[i]) return frXel[i];
-    const b = frXel[i] = document.createElement("button"); b.type = "button"; b.className = "fr-x"; b.textContent = "×"; b.title = "Freundesliste ausblenden (wieder an: Einstellungen › Freunde und Medien)";
+    const b = frXel[i] = document.createElement("button"); b.type = "button"; b.className = "fr-x"; b.textContent = "×"; b.title = "Freundesliste ausblenden (wieder an: Einstellungen › Freunde)";
     b.addEventListener("pointerdown", (e) => e.stopPropagation());
     b.addEventListener("click", (e) => { e.stopPropagation(); setFriendsOn(false); });
     return b;

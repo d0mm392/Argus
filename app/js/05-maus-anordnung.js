@@ -106,7 +106,7 @@
         holdT = setTimeout(() => { holdT = null; el.classList.remove("arming"); el.classList.add("holding"); begin(ptr.x, ptr.y); }, friendsHold * 1000);
         const chk = (ev) => { if (!holdT) return window.removeEventListener("pointermove", chk, true);
           if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 8) { cancelHold(); window.removeEventListener("pointermove", chk, true);
-            if (!holdHinted) { holdHinted = true; notice(`Zum Verschieben das Fenster ${friendsHold} s gedrückt halten, oder am Griff oben in der Mitte ziehen, oder mit Umschalt ziehen (änderbar unter Einstellungen, Freunde und Medien).`); } } };
+            if (!holdHinted) { holdHinted = true; notice(`Zum Verschieben das Fenster ${friendsHold} s gedrückt halten, oder am Griff oben in der Mitte ziehen, oder mit Umschalt ziehen (änderbar unter Einstellungen, Freunde).`); } } };
         window.addEventListener("pointermove", chk, true);
         return;
       }

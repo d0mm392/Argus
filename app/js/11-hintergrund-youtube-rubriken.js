@@ -230,16 +230,18 @@
     const body = document.querySelector(".set-body"), names = [], secs = [];
     let cur = null, sec = null;
     for (const el of [...body.children]) {
-      if (el.tagName === "H4") { if (el.dataset.tab) cur = el.dataset.tab; sec = { h: el, key: el.textContent, items: [], tab: cur || "Themes" }; secs.push(sec); }
+      if (el.tagName === "H4") { if (el.dataset.tab) cur = el.dataset.tab; sec = { h: el, key: el.textContent, items: [], tab: cur || "Kugel und Farbe" }; secs.push(sec); }
       else if (sec) sec.items.push(el);
-      el.dataset.in = cur || "Themes";
+      el.dataset.in = cur || "Kugel und Farbe";
       if (!names.includes(el.dataset.in)) names.push(el.dataset.in);
       if (el.classList.contains("set-note") && !el.id) { el.classList.add("clamp"); el.title = "Klick: ganzen Hinweis zeigen"; el.addEventListener("click", () => el.classList.toggle("open")); }
     }
     let open = {}; try { open = JSON.parse(localStorage.getItem("jarvisSetOpen") || "{}"); } catch {}
     const firstOf = {}; for (const x of secs) firstOf[x.tab] ??= x.key;
     const isOpen = (x) => open[x.key] ?? firstOf[x.tab] === x.key;
-    let sel = "Themes", q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
+    const ORDER = ["Kugel und Farbe", "Aussehen", "Panel und Medien", "Seiten", "Freunde", "Mining", "Stimme und KI", "Benachrichtigungen", "System", "Fehlerberichte"];
+    names.sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+    let sel = ORDER[0], q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
     if (!names.includes(sel)) sel = names[0];
     const render = () => {
       const s2 = q.trim().toLowerCase();
@@ -258,7 +260,7 @@
     // Schalter „Mining in Argus anzeigen“: alles Mining in den Einstellungen verschwindet, nur der Schalter selbst bleibt
     const master = $("setMiningOn").parentElement, firstMine = secs.find((x) => x.tab === "Mining");
     for (const x of secs) {
-      if (x.key === "Täglicher Miner-Report" || (x.tab === "Mining" && x !== firstMine)) { x.h.classList.add("mn-off"); x.items.forEach((el) => el.classList.add("mn-off")); }
+      if (x.key === "Täglicher Miner-Report" || x.key === "Mining-Seite" || (x.tab === "Mining" && x !== firstMine)) { x.h.classList.add("mn-off"); x.items.forEach((el) => el.classList.add("mn-off")); }
       else if (x === firstMine) x.items.forEach((el) => { if (el !== master) el.classList.add("mn-off"); });
     }
     for (const b of $("setTabs").children) if (b.dataset.tab === "Report") b.classList.add("mn-off"); // ohne Mining kein Report-Reiter
