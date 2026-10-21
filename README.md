@@ -11,7 +11,7 @@ Aktuelle Version: **0.42.2** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source
 - **Mining:** OCEAN-Pool, Foreman-Farmüberwachung, Bitcoin-Netzdaten, täglicher Miner-Report (14 Tage gespeichert), Benachrichtigungen. Alles optional. Es läuft kein Miner in Argus.
 - **Gaming-Seite:** erkennt das laufende Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net, Riot, Xbox), zeigt Infos, News und Tipps. Es wird nichts im Spiel gelesen oder eingeklinkt.
 - **Freunde und Medien:** Steam- und Discord-Freundeslisten, YouTube und Musik-Player im Panel, Fenster-Spiegel, Notizblock.
-- **Anpassung:** drei Seiten (Start, Mining, Gaming) mit jeweils eigener Anordnung, Kugel und Anzeigen. Alle Fenster frei verschieb- und skalierbar, Skins, Schriftarten, Struktur der Formen, Rechtsklick-Menü im Argus-Stil (Deckkraft einstellbar).
+- **Anpassung:** drei Seiten (Start, Mining, Gaming) mit jeweils eigener Anordnung, Kugel und Anzeigen. Alle Fenster frei verschieb- und skalierbar, Skins, 16 Farbwelten plus eigene Farben, Button-Formen und -Materialien (Glas, Neon, Relief …), einklappbare Blöcke, Verlauf der Messwerte per Klick, Schriftarten, Struktur der Formen, Rechtsklick-Menü im Argus-Stil (Deckkraft einstellbar).
 - **Fehlerberichte:** gehen nur mit deiner Zustimmung raus, vorher werden Name, Pfade, Schlüssel und Wallet-Adressen entfernt. Deine Berichte bleiben 14 Tage lokal einsehbar.
 
 ## Installieren
