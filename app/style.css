@@ -668,3 +668,36 @@ body.maxed .edge { display: none !important; }
 .mic-float[aria-pressed="true"] { opacity: 0.95; pointer-events: auto; border-color: #5fd4ff; box-shadow: 0 0 12px rgba(95, 212, 255, 0.5); }
 .rim-hint { position: absolute; left: 0; top: 0; font: 500 11px/1 "Segoe UI", system-ui, sans-serif; color: rgba(219, 231, 243, 0.9); background: rgba(4, 8, 16, 0.8);
   padding: 4px 8px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; z-index: 3; }
+
+/* ---------- Farbwelten (13-optik-interaktion.js) ---------- */
+.pal-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; margin: 6px 0 10px; }
+.pal-pick button { height: 44px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.14); color: #fff; font: 600 0.68rem/1 var(--f-mono, monospace); cursor: pointer; display: flex; align-items: flex-end; padding: 0 6px 5px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+.pal-pick button:hover { border-color: rgba(255, 255, 255, 0.5); }
+.pal-pick button[aria-pressed="true"] { outline: 2px solid hsl(var(--accent-h, 200) 100% 70%); outline-offset: 1px; }
+input[type="color"] { width: 44px; height: 26px; padding: 0; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; background: none; cursor: pointer; }
+
+/* ---------- Buttons: Form und Material ---------- */
+body[data-bshape="abgerundet"] :is(.temp, .who span, .strata-float) { border-radius: 10px; }
+body[data-bshape="eckig"] :is(.temp, .who span, .strata-float) { border-radius: 2px; }
+body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float) { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+body[data-blook="glas"] :is(.temp, .who span) { background: linear-gradient(145deg, hsl(var(--h, 205) 80% 80% / 0.22), hsl(var(--h, 205) 80% 40% / 0.08)); backdrop-filter: blur(6px) saturate(1.4); border-color: hsl(var(--h, 205) 90% 85% / 0.45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35); text-shadow: none; }
+body[data-blook="neon"] :is(.temp, .who span) { background: transparent; border: 1.5px solid hsl(var(--h, 205) 100% 65%); color: hsl(var(--h, 205) 100% 82%); box-shadow: 0 0 6px hsl(var(--h, 205) 100% 60%), 0 0 18px hsl(var(--h, 205) 100% 55% / 0.6), inset 0 0 8px hsl(var(--h, 205) 100% 55% / 0.35); text-shadow: 0 0 6px hsl(var(--h, 205) 100% 65%); }
+body[data-blook="relief"] :is(.temp, .who span) { background: linear-gradient(180deg, hsl(var(--h, 205) 45% 30%), hsl(var(--h, 205) 55% 14%)); border: 1px solid hsl(var(--h, 205) 60% 45%); color: hsl(var(--h, 205) 95% 86%); box-shadow: inset 0 1px 0 hsl(var(--h, 205) 80% 70% / 0.5), inset 0 -3px 5px rgba(0, 0, 0, 0.45), 0 3px 6px rgba(0, 0, 0, 0.5); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6); }
+body[data-blook="flach"] :is(.temp, .who span) { background: hsl(var(--h, 205) 55% 22%); border-color: transparent; box-shadow: none; text-shadow: none; }
+body[data-blook="umriss"] :is(.temp, .who span) { background: transparent; box-shadow: none; text-shadow: none; }
+body[data-blook="verlauf"] :is(.temp, .who span) { background: linear-gradient(90deg, hsl(var(--h, 205) 75% 32%), hsl(calc(var(--h, 205) + 45) 75% 26%)); border-color: hsl(var(--h, 205) 80% 65% / 0.5); color: #fff; text-shadow: none; }
+body[data-blook="neon"] .temp:hover, body[data-blook="relief"] .temp:hover, body[data-blook="glas"] .temp:hover { filter: brightness(1.2); }
+
+/* ---------- Messwert-Verlauf, Einklappen, Schimmern ---------- */
+.spark-pop { position: fixed; z-index: 60; width: 280px; padding: 10px 10px 8px; border-radius: 12px; background: rgba(6, 12, 24, 0.92); border: 1px solid rgba(140, 190, 255, 0.35); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55); color: #cfe3ff; font: 600 0.72rem/1.3 var(--f-mono, monospace); }
+.spark-pop[hidden] { display: none; }
+.spark-pop .sp-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.spark-pop .sp-h button { background: none; border: 0; color: inherit; font-size: 1rem; cursor: pointer; }
+.spark-pop canvas { width: 260px; height: 90px; display: block; }
+.spark-pop .sp-f { margin-top: 4px; opacity: 0.8; font-weight: 500; }
+.sys.folded > :not(.sys-head) { display: none !important; }
+.sys.folded { height: auto !important; min-height: 0 !important; }
+.sys-head > span:first-child:hover { color: #fff; }
+@keyframes appShimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(calc(1 + 0.55 * var(--al, 0))); } }
+body:not(.no-shimmer) .appf[style*="--ah"]:not(.gone) { animation: appShimmer calc(3.4s - 2.4s * var(--al, 0)) ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { body:not(.no-shimmer) .appf[style*="--ah"] { animation: none; } }

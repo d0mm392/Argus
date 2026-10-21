@@ -40,6 +40,16 @@
       <h4 data-tab="Aussehen">Skins</h4>
       <div class="set-note">Ein Klick setzt Form, Farbe, Fensterfarbe, Glühen und Tempo zusammen. Danach kannst du alles einzeln weiter anpassen.</div>
       <div class="skin-pick" id="skinPick"></div>
+      <h4 data-tab="Aussehen">Farbwelten</h4>
+      <div class="set-note">Ein Klick setzt Grundfarbe, Fensterfarbe und Farbverteilung. Darunter kannst du eigene Farben wählen.</div>
+      <div class="pal-pick" id="palPick"></div>
+      <label class="row" title="Nur der Farbton der gewählten Farbe zählt (Kugel, Anzeigen, Akzente)">Eigene Grundfarbe <input type="color" id="setAccentHex"></label>
+      <label class="row" title="Das Fenster bleibt dunkel genug, damit Text lesbar ist">Eigene Fensterfarbe <input type="color" id="setWinHex"></label>
+      <h4 data-tab="Aussehen">Buttons: Form und Material</h4>
+      <div class="set-note">Gilt für die Anzeigen (CPU, GPU, Bitcoin …) und „Claude · Lokal“. Form und Material sind unabhängig wählbar.</div>
+      <label class="row">Form <select id="setBtnShape"></select></label>
+      <label class="row">Material <select id="setBtnLook"></select></label>
+      <label class="row" title="Programm-Symbole um die Kugel pulsieren schneller und heller, je mehr Last das Programm hat">Programme schimmern nach Last <input type="checkbox" id="setShimmer"></label>
       <h4 data-tab="Aussehen">Form und Farbe der Kugel</h4>
       <div class="swatches" id="swatches"></div>
       <label class="row">Farbton <input type="range" id="setHue" min="0" max="359" step="1"></label>
@@ -508,6 +518,7 @@
 <script src="js/10-anordnen-modus.js"></script>
 <script src="js/11-hintergrund-youtube-rubriken.js"></script>
 <script src="js/12-ki-frage-sprache-systemwache.js"></script>
-<script src="js/13-start.js"></script>
+<script src="js/13-optik-interaktion.js"></script>
+<script src="js/14-start.js"></script>
 </body>
 </html>

@@ -77,4 +77,20 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-REP-3 Einstellungen haben den Reiter „Fehlerberichte“", tab, tab);
   const spacing = await ev(`(()=>{const s=document.getElementById('settings').getBoundingClientRect(); const b=document.querySelector('.brand').getBoundingClientRect(); return Math.round(s.top-b.bottom)})()`);
   check("R-UI-1 Einstellungen haben Abstand zur oberen Leiste (≥ 8 px)", spacing >= 8, spacing);
+
+  // R-OPT-1..5: Optik und Interaktion (0.42)
+  await click("[data-pg=Start]"); await wait(500);
+  await ev(`document.querySelector('#palPick button[data-n="Lava"]').click(); true`); await wait(600);
+  const cp = await cfg();
+  check("R-OPT-1 Farbwelt setzt Grundfarbe und Fensterfarbe und wird gespeichert", cp.palette === "Lava" && cp.themeHue === 8 && cp.winColor?.h === 10, { palette: cp.palette, hue: cp.themeHue, win: cp.winColor });
+  await ev(`(()=>{const a=document.getElementById('setBtnShape'),b=document.getElementById('setBtnLook'); a.value='eckig'; a.dispatchEvent(new Event('change')); b.value='neon'; b.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  const cb = await cfg(); const bd = await ev(`[document.body.dataset.bshape, document.body.dataset.blook]`);
+  check("R-OPT-2 Button-Form und Material sind unabhängig wählbar und gespeichert", bd[0] === "eckig" && bd[1] === "neon" && cb.btnShape === "eckig" && cb.btnLook === "neon", { bd, s: cb.btnShape, l: cb.btnLook });
+  const fold = await ev(`(()=>{ const s=document.getElementById('sys'); const t=s.querySelector('.sys-head > span:first-child'); t.click(); const a=s.classList.contains('folded'); t.click(); return [a, s.classList.contains('folded')]; })()`);
+  check("R-OPT-3 Klick auf den Blocktitel klappt den Block ein und wieder aus", fold[0] === true && fold[1] === false, fold);
+  const sp = await ev(`(async()=>{ const t=document.querySelector('.temp:not(.off)'); if(!t) return 'keine Anzeige'; const w=(ms)=>new Promise(r=>setTimeout(r,ms)); t.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:5,clientY:5})); await w(200); const open=!document.querySelector('.spark-pop').hidden; return open; })()`);
+  check("R-OPT-4 Klick auf eine Messwert-Anzeige öffnet den Verlauf", sp === true, sp);
+  await ev(`(()=>{const e=document.getElementById('setShimmer'); e.checked=false; e.dispatchEvent(new Event('change')); return true})()`); await wait(400);
+  const sh = [await ev(`document.body.classList.contains('no-shimmer')`), (await cfg()).loadShimmer];
+  check("R-OPT-5 Schimmern nach Last lässt sich ausschalten", sh[0] === true && sh[1] === false, sh);
 });
