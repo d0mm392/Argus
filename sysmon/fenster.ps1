@@ -46,7 +46,7 @@ while ($true) {
       $r = New-Object W+RECT
       if ([W]::DwmGetWindowAttribute($h, 9, [ref]$r, 16) -eq 0) {
         if (-not $names.ContainsKey($pid2)) { $names[$pid2] = (Get-Process -Id $pid2 -ErrorAction SilentlyContinue).ProcessName }
-        if ($pid2 -ne $Parent -and $sb.ToString() -notmatch "^($shell)$" -and ($r.R - $r.L) -ge 200 -and ($r.B - $r.T) -ge 150) { $trk = $h }
+        if ($pid2 -ne $Parent -and [string]$names[$pid2] -notmatch '^(SearchHost|SearchApp|StartMenuExperienceHost|ShellExperienceHost|TextInputHost|LockApp|SystemSettings|ApplicationFrameHost|Widgets|WidgetBoard)$' -and $sb.ToString() -notmatch "^($shell)$" -and ($r.R - $r.L) -ge 200 -and ($r.B - $r.T) -ge 150) { $trk = $h }
         $o = @{ pid = $pid2; app = [string]$names[$pid2]; cls = $sb.ToString(); max = [W]::IsZoomed($h); l = $r.L; t = $r.T; r = $r.R; b = $r.B }
       }
     }
