@@ -93,4 +93,6 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   await ev(`(()=>{const e=document.getElementById('setShimmer'); e.checked=false; e.dispatchEvent(new Event('change')); return true})()`); await wait(400);
   const sh = [await ev(`document.body.classList.contains('no-shimmer')`), (await cfg()).loadShimmer];
   check("R-OPT-5 Schimmern nach Last lässt sich ausschalten", sh[0] === true && sh[1] === false, sh);
+  await ev(`(()=>{const e=document.getElementById('setYtAlpha'); e.value=60; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  check("R-OPT-7 YouTube-Transparenz wird gespeichert (30–100 %)", (await cfg()).ytAlpha === 60, (await cfg()).ytAlpha);
 });

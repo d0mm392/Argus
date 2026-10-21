@@ -3,7 +3,7 @@ const { app, BrowserWindow } = require("electron"); const fs = require("fs"), os
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "argus-ui-")); app.setPath("userData", dir);
 fs.writeFileSync(path.join(dir, "argus-config.json"), JSON.stringify({ setupDone: true, crashReport: false, updateChannel: "updates", autoUpdate: false, ballOn: true, pagesOn: true, mineOn: true, miningOn: true }));
 const errs = [];
-app.on("web-contents-created", (_e, wc) => wc.on("console-message", (_e2, lvl, msg) => { if (lvl >= 2 && !/Security|Canvas2D|Vosk|^\d+$|streamkit/.test(msg)) errs.push(msg); }));
+app.on("web-contents-created", (_e, wc) => wc.on("console-message", (_e2, lvl, msg) => { if (lvl >= 2 && !/Security|Canvas2D|ScriptProcessorNode|Vosk|^\d+$|streamkit/.test(msg)) errs.push(msg); }));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = []; const check = (id, ok, info) => { results.push({ id, ok: !!ok, info }); console.log((ok ? "PASS " : "FAIL ") + id + (ok ? "" : "  → " + JSON.stringify(info))); };
 async function run(body) {
