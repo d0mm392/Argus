@@ -1274,6 +1274,7 @@ async function createWindow(port) {
   });
   win.on("move", () => { followDock(); if (config.holeFollow) applyShape(); }); win.on("resize", () => { followDock(); applyShape(); });
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
+  win.on("blur", () => { blurAt = Date.now(); });
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
   win.on("show", () => { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); setTimeout(reshowViews, 200); });
@@ -1386,7 +1387,15 @@ function trayMenu() {
     { label: "Beenden", click: () => app.quit() },
   ]);
 }
-function toggleVisible() { if (!alive()) return; if (win.isVisible()) setExpanded(false); else setExpanded(true); }
+// Ein-/Ausblenden (Tray, Strg+Umschalt+J): Ist Argus offen, aber verdeckt (z. B. hinter einem maximierten Programm), holt der Aufruf es nach vorn statt es zu verstecken. Der Klick aufs Tray nimmt Argus den Fokus, daher zählt auch ein Fokusverlust vor weniger als 0,5 s als „war vorn“.
+let blurAt = 0;
+function toggleVisible() {
+  if (!alive()) return;
+  if (!win.isVisible() || win.isMinimized()) return setExpanded(true);
+  const front = win.isFocused() || Date.now() - blurAt < 500;
+  if (front) setExpanded(false);
+  else { win.show(); win.moveTop(); win.focus(); if (config.onTop === "nie" || config.onTop === "kugel") { win.setAlwaysOnTop(true, "floating"); setTimeout(() => alive() && applyTop(), 800); } reshowViews(); }
+}
 function applyAutostart() {
   if (process.platform === "linux") { // Linux kennt setLoginItemSettings nicht: Starter in ~/.config/autostart
     try {

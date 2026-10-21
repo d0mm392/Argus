@@ -1,6 +1,6 @@
 {
   "name": "argus-desktop",
-  "version": "0.51.1",
+  "version": "0.51.2",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {

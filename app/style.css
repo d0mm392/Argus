@@ -35,6 +35,8 @@ body.expanded .shell { background: hsl(var(--win-h) var(--win-s) var(--win-l) / 
 .bar { display: none; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px 0; }
 body.expanded .bar { display: flex; }
 .brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bname { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.bname small { opacity: 0.55; font-size: 10px; letter-spacing: 0.04em; }
 .brand b { font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; letter-spacing: 0.34em; }
 .backend { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 0.7rem; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .backend i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-dim); }
