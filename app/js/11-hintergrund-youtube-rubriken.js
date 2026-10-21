@@ -195,7 +195,7 @@
   let twVo = false;
   const applyTwVo = () => { $("tw").classList.toggle("vo", twVo); $("twVo").setAttribute("aria-pressed", String(twVo)); twLastKey = ""; twLayout(); };
   $("twVo").addEventListener("click", () => { twVo = !twVo; applyTwVo(); window.jarvis.setConfig({ twVideoOnly: twVo }); });
-  window.jarvis.getConfig?.().then((c) => { twVo = c.twVideoOnly !== false; twSize = c.twEmbedSize || "m"; applyTwVo(); });
+  window.jarvis.getConfig?.().then((c) => { twVo = !!c.twVideoOnly; twSize = c.twEmbedSize || "m"; applyTwVo(); });
   $("twPop").addEventListener("click", () => window.jarvis.twEmbed("popout"));
   const twResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(twSize) + d)); twSize = o[i]; twLastKey = ""; twLayout(); window.jarvis.setConfig({ twEmbedSize: twSize }); };
   $("twSmaller").addEventListener("click", () => twResize(-1)); $("twBigger").addEventListener("click", () => twResize(1));
@@ -309,7 +309,7 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !$("settings").hidden) { $("settings").hidden = true; return; }
     if (e.key === "Escape" && document.body.classList.contains("maxed")) { window.jarvis.winMode("normal"); return; }
-    if (e.key === "Escape" && expanded) { autoExpanded = false; window.jarvis.setExpanded(false, false); } });
+    });
   // Ein Klick auf das Fenster nimmt die automatische Verkleinerung zurück
   document.addEventListener("pointerdown", () => { autoExpanded = false; clearTimeout(collapseTimer); });
 

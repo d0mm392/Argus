@@ -13,7 +13,7 @@
   micFloat.classList.add("mic-float"); stage.append(micFloat);
   makeDraggable(micFloat, () => "mic");
   let micFloatOn = true;
-  const rimHint = document.createElement("div"); rimHint.className = "rim-hint"; rimHint.textContent = "Ziehen ändert die Größe"; stage.append(rimHint);
+  
   const rimR = () => S * 1.08, rimTol = () => Math.max(10, S * 0.09);
   function hit(e, raw) {
     const r = canvas.getBoundingClientRect(), x = e.clientX - r.left - CX, y = e.clientY - r.top - CY, d = Math.hypot(x, y);
@@ -161,7 +161,6 @@
 
   const endGesture = () => {
     if (!gesture) return;
-    if (gesture.type === "press") window.jarvis.toggleExpanded();
     if (gesture.type === "move") window.jarvis.moveEnd();
     if (gesture.type === "rotate") dragging = false;
     if (gesture.type === "ballmove") window.jarvis.setConfig({ ballOff });
@@ -528,7 +527,7 @@
     if (!openShape) { ctx.fillStyle = glass; outlinePath(); ctx.fill(); }
     if (shapeRim && !openShape) { ctx.strokeStyle = `hsla(${stateHue},70%,70%,0.28)`; ctx.lineWidth = 1; outlinePath(); ctx.stroke(); }
     if (shape === "symbiont") drawSymbiont();
-    else if (SOLID_SHAPES.has(shape)) drawSolid();
+    else if (SOLID_SHAPES.has(shape) && !flat2d) drawSolid();
     if (shape === "muenze") drawCoin();
     drawFolds(); drawStructure();
     }
@@ -653,7 +652,21 @@
         r.off = (r.off || 0) + (off - (r.off || 0)) * (1 - Math.exp(-dt * 5));
         ty = Math.min(H - 4 - hgt, ty + r.off); ey = r.ly + r.off;
       }
-      const al = r.lab * Math.max(r.depthK, r.glow);
+      // YouTube und Twitch liegen als eigene Ansicht immer obenauf: Beschriftung (auch selbst abgelegte) in allen vier Richtungen zum nächsten freien Platz schieben, sonst ausblenden
+      r.hid = false;
+      const yb = ytBlock();
+      if (yb.length) {
+        const hits = (x, y) => yb.some((o) => x < o.x + o.w + 4 && x + w > o.x - 4 && y < o.y + o.h + 4 && y + hgt > o.y - 4);
+        if (hits(tx, ty)) {
+          let found = null;
+          search: for (let d = 12; d <= 480; d += 12) for (const [dx, dy] of [[0, -d], [0, d], [-d, 0], [d, 0]]) {
+            const nx = Math.max(4, Math.min(W - 4 - w, tx + dx)), ny = Math.max(4, Math.min(H - 4 - hgt, ty + dy));
+            if (!hits(nx, ny)) { found = [nx, ny]; break search; }
+          }
+          if (found) { tx = found[0]; ty = found[1]; } else r.hid = true;
+        }
+      }
+      const al = r.hid ? 0 : r.lab * Math.max(r.depthK, r.glow);
       r.el.style.transform = `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`;
       tiltApply(r.el, -Math.sin(ax) * 6, (r.side ? -1 : 1) * 16 + Math.sin(ay) * 8); // Beschriftungen stehen schräg im Raum und neigen sich mit der Kugel mit
       r.el.style.opacity = (al * opacity.labels).toFixed(3);
@@ -724,11 +737,6 @@
       outlinePath(); ctx.stroke();
       ctx.shadowBlur = 0; ctx.globalCompositeOperation = "source-over";
     }
-    const hintTxt = rimOn ? "Rand ziehen: Größe" : expanded ? "Mausrad: Kugelgröße · Klick: zu" : "Klick: Panel öffnen";
-    if (rimHint.textContent !== hintTxt) rimHint.textContent = hintTxt;
-    const showHint = !gesture && (rimOn || (overBall && hov > 0.6));
-    rimHint.style.opacity = showHint ? "1" : "0";
-    if (showHint) rimHint.style.transform = `translate(${(CX - rimHint.offsetWidth / 2).toFixed(0)}px, ${(CY + S * 0.6).toFixed(0)}px)`; // im unteren Teil der Kugel, damit nichts darunter verrutscht
     // Mikrofon-Knopf: standardmäßig rechts am Kugelrand, frei verschiebbar, abschaltbar
     const mpos = anchor("mic", -0.2, 1.18, 0, 30, 30, 0);
     micFloat.style.transform = `translate(${Math.round(mpos.x)}px, ${Math.round(mpos.y)}px)`; tiltApply(micFloat);

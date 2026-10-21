@@ -47,7 +47,7 @@
   $("setBtnLook").addEventListener("change", (e) => { applyBtn(document.body.dataset.bshape, e.target.value); window.jarvis.setConfig({ btnLook: e.target.value }); });
   applyBtn();
   // Buttons neigen/drehen (3D): wird an die Lage der Anzeigen, „Claude · Lokal“ und „Strata“ angehängt
-  let tiltX = 0, tiltY = 0, tiltFollow = false, tiltSR = null, tiltT = -1;
+  let tiltX = 0, tiltY = 0, tiltK = 24, tiltFollow = false, tiltSR = null, tiltT = -1;
   function tiltApply(el, ex = 0, ey = 0) {
     if (!tiltX && !tiltY && !tiltFollow && !el._tf && !ex && !ey) return;
     const m = /translate\((-?\d+)px, (-?\d+)px\)/.exec(el.style.transform); if (!m) return;
@@ -56,23 +56,24 @@
       if (tiltT !== time) { tiltT = time; tiltSR = stage.getBoundingClientRect(); }
       // Nähe zur Maus aus der ungekippten Lage rechnen; die Neigung zieht sanft nach, damit nichts flackert
       const cx = +m[1] + el.offsetWidth / 2 + tiltSR.left, cy = +m[2] + el.offsetHeight / 2 + tiltSR.top;
-      const dx = ptr.x - cx, dy = ptr.y - cy, near = Math.max(0, 1 - Math.hypot(dx, dy) / 240);
-      fy = Math.max(-1, Math.min(1, dx / 120)) * 15 * near; fx = -Math.max(-1, Math.min(1, dy / 120)) * 15 * near;
+      const dx = ptr.x - cx, dy = ptr.y - cy, near = Math.max(0, 1 - Math.hypot(dx, dy) / 340);
+      fy = Math.max(-1, Math.min(1, dx / 70)) * tiltK * near; fx = -Math.max(-1, Math.min(1, dy / 70)) * tiltK * near;
     }
-    const k = 0.12; el._tf = el._tf || [0, 0]; el._tf[0] += (fx - el._tf[0]) * k; el._tf[1] += (fy - el._tf[1]) * k;
+    const k = 0.2; el._tf = el._tf || [0, 0]; el._tf[0] += (fx - el._tf[0]) * k; el._tf[1] += (fy - el._tf[1]) * k;
     if (Math.abs(el._tf[0]) < 0.05 && Math.abs(el._tf[1]) < 0.05 && !tiltX && !tiltY && !ex && !ey) { el._tf = null; return; }
     el.style.transform += ` perspective(480px) rotateX(${(tiltX + ex + el._tf[0]).toFixed(1)}deg) rotateY(${(tiltY + ey + el._tf[1]).toFixed(1)}deg)`;
   }
   let gTiltX = 0, gTiltY = 0; const gTiltSave = () => window.jarvis.setConfig({ gaugeTiltX: gTiltX, gaugeTiltY: gTiltY });
   $("setGaugeTiltX").addEventListener("input", (e) => { gTiltX = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
   $("setGaugeTiltY").addEventListener("input", (e) => { gTiltY = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
-  const tiltSave = () => window.jarvis.setConfig({ btnTiltX: tiltX, btnTiltY: tiltY, btnTiltFollow: tiltFollow });
+  const tiltSave = () => window.jarvis.setConfig({ btnTiltX: tiltX, btnTiltY: tiltY, btnTiltFollow: tiltFollow, btnTiltK: tiltK });
   $("setBtnTiltX").addEventListener("input", (e) => { tiltX = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
   $("setBtnTiltY").addEventListener("input", (e) => { tiltY = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
+  $("setBtnTiltK").addEventListener("input", (e) => { tiltK = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
   $("setBtnTiltFollow").addEventListener("change", (e) => { tiltFollow = e.target.checked; tiltSave(); });
   const applyShimmer = (on) => { document.body.classList.toggle("no-shimmer", on === false); $("setShimmer").checked = on !== false; };
   $("setShimmer").addEventListener("change", (e) => { applyShimmer(e.target.checked); window.jarvis.setConfig({ loadShimmer: e.target.checked }); });
-  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); $("setYtAlpha").value = c.ytAlpha ?? 100; $("setYtAlpha").dispatchEvent(new Event("input")); $("setYtRound").value = c.ytRound ?? 14; $("setYtRound").dispatchEvent(new Event("input")); $("setYtFeather").value = c.ytFeather ?? 0; $("setYtFeather").dispatchEvent(new Event("input")); markPalette(c.palette || ""); syncCustomColors(); });
+  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; tiltK = c.btnTiltK || 24; $("setBtnTiltK").value = tiltK; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); $("setYtAlpha").value = c.ytAlpha ?? 100; $("setYtAlpha").dispatchEvent(new Event("input")); $("setYtRound").value = c.ytRound ?? 14; $("setYtRound").dispatchEvent(new Event("input")); $("setYtFeather").value = c.ytFeather ?? 0; $("setYtFeather").dispatchEvent(new Event("input")); markPalette(c.palette || ""); syncCustomColors(); });
 
   // ---------- Messwerte anklicken: Verlauf der letzten 30 Minuten ----------
   const SPARK_N = 360;

@@ -1,4 +1,4 @@
-# Meldet 4-mal pro Sekunde das vorderste Fenster (Programm, Klasse, Rechteck in Bildschirm-Pixeln), nur lesend.
+# Meldet 8-mal pro Sekunde das vorderste Fenster (Programm, Klasse, Rechteck in Bildschirm-Pixeln), nur lesend.
 param([int]$Parent = 0)
 Add-Type -TypeDefinition @"
 using System; using System.Runtime.InteropServices; using System.Text;
@@ -9,12 +9,13 @@ public static class W {
   [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+  [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr c);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out int[] r);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int a, out RECT r, int n);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
 }
 "@
-[void][W]::SetProcessDPIAware()
+try { [void][W]::SetProcessDpiAwarenessContext([IntPtr](-4)) } catch { [void][W]::SetProcessDPIAware() }
 $names = @{}; $last = ""
 while ($true) {
   if ($Parent -gt 0 -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break }
@@ -33,5 +34,5 @@ while ($true) {
   } catch {}
   $j = $o | ConvertTo-Json -Compress
   if ($j -ne $last) { [Console]::Out.WriteLine($j); [Console]::Out.Flush(); $last = $j }
-  Start-Sleep -Milliseconds 250
+  Start-Sleep -Milliseconds 120
 }
