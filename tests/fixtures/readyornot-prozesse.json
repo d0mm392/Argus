@@ -1,0 +1,11 @@
+{
+  "quelle": "Echte Prozessdaten von Domis PC, 21.10.2026, Spiel lief (nur lesend gelesen, Schlüssel entfernt).",
+  "steamRunningAppID": "0x117588",
+  "prozesse": [
+    { "name": "ReadyOrNot", "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Ready Or Not\\ReadyOrNot.exe", "fenster": "" },
+    { "name": "ReadyOrNotSteam-Win64-Shipping", "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Ready Or Not\\ReadyOrNot\\Binaries\\Win64\\ReadyOrNotSteam-Win64-Shipping.exe", "fenster": "Ready Or Not  " },
+    { "name": "crashpad_handler", "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Ready Or Not\\ReadyOrNot\\Plugins\\Sentry\\Binaries\\Win64\\crashpad_handler.exe", "fenster": "" },
+    { "name": "chrome", "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "fenster": "Google" },
+    { "name": "Discord", "path": "C:\\Users\\x\\AppData\\Local\\Discord\\app-1.0.9\\Discord.exe", "fenster": "Discord" }
+  ]
+}

@@ -5001,7 +5001,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
       }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
-    else if (a === "setw" && v && typeof v.k === "string") hideWidget(v.k, !!v.on);
+    else if (a === "setw" && v && typeof v.k === "string") hideWidget(v.k, v.flip ? widgets[v.k]?.on === false : !!v.on); // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
     else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
     else if (a === "hideblk" && BLOCK_NAMES[v]) setHidden(v, true);
     else if ((a === "blkfront" || a === "blkback") && BLOCK_NAMES[v]) {
