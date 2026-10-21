@@ -1029,6 +1029,7 @@ function applyShape() {
       const fxr = followRect.x - b.x, fyr = followRect.y - b.y;
       hx = Math.max(0, fxr); hy = Math.max(0, fyr);
       hw = Math.min(W, fxr + followRect.w) - hx; hh = Math.min(H, fyr + followRect.h) - hy;
+      if (hw * hh > 0.8 * W * H) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; } // maximiertes Programm bedeckt fast ganz Argus: kein Loch, sonst wäre Argus unsichtbar
       if (hw < 60 || hh < 60) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
     } else {
       hw = Math.max(80, Math.min(W - 200, Math.round(config.holeW || 360))); hh = Math.max(80, Math.min(H - 200, Math.round(config.holeH || 260)));
