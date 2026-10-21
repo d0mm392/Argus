@@ -38,8 +38,8 @@
   $("setWinHex").addEventListener("change", () => window.jarvis.setConfig({ winColor, palette: "" }));
 
   // ---------- Buttons: Form und Material, unabhängig voneinander ----------
-  const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"]];
-  const B_LOOKS = [["standard", "Standard"], ["glas", "Glas"], ["neon", "Neon"], ["relief", "Relief (3D)"], ["flach", "Flach"], ["umriss", "Nur Umriss"], ["verlauf", "Farbverlauf"]];
+  const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"], ["hexagon", "Hexagon"], ["pfeil", "Pfeil"], ["schraeg", "Schräg"], ["ticket", "Ticket"], ["doppelt", "Doppelter Rand"]];
+  const B_LOOKS = [["standard", "Standard"], ["glas", "Glas"], ["neon", "Neon"], ["relief", "Relief (3D)"], ["flach", "Flach"], ["umriss", "Nur Umriss"], ["verlauf", "Farbverlauf (Farbe folgt dem Messwert)"], ["chrom", "Chrom"], ["holo", "Hologramm"], ["karbon", "Karbon"], ["pixel", "Pixel (Retro)"], ["milchglas", "Milchglas"], ["seife", "Seifenblase"], ["gummi", "Gummi (glänzend)"], ["scan", "Scanlines"], ["kontur", "Kontur-Glühen"], ["sonnenuntergang", "Sonnenuntergang"], ["aurora", "Aurora"]];
   const fillSel = (id, list) => $(id).replaceChildren(...list.map(([v, l]) => Object.assign(document.createElement("option"), { value: v, textContent: l })));
   fillSel("setBtnShape", B_SHAPES); fillSel("setBtnLook", B_LOOKS);
   const applyBtn = (shape, look) => { document.body.dataset.bshape = shape || "kapsel"; document.body.dataset.blook = look || "standard"; $("setBtnShape").value = document.body.dataset.bshape; $("setBtnLook").value = document.body.dataset.blook; };
