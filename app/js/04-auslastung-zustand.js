@@ -398,6 +398,7 @@
   // Schauseite: Hexagon von vorn, Gehirn von der Seite
   const FACING = { hexagon: { y: 0, a: 0.4, x: 0.1 }, gehirn: { y: Math.PI / 2, a: 0.55, x: 0.12 }, muenze: { y: 0, a: 0.75, x: 0.05 }, stern: { y: 0, a: 0.45, x: 0.05 }, herz: { y: 0, a: 0.45, x: 0.05 } };
   function rot(x, y, z) {
+    if (flat2d) return [x, y, z * 0.02]; // 2D: Form flach von vorn, ohne Drehung
     const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax);
     const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
     const y2 = y * cx - z1 * sx, z2 = y * sx + z1 * cx;

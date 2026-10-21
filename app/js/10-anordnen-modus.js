@@ -443,8 +443,8 @@
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS };
-    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS };
+    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   window.jarvis.onCtxAction?.(({ a, v }) => {
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
@@ -470,7 +470,7 @@
     }
     else if (a === "holetoggle") window.jarvis.getConfig().then((c) => { window.jarvis.setConfig({ holeOn: !c.holeOn, holeEdit: false }); $("setHoleOn").checked = !c.holeOn; });
     else if (a === "ctxset" && v && typeof v.k === "string") { // Rechtsklick-Menü am Element: stellt über die Einstellungs-Steuerung ein, damit alles den gleichen Weg nimmt
-      const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim" }, el = ids[v.k] && $(ids[v.k]);
+      const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim", flat: "setShape2d" }, el = ids[v.k] && $(ids[v.k]);
       if (el) { if (el.type === "checkbox") el.checked = !!v.v; else el.value = v.v; if (el.type === "range") el.dispatchEvent(new Event("input")); el.dispatchEvent(new Event("change")); }
     }
     else if (a === "reset") $("arrReset").click();

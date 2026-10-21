@@ -38,29 +38,19 @@
       <label class="row">Kugel anzeigen <input type="checkbox" id="setBallOn"></label>
       <label class="row">Statusanzeige (Leerlauf, Hört zu …) <input type="checkbox" id="setStatusOn"></label>
       <label class="row" title="Aus: Das kleine Widget zeigt nur die Kugel mit CPU- und GPU-Temperatur. An: auch die übrigen Anzeigen und die Statusanzeige.">Mini-Widget zeigt alle Anzeigen <input type="checkbox" id="setMiniMore"></label>
-      <h4 data-tab="Themes">Skins</h4>
-      <div class="set-note">Ein Klick setzt Form, Farbe, Fensterfarbe, Glühen und Tempo zusammen. Danach kannst du alles einzeln weiter anpassen.</div>
-      <div class="skin-pick" id="skinPick"></div>
-      <h4 data-tab="Themes">Farbwelten</h4>
-      <div class="set-note">Ein Klick setzt Grundfarbe, Fensterfarbe und Farbverteilung. Darunter kannst du eigene Farben wählen.</div>
+      <div class="skin-pick" id="skinPick" hidden></div>
+      <h4 data-tab="Themes">Farbe und Form</h4>
+      <div class="set-note">Farbwelten setzen Grundfarbe, Fensterfarbe und Farbverteilung mit einem Klick. Darunter wählst du eigene Farben, die Form der Kugel und ihr Aussehen.</div>
       <div class="pal-pick" id="palPick"></div>
       <label class="row" title="Nur der Farbton der gewählten Farbe zählt (Kugel, Anzeigen, Akzente)">Eigene Grundfarbe <input type="color" id="setAccentHex"></label>
       <label class="row" title="Das Fenster bleibt dunkel genug, damit Text lesbar ist">Eigene Fensterfarbe <input type="color" id="setWinHex"></label>
-      <h4 data-tab="Themes">Buttons: Form und Material</h4>
-      <div class="set-note">Gilt für die Anzeigen (CPU, GPU, Bitcoin …) und „Claude · Lokal“. Form und Material sind unabhängig wählbar.</div>
-      <label class="row">Form <select id="setBtnShape"></select></label>
-      <label class="row">Material <select id="setBtnLook"></select></label>
-      <label class="row" title="Kippt die Buttons nach vorn oder hinten, mit Perspektive, für einen stärkeren 3D-Effekt.">Neigung (oben/unten) <input type="range" id="setBtnTiltX" min="-60" max="60" step="1" value="0"></label>
-      <label class="row" title="Dreht die Buttons nach links oder rechts, mit Perspektive.">Drehung (links/rechts) <input type="range" id="setBtnTiltY" min="-60" max="60" step="1" value="0"></label>
-      <label class="row" title="Kommst du mit der Maus in die Nähe eines Buttons, neigt er sich leicht zum Zeiger. Weiter weg bleibt er so, wie du ihn eingestellt hast.">Buttons neigen sich zur Maus (nur in der Nähe) <input type="checkbox" id="setBtnTiltFollow"></label>
-      <label class="row" title="Programm-Symbole um die Kugel pulsieren schneller und heller, je mehr Last das Programm hat">Programme schimmern nach Last <input type="checkbox" id="setShimmer"></label>
-      <h4 data-tab="Themes">Form und Farbe der Kugel</h4>
       <div class="swatches" id="swatches"></div>
       <label class="row">Farbton <input type="range" id="setHue" min="0" max="359" step="1"></label>
       <label class="row">Form <select id="setShape" hidden></select></label>
       <button type="button" class="pick-toggle" id="pickToggle"></button>
       <div class="shape-pick" id="shapePick" role="radiogroup" aria-label="Form"></div>
       <label class="row">Rand der Form <input type="checkbox" id="setShapeRim"></label>
+      <label class="row" title="Zeigt die Form flach von vorn (Kreis, Quadrat, Sechseck …) ohne Drehung. Geht auch per Rechtsklick auf die Kugel.">2D-Darstellung <input type="checkbox" id="setShape2d"></label>
       <label class="row" title="Wie durchsichtig das Rechtsklick-Menü ist. 100 % = undurchsichtig">Deckkraft Rechtsklick-Menü <input type="range" id="setMenuAlpha" min="30" max="100" step="5" data-unit=" %"></label>
       <label class="row" title="Gitterlinien und Kanten der Form (Hexagon, Würfel, Kristall … zeigen ihre Kanten, Kugel und Co. Längen- und Breitenkreise). 0 = aus">Struktur-Linien <input type="range" id="setStruct" min="0" max="250" step="5" data-unit=" %"></label>
       <label class="row" title="Wie viele Nachbarn jeder Punkt verbindet: mehr = dichteres Netz">Netz: Verbindungen je Punkt <input type="range" id="setEdgeK" min="2" max="6" step="1"></label>
@@ -75,6 +65,14 @@
       <label class="row">Neuronen-Dichte <select id="setDens"><option value="0.5">Locker</option><option value="1">Normal</option><option value="1.5">Dicht</option><option value="2">Sehr dicht</option></select></label>
       <label class="row">Hirnregionen
         <select id="setRegions"><option value="bunt">Bunt</option><option value="thema">In der Grundfarbe</option></select></label>
+      <h4 data-tab="Themes">Buttons: Form und Material</h4>
+      <div class="set-note">Gilt für die Anzeigen (CPU, GPU, Bitcoin …) und „Claude · Lokal“. Form und Material sind unabhängig wählbar.</div>
+      <label class="row">Form <select id="setBtnShape"></select></label>
+      <label class="row">Material <select id="setBtnLook"></select></label>
+      <label class="row" title="Kippt die Buttons nach vorn oder hinten, mit Perspektive, für einen stärkeren 3D-Effekt.">Neigung (oben/unten) <input type="range" id="setBtnTiltX" min="-60" max="60" step="1" value="0"></label>
+      <label class="row" title="Dreht die Buttons nach links oder rechts, mit Perspektive.">Drehung (links/rechts) <input type="range" id="setBtnTiltY" min="-60" max="60" step="1" value="0"></label>
+      <label class="row" title="Kommst du mit der Maus in die Nähe eines Buttons, neigt er sich leicht zum Zeiger. Weiter weg bleibt er so, wie du ihn eingestellt hast.">Buttons neigen sich zur Maus (nur in der Nähe) <input type="checkbox" id="setBtnTiltFollow"></label>
+      <label class="row" title="Programm-Symbole um die Kugel pulsieren schneller und heller, je mehr Last das Programm hat">Programme schimmern nach Last <input type="checkbox" id="setShimmer"></label>
       <h4 data-tab="Themes">Farbe des Fensters</h4>
       <div class="set-note">Hintergrund von Panel, Einstellungen und Freundesliste.</div>
       <div class="swatches" id="winSwatches"></div>

@@ -20,7 +20,7 @@
   let nodes = [], edges = [], adj = [], regionNodes = [];
   // ---------- Formen: Kugel, Hexagon, Würfel, Kristall, Gehirn, Ring, DNA-Helix, Galaxie ----------
   let structK = 1, edgeK = 3, nodeK = 1, ballOn = true, statusOn = true, miniMore = false, look3dK = 0.35, structRings = [], structSkel = [];
-  let flashK = 1, shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
+  let flashK = 1, flat2d = false, shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
   const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"], ["trapez", "Trapez"], ["parallelogramm", "Parallelogramm"], ["oktagon", "Oktagon"], ["diamant", "Diamant"], ["tornado", "Tornado"]];
   // Herz- und Sternumriss als Radius je Winkel (Tabelle), für Punkte und Umriss
   const HEART_R = (() => { const pts = []; for (let k = 0; k < 720; k++) { const t = (k / 720) * Math.PI * 2, x = 16 * Math.sin(t) ** 3, y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); pts.push([x / 17, (y + 2.5) / 17]); }
@@ -157,7 +157,7 @@
       case "ikosaeder": case "trapez": case "parallelogramm": case "oktagon": case "diamant": { const t = solidR(shape, x, y, z) * 0.97, rr = Math.pow(rad, 0.6); return [x * t * rr, y * t * rr, z * t * rr]; }
       case "tornado": { // offener Wirbel: Spiralarme um eine Achse, oben weit, unten spitz
         if (i % 9 === 0) { const t = R(); return [(R() - 0.5) * 0.08, -0.95 + t * 1.9, (R() - 0.5) * 0.08]; }
-        const t = Math.pow(R(), 0.85), arm = i % 3, ang = t * 13 + arm * 2.094 + (R() - 0.5) * 0.35, rr = (0.06 + 0.86 * Math.pow(t, 1.35)) * (0.82 + 0.3 * R());
+        const t = Math.pow(R(), 0.85), arm = i % 3, ang = t * 13 + arm * 2.094 + (R() - 0.5) * 0.35, rr = (0.05 + 0.86 * Math.pow(t, 1.35)) * (0.45 + 0.5 * R()); // innerhalb des sichtbaren Trichters
         return [Math.cos(ang) * rr, -0.95 + t * 1.9, Math.sin(ang) * rr]; }
       case "stella": { const t = solidR("stella", x, y, z) * 0.97, rr = Math.pow(rad, 0.6); return [x * t * rr, y * t * rr, z * t * rr]; }
       case "knoten": { const t = R() * Math.PI * 2, k0 = 0.3, c = [(2 + Math.cos(3 * t)) * Math.cos(2 * t) * k0, Math.sin(3 * t) * k0 * 1.15, (2 + Math.cos(3 * t)) * Math.sin(2 * t) * k0], rr = 0.12 * Math.sqrt(R()), a = R() * Math.PI * 2;

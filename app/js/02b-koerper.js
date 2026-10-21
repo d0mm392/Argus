@@ -1,8 +1,8 @@
 "use strict";
 // Körper: schattierte 3D-Flächen für Würfel, Hexagon, Kristall, Pyramide, Ring (Torus), Ikosaeder, Stern-Tetraeder, Torusknoten, Tropfen,
 // dazu der Symbiont als echte 3D-Masse (Netz aus Flächen, das ständig wabert). Alles läuft auf Canvas 2D ohne WebGL.
-  const SOLID_SHAPES = new Set(["wuerfel", "hexagon", "kristall", "pyramide", "ring", "ikosaeder", "stella", "knoten", "tropfen", "trapez", "parallelogramm", "oktagon", "diamant"]);
-  const OPEN_SHAPES = new Set(["ring", "helix", "galaxie", "atom", "knoten", "tornado"]); // offene Formen: kein dunkler Untergrund, nur Hof
+  const SOLID_SHAPES = new Set(["wuerfel", "hexagon", "kristall", "pyramide", "ring", "ikosaeder", "stella", "knoten", "tropfen", "trapez", "parallelogramm", "oktagon", "diamant", "tornado"]);
+  const OPEN_SHAPES = new Set(["ring", "helix", "galaxie", "atom", "knoten"]); // offene Formen: kein dunkler Untergrund, nur Hof
   const LIGHT = (() => { const l = Math.hypot(-0.45, 0.6, 0.66); return [-0.45 / l, 0.6 / l, 0.66 / l]; })();
   const HALF = (() => { const h = [LIGHT[0], LIGHT[1], LIGHT[2] + 1], l = Math.hypot(...h); return [h[0] / l, h[1] / l, h[2] / l]; })(); // Halbvektor für den Glanz (Blick entlang z)
   const solidCache = {};
@@ -85,6 +85,10 @@
           for (let j = 0; j < V; j++) { const b = j / V * Math.PI * 2, cb = Math.cos(b) * rr, sb = Math.sin(b) * rr; v.push([p[0] + N[0] * cb + Bn[0] * sb, p[1] + N[1] * cb + Bn[1] * sb, p[2] + N[2] * cb + Bn[2] * sb]); c.push(p); }
         }
         for (let i = 0; i < U; i++) for (let j = 0; j < V; j++) f.push([i * V + j, ((i + 1) % U) * V + j, ((i + 1) % U) * V + (j + 1) % V, i * V + (j + 1) % V]);
+        return makeMesh(v, f, c, true); }
+      case "tornado": { const U = 30, V = 40, v = [], c = [], f = [];
+        for (let i = 0; i <= U; i++) { const s = i / U, y = -0.95 + s * 1.9, r = 0.05 + 0.86 * Math.pow(s, 1.35); for (let j = 0; j < V; j++) { const a = j / V * Math.PI * 2 + s * 5; v.push([r * Math.cos(a), y, r * Math.sin(a)]); c.push([0, y, 0]); } }
+        for (let i = 0; i < U; i++) for (let j = 0; j < V; j++) f.push([i * V + j, (i + 1) * V + j, (i + 1) * V + (j + 1) % V, i * V + (j + 1) % V]);
         return makeMesh(v, f, c, true); }
       case "tropfen": { const U = 28, V = 36, v = [], c = [], f = [], prof = (s) => { const y = -0.72 + s * 1.7, k = s; return [y, Math.sin(Math.PI * Math.pow(k, 0.72)) * 0.56 * (1 - 0.15 * k)]; };
         for (let i = 0; i <= U; i++) { const [y, r] = prof(i / U); for (let j = 0; j < V; j++) { const a = j / V * Math.PI * 2; v.push([r * Math.cos(a), y, r * Math.sin(a)]); c.push([0, y, 0]); } }

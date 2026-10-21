@@ -185,6 +185,7 @@
   $("setDens").addEventListener("change", (e) => { densK = +e.target.value; resize(); window.jarvis.setConfig({ density: densK }); });
   window.jarvis.getConfig?.().then((c) => { spinK = typeof c.spin === "number" ? c.spin : 1; densK = typeof c.density === "number" ? c.density : 1; $("setSpin").value = spinK; $("setDens").value = String(densK); venomRoam = !!c.venomRoam; $("setVenomRoam").checked = venomRoam; if (c.skin) markSkin(c.skin); resize(); });
   function markShape() { for (const b of $("shapePick").children) b.setAttribute("aria-checked", String(b.dataset.v === (shapePreview ?? shape))); }
+  $("setShape2d").addEventListener("change", (e) => { flat2d = e.target.checked; window.jarvis.setConfig({ shape2d: flat2d }); });
   $("setShapeRim").addEventListener("change", (e) => { shapeRim = e.target.checked; window.jarvis.setConfig({ shapeRim }); });
   // 3D-Optik: berührtes Fenster kippt höchstens 3° zur Maus, beim Verlassen zurück
   let look3d = false, tiltEl = null;
