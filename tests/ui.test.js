@@ -127,7 +127,6 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   const hv = await ev(`(()=>{ const tabs=[...document.querySelectorAll('#setTabs button')].map(b=>b.textContent); const tips=document.querySelectorAll('.set-body .has-tip').length; const vis=[...document.querySelectorAll('.set-body > .set-note:not([id])')].filter(n=>!n.classList.contains('note-folded')).length; return [tabs.includes('Kugel und Farbe'), !tabs.includes('Themes'), tips, vis]; })()`);
   const hr = await ev(`(()=>{ const r=document.getElementById('setHoleRound'); return !!r && r.type==='range' && +r.max>=30; })()`);
   check("R-OPT-17 Aussparung hat einstellbaren Eckenradius", hr === true);
-  const hf = await ev(`(()=>!!document.getElementById('setHoleFollow') && !!document.getElementById('setHoleApps'))()`);
   const pt = await ev(`(()=>{ const h=[...document.querySelectorAll('.set-body h4')].find(x=>/Farbe und Form/.test(x.textContent)); const was=h.classList.contains('closed'); if(!was) h.click(); const hid=document.getElementById('pickToggle').classList.contains('tab-hidden'); h.click(); const open=!document.getElementById('pickToggle').classList.contains('tab-hidden'); return [hid, open===was]; })()`);
   const gs = await ev(`(async()=>{ const ids=[...document.querySelectorAll('#ringPick button')].map(b=>b.dataset.v); const bad=[]; const keep=viz; for (const id of ids) { viz={...viz, rings:true, ringStyle:id}; await new Promise(r=>setTimeout(r,500)); } viz=keep; return ids; })()`);
   check("R-OPT-19 mindestens 12 Last-Anzeigen (inkl. 3D: Orbit, Säulen, Kugeln), jede zeichnet ohne Fehler", Array.isArray(gs) && gs.length >= 12 && ["orbit","saeulen","kugeln"].every(x=>gs.includes(x)));
@@ -140,6 +139,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   const spg = await ev(`(()=>{ const ids=['setPagesOn','setMiningOn','setGamingOn','setGameMode','setMineOrb','setPageFriends']; return ids.map(i=>{ const e=document.getElementById(i); const row=e&&e.closest('[data-in]'); return row&&row.dataset.in; }); })()`);
   check("R-UI-6 Reiter „Seiten“ enthält die Seiten-Schalter (Mining, Gaming) samt ihren Einstellungen", Array.isArray(spg) && spg.every((x) => x === "Seiten"), JSON.stringify(spg));
   check("R-UI-4 Formwahl-Schalter liegt im Abschnitt „Farbe und Form“ und verschwindet beim Zuklappen", Array.isArray(pt));
-  check("R-OPT-18 Aussparung kann dem Programm folgen (Schalter + Programmliste)", hf === true);
+  const hf = await ev(`(()=>!document.getElementById('setHoleFollow') && !document.getElementById('setHoleApps') && !!document.getElementById('setHoleOn'))()`);
+  check("R-OPT-18 Aussparung ist fest (kein automatisches Folgen), Schalter und Eckenradius bleiben", hf === true);
   check("R-UI-3 Einstellungen: Reiter „Kugel und Farbe“ und „Aussehen“ bündeln die Optik; Erklärungen erscheinen beim Darüberfahren statt als Fließtext", hv[0] === true && hv[1] === true && hv[2] >= 20 && hv[3] === 0, hv);
 });
