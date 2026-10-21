@@ -300,7 +300,7 @@ const JARVIS_TOOLS = ["lokale_ki", "systemstatus", "oeffnen", "gedaechtnis_suche
 function startServer() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
-      const url = decodeURIComponent(req.url.split("?")[0]);
+      let url; try { url = decodeURIComponent(req.url.split("?")[0]); } catch { res.writeHead(400); return res.end(); }
       if (url.startsWith("/api/tool/")) return handleTool(req, res, url.slice(10));
       let file;
       if (url === "/" || url === "/index.html") file = path.join(APP_DIR, "index.html");
@@ -949,8 +949,8 @@ function sizes() {
   return {
     compact: { width: Math.round(s), height: Math.round(s * 1.08) },
     expanded: {
-      width: Math.round(Math.min(wa.width - 2 * MARGIN, config.panelW || Math.max(460, s * 1.25))),
-      height: Math.round(Math.min(wa.height - 2 * MARGIN, config.panelH || s + 560)),
+      width: Math.round(Math.min(wa.width - 2 * MARGIN, config.panelW || Math.max(560, s * 1.6))),
+      height: Math.round(Math.min(wa.height - 2 * MARGIN, config.panelH || Math.min(s + 480, Math.round(Math.min(wa.width - 2 * MARGIN, config.panelW || Math.max(560, s * 1.6)) * 1.7)))),
     },
   };
 }
@@ -1012,13 +1012,17 @@ function applyShape() {
 }
 let shrinkTimer = null, boundsCheckT = null, lastBoundsW = 0, lastBoundsH = 0;
 let panelDrag = null; // läuft gerade ein Ziehen an Panel-Kante oder -Ecke
+// Bei gemischter Skalierung (z. B. 100 % und 150 % auf zwei Bildschirmen) rechnet Windows die Größe beim ersten setBounds mit dem Maßstab des alten Bildschirms:
+// das Fenster bleibt dann kleiner als die Oberfläche (Inhalt rechts abgeschnitten, Vergrößern und Maximieren wirkungslos). Zweimal setzen: erst Lage, dann Größe
+function putBounds(b) { win.setBounds(b); win.setBounds(b); }
+let lastSF = 0;
 function setBoundsNow(b) {
   if (!alive()) return;
   if (!lastBoundsW || Math.abs(lastBoundsW - b.width) > 1 || Math.abs(lastBoundsH - b.height) > 1) setTimeout(applyShape, 60);
   lastBoundsW = b.width; lastBoundsH = b.height;
-  if (panelDrag) return win.setBounds(b); // während des Ziehens bleibt das Fenster dauerhaft veränderbar
+  if (panelDrag) return putBounds(b); // während des Ziehens bleibt das Fenster dauerhaft veränderbar
   win.setResizable(true); win.setMinimumSize(1, 1);
-  win.setBounds(b);
+  putBounds(b);
   win.setResizable(false);
   // Windows übernimmt die Größe bei durchsichtigen Fenstern manchmal nicht (schnelles Auf-/Zuklappen ließ das Panel abgeschnitten zurück): prüfen und nachsetzen
   clearTimeout(boundsCheckT);
@@ -1026,8 +1030,12 @@ function setBoundsNow(b) {
   const verify = () => {
     if (!alive() || panelDrag) return;
     const c = win.getBounds();
-    if (Math.abs(c.width - b.width) <= 6 && Math.abs(c.height - b.height) <= 6) return;
-    win.setResizable(true); win.setMinimumSize(1, 1); win.setBounds(b); win.setResizable(false);
+    if (Math.abs(c.width - b.width) <= 6 && Math.abs(c.height - b.height) <= 6) {
+      // Fenstermaß stimmt: noch prüfen, ob die Oberfläche genauso groß ist (sonst hat Windows die Größe mit falschem Maßstab angewendet)
+      if (tries === 0 && viewReady) win.webContents.executeJavaScript("[innerWidth, innerHeight]").then((r) => { const cb = win.getContentBounds(); if (alive() && !panelDrag && Array.isArray(r) && (Math.abs(r[0] - cb.width) > 8 || Math.abs(r[1] - cb.height) > 8)) { win.setResizable(true); win.setMinimumSize(1, 1); putBounds(b); win.setResizable(false); } }).catch(() => {});
+      return;
+    }
+    win.setResizable(true); win.setMinimumSize(1, 1); putBounds(b); win.setResizable(false);
     if (++tries < 3) boundsCheckT = setTimeout(verify, 200);
   };
   boundsCheckT = setTimeout(verify, 200);
@@ -1067,7 +1075,7 @@ function bigBox(wa) { wa = edgeSafe(wa);
 // Selbst verschobenes/gezogenes Panel merken, solange es noch auf einem Bildschirm liegt
 function panelBoxOk() {
   const p = config.panelBox;
-  if (!p || !(p.width >= 380 && p.height >= 420)) return false;
+  if (!p || !(p.width >= 380 && p.height >= 420) || p.height / p.width > 2.2) return false; // zu schmal und hoch (altes Einrasten am Rand) gilt als ungültig
   return screen.getAllDisplays().some((d) => { const a = d.workArea; return p.x < a.x + a.width - 60 && p.x + p.width > a.x + 60 && p.y >= a.y - 10 && p.y < a.y + a.height - 60; });
 }
 // Panel immer ganz auf einen Bildschirm holen (Domi: Panel hing halb links draußen, Bedienelemente unerreichbar)
@@ -1204,6 +1212,7 @@ async function createWindow(port) {
   });
   win.on("moved", () => {
     if (!alive()) return;
+    try { const sf = screen.getDisplayMatching(win.getBounds()).scaleFactor; if (lastSF && sf !== lastSF && expanded && winMode === "normal") setBoundsNow(win.getBounds()); lastSF = sf; } catch {}
     if (!expanded) { config.corner = nearestCorner(); const b = win.getBounds(); config.lastView = { ...(config.lastView || {}), exp: false, mode: "normal", at: { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) } }; }
     else if (winMode === "max") {
       // Aus dem Vollbild weggezogen: wieder normale Größe unter dem Mauszeiger, Ränder zum Größe-Ändern wieder da
@@ -1218,11 +1227,7 @@ async function createWindow(port) {
       // Wie bei Windows: an den oberen Rand gezogen = Vollbild im Arbeitsbereich, an den linken/rechten Rand = halber Bildschirm
       const c = screen.getCursorScreenPoint(), wa = screen.getDisplayNearestPoint(c).workArea;
       if (c.y <= wa.y + 2) { winMode = "max"; applyTop(); applyBounds(config.corner, false); return; }
-      if (c.x <= wa.x + 2 || c.x >= wa.x + wa.width - 3) {
-        const half = Math.round(wa.width / 2);
-        config.panelBox = { x: c.x <= wa.x + 2 ? wa.x : wa.x + wa.width - half, y: wa.y, width: half, height: wa.height };
-        setBoundsNow(config.panelBox); saveConfig(); return;
-      }
+      // Am linken/rechten Rand gibt es bewusst kein Einrasten auf den halben Bildschirm mehr: auf einem hochkant gestellten Monitor wurde das Panel dadurch schmal und hoch
       const b = win.getBounds(), f = fitOnScreen(b); // nach dem Loslassen ganz auf den Bildschirm zurückholen
       if (f.x !== b.x || f.y !== b.y || f.width !== b.width || f.height !== b.height) setBoundsNow(f);
       config.panelBox = f; // Panel an der Leiste verschoben
@@ -1583,6 +1588,7 @@ ipcMain.on("quit", () => app.quit());
 const SETTABLE = { aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", taskbarShow: "string", hiddenFans: "object", afterHide: "string", miniPos: "object", taskbarFront: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", btnTiltK: "number", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", flashT: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceOutput: "boolean", micOnStart: "boolean",
   holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeRadii: "object", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", shape2d: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 ipcMain.handle("set-config", (_e, patch) => {
+  if (patch && typeof patch.updateUrl === "string" && patch.updateUrl.trim() && !/^https:\/\//i.test(patch.updateUrl.trim())) delete patch.updateUrl; // Update-Adresse nur verschlüsselt (https)
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
   saveConfig();
@@ -1706,7 +1712,7 @@ ipcMain.on("panel-resize-start", (_e, k) => {
     if (k.includes("n")) { h = Math.max(MINH, b0.height - dy); y = b0.y + b0.height - h; }
     const key = [x, y, w, h].join();
     if (key === last) return;
-    last = key; win.setBounds({ x, y, width: w, height: h });
+    last = key; putBounds({ x, y, width: w, height: h });
   }, 8) };
 });
 function endPanelDrag() {
@@ -1763,6 +1769,8 @@ app.whenReady().then(async () => {
   if (config.autostart) try { applyAutostart(); } catch (e) { logError(e); } // Autostart-Eintrag auf die aktuelle Programmdatei (nach dem Umzug Argus.exe)
   session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === "media"));
   session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === "media");
+  // Fremde Seiten (YouTube, Twitch, StreamKit) dürfen weder Kamera, Mikrofon, Standort noch Benachrichtigungen verlangen
+  for (const part of ["persist:youtube", "persist:twitch", "persist:streamkit"]) { const ss = session.fromPartition(part); ss.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === "fullscreen" || perm === "clipboard-sanitized-write")); ss.setPermissionCheckHandler((_wc, perm) => perm === "fullscreen" || perm === "clipboard-sanitized-write"); }
   const port = await startServer();
   await createWindow(port);
   buildTray();

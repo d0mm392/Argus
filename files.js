@@ -112,7 +112,10 @@ function searchContent(query, n = 15) {
 }
 
 const TEXT = /\.(txt|md|csv|tsv|log|json|jsonl|xml|html?|css|js|ts|py|ps1|bat|cmd|ini|cfg|conf|yaml|yml|toml|sql|sh|c|cpp|h|cs|java|go|rs|php|rb|srt)$/i;
+// Zugangsdaten, Schlüssel und Browser-/Programmprofile bleiben auch für die KI unlesbar (eingeschleuste Anweisungen aus fremden Texten könnten sie sonst herausgeben)
+const SECRET = /(^|[\\/])(\.ssh|\.aws|\.gnupg|\.azure|\.kube|\.docker)([\\/]|$)|[\\/]\.env(\.[^\\/]*)?$|\.(pem|key|ppk|kdbx|p12|pfx|ovpn)$|[\\/](id_rsa|id_ed25519|id_ecdsa|wallet\.dat|login data|cookies|local state|argus-config\.json|jarvis-config\.json)$|[\\/]appdata[\\/](roaming|local)[\\/](google[\\/]chrome|microsoft[\\/]edge|mozilla|bravesoftware|opera software|discord|telegram desktop|argus|jarvis)([\\/]|$)/i;
 function read(p, max = 60000) {
+  if (SECRET.test(String(p))) return `${p} ist gesperrt (Zugangsdaten oder Profildaten). Das lese ich nicht.`;
   const st = fs.statSync(p);
   if (st.isDirectory()) return list(p);
   if (!TEXT.test(p)) {

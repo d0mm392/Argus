@@ -159,7 +159,7 @@ body.free.expanded .shell { position: relative; }
 body.free.expanded #stage { position: absolute; left: 0; right: 0; top: var(--barH, 52px); bottom: 0; flex: none; min-height: 0; }
 body.free.expanded .panel { isolation: isolate; }
 body.free.expanded .panel { position: absolute; left: 0; right: 0; top: var(--barH, 52px); bottom: 0; display: block; padding: 0; pointer-events: none; }
-body.free.expanded .panel > .blk { position: absolute; pointer-events: auto; margin: 0; box-sizing: border-box; }
+body.free.expanded .panel > .blk { position: absolute; pointer-events: auto; margin: 0; box-sizing: border-box; max-width: 100%; }
 body.free.expanded .panel > .yt:not(.on) { display: none; }
 body.free.expanded .panel > .transcript, body.free.expanded .panel > .log, body.free.expanded .panel > .sys { overflow: auto; }
 body.free .sys > .fgrip { display: none; }
@@ -170,7 +170,7 @@ body.look3d .sys, body.look3d .notes, body.look3d .transcript, body.look3d .medi
   background-image: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0) 38%, rgba(0,0,0,0.14));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 0 rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.35), 0 8px 18px rgba(0,0,0,0.38), 0 18px 40px rgba(0,0,0,0.25); }
 body.look3d .yt.vo { background-image: none; box-shadow: none; } /* „Nur Video“: kein Rahmen, kein Schatten um das Bild (sah aus wie ein Streifen/Schleier) */
-body.look3d .btn:not(.primary), body.look3d .temp, body.look3d .who, body.look3d .pg i {
+body.look3d .btn:not(.primary):not(.strata-float), body.look3d .who, body.look3d .pg i {
   background-image: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0) 55%, rgba(0,0,0,0.18));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.35), 0 2px 0 rgba(0,0,0,0.45), 0 5px 12px rgba(0,0,0,0.35); }
 body.look3d .btn.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 0 rgba(0,0,0,0.25), 0 2px 0 rgba(0,0,0,0.45), 0 5px 12px rgba(0,0,0,0.35); }
@@ -684,16 +684,83 @@ body.maxed .edge { display: none !important; }
 input[type="color"] { width: 44px; height: 26px; padding: 0; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; background: none; cursor: pointer; }
 
 /* ---------- Buttons: Form und Material ---------- */
-body[data-bshape="abgerundet"] :is(.temp, .who span, .strata-float) { border-radius: 10px; }
-body[data-bshape="eckig"] :is(.temp, .who span, .strata-float) { border-radius: 2px; }
-body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float) { border-radius: 0; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-body[data-blook="glas"] :is(.temp, .who span) { background: linear-gradient(145deg, hsl(var(--h, 205) 80% 80% / 0.22), hsl(var(--h, 205) 80% 40% / 0.08)); backdrop-filter: blur(6px) saturate(1.4); border-color: hsl(var(--h, 205) 90% 85% / 0.45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35); text-shadow: none; }
-body[data-blook="neon"] :is(.temp, .who span) { background: transparent; border: 1.5px solid hsl(var(--h, 205) 100% 65%); color: hsl(var(--h, 205) 100% 82%); box-shadow: 0 0 6px hsl(var(--h, 205) 100% 60%), 0 0 18px hsl(var(--h, 205) 100% 55% / 0.6), inset 0 0 8px hsl(var(--h, 205) 100% 55% / 0.35); text-shadow: 0 0 6px hsl(var(--h, 205) 100% 65%); }
-body[data-blook="relief"] :is(.temp, .who span) { background: linear-gradient(180deg, hsl(var(--h, 205) 45% 30%), hsl(var(--h, 205) 55% 14%)); border: 1px solid hsl(var(--h, 205) 60% 45%); color: hsl(var(--h, 205) 95% 86%); box-shadow: inset 0 1px 0 hsl(var(--h, 205) 80% 70% / 0.5), inset 0 -3px 5px rgba(0, 0, 0, 0.45), 0 3px 6px rgba(0, 0, 0, 0.5); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6); }
-body[data-blook="flach"] :is(.temp, .who span) { background: hsl(var(--h, 205) 55% 22%); border-color: transparent; box-shadow: none; text-shadow: none; }
-body[data-blook="umriss"] :is(.temp, .who span) { background: transparent; box-shadow: none; text-shadow: none; }
-body[data-blook="verlauf"] :is(.temp, .who span) { background: linear-gradient(90deg, hsl(clamp(0, calc(var(--h, 205) + 38), 175) 80% 34%), hsl(clamp(0, calc(var(--h, 205) - 38), 175) 85% 30%)); border-color: hsl(var(--h, 205) 90% 65% / 0.6); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); box-shadow: 0 0 12px hsl(var(--h, 205) 90% 55% / 0.45); transition: background 1.2s, color 1.2s, border-color 1.2s, box-shadow 0.4s; }
-body[data-blook="neon"] .temp:hover, body[data-blook="relief"] .temp:hover, body[data-blook="glas"] .temp:hover { filter: brightness(1.2); }
+/* ---------- Buttons: Form und Material (erzeugt aus tests/gen-buttons.js) ----------
+   Aufbau: das Element selbst trägt nur Text, Lage und den Schatten (filter: drop-shadow folgt der echten Form).
+   Hintergrund, Rand und Form liegen in ::before (Füllung) und ::after (Rand bei Vielecken), dadurch kann nichts als eckiger Kasten durchscheinen. */
+:is(.temp, .who span, .strata-float) { --bg: rgba(4, 8, 16, 0.6); --bd: hsl(var(--h, 205) 90% 60% / 0.55); --bw: 1px; --bwid: var(--bw); --gl: drop-shadow(0 0 5px hsl(var(--h, 205) 90% 55% / 0.3)); --ins: inset 0 0 0 transparent; --osh: 0 0 0 transparent; --bf: none; --clip: none; --ring: none; --msk: none;
+  --r1: 999px; --r2: 999px; --r3: 999px; --r4: 999px; isolation: isolate; background: none !important; box-shadow: none !important; border-color: transparent !important; border-radius: var(--r1) var(--r2) var(--r3) var(--r4); filter: var(--gl); }
+.who span { position: relative; --bg: transparent; --bd: transparent; --gl: drop-shadow(0 0 0 transparent); }
+body:not([data-bshape="kapsel"]) .who span { --bg: rgba(4, 8, 16, 0.6); --bd: hsl(var(--h, 205) 90% 60% / 0.5); }
+.strata-float { --bg: rgba(6, 11, 20, 0.78); --bd: rgba(160, 200, 240, 0.3); --gl: drop-shadow(0 0 0 transparent); }
+.strata-float[data-st="an"] { --bd: #6ee7a8; }
+:is(.temp, .who span, .strata-float)::before { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; box-sizing: border-box; background: var(--bg); border: var(--bwid) solid var(--bd); border-radius: var(--r1) var(--r2) var(--r3) var(--r4); box-shadow: var(--ins), var(--osh); backdrop-filter: var(--bf); -webkit-backdrop-filter: var(--bf); clip-path: var(--clip); -webkit-mask: var(--msk); transition: background 0.4s, border-color 1.2s; }
+:is(.temp, .who span, .strata-float)::after { content: none; }
+.temp:hover { filter: var(--gl) drop-shadow(0 0 9px hsl(var(--h, 205) 95% 60% / 0.55)) brightness(1.12); }
+.temp:hover::before { background: var(--bg-hov, var(--bg)); }
+body.look3d :is(.temp, .who span, .strata-float)::before { background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.18)), var(--bg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -2px 0 rgba(0, 0, 0, 0.35), var(--ins), var(--osh); }
+body.look3d :is(.temp, .who span, .strata-float) { filter: var(--gl) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 4px 5px rgba(0, 0, 0, 0.3)); }
+body.look3d .temp:hover { filter: var(--gl) drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 0 9px hsl(var(--h, 205) 95% 60% / 0.55)) brightness(1.12); }
+/* „Claude · Lokal“: der Halter ist nur bei der Kapsel sichtbar, bei allen anderen Formen schweben die Teile frei */
+body:not([data-bshape="kapsel"]) .who { background: none !important; border-color: transparent !important; box-shadow: none !important; padding: 2px 0; gap: 8px; border-radius: 0; }
+.who span.busy { --gl: drop-shadow(0 0 4px hsl(var(--h, 205) 100% 62% / 0.65)); }
+body[data-blook="standard"] .who span.busy { color: #fff; --bg: hsl(var(--h, 205) 80% 50% / 0.28); }
+body[data-bshape="kapsel"] :is(.temp, .who span, .strata-float) { --r1: 999px; --r2: 999px; --r3: 999px; --r4: 999px; }
+body[data-bshape="abgerundet"] :is(.temp, .who span, .strata-float) { --r1: 10px; --r2: 10px; --r3: 10px; --r4: 10px; }
+body[data-bshape="eckig"] :is(.temp, .who span, .strata-float) { --r1: 2px; --r2: 2px; --r3: 2px; --r4: 2px; }
+body[data-bshape="tab"] :is(.temp, .who span, .strata-float) { --r1: 12px; --r2: 12px; --r3: 2px; --r4: 2px; }
+body[data-bshape="blase"] :is(.temp, .who span, .strata-float) { --r1: 12px; --r2: 12px; --r3: 12px; --r4: 0; }
+body[data-bshape="blatt"] :is(.temp, .who span, .strata-float) { --r1: 14px; --r2: 2px; --r3: 14px; --r4: 2px; }
+body[data-bshape="schild"] :is(.temp, .who span, .strata-float) { --r1: 2px; --r2: 2px; --r3: 12px; --r4: 12px; }
+body[data-bshape="klammer"] :is(.temp, .who span, .strata-float) { --r1: 3px; --r2: 3px; --r3: 3px; --r4: 3px; }
+body[data-bshape="ticket"] :is(.temp, .who span, .strata-float) { --r1: 6px; --r2: 6px; --r3: 6px; --r4: 6px; padding-inline: 1em; }
+body[data-bshape="doppelt"] :is(.temp, .who span, .strata-float) { --r1: 999px; --r2: 999px; --r3: 999px; --r4: 999px; }
+body[data-bshape="ticket"] :is(.temp, .who span, .strata-float) { --msk: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat; }
+body[data-bshape="klammer"] :is(.temp, .who span, .strata-float) { --bwid: 0 var(--bw); padding-inline: 1em; }
+body[data-bshape="doppelt"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -5px; z-index: -1; pointer-events: none; border: 1px solid hsl(var(--h, 205) 90% 60% / 0.45); border-radius: 999px; }
+body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); undefined }
+body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px, 8px 0, 9.5px 1.5px, 1.5px 9.5px, 1.5px calc(100% - 1.5px), calc(100% - 9.5px) calc(100% - 1.5px), calc(100% - 1.5px) calc(100% - 9.5px), calc(100% - 1.5px) 1.5px, 9.5px 1.5px); }
+body[data-bshape="oktagon"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); padding-inline: 0.9em; }
+body[data-bshape="oktagon"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="oktagon"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px, 6px 0, 7.5px 1.5px, 1.5px 7.5px, 1.5px calc(100% - 7.5px), 7.5px calc(100% - 1.5px), calc(100% - 7.5px) calc(100% - 1.5px), calc(100% - 1.5px) calc(100% - 7.5px), calc(100% - 1.5px) 7.5px, calc(100% - 7.5px) 1.5px, 7.5px 1.5px); }
+body[data-bshape="hexagon"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); padding-inline: 1.15em; }
+body[data-bshape="hexagon"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="hexagon"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%, 10px 0, 11.5px 1.5px, 3px 50%, 11.5px calc(100% - 1.5px), calc(100% - 11.5px) calc(100% - 1.5px), calc(100% - 3px) 50%, calc(100% - 11.5px) 1.5px, 11.5px 1.5px); }
+body[data-bshape="raute"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%); padding-inline: 1.6em; }
+body[data-bshape="raute"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="raute"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%, 16px 0, 18.5px 1.5px, 3.5px 50%, 18.5px calc(100% - 1.5px), calc(100% - 18.5px) calc(100% - 1.5px), calc(100% - 3.5px) 50%, calc(100% - 18.5px) 1.5px, 18.5px 1.5px); }
+body[data-bshape="pfeil"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); padding-right: 1.1em; }
+body[data-bshape="pfeil"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="pfeil"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 0 0, 1.5px 1.5px, 1.5px calc(100% - 1.5px), calc(100% - 11.5px) calc(100% - 1.5px), calc(100% - 3px) 50%, calc(100% - 11.5px) 1.5px, 1.5px 1.5px); }
+body[data-bshape="pfeillinks"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(0 50%, 10px 0, 100% 0, 100% 100%, 10px 100%); padding-left: 1.1em; }
+body[data-bshape="pfeillinks"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="pfeillinks"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(0 50%, 10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%, 3px 50%, 11.5px calc(100% - 1.5px), calc(100% - 1.5px) calc(100% - 1.5px), calc(100% - 1.5px) 1.5px, 11.5px 1.5px, 3px 50%); }
+body[data-bshape="schraeg"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); padding-inline: 1em; }
+body[data-bshape="schraeg"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="schraeg"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%, 9px 0, 10.5px 1.5px, 2.5px calc(100% - 1.5px), calc(100% - 10.5px) calc(100% - 1.5px), calc(100% - 2.5px) 1.5px, 10.5px 1.5px); }
+body[data-bshape="schraeg2"] :is(.temp, .who span, .strata-float) { --r1: 0; --r2: 0; --r3: 0; --r4: 0; --clip: polygon(0 0, calc(100% - 9px) 0, 100% 100%, 9px 100%); padding-inline: 1em; }
+body[data-bshape="schraeg2"] :is(.temp, .who span, .strata-float)::before { border: 0; }
+body[data-bshape="schraeg2"] :is(.temp, .who span, .strata-float)::after { content: ""; position: absolute; inset: -1px; z-index: -1; pointer-events: none; background: var(--bd); clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 100%, 9px 100%, 0 0, 2.5px 1.5px, 10.5px calc(100% - 1.5px), calc(100% - 2.5px) calc(100% - 1.5px), calc(100% - 10.5px) 1.5px, 2.5px 1.5px); }
+body[data-blook="glas"] :is(.temp, .who span) { --bg: linear-gradient(145deg, hsl(var(--h, 205) 80% 80% / 0.22), hsl(var(--h, 205) 80% 40% / 0.08)); --bd: hsl(var(--h, 205) 90% 85% / 0.45); --ins: inset 0 1px 0 rgba(255, 255, 255, 0.35); --osh: 0 4px 12px rgba(0, 0, 0, 0.35); --bf: blur(6px) saturate(1.4); text-shadow: none; }
+body[data-blook="neon"] :is(.temp, .who span) { --bg: transparent; --bd: hsl(var(--h, 205) 100% 65%); --bw: 1.5px; --gl: drop-shadow(0 0 3px hsl(var(--h, 205) 100% 60%)) drop-shadow(0 0 9px hsl(var(--h, 205) 100% 55% / 0.6)); --ins: inset 0 0 6px hsl(var(--h, 205) 100% 55% / 0.2); color: hsl(var(--h, 205) 100% 82%); text-shadow: 0 0 6px hsl(var(--h, 205) 100% 65%); }
+body[data-blook="relief"] :is(.temp, .who span) { --bg: linear-gradient(180deg, hsl(var(--h, 205) 45% 30%), hsl(var(--h, 205) 55% 14%)); --bd: hsl(var(--h, 205) 60% 45%); --ins: inset 0 1px 0 hsl(var(--h, 205) 80% 70% / 0.5), inset 0 -3px 5px rgba(0, 0, 0, 0.45); --gl: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); color: hsl(var(--h, 205) 95% 86%); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6); }
+body[data-blook="flach"] :is(.temp, .who span) { --bg: hsl(var(--h, 205) 55% 22%); --bd: transparent; --gl: drop-shadow(0 0 0 transparent); text-shadow: none; }
+body[data-blook="umriss"] :is(.temp, .who span) { --bg: transparent; --gl: drop-shadow(0 0 0 transparent); text-shadow: none; }
+body[data-blook="verlauf"] :is(.temp, .who span) { --bg: linear-gradient(90deg, hsl(clamp(0, calc(var(--h, 205) + 38), 175) 80% 34%), hsl(clamp(0, calc(var(--h, 205) - 38), 175) 85% 30%)); --bd: hsl(var(--h, 205) 90% 65% / 0.6); --gl: drop-shadow(0 0 6px hsl(var(--h, 205) 90% 55% / 0.45)); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+body[data-blook="chrom"] :is(.temp, .who span) { --bg: linear-gradient(180deg, #e8eef6 0%, #8c97a6 46%, #4b5461 52%, #a9b4c3 100%); --bd: #dfe7f2; --ins: inset 0 1px 0 #fff; --gl: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5)); color: #0c1522; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55); }
+body[data-blook="holo"] :is(.temp, .who span) { --bg: linear-gradient(115deg, hsl(calc(var(--h, 205) - 40) 90% 45% / 0.85), hsl(calc(var(--h, 205) + 20) 95% 62% / 0.85) 35%, hsl(calc(var(--h, 205) + 90) 90% 55% / 0.85) 65%, hsl(calc(var(--h, 205) + 160) 90% 50% / 0.85)); --bd: rgba(255, 255, 255, 0.55); --gl: drop-shadow(0 0 7px hsl(var(--h, 205) 90% 60% / 0.5)); color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+body[data-blook="karbon"] :is(.temp, .who span) { --bg: repeating-linear-gradient(45deg, #11151c 0 3px, #181d26 3px 6px); --bd: hsl(var(--h, 205) 70% 45% / 0.7); --ins: inset 0 1px 0 rgba(255, 255, 255, 0.1); --gl: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55)); }
+body[data-blook="pixel"] :is(.temp, .who span) { --bg: hsl(var(--h, 205) 50% 12%); --bd: hsl(var(--h, 205) 90% 60%); --bw: 2px; --osh: 3px 3px 0 hsl(var(--h, 205) 90% 40%); --r1: min(var(--p1), 2px); --r2: min(var(--p2), 2px); --r3: min(var(--p3), 2px); --r4: min(var(--p4), 2px); text-shadow: none; letter-spacing: 0.04em; }
+body[data-blook="milchglas"] :is(.temp, .who span) { --bg: rgba(255, 255, 255, 0.16); --bd: rgba(255, 255, 255, 0.35); --osh: 0 4px 14px rgba(0, 0, 0, 0.3); --bf: blur(10px) saturate(1.2); color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); }
+body[data-blook="seife"] :is(.temp, .who span) { --bg: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 35%), linear-gradient(135deg, hsl(calc(var(--h, 205) + 60) 80% 55% / 0.35), hsl(calc(var(--h, 205) - 60) 80% 55% / 0.35)); --bd: rgba(255, 255, 255, 0.4); --ins: inset 0 0 10px rgba(255, 255, 255, 0.25); --gl: drop-shadow(0 0 5px hsl(var(--h, 205) 90% 60% / 0.4)); }
+body[data-blook="gummi"] :is(.temp, .who span) { --bg: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%), hsl(var(--h, 205) 75% 38%); --bd: hsl(var(--h, 205) 80% 62%); --ins: inset 0 -4px 6px rgba(0, 0, 0, 0.35); --gl: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+body[data-blook="scan"] :is(.temp, .who span) { --bg: repeating-linear-gradient(0deg, hsl(var(--h, 205) 80% 14% / 0.9) 0 2px, hsl(var(--h, 205) 80% 9% / 0.9) 2px 4px); --bd: hsl(var(--h, 205) 90% 55% / 0.7); --ins: inset 0 0 8px hsl(var(--h, 205) 90% 55% / 0.2); --gl: drop-shadow(0 0 5px hsl(var(--h, 205) 90% 55% / 0.45)); }
+body[data-blook="kontur"] :is(.temp, .who span) { --bg: transparent; --bd: hsl(var(--h, 205) 90% 62%); --osh: 0 0 0 3px hsl(var(--h, 205) 90% 62% / 0.18); --gl: drop-shadow(0 0 7px hsl(var(--h, 205) 90% 55% / 0.4)); text-shadow: none; }
+body[data-blook="sonnenuntergang"] :is(.temp, .who span) { --bg: linear-gradient(90deg, #ff5f6d, #ffc371); --bd: rgba(255, 255, 255, 0.45); --gl: drop-shadow(0 0 6px rgba(255, 130, 100, 0.5)); color: #2b0f16; text-shadow: none; }
+body[data-blook="aurora"] :is(.temp, .who span) { --bg: linear-gradient(90deg, #11998e, #38ef7d 60%, #7f7fd5); --bd: rgba(255, 255, 255, 0.4); --gl: drop-shadow(0 0 6px rgba(56, 239, 125, 0.45)); color: #04251d; text-shadow: none; }
+:is(.temp, .who span, .strata-float) { --p1: var(--r1); --p2: var(--r2); --p3: var(--r3); --p4: var(--r4); }
+body:is([data-blook="glas"], [data-blook="milchglas"]) :is(.temp, .who span), body:is([data-blook="glas"], [data-blook="milchglas"]) :is(.temp, .who span):hover { filter: none; }
+
 
 /* ---------- Messwert-Verlauf, Einklappen, Schimmern ---------- */
 .spark-pop { position: fixed; z-index: 60; width: 280px; padding: 10px 10px 8px; border-radius: 12px; background: rgba(6, 12, 24, 0.92); border: 1px solid rgba(140, 190, 255, 0.35); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55); color: #cfe3ff; font: 600 0.72rem/1.3 var(--f-mono, monospace); }
@@ -710,24 +777,8 @@ body:not(.no-shimmer) .appf[style*="--ah"]:not(.gone) { animation: appShimmer ca
 @media (prefers-reduced-motion: reduce) { body:not(.no-shimmer) .appf[style*="--ah"] { animation: none; } }
 
 /* ---------- weitere Button-Formen ---------- */
-body[data-bshape="hexagon"] :is(.temp, .who span, .strata-float) { border-radius: 0; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%); padding-inline: 1.1em; }
-body[data-bshape="pfeil"] :is(.temp, .who span, .strata-float) { border-radius: 0; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); padding-right: 1.1em; }
-body[data-bshape="schraeg"] :is(.temp, .who span, .strata-float) { border-radius: 0; clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%); padding-inline: 1em; }
-body[data-bshape="ticket"] :is(.temp, .who span, .strata-float) { border-radius: 6px; -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat; padding-inline: 1em; }
-body[data-bshape="doppelt"] :is(.temp, .who span, .strata-float) { border-radius: 999px; outline: 1px solid hsl(var(--h, 205) 90% 60% / 0.45); outline-offset: 3px; }
 
 /* ---------- weitere Button-Materialien ---------- */
-body[data-blook="chrom"] :is(.temp, .who span) { background: linear-gradient(180deg, #e8eef6 0%, #8c97a6 46%, #4b5461 52%, #a9b4c3 100%); border: 1px solid #dfe7f2; color: #0c1522; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55); box-shadow: inset 0 1px 0 #fff, 0 2px 6px rgba(0, 0, 0, 0.5); }
-body[data-blook="holo"] :is(.temp, .who span) { background: linear-gradient(115deg, hsl(calc(var(--h, 205) - 40) 90% 45% / 0.85), hsl(calc(var(--h, 205) + 20) 95% 62% / 0.85) 35%, hsl(calc(var(--h, 205) + 90) 90% 55% / 0.85) 65%, hsl(calc(var(--h, 205) + 160) 90% 50% / 0.85)); border: 1px solid rgba(255, 255, 255, 0.55); color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); box-shadow: 0 0 14px hsl(var(--h, 205) 90% 60% / 0.5); }
-body[data-blook="karbon"] :is(.temp, .who span) { background: repeating-linear-gradient(45deg, #11151c 0 3px, #181d26 3px 6px); border: 1px solid hsl(var(--h, 205) 70% 45% / 0.7); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.55); }
-body[data-blook="pixel"] :is(.temp, .who span) { background: hsl(var(--h, 205) 50% 12%); border: 2px solid hsl(var(--h, 205) 90% 60%); border-radius: 0 !important; box-shadow: 3px 3px 0 hsl(var(--h, 205) 90% 40%); text-shadow: none; letter-spacing: 0.04em; }
-body[data-blook="milchglas"] :is(.temp, .who span) { background: rgba(255, 255, 255, 0.16); backdrop-filter: blur(10px) saturate(1.2); border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
-body[data-blook="seife"] :is(.temp, .who span) { background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 35%), linear-gradient(135deg, hsl(calc(var(--h, 205) + 60) 80% 55% / 0.35), hsl(calc(var(--h, 205) - 60) 80% 55% / 0.35)); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.25), 0 0 10px hsl(var(--h, 205) 90% 60% / 0.35); }
-body[data-blook="gummi"] :is(.temp, .who span) { background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%), hsl(var(--h, 205) 75% 38%); border: 1px solid hsl(var(--h, 205) 80% 62%); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.45); }
-body[data-blook="scan"] :is(.temp, .who span) { background: repeating-linear-gradient(0deg, hsl(var(--h, 205) 80% 14% / 0.9) 0 2px, hsl(var(--h, 205) 80% 9% / 0.9) 2px 4px); border: 1px solid hsl(var(--h, 205) 90% 55% / 0.7); box-shadow: 0 0 10px hsl(var(--h, 205) 90% 55% / 0.4), inset 0 0 8px hsl(var(--h, 205) 90% 55% / 0.2); }
-body[data-blook="kontur"] :is(.temp, .who span) { background: transparent; border: 1px solid hsl(var(--h, 205) 90% 62%); box-shadow: 0 0 0 3px hsl(var(--h, 205) 90% 62% / 0.18), 0 0 14px hsl(var(--h, 205) 90% 55% / 0.35); text-shadow: none; }
-body[data-blook="sonnenuntergang"] :is(.temp, .who span) { background: linear-gradient(90deg, #ff5f6d, #ffc371); border: 1px solid rgba(255, 255, 255, 0.45); color: #2b0f16; text-shadow: none; box-shadow: 0 0 12px rgba(255, 130, 100, 0.45); }
-body[data-blook="aurora"] :is(.temp, .who span) { background: linear-gradient(90deg, #11998e, #38ef7d 60%, #7f7fd5); border: 1px solid rgba(255, 255, 255, 0.4); color: #04251d; text-shadow: none; box-shadow: 0 0 12px rgba(56, 239, 125, 0.4); }
 /* Einstellungen: Erklärungen beim Darüberfahren, Zeilen kompakt und ausgerichtet */
 .set-body .note-folded { display: none !important; }
 .set-body .has-tip { cursor: help; }
@@ -749,10 +800,5 @@ body[data-blook="aurora"] :is(.temp, .who span) { background: linear-gradient(90
 .nt-tabs button { max-width: none; }
 
 /* ---------- Formrahmen: bei geclippten Formen folgt der Rand der Form (kein eckiger Rahmen mehr) ---------- */
-body:is([data-bshape="abgeschnitten"], [data-bshape="hexagon"], [data-bshape="pfeil"], [data-bshape="schraeg"]) :is(.temp, .who span, .strata-float) { border-color: transparent !important; box-shadow: none !important; outline: 0; }
-body:is([data-bshape="abgeschnitten"], [data-bshape="hexagon"], [data-bshape="pfeil"], [data-bshape="schraeg"]) .who span { position: relative; }
-body:is([data-bshape="abgeschnitten"], [data-bshape="hexagon"], [data-bshape="pfeil"], [data-bshape="schraeg"]) :is(.temp, .who span, .strata-float)::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: hsl(var(--h, 205) 90% 62% / 0.65); }
-body[data-bshape="abgeschnitten"] :is(.temp, .who span, .strata-float)::before { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px, 8px 0, 9.5px 1.5px, 1.5px 9.5px, 1.5px calc(100% - 1.5px), calc(100% - 9.5px) calc(100% - 1.5px), calc(100% - 1.5px) calc(100% - 9.5px), calc(100% - 1.5px) 1.5px, 9.5px 1.5px); }
-body[data-bshape="hexagon"] :is(.temp, .who span, .strata-float)::before { clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%, 10px 0, 11.5px 1.5px, 3px 50%, 11.5px calc(100% - 1.5px), calc(100% - 11.5px) calc(100% - 1.5px), calc(100% - 3px) 50%, calc(100% - 11.5px) 1.5px, 11.5px 1.5px); }
-body[data-bshape="pfeil"] :is(.temp, .who span, .strata-float)::before { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 0 0, 1.5px 1.5px, 1.5px calc(100% - 1.5px), calc(100% - 11.5px) calc(100% - 1.5px), calc(100% - 3px) 50%, calc(100% - 11.5px) 1.5px, 1.5px 1.5px); }
-body[data-bshape="schraeg"] :is(.temp, .who span, .strata-float)::before { clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%, 9px 0, 10.5px 1.5px, 2.5px calc(100% - 1.5px), calc(100% - 10.5px) calc(100% - 1.5px), calc(100% - 2.5px) 1.5px, 10.5px 1.5px); }
+
+.set-head .set-close, .set-body .set-head .set-close { height: 36px; padding: 0 20px; font-size: 0.95rem; font-weight: 700; flex: none; }

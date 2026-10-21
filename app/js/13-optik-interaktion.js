@@ -38,7 +38,7 @@
   $("setWinHex").addEventListener("change", () => window.jarvis.setConfig({ winColor, palette: "" }));
 
   // ---------- Buttons: Form und Material, unabhängig voneinander ----------
-  const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"], ["hexagon", "Hexagon"], ["pfeil", "Pfeil"], ["schraeg", "Schräg"], ["ticket", "Ticket"], ["doppelt", "Doppelter Rand"]];
+  const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"], ["hexagon", "Hexagon"], ["pfeil", "Pfeil"], ["schraeg", "Schräg"], ["ticket", "Ticket"], ["doppelt", "Doppelter Rand"], ["oktagon", "Oktagon"], ["raute", "Raute (spitz)"], ["pfeillinks", "Pfeil nach links"], ["schraeg2", "Schräg (andersrum)"], ["tab", "Reiter (oben rund)"], ["schild", "Schild (unten rund)"], ["blase", "Sprechblase"], ["blatt", "Blatt"], ["klammer", "Klammer [ ]"]];
   const B_LOOKS = [["standard", "Standard"], ["glas", "Glas"], ["neon", "Neon"], ["relief", "Relief (3D)"], ["flach", "Flach"], ["umriss", "Nur Umriss"], ["verlauf", "Farbverlauf (Farbe folgt dem Messwert)"], ["chrom", "Chrom"], ["holo", "Hologramm"], ["karbon", "Karbon"], ["pixel", "Pixel (Retro)"], ["milchglas", "Milchglas"], ["seife", "Seifenblase"], ["gummi", "Gummi (glänzend)"], ["scan", "Scanlines"], ["kontur", "Kontur-Glühen"], ["sonnenuntergang", "Sonnenuntergang"], ["aurora", "Aurora"]];
   const fillSel = (id, list) => $(id).replaceChildren(...list.map(([v, l]) => Object.assign(document.createElement("option"), { value: v, textContent: l })));
   fillSel("setBtnShape", B_SHAPES); fillSel("setBtnLook", B_LOOKS);
@@ -61,9 +61,12 @@
     }
     const k = 0.2; el._tf = el._tf || [0, 0]; el._tf[0] += (fx - el._tf[0]) * k; el._tf[1] += (fy - el._tf[1]) * k;
     if (Math.abs(el._tf[0]) < 0.05 && Math.abs(el._tf[1]) < 0.05 && !tiltX && !tiltY && !ex && !ey) { el._tf = null; return; }
-    // Winkel auf 0,5° runden: sonst ändert jede Mausbewegung den Winkel minimal, und Text und Rahmen werden ständig neu gerastert (Flackern)
-    const q = (v) => (Math.round(v * 2) / 2).toFixed(1);
-    el.style.transform += ` perspective(480px) rotateX(${q(tiltX + ex + el._tf[0])}deg) rotateY(${q(tiltY + ey + el._tf[1])}deg)`;
+    // Neigung ohne echtes 3D (keine perspective-Ebene, die auf durchsichtigen Fenstern flackern kann): Verkürzung plus leichte Scherung.
+    // Winkel nur ändern, wenn er sich um mindestens 0,5° bewegt hat, sonst zappelt der Wert an der Rundungsgrenze
+    let rx = tiltX + ex + el._tf[0], ry = tiltY + ey + el._tf[1];
+    const o = el._q; if (o && Math.abs(rx - o[0]) < 0.5 && Math.abs(ry - o[1]) < 0.5) { rx = o[0]; ry = o[1]; } else el._q = [rx, ry];
+    const d = Math.PI / 180;
+    el.style.transform += ` scale(${Math.cos(ry * d).toFixed(3)}, ${Math.cos(rx * d).toFixed(3)}) skew(${(rx * 0.3).toFixed(1)}deg, ${(-ry * 0.3).toFixed(1)}deg)`;
   }
   let gTiltX = 0, gTiltY = 0; const gTiltSave = () => window.jarvis.setConfig({ gaugeTiltX: gTiltX, gaugeTiltY: gTiltY });
   $("setGaugeTiltX").addEventListener("input", (e) => { gTiltX = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
