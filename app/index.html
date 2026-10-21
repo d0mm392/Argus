@@ -954,6 +954,7 @@ body.maxed .edge { display: none !important; }
       <div class="set-note" id="setExpNote">Speichert alle Einstellungen samt Anordnung in eine Datei, z. B. für eine Neuinstallation oder einen zweiten PC. Schlüssel und Tokens (Steam, Discord-Bot, Claude-API) bleiben aus Sicherheitsgründen draußen. Nach dem Laden startet Argus neu.</div>
       <h4 data-tab="System">System</h4>
       <label class="row">Mit Windows starten <input type="checkbox" id="setAuto"></label>
+      <label class="row" title="Aus (Standard): Argus erscheint nie in der Taskleiste. An: nur wenn das Panel hinter anderen Fenstern liegt, damit man es wiederfindet.">Eintrag in der Taskleiste <input type="checkbox" id="setTaskbarOn"></label>
       <label class="row">Im Vordergrund <select id="setOnTop"><option value="kugel">Nur die kleine Kugel</option><option value="immer">Immer, auch das Panel</option><option value="nie">Nie, wie ein normales Fenster</option></select></label>
       <label class="row">Bei „Hallo Claude“ kurz nach vorn holen <input type="checkbox" id="setWakeFront"></label>
       <label class="row">Panel bei Fragen automatisch öffnen <input type="checkbox" id="setAutoOpen"></label>
@@ -2144,7 +2145,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   // Freundesliste, „Läuft gerade“, KI-Anzeige und Mikrofon hängen im Panel nicht an der Form, sondern an der Fenstermitte:
   // Verschiebt man die Kugel, wandern nur die Anzeigen um sie herum mit
   const FIXED = new Set(["friends", "friends2", "media", "ai", "mic", "strata"]);
-  const cOf = (key) => (expanded && FIXED.has(key) ? { x: W / 2, y: H / 2 + 6 } : { x: homeX || CX, y: homeY || CY }); // Anzeigen bleiben, wo die Form zuhause ist, auch wenn der Symbiont umherstreift
+  const cOf = (key) => (expanded ? { x: W / 2, y: H / 2 + 6 } : { x: homeX || CX, y: homeY || CY }); // Anzeigen bleiben, wo die Form zuhause ist, auch wenn der Symbiont umherstreift
   const pinPos = (key) => { const p = pins[key], c = cOf(key); return p ? { x: c.x + Math.cos(p.a) * p.r * SB, y: c.y + Math.sin(p.a) * p.r * SB } : null; };
   const savePins = () => { clearTimeout(pinSave); pinSave = setTimeout(() => window.jarvis.setConfig({ pins }), 300); };
   // Bewegungen am ganzen Fenster verfolgen, damit das Teil auch bei schnellem Ziehen nicht "verloren" geht
@@ -3119,7 +3120,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
       who.style.setProperty("--wfs", 11.5 * tempScale * (scales.ai || 1) + "px");
       const ww = who.offsetWidth, wh = who.offsetHeight;
       if (pins.ai) { const p = anchor("ai", 0, 0, 1.7, ww, wh, 0.3); who.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`; }
-      else who.style.transform = `translate(${Math.round(Math.max(4, Math.min(W - 4 - ww, (homeX || CX) - ww / 2)))}px, ${Math.round(Math.max(4, (homeY || CY) - S * 1.12 - wh + Math.sin(time * 0.55) * S * 0.012))}px)`;
+      else who.style.transform = `translate(${Math.round(Math.max(4, Math.min(W - 4 - ww, (expanded ? W / 2 : homeX || CX) - ww / 2)))}px, ${Math.round(Math.max(4, (expanded ? H / 2 + 6 : homeY || CY) - S * 1.12 - wh + Math.sin(time * 0.55) * S * 0.012))}px)`;
     }
     // Strata-Knopf: ohne eigene Stelle rechts neben „Claude · Lokal“, sonst wie gezogen
     const sOn = expanded && strataHas && !hiddenSet.has("strataBtn") && widgets.strata?.on !== false;
@@ -3447,7 +3448,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     markRing(); $("setRingSize").value = scales.rings || 1; $("setMedia").checked = c.mediaOn !== false;
     $("setUpdUrl").value = c.updateUrl || ""; $("setUpdChannel").value = c.updateChannel || "stabil"; refreshUpd(); $("setSensors").checked = c.sensors !== false;
     $("setMicFloat").checked = c.micFloat !== false; $("setShape").value = shape; markShape(); $("setShapeRim").checked = shapeRim; $("setGlow").value = glowK; $("setSway").value = c.sway || "schweben";
-    $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
+    $("setTaskbarOn").checked = c.taskbarOn === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
     $("setSteamOn").checked = c.steamOn !== false; $("setDiscordOn").checked = c.discordOn !== false;
     $("setDcVoice").checked = c.discordVoiceOnly !== false; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "panel"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
     $("setYtTop").checked = !!c.ytOnTop; winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
@@ -3650,6 +3651,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   $("setUpdCheck").addEventListener("click", () => refreshUpd(true));
   $("setUpdInstall").addEventListener("click", () => window.jarvis.updateInstall());
   $("setPinsReset").addEventListener("click", () => { pins = {}; scales = {}; window.jarvis.setConfig({ pins, scales }); });
+  $("setTaskbarOn").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarOn: e.target.checked }));
   $("setOnTop").addEventListener("change", (e) => window.jarvis.setConfig({ onTop: e.target.value }));
   $("setWakeFront").addEventListener("change", (e) => window.jarvis.setConfig({ wakeFront: e.target.checked }));
   $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.jarvis.setConfig({ autoOpen }); });
@@ -4951,6 +4953,18 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     for (const ev of ["pointerdown", "mousedown", "dblclick"]) x.addEventListener(ev, (e) => e.stopPropagation());
     x.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); fn(); }); el.append(x);
   }
+  // Das Rechtsklick-Menü zeigt nur, was auf der geöffneten Seite vorkommt (Mining-Dinge nicht auf Start usw.)
+  const MINE_BLK = ["mTick", "mOver", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
+  function pageHas(id) {
+    if (MINE_BLK.includes(id)) return miningOn && page === "Mining";
+    if (page === "Mining") return PAGE_DEF.Mining.includes(id);
+    if (page === "Gaming") return PAGE_DEF.Gaming.includes(id);
+    return id !== "game";
+  }
+  function pageBtn(k) {
+    const ts = temps.filter((t) => t.w === k); if (!ts.length) return true; // Knöpfe ohne Messwert-Anzeige (Claude · Lokal, Strata, Freundesliste …) gelten überall
+    return ts.some((t) => (miningOn && page === "Mining" ? t.page === "Mining" || t.trend : t.page !== "Mining"));
+  }
   // Rechtsklick: Menü aus main (Einstellungen, Anordnen, Profile, Skins …). Rechts ziehen dreht die Form, das öffnet kein Menü.
   let rDown = null;
   window.addEventListener("mousedown", (e) => { if (e.button === 2) rDown = [e.screenX, e.screenY]; }, true);
@@ -4970,7 +4984,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    window.jarvis.ctxMenu?.({ target, vars, buttons: WIDGET_ROWS.map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id]).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.jarvis.ctxMenu?.({ target, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   window.jarvis.onCtxAction?.(({ a, v }) => {
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }

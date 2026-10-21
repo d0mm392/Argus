@@ -32,7 +32,16 @@
       b.addEventListener("pointerenter", () => { clearTimeout(t); t = setTimeout(open, 90); }); b.addEventListener("click", open);
     } else {
       b.addEventListener("pointerenter", () => { if (!isSub) window.menu.sub(0, 0); });
-      b.addEventListener("click", () => { if (!b.disabled) window.menu.pick(it.id); });
+      if (it.keep) b.dataset.k = it.keep;
+      b.addEventListener("click", () => {
+        if (b.disabled) return;
+        if (it.keep) { // Häkchen-Einträge: Menü bleibt offen, Häkchen springt sofort um
+          const ck = b.querySelector(".ck");
+          if (it.keep === "radio") { for (const c of host.querySelectorAll('button[data-k="radio"] .ck')) c.textContent = ""; ck.textContent = "✓"; }
+          else ck.textContent = ck.textContent ? "" : "✓";
+        }
+        window.menu.pick(it.id);
+      });
     }
     host.append(b);
   };

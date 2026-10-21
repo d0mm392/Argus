@@ -125,4 +125,4 @@ async function info(name, appid) {
   return out;
 }
 
-module.exports = { detect, info, tipsFor, steamRunning, steamDiag, prettyExe };
+module.exports = { detect, info, tipsFor, steamRunning, steamDiag, prettyExe, byName };

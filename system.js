@@ -70,7 +70,20 @@ class SystemWatch {
       }
       this.data.apps = [...appsSeen.values()].slice(0, 12);
     }
+    this.detectGame(m, top);
     this.emit();
+  }
+  // Spiel erkennen. Unter Windows kommen Prozesse über den Dauer-Prozess (sysmon), die Einzelabfrage in pollProcesses läuft dann nicht mehr.
+  // Quellen in dieser Reihenfolge: Steam meldet das laufende Spiel (Registry), Programme mit Fenster samt Pfad, Prozessname (z. B. …-Win64-Shipping.exe).
+  detectGame(m, top) {
+    try {
+      const G = require("./games"), now = Date.now();
+      if (!this.gameT || now - this.gameT > 8000) { this.gameT = now; G.steamRunning().then((x) => { this.gameSteam = x; }).catch(() => { this.gameSteam = null; }); }
+      const apps = (m.apps || []).map((a) => ({ name: (a.n || "") + ".exe", path: a.p || "", cpu: (top.find((x) => x.key === String(a.n || "").toLowerCase()) || {}).cpu || 0 }));
+      const g = this.gameSteam || G.detect(apps) || G.byName(top);
+      this.data.game = g || null;
+      this.data.gameDiag = { n: top.length, withPath: apps.filter((x) => x.path).length, apps: apps.length, steam: G.steamDiag(), ship: top.filter((x) => /shipping/i.test(x.name)).map((x) => x.name).slice(0, 3), src: "Dauer-Prozess" };
+    } catch { this.data.game = null; }
   }
 
   start() {
