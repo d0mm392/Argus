@@ -107,7 +107,7 @@ function writable() {
 
 const PROMPT = (wish) => `Du arbeitest am Quellcode von Argus, einem Desktop-Assistenten (Electron 33, Windows). Dieser Ordner ist der komplette Quellcode:
 main.js (Hauptprozess: Fenster, KI, Einstellungen), preload.js (Brücke zur Oberfläche), system.js (Systemwerte), actions.js (Programme/Webseiten öffnen),
-selfimprove.js (diese Selbstverbesserung), app/index.html (Oberfläche: Neuronen-Kugel, Panel, Einstellungen, alles in einer Datei).
+selfimprove.js (diese Selbstverbesserung), app/index.html (Gerüst), app/style.css und app/js/01…13 (Oberfläche: Neuronen-Kugel, Panel, Einstellungen, nach Abschnitten getrennt; ARCHITEKTUR.md beschreibt sie).
 
 Wunsch des Nutzers: ${wish}
 
