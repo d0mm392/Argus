@@ -258,6 +258,7 @@
   $("setVenomRoam").addEventListener("change", (e) => { venomRoam = e.target.checked; window.jarvis.setConfig({ venomRoam }); });
   $("setFlash").addEventListener("input", (e) => { flashK = +e.target.value; });
   $("setFlash").addEventListener("change", (e) => window.jarvis.setConfig({ flashK: +e.target.value }));
+  $("setFansReset").addEventListener("click", () => { hiddenFans = []; window.jarvis.setConfig({ hiddenFans }); });
   $("setFlashT").addEventListener("input", (e) => { flashT = +e.target.value; });
   $("setFlashT").addEventListener("change", (e) => window.jarvis.setConfig({ flashT: +e.target.value }));
   $("setGlow").addEventListener("input", (e) => { glowK = +e.target.value; });

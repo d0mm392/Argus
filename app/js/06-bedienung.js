@@ -173,7 +173,9 @@
   // Schwebende Anzeigen: Temperaturen, Takt und Lüfter; jede einzeln an/aus und in eigener Farbe
   const tempHue = (v) => Math.max(0, Math.min(140, 140 - (v - 45) * 3.5)); // 45 °C grün, 85 °C rot
   const fmtGHz = (v) => v == null ? null : v.toFixed(2).replace(".", ",") + " GHz";
-  const fanOf = (i) => sys.fans?.[i];
+  let hiddenFans = []; // einzeln ausgeblendete Lüfter (nach Namen, damit beim Ausblenden nicht der falsche verschwindet)
+  const visFans = () => (sys.fans || []).filter((f) => !hiddenFans.includes(f.name));
+  const fanOf = (i) => visFans()[i];
   const ALT_COINS = ["ETH", "SOL", "XRP", "LTC", "DOGE", "KAS", "BNB", "ADA"];
   let coinSel = ["BTC"];
   // Preis mit Pfeil (▲ seit gestern gestiegen, ▼ gefallen); kleine Kurse mit Nachkommastellen

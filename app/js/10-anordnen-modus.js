@@ -462,7 +462,7 @@
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
     else if (a === "setw" && v && typeof v.k === "string") hideWidget(v.k, v.flip ? widgets[v.k]?.on === false : !!v.on); // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
-    else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
+    else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t && /^fan\d$/.test(t.key)) { const nm = fanOf(+t.key.slice(3))?.name; if (nm) { hiddenFans = [...hiddenFans, nm]; window.jarvis.setConfig({ hiddenFans }); } } else if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
     else if (a === "hideblk" && BLOCK_NAMES[v]) setHidden(v, true);
     else if ((a === "blkfront" || a === "blkback") && BLOCK_NAMES[v]) {
       if (!freeLayout) { freeLayout = captureLayout(); applyLayout(); }
