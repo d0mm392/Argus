@@ -466,7 +466,7 @@ body.expanded .yt.on { display: flex; }
 .wrow select { padding: 3px 6px !important; }
 .controls { display: none !important; }
 /* Einstellungen als Ebene über dem Panel */
-.settings { position: absolute; inset: 82px 16px 16px; z-index: 30; display: flex; flex-direction: column; background: var(--win-solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.settings { position: absolute; inset: 90px 16px 16px; z-index: 30; display: flex; flex-direction: column; background: var(--win-solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .settings[hidden] { display: none; }
 .setup { z-index: 40; }
 .setup .su-step { display: none; flex-direction: column; gap: 8px; }

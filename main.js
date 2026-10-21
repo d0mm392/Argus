@@ -1206,7 +1206,7 @@ async function createWindow(port) {
   win.once("ready-to-show", () => {
     win.showInactive();
     // wie vor dem Beenden/Update: Panel wieder offen, gleicher Modus, gleicher Bildschirm
-    const lv = config.lastView;
+    const lv = config.lastView || {}; // frische Installation: noch keine letzte Ansicht gespeichert
     if (alive()) { winMode = ["max", "full"].includes(lv.mode) ? lv.mode : "normal"; if (lv.at) restoreAt = lv.at; expanded = true; applyTop(); applyBounds(config.corner, false); sendUI("expanded", true); }
     viewReady = true;
   });
