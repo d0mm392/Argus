@@ -1007,6 +1007,8 @@ function followUpdate(m) {
   } else return; // kein Fenster vorn (z. B. beim Wechsel des virtuellen Desktops), Argus, Desktop, Taskleiste: Aussparung bleibt, wo sie ist // Argus, Desktop und Taskleiste ändern nichts (die Aussparung bleibt beim zuletzt benutzten Programm)
   const d = screen.screenToDipRect(win, { x: t.l, y: t.t, width: t.r - t.l, height: t.b - t.t }), pad = 0;
   const r = { x: Math.round(d.x - pad), y: Math.round(d.y - pad), w: Math.round(d.width + 2 * pad), h: Math.round(d.height + 2 * pad) }; // absolute Bildschirmposition
+  // Ein Programm, das gar nicht über Argus liegt (z. B. Chrome auf dem anderen Bildschirm), nimmt der Aussparung nicht das zuletzt verfolgte Programm weg
+  { const wb = win.getContentBounds(); if (followRect && (r.x + r.w <= wb.x + 60 || r.x >= wb.x + wb.width - 60 || r.y + r.h <= wb.y + 60 || r.y >= wb.y + wb.height - 60)) return; }
   if (followRect && Math.abs(followRect.x - r.x) <= 2 && Math.abs(followRect.y - r.y) <= 2 && Math.abs(followRect.w - r.w) <= 2 && Math.abs(followRect.h - r.h) <= 2) return; // Kleinstbewegungen ignorieren (Flackern)
   followRect = r;
   // Höchstens alle 200 ms neu zuschneiden; beim Ziehen eines Fensters zählt der letzte Stand (Neuzeichnen des ganzen Fensters flackert sonst)
