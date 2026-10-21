@@ -65,6 +65,18 @@
     for (let i = 0; i < face.length; i++) { const a = face[i], b = face[(i + 1) % face.length]; nx += (m.vy[a] - m.vy[b]) * (m.vz[a] + m.vz[b]); ny += (m.vz[a] - m.vz[b]) * (m.vx[a] + m.vx[b]); nz += (m.vx[a] - m.vx[b]) * (m.vy[a] + m.vy[b]); z += m.vz[a]; }
     const l = Math.hypot(nx, ny, nz) || 1; out[0] = nx / l; out[1] = ny / l; out[2] = nz / l; return z / face.length;
   }
+  // Umriss eines Glaskörpers: konvexe Hülle seiner projizierten Ecken
+  function solidHull() {
+    const m = solidCache[shape] || (solidCache[shape] = buildSolid(shape)); if (!m) { hull = null; return; }
+    meshView(m);
+    const pts = []; for (let i = 0; i < m.sx.length; i++) pts.push([m.sx[i], m.sy[i]]);
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
+    for (const p of pts) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    const h = lo.slice(0, -1).concat(up.slice(0, -1)), cx = h.reduce((a, p) => a + p[0], 0) / h.length, cy = h.reduce((a, p) => a + p[1], 0) / h.length, pad = S * 0.015;
+    sharp = true; hull = h.map(([x, y]) => { const dx = x - cx, dy = y - cy, l = Math.hypot(dx, dy) || 1; return [x + dx / l * pad, y + dy / l * pad]; });
+  }
   // Glasartige Körper: alle Flächen von hinten nach vorn, tönen in der Zustandsfarbe, Kanten hell
   const _n = [0, 0, 0];
   function drawSolid() {

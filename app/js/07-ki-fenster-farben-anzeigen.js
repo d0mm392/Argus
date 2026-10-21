@@ -238,6 +238,8 @@
   $("setGfxSafe").addEventListener("change", (e) => { window.jarvis.setConfig({ gfxSafe: e.target.checked }); });
   window.jarvis.getConfig?.().then((c) => { $("setGfxSafe").checked = !!c.gfxSafe; });
   $("setVenomRoam").addEventListener("change", (e) => { venomRoam = e.target.checked; window.jarvis.setConfig({ venomRoam }); });
+  $("setFlash").addEventListener("input", (e) => { flashK = +e.target.value; });
+  $("setFlash").addEventListener("change", (e) => window.jarvis.setConfig({ flashK: +e.target.value }));
   $("setGlow").addEventListener("input", (e) => { glowK = +e.target.value; });
   $("setGlow").addEventListener("change", (e) => window.jarvis.setConfig({ glow: +e.target.value }));
   $("setRegions").addEventListener("change", (e) => { theme.regions = e.target.value; applyTheme(); window.jarvis.setConfig({ themeRegions: theme.regions }); });

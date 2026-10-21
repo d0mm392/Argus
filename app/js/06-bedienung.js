@@ -494,11 +494,11 @@
 
     // Mining-Kugel lebt: laufende Miner schicken ständig Impulse (mehr online = mehr Verkehr), neue Foreman-Meldung = Aufblitzen in Rot (Ausfall) oder Grün (zurück)
     if (orbMine && fmTotC && nodes.length) {
-      if (Math.random() < (3 + 12 * fmTotC.on / fmTotC.n) * dt * speedK) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 145) { nodes[i].flash = Math.max(nodes[i].flash, 0.55); spawnFrom(i, 145); } }
-      if (Math.random() < 2 * dt) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 4) { nodes[i].flash = 1; spawnFrom(i, 4); } }
+      if (Math.random() < (3 + 12 * fmTotC.on / fmTotC.n) * dt * speedK * flashK) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 145) { nodes[i].flash = Math.max(nodes[i].flash, 0.55); spawnFrom(i, 145); } }
+      if (Math.random() < 2 * dt * flashK) { const i = (Math.random() * nodes.length) | 0; if (minerHue(i) === 4) { nodes[i].flash = 1; spawnFrom(i, 4); } }
       const ev = farmData?.events?.[0];
       if (ev && ev[0] !== orbEvT) {
-        if (orbEvT) { const h = ev[2] ? 4 : 145; for (let k = 0; k < 24; k++) { const i = (Math.random() * nodes.length) | 0; nodes[i].flash = 1; spawnFrom(i, h); } coreAct = Math.max(coreAct, 0.9); }
+        if (orbEvT) { const h = ev[2] ? 4 : 145; for (let k = 0, kn = Math.round(24 * flashK); k < kn; k++) { const i = (Math.random() * nodes.length) | 0; nodes[i].flash = 1; spawnFrom(i, h); } coreAct = Math.max(coreAct, 0.9); }
         orbEvT = ev[0];
       }
     }
@@ -550,7 +550,7 @@
 
     // Maus über der Kugel: alles hellt leicht auf, Neuronen nahe am Zeiger glühen
     if (hov > 0.01) {
-      ctx.fillStyle = `hsla(${stateHue},80%,60%,${0.07 * hov})`; outlinePath(); ctx.fill();
+      if (!OPEN_SHAPES.has(shape)) { ctx.fillStyle = `hsla(${stateHue},80%,60%,${0.07 * hov})`; outlinePath(); ctx.fill(); }
       if (inSphere) {
         const sg = ctx.createRadialGradient(mx, my, 0, mx, my, nearR * 1.3);
         sg.addColorStop(0, `hsla(${stateHue},90%,70%,${0.16 * hov})`); sg.addColorStop(1, `hsla(${stateHue},90%,60%,0)`);
@@ -569,16 +569,16 @@
 
     for (const n of nodes) {
       const act = actOf(n), depth = 0.3 + 0.7 * (n.sz + 1) / 2, h = hueOf(n), mk = orbMine && fmTotC ? (h === 4 ? 2.4 : h === 38 ? 1.9 : 1.5) : 1; // Mining-Kugel: Punkte größer, Ausfälle am größten
-      const r = (0.9 + n.flash * 2.2 + act * 1.3 + n.near * 1.6) * n.f * unit * mk * nodeK * (OPEN_SHAPES.has(shape) ? 1.7 : 1);
+      const r = (0.9 + (n.flash * flashK) * 2.2 + act * 1.3 + n.near * 1.6) * n.f * unit * mk * nodeK * (OPEN_SHAPES.has(shape) ? 1.7 : 1);
       if (n.near > 0.05) {
         ctx.fillStyle = `hsla(${h},95%,65%,${n.near * 0.22 * depth})`;
         ctx.beginPath(); ctx.arc(n.sx, n.sy, r * 3.5, 0, Math.PI * 2); ctx.fill();
       }
-      if (n.flash > 0.25) {
-        ctx.fillStyle = `hsla(${h},90%,60%,${n.flash * 0.18 * depth})`;
+      if ((n.flash * flashK) > 0.25) {
+        ctx.fillStyle = `hsla(${h},90%,60%,${(n.flash * flashK) * 0.18 * depth})`;
         ctx.beginPath(); ctx.arc(n.sx, n.sy, r * 4, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = `hsla(${h},85%,${55 + n.flash * 35 + n.near * 20}%,${Math.min(1, (0.35 + act * 0.5 + n.flash * 0.3) * depth * lift * (OPEN_SHAPES.has(shape) ? 1.6 : 1) + n.near * 0.5)})`;
+      ctx.fillStyle = `hsla(${h},85%,${55 + (n.flash * flashK) * 35 + n.near * 20}%,${Math.min(1, (0.35 + act * 0.5 + (n.flash * flashK) * 0.3) * depth * lift * (OPEN_SHAPES.has(shape) ? 1.6 : 1) + n.near * 0.5)})`;
       ctx.beginPath(); ctx.arc(n.sx, n.sy, r, 0, Math.PI * 2); ctx.fill();
     }
 
@@ -694,7 +694,7 @@
       ctx.globalCompositeOperation = "lighter";
       const pg = ctx.createRadialGradient(CX, CY, S * 0.2, CX, CY, S * 1.3);
       pg.addColorStop(0, `hsla(275,90%,62%,${talkGlow * 0.12})`); pg.addColorStop(0.8, `hsla(275,90%,60%,${talkGlow * 0.08})`); pg.addColorStop(1, "hsla(275,90%,55%,0)");
-      ctx.fillStyle = pg; if (hull) outlinePath(); else { ctx.beginPath(); ctx.arc(CX, CY, S * 1.3, 0, Math.PI * 2); } ctx.fill();
+      ctx.fillStyle = pg; if (hull) outlinePath(); else if (OPEN_SHAPES.has(shape)) ctx.beginPath(); else { ctx.beginPath(); ctx.arc(CX, CY, S * 1.3, 0, Math.PI * 2); } ctx.fill();
       // Pixel-Spalten: kleine Quadrate, symmetrisch um die Mittellinie, außen leiser
       const px = Math.max(2, Math.round(S * 0.028)), gap = Math.max(1, Math.round(px * 0.6)), step = px + gap;
       const maxRows = Math.max(3, Math.round((S * 0.42) / step)), x0 = CX - (COLS * step - gap) / 2;

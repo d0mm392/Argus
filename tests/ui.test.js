@@ -108,7 +108,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   await ev(`(()=>{const e=document.getElementById('setYtFeather'); e.value=24; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
   check("R-OPT-10 YouTube: weiche Ränder werden gespeichert (0–80 px)", (await cfg()).ytFeather === 24, (await cfg()).ytFeather);
   const shp = await ev(`(async()=>{ const sel=document.getElementById('setShape'), bad=[]; const n=sel.options.length; for (const o of [...sel.options]) { sel.value=o.value; sel.dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,350)); if (!nodes.length || nodes.some(q=>!Number.isFinite(q.near)||!Number.isFinite(q.sx)||!Number.isFinite(q.x))) bad.push(o.value); } sel.value='kugel'; sel.dispatchEvent(new Event('change')); return [n,bad]; })()`);
-  check("R-OPT-11 mindestens 18 Formen, jede baut gültige Punkte (kein NaN), Wechsel ohne Fehler", shp[0] >= 18 && shp[1].length === 0, shp);
+  check("R-OPT-11 mindestens 15 Formen (ohne Gehirn, Ring, Tropfen), jede baut gültige Punkte (kein NaN), Wechsel ohne Fehler", shp[0] >= 15 && shp[1].length === 0, shp);
   await ev(`(()=>{const e=document.getElementById('setBgFx'); e.value='nordlicht'; e.dispatchEvent(new Event('change')); return true})()`); await wait(300);
   const r1 = await ev(`document.querySelector('[data-bgfor="sterne"]').hidden`);
   await ev(`(()=>{const e=document.getElementById('setBgFx'); e.value='sterne'; e.dispatchEvent(new Event('change')); return true})()`); await wait(300);
@@ -116,4 +116,12 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-OPT-12 Sternschnuppen-Zeile erscheint nur beim Hintergrund Sternenhimmel", r1 === true && r2 === false, [r1, r2]);
   await ev(`(()=>{const e=document.getElementById('setBgHue'); e.value='275'; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
   check("R-OPT-13 Hintergrundfarbe wird gespeichert, mindestens 12 Hintergründe", (await cfg()).bgFx?.hue === "275" && (await ev(`document.getElementById('setBgFx').options.length`)) >= 12, (await cfg()).bgFx);
+  await ev(`(()=>{const e=document.getElementById('setBgOp'); e.value=0.5; e.dispatchEvent(new Event('input')); return true})()`); await wait(700);
+  check("R-OPT-14 Hintergrund-Deckkraft einstellbar und gespeichert", (await cfg()).bgFx?.alpha === 0.5 && (await ev(`getComputedStyle(document.getElementById('bgfx')).opacity`)) === "0.5", (await cfg()).bgFx);
+  await ev(`(()=>{const e=document.getElementById('setFlash'); e.value=0.4; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  check("R-OPT-15 Aufleuchten der Aktivität ist einstellbar (0–2) und gespeichert", (await cfg()).flashK === 0.4 && (await ev(`flashK`)) === 0.4, [(await cfg()).flashK]);
+  await ev(`(()=>{const e=document.getElementById('setYtRound'); e.value=20; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  check("R-OPT-16 YouTube: runde Ecken werden gespeichert (0–40 px)", (await cfg()).ytRound === 20, (await cfg()).ytRound);
+  const lab = await ev(`(async()=>{ const sel=document.getElementById('setShape'); sel.value='symbiont'; sel.dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,400)); const first=document.querySelector('#shapePick button[data-v=kugel] span').textContent; const txt=document.getElementById('settings').innerText; sel.value='kugel'; sel.dispatchEvent(new Event('change')); return [first, /Lagebild/.test(txt)]; })()`);
+  check("R-UI-2 Formwahl behält „Kugel“ auch bei anderer Form; „Lagebild“ heißt überall „News & Uhren“", lab[0] === "Kugel" && lab[1] === false, lab);
 });

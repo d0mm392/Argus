@@ -20,8 +20,8 @@
   let nodes = [], edges = [], adj = [], regionNodes = [];
   // ---------- Formen: Kugel, Hexagon, Würfel, Kristall, Gehirn, Ring, DNA-Helix, Galaxie ----------
   let structK = 1, edgeK = 3, nodeK = 1, ballOn = true, statusOn = true, miniMore = false, look3dK = 0.35, structRings = [], structSkel = [];
-  let shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
-  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["gehirn", "Gehirn"], ["ring", "Ring"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["stern", "Stern"], ["herz", "Herz"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"], ["tropfen", "Tropfen"]];
+  let flashK = 1, shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
+  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["stern", "Stern"], ["herz", "Herz"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"]];
   // Herz- und Sternumriss als Radius je Winkel (Tabelle), für Punkte und Umriss
   const HEART_R = (() => { const pts = []; for (let k = 0; k < 720; k++) { const t = (k / 720) * Math.PI * 2, x = 16 * Math.sin(t) ** 3, y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); pts.push([x / 17, (y + 2.5) / 17]); }
     const tab = new Array(360).fill(0); for (const [x, y] of pts) { const a = Math.round(((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360) % 360; tab[a] = Math.max(tab[a], Math.hypot(x, y)); }
@@ -241,6 +241,7 @@
       for (const [x, y] of pts) { const q = proj(rot(x, y, 0)); hull.push([q[0], q[1]]); }
       return;
     }
+    if (SOLID_SHAPES.has(shape)) { solidHull(); return; } // Umriss aus dem 3D-Körper selbst, nicht aus der Punktwolke (sonst bleibt eine runde Scheibe darin)
     if (shape === "kugel" || shape === "atom" || !nodes.length) { hull = null; return; }
     const cv = CORNERS[shape];
     sharp = !!cv;

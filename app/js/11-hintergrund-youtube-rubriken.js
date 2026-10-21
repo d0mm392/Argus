@@ -128,13 +128,14 @@
   setInterval(bgKick, 1000); document.addEventListener("visibilitychange", bgKick);
   // Zeilen mit data-bgfor erscheinen nur beim passenden Hintergrund (Regel: Optionen eines Hintergrunds nie bei anderen zeigen)
   const bgRows = () => { for (const r of document.querySelectorAll("[data-bgfor]")) { const f = r.dataset.bgfor; r.hidden = f.startsWith("not:") ? bg.mode === f.slice(4) : f === "custom" ? bg.hueMode !== "custom" || bg.mode === "aus" : f !== bg.mode; } };
-  const bgSave = () => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt, hue: bg.hueMode, hueN: bg.hueN } });
-  const applyBg = () => { $("setBgFx").value = bg.mode; $("setBgAmt").value = bg.amt; $("setBgHue").value = bg.hueMode; $("setBgHueN").value = bg.hueN; bgRows(); bg.w = 0; bgKick(); };
+  const bgSave = () => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt, hue: bg.hueMode, hueN: bg.hueN, alpha: bg.op } });
+  const applyBg = () => { $("setBgFx").value = bg.mode; $("setBgAmt").value = bg.amt; $("setBgHue").value = bg.hueMode; $("setBgHueN").value = bg.hueN; $("setBgOp").value = bg.op; bg.cv.style.opacity = bg.op; bgRows(); bg.w = 0; bgKick(); };
   $("setBgFx").addEventListener("change", (e) => { bg.mode = e.target.value; applyBg(); bgSave(); });
   $("setBgHue").addEventListener("change", (e) => { bg.hueMode = e.target.value; applyBg(); bgSave(); });
+  $("setBgOp").addEventListener("input", (e) => { bg.op = +e.target.value; bg.cv.style.opacity = bg.op; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
   $("setBgHueN").addEventListener("input", (e) => { bg.hueN = +e.target.value; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
   $("setBgAmt").addEventListener("input", (e) => { bg.amt = +e.target.value; bg.w = 0; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
-  window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); bg.hueMode = c.bgFx?.hue || "auto"; bg.hueN = c.bgFx?.hueN ?? 210; applyBg(); });
+  window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); bg.hueMode = c.bgFx?.hue || "auto"; bg.hueN = c.bgFx?.hueN ?? 210; bg.op = Math.max(0.1, Math.min(1, c.bgFx?.alpha ?? 1)); applyBg(); });
 
   // ---------- YouTube im Panel ----------
   let ytOn = false, ytSize = "m", ytLast = "", ytOffN = 0;
@@ -246,7 +247,7 @@
       .replace(/kleinen Kugel/g, "kleinen Ansicht").replace(/kleine Kugel/g, "kleine Ansicht").replace(/^Kugel$/, nom);
     const walk = document.createTreeWalker($("settings"), NodeFilter.SHOW_TEXT);
     for (let n; (n = walk.nextNode());) {
-      if (n.parentElement?.closest("select")) continue; // Auswahlliste der Formen bleibt wie sie ist
+      if (n.parentElement?.closest("select, #shapePick")) continue; // Auswahlliste der Formen bleibt wie sie ist
       if (!shapeOrig.has(n)) { if (!/Kugel/.test(n.nodeValue)) continue; shapeOrig.set(n, n.nodeValue); }
       n.nodeValue = conv(shapeOrig.get(n));
     }

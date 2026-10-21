@@ -62,6 +62,7 @@
       <label class="row">Punktgröße <input type="range" id="setNodeK" min="50" max="220" step="5" data-unit=" %"></label>
       <label class="row" title="Nur bei der Form Symbiont im geöffneten Panel">Symbiont streift frei umher <input type="checkbox" id="setVenomRoam"></label>
       <label class="row">Glühen <input type="range" id="setGlow" min="0" max="2.5" step="0.1"></label>
+      <label class="row" title="Wie stark Neuronen bei Aktivität (Programme, Mining-Ereignisse, Mauszeiger) aufleuchten. 0 = aus.">Aufleuchten der Aktivität <input type="range" id="setFlash" min="0" max="2" step="0.1"></label>
       <label class="row">Drehtempo <input type="range" id="setSpin" min="0" max="3" step="0.1"></label>
       <label class="row" title="Die Beschriftungen an der Kugel, zum Beispiel „Hörzentrum“ und „Sprachausgabe“, wenn gerade etwas aktiv ist.">Beschriftungen an der Kugel (Hörzentrum, Sprachausgabe …) <select id="setBallLabels"><option value="aktiv">Wie bisher (bis zu 3)</option><option value="eine">Nur eine</option><option value="aus">Aus</option></select></label>
       <label class="row" title="Skalierung der Anzeige „Claude · Lokal“ und des Strata-Knopfs. Einzeln ausblenden: unten bei den Anzeigen. Auch per Mausrad auf dem Teil.">Größe „Claude · Lokal“ <input type="range" id="setScaleAi" min="0.5" max="3" step="0.05"></label>
@@ -105,6 +106,7 @@
       <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="funken">Funkenflug</option><option value="blasen">Blasen</option><option value="wellen">Wellen</option><option value="schnee">Schneefall</option><option value="regen">Regen</option><option value="gewitter">Gewitter</option><option value="nebel">Nebel</option><option value="wolken">Wolken</option><option value="sonne">Sonnenstaub</option><option value="wetter">Wetter am Standort (live)</option></select></label>
       <label class="row" data-bgfor="not:aus">Farbe <select id="setBgHue"><option value="auto">Automatisch (Zustandsfarbe)</option><option value="bunt">Regenbogen (wandert)</option><option value="210">Blau</option><option value="185">Cyan</option><option value="165">Türkis</option><option value="140">Grün</option><option value="68">Limette</option><option value="45">Gold</option><option value="25">Orange</option><option value="355">Rot</option><option value="320">Pink</option><option value="275">Violett</option><option value="custom">Eigener Farbton</option></select></label>
       <label class="row" data-bgfor="custom"><span>Eigener Farbton</span> <input type="range" id="setBgHueN" min="0" max="359" step="1"></label>
+      <label class="row" data-bgfor="not:aus">Deckkraft <input type="range" id="setBgOp" min="0.1" max="1" step="0.05"></label>
       <label class="row" data-bgfor="not:aus">Menge <input type="range" id="setBgAmt" min="0.3" max="2" step="0.1"></label>
       <label class="row" data-bgfor="sterne">Sternschnuppen <select id="setBgShoot"><option value="0">Keine</option><option value="0.4">Selten</option><option value="1">Normal</option><option value="3">Viele</option><option value="8">Sternenregen</option></select></label>
       <div class="set-note">Optionen, die nur zu einem Hintergrund gehören (Sternschnuppen bei Sternenhimmel), erscheinen nur, wenn dieser Hintergrund gewählt ist. Nordlicht: wehende Lichtbänder. Netzwerk: Knoten, die sich verbinden. Hash-Regen: fallende Hex-Zeichen wie Blöcke im Mining. Funkenflug: aufsteigende Glut. Wellen: weiche Sinuswellen. „Wetter“ zeigt, was draußen gerade los ist. Läuft mit 30 Bildern pro Sekunde und pausiert, wenn das Panel zu ist, Argus versteckt ist oder der Spielmodus greift.</div>
@@ -139,15 +141,15 @@
       <label class="row ollama-only">Grafikkarte für lokale KI <select id="setGpu"><option value="voll">Voll (am schnellsten)</option><option value="sparsam">Sparsam (halbe Last)</option><option value="aus">Aus (nur Prozessor)</option></select></label>
       <label class="col ollama-only">Lokales Modell <input type="text" id="setModel" placeholder="qwen2.5:7b"></label>
       <label class="col">Claude API-Key <input type="password" id="setKey" placeholder="sk-ant-… (leer lassen = unverändert)"></label><button class="help-btn" type="button" data-help="apiKey">So geht’s</button>
-      <h4 data-tab="Lagebild">Lagebild (Kurs und Nachrichten)</h4>
-      <label class="row">Lagebild-Fenster anzeigen <input type="checkbox" id="setNews"></label>
+      <h4 data-tab="News &amp; Uhren">News &amp; Uhren (Kurs und Nachrichten)</h4>
+      <label class="row">News-&amp;-Uhren-Fenster anzeigen <input type="checkbox" id="setNews"></label>
       <label class="row">Bitcoin-Kurs im Fenster <input type="checkbox" data-cat="btc"></label>
       <label class="row">Krypto-News (BTC-ECHO, Cointelegraph, CoinDesk) <input type="checkbox" data-cat="krypto"></label>
       <label class="row">Tech-News (heise, Golem, t3n) <input type="checkbox" data-cat="tech"></label>
       <label class="row">Immer im Vordergrund <input type="checkbox" id="setNewsTop"></label>
       <label class="row">Tropfen-Effekt beim Andocken <input type="checkbox" id="setDockFx"></label>
       <label class="row">Währung <select id="setCur"><option value="USD">US-Dollar</option><option value="EUR">Euro</option></select></label>
-      <div class="col">Kurse neben der Kugel und im Lagebild (Bitcoin schaltest du oben bei den Anzeigen)<div class="coin-pick" id="setCoins"></div></div>
+      <div class="col">Kurse neben der Kugel und in News &amp; Uhren (Bitcoin schaltest du oben bei den Anzeigen)<div class="coin-pick" id="setCoins"></div></div>
       <div class="set-note">Das Fenster an der oberen Leiste verschieben, an den Rändern in der Größe ändern. In der Nähe von Bildschirmrand oder Panel rastet es ein. Bündig am Panel angedockt wandert es mit, wenn du das Panel verschiebst; wegziehen dockt es ab. Der BTC-Kurs an der Kugel wird unter „Anzeigen an der Kugel“ geschaltet.</div>
       <h4 data-tab="Mining">Mining-Seite</h4>
       <div class="set-note">Eigene Seite nur fürs Mining, umschalten oben links (Start / Mining) oder mit Strg+1 / Strg+2. Jede Seite merkt sich ihre eigene Anordnung, auch die der Anzeigen.</div>
@@ -179,12 +181,12 @@
       <div class="fm-px" id="fmPx"></div>
       <div class="set-actions"><button class="btn" type="button" id="fmAdd">+ Konto hinzufügen</button><button class="help-btn" type="button" data-help="foreman">So geht’s</button></div>
       <div class="set-note">Je Konto: Name, Client-ID und API-Schlüssel, bis zu 8. Beides steht in Foreman unter „API Information“ (wie für Pickaxe). Mehrere Konten wechseln im Block alle 20 Sekunden durch, dazu eine Seite „Gesamt“. Argus liest nur Hashrate, Temperatur, Lüfter und Status je Miner, alle 60 Sekunden, und meldet Ausfälle und Miner ab 90 °C. Die Schlüssel bleiben nur auf diesem PC und kommen nicht in die Sicherung.</div>
-      <h4 data-tab="Lagebild">Wetter</h4>
+      <h4 data-tab="News &amp; Uhren">Wetter</h4>
       <label class="row">Wetter-Block im Panel <input type="checkbox" id="setWxOn"></label>
       <label class="col">Weitere Orte (bis zu 3, einer pro Zeile) <textarea id="setWxPlaces" rows="3" spellcheck="false" placeholder="Berlin&#10;Asunción"></textarea></label>
       <div class="set-note">Mit mehreren Wallets oder Orten wechselt die Anzeige alle 20 Sekunden. Maus darauf hält sie an, die Punkte oben wählen direkt. Bei mehreren Wallets gibt es zusätzlich eine Seite „Gesamt“.</div>
       <div class="set-note">Standort über die Windows-Ortung (genau, braucht in Windows „Standort“ und „Desktop-Apps Zugriff erlauben“), sonst grob über den Internet-Anschluss. Wetter von Open-Meteo, ohne Konto. Die Anzeige an der Kugel schaltest du unter „Anzeigen an der Kugel“. Frag einfach „Brauche ich heute eine Jacke?“.</div>
-      <h4 data-tab="Lagebild">Weltuhren</h4>
+      <h4 data-tab="News &amp; Uhren">Weltuhren</h4>
       <label class="row">Weltuhren im Panel <input type="checkbox" id="setClocksOn"></label>
       <label class="col">Uhren (bis zu 10, eine pro Zeile: Name = Stadt, Land oder Zeitzone) <textarea id="setClocks" rows="4" spellcheck="false" placeholder="Deutschland = Berlin&#10;Farm = Asuncion&#10;Dubai"></textarea></label>
       <div class="set-note" id="clocksNote">Deine Ortszeit steht immer vorn. Zeitzonen im Format Kontinent/Stadt, z. B. Europe/Berlin, America/New_York, Asia/Dubai, America/Asuncion, Asia/Almaty.</div>
@@ -242,6 +244,7 @@
       <label class="row">Zusätzlich Werbelisten (kann schwarzes Bild verursachen) <input type="checkbox" id="setYtAdblock"></label>
       <label class="row">Eigenes YouTube-Fenster immer im Vordergrund <input type="checkbox" id="setYtTop"></label>
       <label class="row" title="100 % = undurchsichtig. Darunter schimmert das Panel durch, das Video verschmilzt mit der Oberfläche. Falls unter Windows Farbschleier oder Streifen im Video auftauchen: wieder auf 100 % stellen.">YouTube-Transparenz (experimentell) <input type="range" id="setYtAlpha" min="30" max="100" step="5" data-unit=" %"></label>
+      <label class="row" title="Rundet die Ecken des eingebetteten YouTube-Fensters, passend zu den anderen Fenstern. 0 = eckig.">YouTube: runde Ecken <input type="range" id="setYtRound" min="0" max="40" step="1" data-unit=" px"></label>
       <label class="row" title="Blendet die Kanten des eingebetteten YouTube-Fensters weich aus, damit es mit der Oberfläche verschmilzt. 0 = harte Kante. Der Rand verläuft in deiner Fensterfarbe.">YouTube: weiche Ränder (experimentell) <input type="range" id="setYtFeather" min="0" max="80" step="2" data-unit=" px"></label>
       <div class="set-note">Öffnen mit dem Knopf oben im Panel oder per Satz: „Öffne YouTube“, „Spiel Lofi auf YouTube“. Die Anmeldung bleibt gespeichert.</div>
       <h4 data-tab="Benachrichtigungen">Wie gemeldet wird</h4>
@@ -253,7 +256,7 @@
       <label class="row">Foreman: Miner-Ausfall, Rückkehr, Pickaxe offline <input type="checkbox" id="setFmNotify"></label>
       <label class="row">OCEAN: Worker-Ausfall, Rückkehr, Hashrate-Einbruch <input type="checkbox" id="setOceanNotify"></label>
       <label class="row">OCEAN: Auszahlung <input type="checkbox" id="setPayoutNotify"></label>
-      <label class="row">Lagebild: Auffälligkeiten (Kurs, Fear &amp; Greed, Difficulty, Gebühren) <input type="checkbox" data-cat="alerts"></label>
+      <label class="row">News &amp; Uhren: Auffälligkeiten (Kurs, Fear &amp; Greed, Difficulty, Gebühren) <input type="checkbox" data-cat="alerts"></label>
       <h4 data-tab="Report">Täglicher Miner-Report</h4>
       <label class="row" title="Argus zählt über den Tag alle 5 Minuten, wie viele Miner je Anlage online sind. Am nächsten Tag öffnet sich ein Fenster mit Bestand, typisch online (Median), Spanne und welche Miner dauerhaft oder zeitweise offline waren. Kurze Aussetzer zählen als Schwankung.">Report vom Vortag als Fenster <input type="checkbox" id="setReportOn"></label>
       <label class="row">Messdaten aufbewahren <select id="setReportKeep"><option value="2">2 Tage</option><option value="7">7 Tage</option><option value="14">14 Tage</option><option value="30">30 Tage</option></select></label>
@@ -403,7 +406,7 @@
         <label class="row win-only">Temperaturen und Lüfter messen (installiert einen Messtreiber, eine Admin-Abfrage) <input type="checkbox" id="suSensors" checked></label>
         <div class="set-note win-only">Manche Virenscanner melden den Messtreiber, weil er Temperaturen direkt aus der Hardware liest. Das ist ein Fehlalarm. Wer unsicher ist, lässt die Messung aus, Argus läuft dann ohne Temperaturen.</div>
         <label class="row">Wetter am Standort <input type="checkbox" id="suWx" checked></label>
-        <label class="row">Bitcoin-Kurs und Lagebild mit Nachrichten <input type="checkbox" id="suBtc"></label>
+        <label class="row">Bitcoin-Kurs und News &amp; Uhren mit Nachrichten <input type="checkbox" id="suBtc"></label>
         <label class="row">Mit Windows starten <input type="checkbox" id="suAuto" checked></label>
         <label class="row" title="Schickt nichts von selbst. Nach einem Absturz fragt Argus, ob du einen Bericht senden willst, und zeigt ihn dir vorher.">Nach Abstürzen einen Fehlerbericht anbieten <input type="checkbox" id="suCrash" checked></label>
         <label class="col">Aktivierungswörter für die Sprache (mit Komma getrennt) <input type="text" id="suWake" value="hallo argus"></label>
