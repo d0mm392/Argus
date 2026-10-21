@@ -309,8 +309,8 @@
     const m = onMining(); orbMine = m && mineOrb;
     document.body.classList.toggle("pg-gaming", page === "Gaming"); $("game").hidden = page !== "Gaming"; if (page === "Gaming") gameTick(true);
     document.body.classList.toggle("pg-mining", m); document.body.classList.toggle("noorb", m && !mineOrb);
-    $("pageTabs").hidden = !pagesOn || (!miningOn && !gamingOn);
-    for (const b of $("pageTabs").children) b.hidden = (b.dataset.pg === "Mining" && !miningOn) || (b.dataset.pg === "Gaming" && !gamingOn); for (const t of temps) t.val = undefined;
+    $("pageTabs").hidden = !gamingOn && !(miningOn && pagesOn);
+    for (const b of $("pageTabs").children) b.hidden = (b.dataset.pg === "Mining" && (!miningOn || !pagesOn)) || (b.dataset.pg === "Gaming" && !gamingOn); for (const t of temps) t.val = undefined;
     for (const p of pulses) p.hue = hueOf(nodes[p.a]);
   }
   // Kugel (Größe, Lage, an/aus) und die Knöpfe (Claude · Lokal, Strata, Leerlauf) gehören mit zur Seite: auf Start vergrößern oder ausblenden ändert Mining nicht
@@ -333,9 +333,9 @@
     if ((!miningOn && page === "Mining") || (!gamingOn && page === "Gaming")) { const p = pagesOn; pagesOn = true; switchPage("Start"); pagesOn = p; }
     pageClasses(); applyHidden();
   }
-  $("setGamingOn").addEventListener("change", (e) => { gamingOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ gamingOn }); });
+  $("setGamingOn").addEventListener("change", (e) => { gamingOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ gamingOn }); if (gamingOn) { switchPage("Gaming"); try { notice?.("Gaming-Seite oben links neben ARGUS (Strg+3)"); } catch {} } });
   $("setMiningOn").addEventListener("change", (e) => { miningOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ miningOn }); });
-  $("setPagesOn").addEventListener("change", (e) => { pagesOn = e.target.checked; if (!pagesOn && page !== "Start") { pagesOn = true; switchPage("Start"); pagesOn = false; } pageClasses(); window.jarvis.setConfig({ pagesOn }); });
+  $("setPagesOn").addEventListener("change", (e) => { pagesOn = e.target.checked; if (!pagesOn && page === "Mining") { pagesOn = true; switchPage("Start"); pagesOn = false; } pageClasses(); window.jarvis.setConfig({ pagesOn }); });
   $("setMineOrb").addEventListener("change", (e) => { mineOrb = e.target.checked; pageClasses(); window.jarvis.setConfig({ mineOrb }); });
   $("setOceanTotal").addEventListener("change", (e) => { oceanInTotal = e.target.checked; fmTotC = null; renderMOver(); renderFarm(); window.jarvis.setConfig({ oceanInTotal }); });
   $("setPageFriends").addEventListener("change", (e) => { pageFriends = e.target.checked; window.jarvis.setConfig({ pageFriends }); });
@@ -363,7 +363,7 @@
     // 0.31.9: YouTube nur auf der Start-Seite (0.31.8 hatte es auf Mining mitgenommen)
     if (pages.Mining) pages.Mining.hiddenBlocks = [...new Set([...(pages.Mining.hiddenBlocks || []), "yt", "tw"])];
     if (page === "Mining" && (!hiddenSet.has("yt") || !hiddenSet.has("tw"))) { hiddenSet.add("yt"); hiddenSet.add("tw"); applyHidden(); window.jarvis.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); }
-    if (!pagesOn && page !== "Start") { pagesOn = true; switchPage("Start"); pagesOn = false; }
+    if (!pagesOn && page === "Mining") { pagesOn = true; switchPage("Start"); pagesOn = false; }
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); applyMiningOn();
   });
   const saveFx = (patch) => { mineFx = { ...mineFx, ...patch }; tickSig = ""; renderMineFx(); renderMOver(); clearTimeout(saveFx.t); saveFx.t = setTimeout(() => window.jarvis.setConfig({ mineFx }), 300); };

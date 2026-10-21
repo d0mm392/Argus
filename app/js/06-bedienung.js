@@ -759,6 +759,7 @@
       if (t.trend && show && t.el.dataset.chg !== String(market?.btc?.ts)) { t.el.dataset.chg = String(market?.btc?.ts); t.val = undefined; } // neuer Kurs: Farbe und Hinweis auffrischen
       t.el.classList.toggle("off", !show);
       if (!show) continue;
+      if (t.label) { const lb = t.label(); if (lb !== t.lbl) { t.lbl = lb; t.val = undefined; } } // Beschriftung ändert sich auch bei gleichem Wert (Lüfter rutschen beim Aus-/Einblenden nach)
       if (v !== t.val) {
         t.val = v;
         t.el.lastChild.textContent = v == null ? "–" : t.txt(v);

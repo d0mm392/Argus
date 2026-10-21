@@ -156,8 +156,10 @@
       const availH = Math.floor(box.clientHeight - padY - headH - gap);
       if (availH >= 90 && bh > availH) { bh = availH; w = Math.round(bh * 16 / 9); } }
     $("ytBody").style.width = w + "px"; $("ytBody").style.height = bh + "px";
-    const r = $("ytBody").getBoundingClientRect(), key = [r.x, r.y, r.width, r.height].map(Math.round).join();
-    if (key !== ytLast) { ytLast = key; window.jarvis.ytRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
+    // Gekippte Fenster (Tiefe/Neigung) verändern das gemessene Rechteck laufend: Größe aus der ungekippten Maßen, Mitte aus der Messung, und nur bei Änderung über 3 px neu melden (sonst flackert das Video)
+    const b0 = $("ytBody"), r0 = b0.getBoundingClientRect(), W0 = b0.offsetWidth, H0 = b0.offsetHeight, r = { x: r0.x + r0.width / 2 - W0 / 2, y: r0.y + r0.height / 2 - H0 / 2, width: W0, height: H0 };
+    const pl = ytLast && ytLast !== "off" ? ytLast.split(",").map(Number) : null;
+    if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { ytLast = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.ytRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
   }
   setInterval(ytLayout, 250); window.addEventListener("resize", ytLayout);
   window.jarvis.onYtEmbed?.((d) => { ytOn = !!d.on; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
@@ -185,8 +187,10 @@
       const availH = Math.floor(box.clientHeight - padY - headH - gap);
       if (availH >= 90 && bh > availH) { bh = availH; w = Math.round(bh * 16 / 9); } }
     $("twBody").style.width = w + "px"; $("twBody").style.height = bh + "px";
-    const r = $("twBody").getBoundingClientRect(), key = [r.x, r.y, r.width, r.height].map(Math.round).join();
-    if (key !== twLastKey) { twLastKey = key; window.jarvis.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
+    // Gekippte Fenster (Tiefe/Neigung) verändern das gemessene Rechteck laufend: Größe aus der ungekippten Maßen, Mitte aus der Messung, und nur bei Änderung über 3 px neu melden (sonst flackert das Video)
+    const b0 = $("twBody"), r0 = b0.getBoundingClientRect(), W0 = b0.offsetWidth, H0 = b0.offsetHeight, r = { x: r0.x + r0.width / 2 - W0 / 2, y: r0.y + r0.height / 2 - H0 / 2, width: W0, height: H0 };
+    const pl = twLastKey && twLastKey !== "off" ? twLastKey.split(",").map(Number) : null;
+    if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { twLastKey = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
   }
   setInterval(twLayout, 250); window.addEventListener("resize", twLayout);
   window.jarvis.onTwEmbed?.((d) => { twOn = !!d.on; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
