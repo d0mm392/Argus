@@ -983,7 +983,7 @@ function applyShape() {
   if (!alive() || typeof win.setShape !== "function") return;
   try {
     const b = win.getContentBounds(), W = b.width, H = b.height;
-    if (!config.holeOn || config.holeEdit || !expanded || W < 500 || H < 400) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
+    if (!config.holeOn || config.holeEdit || !expanded || W < 500 || H < 400) { if (lastShape) { win.setShape([]); lastShape = ""; } return; } // ohne Aussparung gar keine Form: ein „volles Rechteck“ in DIP wird unter Windows mit Skalierung (z. B. 150 %) als Pixel gelesen und schneidet das Fenster rechts und unten ab
     let hw, hh, hx, hy;
     {
       hw = Math.max(80, Math.min(W - 200, Math.round(config.holeW || 360))); hh = Math.max(80, Math.min(H - 200, Math.round(config.holeH || 260)));
@@ -1239,7 +1239,9 @@ async function createWindow(port) {
   win.on("blur", () => { blurAt = Date.now(); });
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
-  win.on("show", () => { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); setTimeout(reshowViews, 200); });
+  win.on("show", () => { if (config.holeOn) { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); } setTimeout(reshowViews, 200); });
+  // Bildschirmwechsel, Skalierung oder Fernwartung (AnyDesk) ändern die Maße: Fenstergröße danach neu anwenden
+  let dmT = null; screen.on("display-metrics-changed", () => { if (!alive() || !viewReady) return; clearTimeout(dmT); dmT = setTimeout(() => { if (alive()) applyBounds(config.corner, false); }, 500); });
   win.on("restore", () => { if (!expanded || !win.isVisible()) setExpanded(true); });
   win.on("closed", () => { stopAnim(); hideMini(); clearInterval(moveTimer); win = null; });
   // Oberfläche abgestürzt: für den Fehlerbericht merken und neu laden

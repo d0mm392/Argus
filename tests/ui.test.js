@@ -148,5 +148,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-OPT-22 Buttons liegen nicht als eckiger Kasten hinter der Form (Füllung nur im Pseudo-Element, Schatten per drop-shadow)", !/body\[data-blook="[a-z]+"\] :is\(\.temp, \.who span\) \{[^}]*\bbox-shadow:/.test(cssx) && /::before \{ content: ""; position: absolute; inset: -1px/.test(cssx));
   const cl = await ev(`(()=>{ const b=document.getElementById('setClose'); return [b.textContent.trim(), b.offsetHeight]; })()`);
   check("R-UI-7 Einstellungen: Knopf oben rechts heißt „Schließen“ und ist groß", cl[0] === "Schließen" && cl[1] >= 34, cl);
+  const mainSrc = require("fs").readFileSync(require("path").join(__dirname, "..", "main.js"), "utf8");
+  check("R-WIN-2 ohne Aussparung wird keine Fensterform gesetzt (kein volles Rechteck, das bei Skalierung beschneidet)", !/setShape\(\[\{ x: 0, y: 0/.test(mainSrc) && /win\.on\("show", \(\) => \{ if \(config\.holeOn\)/.test(mainSrc));
   check("R-UI-3 Einstellungen: Reiter „Kugel und Farbe“ und „Aussehen“ bündeln die Optik; Erklärungen erscheinen beim Darüberfahren statt als Fließtext", hv[0] === true && hv[1] === true && hv[2] >= 20 && hv[3] === 0, hv);
 });
