@@ -62,7 +62,22 @@ body[data-os=other] .win-only { display: none !important; }
 .hp-steps { margin: 0 0 4px; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; font-size: 0.84rem; line-height: 1.4; }
 .hp-steps a { color: var(--accent); cursor: pointer; } .hp-steps code { font: 0.78rem ui-monospace, monospace; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,0.07); user-select: all; }
 .help-btn { all: unset; cursor: pointer; font-size: 0.74rem; color: var(--accent); padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; align-self: flex-start; } .help-btn:hover { background: rgba(79,195,247,0.1); }
-#crText { width: 100%; box-sizing: border-box; font: 0.74rem ui-monospace, monospace; resize: vertical; }
+#crText { width: 100%; box-sizing: border-box; font: 0.76rem/1.45 ui-monospace, Consolas, monospace; resize: vertical; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.28); color: var(--ink); }
+#crText:focus { outline: none; border-color: var(--accent); }
+.crash-pop { width: min(680px, calc(100vw - 32px)); padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.crash-pop > :not(.pop-head) { margin-left: 18px; margin-right: 18px; } .crash-pop > .rp-act { margin-bottom: 16px; }
+.pop-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 14px 12px 18px; margin-bottom: 12px; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); cursor: move; user-select: none; }
+.pop-head .ph-t { flex: 1; min-width: 0; } .pop-head h3 { margin: 0 0 4px; } .pop-head .rp-sub { margin: 0; }
+.pop-x { all: unset; flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--ink-dim); font-size: 1.15rem; line-height: 1; }
+.pop-x:hover { background: rgba(255, 92, 77, 0.85); color: #fff; }
+.cr-state { margin-bottom: 8px; font: 0.72rem var(--f-mono); color: var(--ink-dim); letter-spacing: 0.04em; }
+.cr-list { display: flex; flex-direction: column; gap: 6px; }
+.cr-item { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); cursor: pointer; }
+.cr-item:hover { background: rgba(120, 190, 255, 0.1); border-color: var(--accent); }
+.cr-item b { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
+.cr-item small { color: var(--ink-dim); font: 0.68rem var(--f-mono); white-space: nowrap; }
+.cr-item .tag { font: 0.66rem var(--f-mono); padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); } .cr-item .tag.sent { color: #6ee7a8; border-color: #6ee7a8; }
+.cr-empty { color: var(--ink-dim); font-size: 0.8rem; padding: 6px 2px; }
 .report-pop h3 { margin: 0 0 4px; font: 600 0.95rem var(--f-display); letter-spacing: 0.12em; text-transform: uppercase; }
 .report-pop .rp-sub { color: var(--ink-dim); font-size: 0.78rem; margin-bottom: 12px; }
 .report-pop table { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 0.8rem; }
@@ -451,7 +466,7 @@ body.expanded .yt.on { display: flex; }
 .wrow select { padding: 3px 6px !important; }
 .controls { display: none !important; }
 /* Einstellungen als Ebene über dem Panel */
-.settings { position: absolute; inset: 56px 12px 12px; z-index: 30; display: flex; flex-direction: column; background: var(--win-solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.settings { position: absolute; inset: 82px 16px 16px; z-index: 30; display: flex; flex-direction: column; background: var(--win-solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .settings[hidden] { display: none; }
 .setup { z-index: 40; }
 .setup .su-step { display: none; flex-direction: column; gap: 8px; }
@@ -560,6 +575,11 @@ body.expanded .panel > .grabbed { cursor: grabbing !important; box-shadow: 0 0 0
 .qs.add { opacity: 0.7; } .qs.missing { opacity: 0.35; }
 .quick.drop { outline: 2px dashed var(--accent); outline-offset: -3px; }
 body.noball #brain { opacity: 0; }
+.hx { position: absolute; top: -8px; right: -8px; width: 17px; height: 17px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: rgba(8, 14, 26, 0.96); color: var(--ink-dim);
+  font: 13px/14px var(--f-body, system-ui); cursor: pointer; display: grid; place-items: center; opacity: 0; transition: opacity .12s, background .12s, color .12s; z-index: 5; }
+.hx:hover { background: rgba(255, 92, 77, 0.9); color: #fff; border-color: transparent; }
+#pill, .who, .strata-float { position: relative; } .who, .strata-float { position: absolute; }
+#pill:hover > .hx, .who:hover > .hx, .strata-float:hover > .hx { opacity: 1; }
 body.nostatus #pill { display: none !important; }
 body:not(.expanded):not(.mini-more) .who, body:not(.expanded):not(.mini-more) #pill { display: none !important; }
 .game { display: flex; flex-direction: column; min-height: 320px; }
@@ -571,9 +591,6 @@ body.pg-gaming:not(.free) #game { order: -1; }
 .game-body .g-links { display: flex; flex-wrap: wrap; gap: 6px; } .game-body .g-links button { cursor: pointer; }
 .game-body .g-dim { color: var(--ink-dim); }
 .game-body a, .game-body .g-news { cursor: pointer; }
-.dcweb { display: flex; flex-direction: column; min-height: 240px; }
-.dcw-body { flex: 1; min-height: 200px; border-radius: 8px; background: #1e1f22; }
-.dcweb .sys-head button { margin-left: auto; background: none; border: 0; color: var(--ink-dim); cursor: pointer; font-size: 0.9rem; }
 .mirror { display: flex; flex-direction: column; min-height: 120px; }
 .mirror video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; border-radius: 8px; }
 .mirror select { max-width: 55%; font-size: 0.7rem; }
@@ -608,7 +625,7 @@ body.pg-gaming:not(.free) #game { order: -1; }
 @keyframes pulse { from { opacity: 0.3; } to { opacity: 1; } }
 .btn.busy::before { content: ""; width: 10px; height: 10px; margin-right: 8px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.set-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.set-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 14px; border-bottom: 1px solid var(--line); }
 .set-head b { font-family: var(--f-display); letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.85rem; }
 .set-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 14px 0; }
 .set-tabs button { font: 600 0.72rem var(--f-body); color: var(--ink-dim); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
@@ -837,7 +854,6 @@ body.maxed .edge { display: none !important; }
       <div class="set-note">Schlüssel kostenlos unter steamcommunity.com/dev/apikey holen (Domain: localhost). Profil und Freundesliste müssen öffentlich sein.</div><button class="help-btn" type="button" data-help="steam">So geht’s</button>
       <h4 data-tab="Freunde und Medien">Discord</h4>
       <label class="row">Discord anzeigen <input type="checkbox" id="setDiscordOn"></label>
-      <label class="row" title="Zeigt Discord (Web) als Fenster im Panel, mit Chat, Sprache, Kamera und Streams. Du meldest dich selbst darin an. Argus liest nichts mit und speichert keine Zugangsdaten.">Discord als Fenster im Panel <input type="checkbox" id="setDcWebOn"></label>
       <label class="row">Nur Leute im Sprachkanal zeigen <input type="checkbox" id="setDcVoice"></label>
       <label class="col">Discord-Server-IDs (mehrere mit Komma) <input type="text" id="setDiscord" placeholder="z. B. 123456789012345678"></label>
       <div class="set-note">Auf dem Server muss das Widget an sein: Servereinstellungen → Beteiligung → Server-Widget aktivieren. Discord gibt den Status deiner privaten Freunde nicht heraus, nur Server.</div><button class="help-btn" type="button" data-help="discordServer">So geht’s</button>
@@ -925,8 +941,14 @@ body.maxed .edge { display: none !important; }
       <h4 data-tab="System">Über dich</h4>
       <label class="col">Wie Argus dich nennt <input type="text" id="setUserName" maxlength="40"></label>
       <label class="col">Ein Satz über dich (für die KI) <input type="text" id="setUserInfo" maxlength="500"></label>
+      <div class="set-actions"><button class="btn" type="button" id="setRerun">Einrichtung erneut starten</button></div>
+      <h4 data-tab="Fehlerberichte">Fehlerberichte</h4>
       <label class="row" title="Schickt nichts von selbst. Nach einem Absturz fragt Argus, ob du einen Bericht senden willst, und zeigt ihn dir vorher.">Nach Abstürzen einen Fehlerbericht anbieten <input type="checkbox" id="setCrash"></label>
-      <div class="set-actions"><button class="btn" type="button" id="setRerun">Einrichtung erneut starten</button><button class="btn" type="button" id="setCrashNow" title="Bericht mit den letzten Fehlermeldungen erstellen, zum Beispiel wenn etwas nicht klappt">Problem melden …</button></div>
+      <div class="set-actions"><button class="btn primary" type="button" id="setCrashNow" title="Bericht mit den letzten Fehlermeldungen erstellen, zum Beispiel wenn etwas nicht klappt">Problem melden …</button></div>
+      <div class="set-note">Nichts wird ohne dein Klicken gesendet. Benutzername, Pfade, Schlüssel und Wallet-Adressen werden vorher entfernt.</div>
+      <h4 data-tab="Fehlerberichte">Meine Berichte</h4>
+      <div class="set-note">Deine Berichte bleiben 14 Tage nur auf diesem PC und werden danach automatisch gelöscht.</div>
+      <div class="cr-list" id="crList"></div>
       <h4 data-tab="System">Einstellungen sichern</h4>
       <div class="set-actions"><button class="btn" type="button" id="setExport">Sichern …</button><button class="btn" type="button" id="setImport">Laden …</button></div>
       <div class="set-note" id="setExpNote">Speichert alle Einstellungen samt Anordnung in eine Datei, z. B. für eine Neuinstallation oder einen zweiten PC. Schlüssel und Tokens (Steam, Discord-Bot, Claude-API) bleiben aus Sicherheitsgründen draußen. Nach dem Laden startet Argus neu.</div>
@@ -1114,10 +1136,6 @@ body.maxed .edge { display: none !important; }
       <div class="sys-head"><span id="gameTitle">Gaming</span><b id="gameState" data-health="ok"></b></div>
       <div class="game-body" id="gameBody"></div>
     </section>
-    <section class="sys dcweb" id="dcweb" aria-label="Discord-Fenster" hidden>
-      <div class="sys-head"><span>Discord</span><button type="button" id="dcwReload" title="Discord neu laden">↻</button></div>
-      <div class="dcw-body" id="dcwBody"></div>
-    </section>
     <section class="sys mirror" id="mirror" aria-label="Fenster-Spiegel" hidden>
       <div class="sys-head"><span>Fenster-Spiegel</span><select id="mirrorSel" title="Welches Fenster gespiegelt wird"></select><b id="mirrorState" data-health="ok"></b></div>
       <video id="mirrorVid" autoplay muted playsinline></video>
@@ -1145,7 +1163,7 @@ body.maxed .edge { display: none !important; }
 <script src="/vosk.js"></script>
 <div class="ctxmenu" id="procMenu" hidden role="menu"></div>
 <div class="report-pop" id="helpPop" hidden role="dialog" aria-label="Anleitung"><h3 id="hpTitle"></h3><div class="rp-sub" id="hpSub"></div><ol class="hp-steps" id="hpSteps"></ol><div class="rp-act"><span class="set-note" style="margin-right:auto">Alles bleibt auf deinem PC, eingetragen wird es in Argus.</span><button class="btn primary" type="button" id="hpClose">Verstanden</button></div></div>
-<div class="report-pop" id="crashPop" hidden role="dialog" aria-label="Fehlerbericht"><button type="button" id="crX" title="Schließen (Esc), ohne zu senden" style="position:absolute;right:10px;top:8px;background:none;border:0;color:var(--ink-dim);font-size:1.2rem;cursor:pointer">×</button><h3 id="crHead" style="cursor:move" title="Zum Verschieben ziehen">Fehlerbericht</h3><div class="rp-sub" id="crSub">Argus hatte ein Problem. Hilf beim Beheben: Der Bericht unten geht nur raus, wenn du auf Senden klickst. Benutzername, Pfade, Schlüssel und Wallet-Adressen sind schon entfernt, du kannst noch alles ändern oder ergänzen.</div><textarea id="crText" rows="12" spellcheck="false"></textarea><div class="rp-act"><label class="row" style="margin-right:auto"><input type="checkbox" id="crIgnore"> diesen Fehler nicht mehr melden</label><button class="btn" type="button" id="crNo">Nicht senden</button><button class="btn" type="button" id="crCopy">Kopieren</button><button class="btn primary" type="button" id="crSend" title="Öffnet ein vorausgefülltes GitHub-Issue im Browser, dort klickst du noch einmal auf Senden (braucht ein GitHub-Konto)">Als GitHub-Issue senden</button></div></div>
+<div class="report-pop crash-pop" id="crashPop" hidden role="dialog" aria-label="Fehlerbericht"><div class="pop-head" id="crHead" title="Zum Verschieben ziehen"><div class="ph-t"><h3 id="crTitleH">Fehlerbericht</h3><div class="rp-sub" id="crSub">Argus hatte ein Problem. Der Bericht geht nur raus, wenn du auf Senden klickst. Benutzername, Pfade, Schlüssel und Wallet-Adressen sind schon entfernt. Du kannst noch alles ändern oder ergänzen.</div></div><button type="button" class="pop-x" id="crX" title="Schließen (Esc)" aria-label="Schließen">×</button></div><div class="cr-state" id="crState" hidden></div><textarea id="crText" rows="12" spellcheck="false"></textarea><div class="rp-act"><label class="row" style="margin-right:auto"><input type="checkbox" id="crIgnore"> diesen Fehler nicht mehr melden</label><button class="btn danger" type="button" id="crDel" hidden>Löschen</button><button class="btn" type="button" id="crNo">Nicht senden</button><button class="btn" type="button" id="crCopy">Kopieren</button><button class="btn primary" type="button" id="crSend" title="Öffnet ein vorausgefülltes GitHub-Issue im Browser, dort klickst du noch einmal auf Senden (braucht ein GitHub-Konto)">Als GitHub-Issue senden</button></div></div>
 <div class="report-pop" id="reportPop" hidden role="dialog" aria-label="Miner-Report"><h3 id="rpTitle">Miner-Report</h3><div class="rp-sub" id="rpSub"></div><div id="rpBody"></div>
   <div class="rp-act"><select id="rpDay" title="Anderen Tag ansehen"></select><button class="btn" type="button" id="rpCopy">Kopieren</button><button class="btn primary" type="button" id="rpClose">Schließen</button></div></div>
 <script>
@@ -2288,8 +2306,9 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   let micFloatOn = true;
   const rimHint = document.createElement("div"); rimHint.className = "rim-hint"; rimHint.textContent = "Ziehen ändert die Größe"; stage.append(rimHint);
   const rimR = () => S * 1.08, rimTol = () => Math.max(10, S * 0.09);
-  function hit(e) {
+  function hit(e, raw) {
     const r = canvas.getBoundingClientRect(), x = e.clientX - r.left - CX, y = e.clientY - r.top - CY, d = Math.hypot(x, y);
+    if (!ballOn && !raw) return { d, ang: Math.atan2(y, x), rim: false, inside: false }; // Kugel entfernt: sie fängt keine Klicks, kein Ziehen, keine Größe mehr ab
     return { d, ang: Math.atan2(y, x), rim: Math.abs(d - rimR()) < rimTol(), inside: d <= rimR() - rimTol() };
   }
   const resizeCursor = (ang) => { const a = ((ang * 180 / Math.PI) + 360) % 180; return a < 22.5 || a >= 157.5 ? "ew-resize" : a < 67.5 ? "nwse-resize" : a < 112.5 ? "ns-resize" : "nesw-resize"; };
@@ -3841,22 +3860,49 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   document.addEventListener("click", (e) => { const b = e.target.closest?.(".help-btn"); if (!b) return; e.preventDefault(); e.stopPropagation(); showHelp(b.dataset.help); }, true);
   $("hpClose").addEventListener("click", () => { $("helpPop").hidden = true; });
   // ---------- Fehlerbericht nach Absturz (nur mit Zustimmung, als GitHub-Issue) ----------
-  let crTitle = "";
-  function showCrash(r) { if (!r) return; if (!expanded) window.jarvis.toggleExpanded(); crTitle = r.title; $("crText").value = r.text; $("crIgnore").checked = false; $("crIgnore").parentElement.hidden = /Nutzer/.test(r.title); $("crashPop").hidden = false; }
-  const crClose = () => { window.jarvis.crashDismiss($("crIgnore").checked); $("crashPop").hidden = true; };
+  let crTitle = "", crHistId = null, crDone = false;
+  // Fenster an der Kopfzeile verschieben (bleibt im Bild)
+  function dragPop(pop, handle) {
+    handle.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || e.target.closest("button")) return;
+      const r = pop.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      pop.style.transform = "none"; pop.style.left = r.left + "px"; pop.style.top = r.top + "px";
+      const mv = (m) => { pop.style.left = Math.max(0, Math.min(innerWidth - 120, m.clientX - dx)) + "px"; pop.style.top = Math.max(0, Math.min(innerHeight - 50, m.clientY - dy)) + "px"; };
+      const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+      addEventListener("pointermove", mv); addEventListener("pointerup", up);
+    });
+  }
+  const fmtT = (t) => new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  function crOpen(title, text, hist) {
+    crTitle = title; crHistId = hist?.id || null; crDone = false; $("crText").value = text; $("crIgnore").checked = false;
+    $("crIgnore").parentElement.hidden = !!hist || /Nutzer/.test(title); $("crDel").hidden = !hist; $("crNo").textContent = hist ? "Schließen" : "Nicht senden";
+    $("crTitleH").textContent = hist ? "Gespeicherter Bericht" : "Fehlerbericht"; $("crState").hidden = !hist; if (hist) $("crState").textContent = fmtT(hist.t) + " · " + hist.state + " · wird nach 14 Tagen gelöscht";
+    $("crashPop").hidden = false;
+  }
+  function showCrash(r) { if (!r) return; if (!expanded) window.jarvis.toggleExpanded(); crOpen(r.title, r.text, null); }
+  async function crRender() {
+    const l = await window.jarvis.crashList().catch(() => []), box = $("crList");
+    if (!l.length) { box.replaceChildren(Object.assign(document.createElement("div"), { className: "cr-empty", textContent: "Noch keine Berichte gespeichert." })); return; }
+    box.replaceChildren(...l.map((it) => { const b = document.createElement("button"); b.type = "button"; b.className = "cr-item"; b.title = "Bericht ansehen";
+      const t = document.createElement("b"); t.textContent = it.title; const g = document.createElement("span"); g.className = "tag" + (it.state === "gesendet" ? " sent" : ""); g.textContent = it.state; const d = document.createElement("small"); d.textContent = fmtT(it.t);
+      b.append(t, g, d); b.addEventListener("click", async () => { const v = await window.jarvis.crashView(it.id); if (v) crOpen(v.title, v.text, v); else crRender(); }); return b; }));
+  }
+  const crClose = () => {
+    if (!crHistId && !crDone) window.jarvis.crashDismiss($("crIgnore").checked, crTitle, $("crText").value).then(() => crRender());
+    $("crashPop").hidden = true;
+  };
   $("crNo").addEventListener("click", crClose); $("crX").addEventListener("click", crClose);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("crashPop").hidden) crClose(); });
-  $("crHead").addEventListener("pointerdown", (e) => { // Bericht verschiebbar, falls ein anderes Fenster darüber liegt
-    const pop = $("crashPop"), r = pop.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
-    pop.style.transform = "none"; pop.style.left = r.left + "px"; pop.style.top = r.top + "px";
-    const mv = (m) => { pop.style.left = Math.max(0, Math.min(innerWidth - 80, m.clientX - dx)) + "px"; pop.style.top = Math.max(0, Math.min(innerHeight - 40, m.clientY - dy)) + "px"; };
-    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
-    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  dragPop($("crashPop"), $("crHead"));
+  $("crCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(crTitle + "\n\n" + $("crText").value); notice("Fehlerbericht kopiert"); } catch { $("crText").select(); document.execCommand("copy"); }
+    if (!crHistId && !crDone) { crDone = true; await window.jarvis.crashArchive(crTitle, $("crText").value, "kopiert"); crRender(); }
   });
-  $("crCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(crTitle + "\n\n" + $("crText").value); notice("Fehlerbericht kopiert"); } catch { $("crText").select(); document.execCommand("copy"); } });
-  $("crSend").addEventListener("click", async () => { await window.jarvis.crashSend(crTitle, $("crText").value); $("crashPop").hidden = true; notice("GitHub öffnet sich, dort noch auf „Submit new issue“ klicken"); });
+  $("crSend").addEventListener("click", async () => { crDone = true; await window.jarvis.crashSend(crTitle, $("crText").value); $("crashPop").hidden = true; notice("GitHub öffnet sich, dort noch auf „Submit new issue“ klicken"); crRender(); });
+  $("crDel").addEventListener("click", async () => { if (crHistId) await window.jarvis.crashDel(crHistId); $("crashPop").hidden = true; crRender(); });
+  $("setCrashNow").addEventListener("click", async () => { showCrash(await window.jarvis.crashGet(true)); }); // Einstellungen bleiben offen
+  crRender();
   $("setCrash").addEventListener("change", (e) => window.jarvis.setConfig({ crashReport: e.target.checked }));
-  $("setCrashNow").addEventListener("click", async () => { $("settings").hidden = true; showCrash(await window.jarvis.crashGet(true)); });
   window.jarvis.getConfig?.().then((c) => { $("setCrash").checked = c.crashReport !== false; if (c.setupDone) setTimeout(() => window.jarvis.crashGet(false).then(showCrash).catch(() => {}), 6000); });
   $("setUserName").addEventListener("change", (e) => { userName = e.target.value.trim(); window.jarvis.setConfig({ userName }); });
   $("setUserInfo").addEventListener("change", (e) => window.jarvis.setConfig({ userInfo: e.target.value.trim() }));
@@ -4486,7 +4532,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
 
   // ---------- Anordnen: Teile des Panels frei verschieben und in der Größe ändern ----------
   // Lage als Anteil der Fläche unter der Kopfleiste (x, y, w; h = 0 heißt Höhe nach Inhalt), damit es bei jeder Fenstergröße passt
-  const BLOCKS = [["yt", "YouTube", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["dcweb", "Discord-Fenster", true], ["game", "Gaming", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
+  const BLOCKS = [["yt", "YouTube", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["game", "Gaming", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
   const panelEl = document.querySelector(".panel");
   function applyLayout() {
     document.body.classList.toggle("free", !!freeLayout);
@@ -4494,7 +4540,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     for (const [id, , hRes] of BLOCKS) {
       const el = $(id); el.classList.toggle("blk", !!freeLayout);
       let r = freeLayout?.[id];
-      if (!r && freeLayout && (id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "dcweb" || id === "game" || id === "aiLog")) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 600); }
+      if (!r && freeLayout && (id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "game" || id === "aiLog")) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 600); }
       if (!r) { el.style.left = el.style.top = el.style.width = ""; if (!(id === "sys" && sysBox.h)) el.style.height = ""; continue; }
       el.style.left = r.x * 100 + "%"; el.style.top = r.y * 100 + "%"; el.style.width = r.w * 100 + "%";
       el.style.height = hRes && r.h ? r.h * 100 + "%" : "";
@@ -4531,7 +4577,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   // (Raster absuchen, nichts überdecken), sonst unter die Systemwache
   function newBlockSpot(id) {
     const ph = panelEl.clientHeight || 600, pw = panelEl.clientWidth || 900, s = freeLayout.sys || { x: 0.02, y: 0.4, w: 0.45 };
-    const EST = { mine: 200, wx: 300, clocks: 72, farm: 160, farm2: 160, farm3: 160, farm4: 160, notes: 160, quick: 90, mirror: 220, dcweb: 380, game: 300 }; // Höhe, bevor Daten da sind, ist noch klein: geschätzt
+    const EST = { mine: 200, wx: 300, clocks: 72, farm: 160, farm2: 160, farm3: 160, farm4: 160, notes: 160, quick: 90, mirror: 220, game: 300 }; // Höhe, bevor Daten da sind, ist noch klein: geschätzt
     const w = Math.min(0.96, Math.max(0.28, id === "mine" ? s.w : 380 / pw)), h = (EST[id] || 120) / ph;
     const taken = Object.entries(freeLayout).filter(([k]) => k !== id && $(k) && !$(k).hidden && (k !== "yt" || $(k).classList.contains("on")))
       .map(([k, r]) => ({ x: r.x, y: r.y, w: r.w, h: r.h || Math.max($(k).offsetHeight || 60, EST[k] || 0) / ph }));
@@ -4798,14 +4844,18 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     for (const b of $("pageTabs").children) b.hidden = (b.dataset.pg === "Mining" && !miningOn) || (b.dataset.pg === "Gaming" && !gamingOn); for (const t of temps) t.val = undefined;
     for (const p of pulses) p.hue = hueOf(nodes[p.a]);
   }
-  // Kugel (Größe, Lage) gehört mit zur Seite: auf Start vergrößern ändert Mining nicht
-  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff } }; }
+  // Kugel (Größe, Lage, an/aus) und die Knöpfe (Claude · Lokal, Strata, Leerlauf) gehören mit zur Seite: auf Start vergrößern oder ausblenden ändert Mining nicht
+  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false }; }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
   function switchPage(n) {
     if (n === page) return;
     pages[page] = snapPage(); page = n;
     const pf = pages[n] || (PAGE_DEF[n] ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !PAGE_DEF[n].includes(id)), pins: {}, scales: {} } : null);
-    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming") hiddenSet.add("game"); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff }; applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
+    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming") hiddenSet.add("game"); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
+      ballOn = pf.ballOn !== false; statusOn = pf.statusOn !== false; $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; applyUi();
+      widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; try { buildWidgetRows(); } catch {}
+      window.jarvis.setConfig({ ballOn, statusOn, widgets: { ai: widgets.ai, strata: widgets.strata } });
+      applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }
   function applyMiningOn() {
@@ -4885,6 +4935,13 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   const unscroll = (el) => { if (el && (el.scrollTop || el.scrollLeft)) { el.scrollTop = 0; el.scrollLeft = 0; } };
   document.addEventListener("scroll", (e) => { const t = e.target; if (t === document || t === document.documentElement || t === document.body) { unscroll(document.documentElement); unscroll(document.body); } else if (t.matches?.(NO_SCROLL)) unscroll(t); }, true);
   setInterval(() => { unscroll(document.documentElement); unscroll(document.body); document.querySelectorAll(NO_SCROLL).forEach(unscroll); }, 1000);
+  // Anzeigen „Claude · Lokal“, Strata und Leerlauf: × zum Ausblenden (zurück: Rechtsklick → Anzeigen)
+  function hideWidget(k, on) { widgets[k] = { ...widgets[k], on }; window.jarvis.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} }
+  for (const [el, fn] of [[$("pill"), () => { statusOn = false; $("setStatusOn").checked = false; applyUi(); sv({ statusOn }); }], [who, () => hideWidget("ai", false)], [$("strataBtn"), () => hideWidget("strata", false)]]) {
+    const x = document.createElement("button"); x.type = "button"; x.className = "hx"; x.textContent = "×"; x.title = "Ausblenden (zurück: Rechtsklick → Anzeigen)"; x.setAttribute("aria-label", "Ausblenden");
+    for (const ev of ["pointerdown", "mousedown", "dblclick"]) x.addEventListener(ev, (e) => e.stopPropagation());
+    x.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); fn(); }); el.append(x);
+  }
   // Rechtsklick: Menü aus main (Einstellungen, Anordnen, Profile, Skins …). Rechts ziehen dreht die Form, das öffnet kein Menü.
   let rDown = null;
   window.addEventListener("mousedown", (e) => { if (e.button === 2) rDown = [e.screenX, e.screenY]; }, true);
@@ -4896,12 +4953,14 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     let target = null; const tEl = e.target.closest?.(".temp");
     if (tEl) { const t = temps.find((x) => x.el === tEl); if (t) target = { kind: "temp", key: t.key, w: t.w, name: t.name + (t.key.endsWith("C") ? " Takt" : t.key.endsWith("T") ? " Temperatur" : "") }; }
     else if (e.target.closest?.("#pill")) target = { kind: "pill" };
-    else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e); if (h.inside || h.rim) target = { kind: "ball" }; } }
+    else if (e.target.closest?.(".who")) target = { kind: "who" };
+    else if (e.target.closest?.("#strataBtn")) target = { kind: "strata" };
+    else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
     const cs = getComputedStyle(document.documentElement), vars = {};
     for (const k of ["--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    window.jarvis.ctxMenu?.({ target, vars, flags: { ball: ballOn, status: statusOn, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id]).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.jarvis.ctxMenu?.({ target, vars, flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id]).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   window.jarvis.onCtxAction?.(({ a, v }) => {
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
@@ -4910,9 +4969,12 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     else if (a === "tog") {
       if (v === "ball") { ballOn = !ballOn; $("setBallOn").checked = ballOn; applyUi(); sv({ ballOn }); }
       else if (v === "status") { statusOn = !statusOn; $("setStatusOn").checked = statusOn; applyUi(); sv({ statusOn }); }
+      else if (v === "ai" || v === "strata") hideWidget(v, widgets[v]?.on === false);
       else if (v === "mini") { miniMore = !miniMore; $("setMiniMore").checked = miniMore; applyUi(); sv({ miniMore }); }
-      else if (v === "steam") { $("setSteamOn").checked = !$("setSteamOn").checked; $("setSteamOn").dispatchEvent(new Event("change")); }
-      else if (v === "discord") { $("setDiscordOn").checked = !$("setDiscordOn").checked; $("setDiscordOn").dispatchEvent(new Event("change")); }
+      else if (v === "steam" || v === "discord") { // aus der gespeicherten Einstellung umschalten (das Häkchen in den Einstellungen kann veraltet sein); Einschalten holt auch die Freundesliste zurück
+        const k = v === "steam" ? "steamOn" : "discordOn", box = $(v === "steam" ? "setSteamOn" : "setDiscordOn");
+        window.jarvis.getConfig().then((c) => { const nv = c[k] === false; box.checked = nv; window.jarvis.setConfig({ [k]: nv }); if (nv && widgets.friends?.on === false) setFriendsOn(true); });
+      }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
     else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
@@ -5052,21 +5114,6 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   $("setBgFx").addEventListener("change", (e) => { bg.mode = e.target.value; applyBg(); window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt } }); });
   $("setBgAmt").addEventListener("input", (e) => { bg.amt = +e.target.value; bg.w = 0; clearTimeout(bg.save); bg.save = setTimeout(() => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt } }), 400); });
   window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); applyBg(); });
-
-  // ---------- Discord (Web) im Panel ----------
-  let dcWebOn = false, dcwLast = "", dcwOffN = 0;
-  function dcwLayout() {
-    $("dcweb").hidden = !dcWebOn;
-    if (!dcWebOn || !expanded || !$("settings").hidden || $("dcweb").classList.contains("gone") || !$("dcwBody").offsetWidth) {
-      if (dcwLast !== "off" && (!dcWebOn || !$("settings").hidden || ++dcwOffN >= 3)) { dcwLast = "off"; window.jarvis.dcWebRect(null); } return; }
-    dcwOffN = 0;
-    const r = $("dcwBody").getBoundingClientRect(), key = [r.x, r.y, r.width, r.height].map(Math.round).join();
-    if (key !== dcwLast) { dcwLast = key; window.jarvis.dcWebRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
-  }
-  setInterval(dcwLayout, 250); window.addEventListener("resize", dcwLayout);
-  $("dcwReload").addEventListener("click", () => window.jarvis.dcWebReload());
-  $("setDcWebOn").addEventListener("change", (e) => { dcWebOn = e.target.checked; dcwLast = ""; window.jarvis.setConfig({ dcWebOn }); dcwLayout(); fitPanel?.(); });
-  window.jarvis.getConfig?.().then((c) => { dcWebOn = c.dcWebOn === true; $("setDcWebOn").checked = dcWebOn; dcwLast = ""; dcwLayout(); });
 
   // ---------- YouTube im Panel ----------
   let ytOn = false, ytSize = "m", ytLast = "", ytOffN = 0;

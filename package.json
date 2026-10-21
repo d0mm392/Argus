@@ -1,7 +1,6 @@
 {
   "name": "argus-desktop",
-  "license": "GPL-3.0-only",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {
@@ -105,6 +104,21 @@
       "artifactName": "Argus-${version}.AppImage",
       "executableName": "argus-desktop",
       "synopsis": "Argus Desktop-Widget"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon-mac.png",
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "artifactName": "Argus-${version}-mac-${arch}.zip"
     }
   },
   "homepage": "https://github.com/d0mm392/Argus"

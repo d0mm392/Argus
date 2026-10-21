@@ -99,7 +99,6 @@ const DEFAULTS = {
   discordOn: true, discordServers: "", // Discord: Server-IDs mit eingeschaltetem Widget
   discordVoiceOnly: true,  // Discord: nur Leute im Sprachkanal zeigen
   holeOn: false, holeCorner: "br", holeW: 360, holeH: 260, holeX: null, holeY: null, holeEdit: false, // Aussparung in einer Ecke, damit Discord-Popup und Co. nicht überdeckt werden
-  dcWebOn: false, // Discord (Web) als eigenes Fenster im Panel, Anmeldung macht der Nutzer selbst im Fenster
   friendsStill: true, // Freundeslisten starr (kein leichtes Schweben)
   notesPages: null, notesCur: "", // Notiz-Seiten [{id,name,folder,text}], aktuelle Seite
   miningOn: true, // Mining-Rubrik (Blöcke, Seite, Einstellungen, Abfragen) insgesamt ein/aus
@@ -827,7 +826,7 @@ ipcMain.handle("sensor-status", () => sensorState);
 ipcMain.on("sensor-setup", () => { config.sensors = true; saveConfig(); setupSensors(); });
 
 ipcMain.handle("game-info", (_e, name, appid) => require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })));
-ipcMain.handle("get-config", () => ({ aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, dcWebOn: config.dcWebOn, friendsStill: config.friendsStill, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine,
+ipcMain.handle("get-config", () => ({ aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, friendsStill: config.friendsStill, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine,
   autostart: config.autostart, backend: config.backend, ollamaModel: config.ollamaModel || localModel(), hasApiKey: !!config.anthropicApiKey,
   ballScale: config.ballScale, labelScale: config.labelScale, tempScale: config.tempScale, appScale: config.appScale, wakeWords: config.wakeWords, voiceOutput: config.voiceOutput, micOnStart: config.micOnStart, systemAlertsVoice: config.systemAlertsVoice, voice: voiceState, system: watch?.data.ts ? withIcons(watch.data) : null }));
 // Kurz-Lagebild für die KI, nur echte abgerufene Werte
@@ -1049,7 +1048,6 @@ function setExpanded(on, focus = true) {
   applyBounds(corner);
   sendUI("expanded", expanded);
   if (ytView && !expanded) { ytView.setVisible(false); ytShown = false; }
-  if (dcView && !expanded) { dcView.setVisible(false); dcShown = false; }
   if (expanded && focus) win.focus();
   applyTop();
 }
@@ -1179,7 +1177,7 @@ function buildTray() {
 let updState = { text: "", ready: false }, updTimer = null, updater = null;
 function updaterOk() { return app.isPackaged && process.platform === "win32" && fs.existsSync(path.join(process.resourcesPath, "app-update.yml")); }
 function setupUpdater() {
-  if (!updaterOk()) { updState.text = process.platform === "linux" ? "Unter Linux gibt es noch keine automatische Aktualisierung. Neue Versionen kommen als AppImage-Datei." : app.isPackaged ? "Updates gibt es nur in der installierten Version (Setup)." : ""; return; }
+  if (!updaterOk()) { updState.text = process.platform === "linux" ? "Unter Linux gibt es noch keine automatische Aktualisierung. Neue Versionen kommen als AppImage-Datei." : process.platform === "darwin" ? "Auf dem Mac gibt es noch keine automatische Aktualisierung (die App ist nicht signiert). Neue Versionen kommen als ZIP-Datei." : app.isPackaged ? "Updates gibt es nur in der installierten Version (Setup)." : ""; return; }
   try { updater = require("electron-updater").autoUpdater; } catch (e) { logError(e); return; }
   updater.autoDownload = true; updater.autoInstallOnAppQuit = true;
   updater.on("checking-for-update", () => { updState.text = "Suche nach Updates…"; });
@@ -1221,6 +1219,7 @@ function trayMenu() {
     { label: "Ein-/Ausblenden", click: toggleVisible },
     { label: "Fenster zurückholen (mittig, Standardgröße)", click: rescueWindow },
     { label: "Panel auf-/zuklappen  (Strg+Umschalt+J)", click: () => setExpanded(!expanded) },
+    { label: "Kugel ein-/ausblenden", click: () => alive() && win.webContents.send("ctx-action", { a: "tog", v: "ball" }) },
     { type: "separator" },
     localState.phase === "ready"
       ? { label: "Lokale KI: " + localModel(), enabled: false }
@@ -1256,25 +1255,47 @@ ipcMain.on("toggle-expanded", () => setExpanded(!expanded));
 // Rechtsklick ins Fenster: Menü mit Einstellungen und den wichtigsten Schaltern (geht auch, wenn die Kopfleiste nicht erreichbar ist)
 // Rechtsklick-Menü im Argus-Stil: eigenes kleines Fenster (auch neben der kleinen Kugel nutzbar). Die Einträge kommen als Menü-Vorlage
 // und werden hier in einfache Daten verwandelt; Aktionen laufen über die gemerkten click-Funktionen.
-let menuWin = null, menuClicks = new Map(), menuReady = null;
-function closeStyledMenu() { if (menuWin && !menuWin.isDestroyed()) menuWin.close(); menuWin = null; }
+let menuWin = null, menuClicks = new Map(), menuReady = null, subWin = null, subReady = null, menuSubs = new Map(), subOpen = 0, menuVars = {};
+function closeSubMenu() { subOpen = 0; if (subWin && !subWin.isDestroyed()) subWin.close(); subWin = null; subReady = null; }
+function closeStyledMenu() { closeSubMenu(); if (menuWin && !menuWin.isDestroyed()) menuWin.close(); menuWin = null; }
+// Untermenü als zweites, eigenes Fenster neben dem Hauptmenü (wie bei Windows-Menüs); y = Oberkante des Eintrags im Hauptmenü
+function openSubMenu(sid, y) {
+  if (!menuWin || menuWin.isDestroyed()) return;
+  if (sid === subOpen) return;
+  closeSubMenu(); const items = menuSubs.get(sid); if (!items) return;
+  subOpen = sid;
+  const mb = menuWin.getBounds(), wa = screen.getDisplayNearestPoint({ x: mb.x, y: mb.y }).workArea;
+  const sw = new BrowserWindow({ x: mb.x + mb.width - 6, y: mb.y + Math.round(y) - 6, width: 220, height: 60, frame: false, transparent: true, backgroundColor: "#00000000", hasShadow: false, resizable: false, skipTaskbar: true, show: false, alwaysOnTop: true, focusable: true, title: "Argus Untermenü",
+    webPreferences: { preload: path.join(__dirname, "preload-menu.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  subWin = sw; sw.setAlwaysOnTop(true, "screen-saver"); sw.setMenuBarVisibility?.(false);
+  sw.on("closed", () => { if (subWin === sw) { subWin = null; subOpen = 0; } });
+  sw.on("blur", () => setTimeout(() => { if (menuWin && !menuWin.isDestroyed() && !menuWin.isFocused() && !(subWin && !subWin.isDestroyed() && subWin.isFocused())) closeStyledMenu(); }, 120));
+  subReady = (cw, ch) => {
+    if (!sw || sw.isDestroyed()) return;
+    const W = Math.min(Math.max(170, cw), 340), H = Math.min(ch, wa.height - 16), b = menuWin.getBounds();
+    let x = b.x + b.width - 6; if (x + W > wa.x + wa.width - 4) x = Math.max(wa.x, b.x - W + 6); // kein Platz rechts: links daneben
+    const yy = Math.max(wa.y, Math.min(b.y + Math.round(y) - 6, wa.y + wa.height - H - 4));
+    sw.setBounds({ x, y: yy, width: W, height: H }); if (!sw.isVisible()) sw.showInactive();
+  };
+  sw.loadFile(path.join(__dirname, "app", "menu.html")).then(() => { if (!sw.isDestroyed()) sw.webContents.send("menu-show", { items, vars: menuVars, sub: true }); }).catch(() => closeSubMenu());
+}
 function showStyledMenu(t, vars, title) {
-  closeStyledMenu(); menuClicks = new Map(); let n = 0;
+  closeStyledMenu(); menuClicks = new Map(); menuSubs = new Map(); let n = 0, sn = 0;
   const roles = { cut: () => win.webContents.cut(), copy: () => win.webContents.copy(), paste: () => win.webContents.paste(), selectAll: () => win.webContents.selectAll() };
   const conv = (list) => list.filter((x) => x.visible !== false).map((x) => {
     if (x.type === "separator") return { type: "separator" };
     const o = { label: String(x.label || ""), checked: x.type === "checkbox" || x.type === "radio" ? !!x.checked : false, enabled: x.enabled !== false, danger: !!x.danger };
-    if (x.submenu) o.sub = conv(x.submenu); else { o.id = ++n; menuClicks.set(o.id, x.click || (x.role && roles[x.role]) || (() => {})); }
+    if (x.submenu) { o.sid = ++sn; menuSubs.set(o.sid, conv(x.submenu)); } else { o.id = ++n; menuClicks.set(o.id, x.click || (x.role && roles[x.role]) || (() => {})); }
     return o;
   });
   const okVars = {}; for (const [k, v] of Object.entries(vars && typeof vars === "object" ? vars : {})) if (/^--[a-z-]{2,14}$/.test(k) && typeof v === "string" && v.length < 200 && !/[;{}<>]|url\(/i.test(v)) okVars[k] = v;
-  vars = okVars;
+  vars = okVars; menuVars = okVars;
   const items = conv(t); if (title) items.unshift({ type: "title", label: String(title).slice(0, 60) });
   const pt = screen.getCursorScreenPoint(), disp = screen.getDisplayNearestPoint(pt), wa = disp.workArea;
   menuWin = new BrowserWindow({ x: pt.x, y: pt.y, width: 260, height: 80, frame: false, transparent: true, backgroundColor: "#00000000", hasShadow: false, resizable: false, skipTaskbar: true, show: false, alwaysOnTop: true, title: "Argus Menü",
     webPreferences: { preload: path.join(__dirname, "preload-menu.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   const w = menuWin; w.setAlwaysOnTop(true, "screen-saver"); w.setMenuBarVisibility?.(false);
-  w.on("blur", () => { if (menuWin === w) closeStyledMenu(); });
+  w.on("blur", () => setTimeout(() => { if (menuWin === w && !w.isDestroyed() && !w.isFocused() && !(subWin && !subWin.isDestroyed() && subWin.isFocused())) closeStyledMenu(); }, 120));
   w.on("closed", () => { if (menuWin === w) menuWin = null; });
   menuReady = (cw, ch) => { // an den Mauszeiger setzen, aber ganz auf dem Bildschirm
     if (!w || w.isDestroyed()) return;
@@ -1284,9 +1305,13 @@ function showStyledMenu(t, vars, title) {
   };
   w.loadFile(path.join(__dirname, "app", "menu.html")).then(() => { if (!w.isDestroyed()) w.webContents.send("menu-show", { items, vars }); }).catch(() => closeStyledMenu());
 }
-ipcMain.on("menu-size", (e, cw, ch) => { if (menuWin && e.sender === menuWin.webContents && Number.isFinite(cw) && Number.isFinite(ch)) menuReady?.(cw, ch); });
-ipcMain.on("menu-pick", (e, id) => { if (!menuWin || e.sender !== menuWin.webContents) return; const fn = menuClicks.get(id); closeStyledMenu(); try { fn?.(); } catch (err) { logError(err); } });
-ipcMain.on("menu-close", (e) => { if (menuWin && e.sender === menuWin.webContents) closeStyledMenu(); });
+ipcMain.on("menu-size", (e, cw, ch) => {
+  if (!Number.isFinite(cw) || !Number.isFinite(ch)) return;
+  if (menuWin && e.sender === menuWin.webContents) menuReady?.(cw, ch); else if (subWin && !subWin.isDestroyed() && e.sender === subWin.webContents) subReady?.(cw, ch);
+});
+ipcMain.on("menu-sub", (e, sid, y) => { if (!menuWin || e.sender !== menuWin.webContents) return; if (Number.isInteger(sid) && sid > 0 && Number.isFinite(y)) openSubMenu(sid, y); else closeSubMenu(); });
+ipcMain.on("menu-pick", (e, id) => { if (!menuWin || (e.sender !== menuWin.webContents && !(subWin && !subWin.isDestroyed() && e.sender === subWin.webContents))) return; const fn = menuClicks.get(id); closeStyledMenu(); try { fn?.(); } catch (err) { logError(err); } });
+ipcMain.on("menu-close", (e) => { if ((menuWin && e.sender === menuWin.webContents) || (subWin && !subWin.isDestroyed() && e.sender === subWin.webContents)) closeStyledMenu(); });
 ipcMain.on("ctx-menu", (e, s = {}) => {
   if (!alive() || e.sender !== win.webContents) return;
   const act = (a, v, open) => () => { if (open && !expanded) { setExpanded(true); setTimeout(() => alive() && win.webContents.send("ctx-action", { a, v }), 450); } else win.webContents.send("ctx-action", { a, v }); };
@@ -1296,12 +1321,16 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
   const tg = s.target, fl = s.flags || {};
   if (tg?.kind === "ball") t.push({ label: fl.ball === false ? "Kugel einblenden" : "Kugel entfernen", danger: fl.ball !== false, click: act("tog", "ball") }, { type: "separator" });
   else if (tg?.kind === "pill") t.push({ label: "Statusanzeige ausblenden", danger: true, click: act("tog", "status") }, { type: "separator" });
+  else if (tg?.kind === "who") t.push({ label: "„Claude · Lokal“ ausblenden", danger: true, click: act("tog", "ai") }, { type: "separator" });
+  else if (tg?.kind === "strata") t.push({ label: "Strata-Knopf ausblenden", danger: true, click: act("tog", "strata") }, { type: "separator" });
   else if (tg?.kind === "temp" && typeof tg.key === "string") t.push({ label: `Anzeige „${String(tg.name || "").slice(0, 30)}“ ausblenden`, danger: true, click: act("hidetemp", tg.key) }, { type: "separator" });
   else if (tg?.kind === "blk" && typeof tg.id === "string") t.push({ label: `„${String(tg.name || "").slice(0, 30)}“ ausblenden`, danger: true, click: act("hideblk", tg.id) }, { label: "Nach vorn holen", click: act("blkfront", tg.id) }, { label: "Nach hinten legen", click: act("blkback", tg.id) }, { type: "separator" });
   t.push({ label: "Einstellungen", click: act("settings", null, true) }, { label: expanded ? "Zur Kugel verkleinern" : "Panel öffnen", click: () => setExpanded(!expanded) });
   t.push({ label: "Anzeigen", submenu: [
     { label: "Kugel", type: "checkbox", checked: fl.ball !== false, click: act("tog", "ball") },
     { label: "Statusanzeige (Leerlauf …)", type: "checkbox", checked: fl.status !== false, click: act("tog", "status") },
+    { label: "„Claude · Lokal“", type: "checkbox", checked: fl.ai !== false, click: act("tog", "ai") },
+    { label: "Strata-Knopf", type: "checkbox", checked: fl.strata !== false, click: act("tog", "strata") },
     { label: "Steam-Freunde", type: "checkbox", checked: !!fl.steam, click: act("tog", "steam") },
     { label: "Discord-Freunde", type: "checkbox", checked: !!fl.discord, click: act("tog", "discord") },
     { label: "Freundesliste insgesamt", type: "checkbox", checked: fl.friends !== false, click: act("tog", "friends") },
@@ -1312,7 +1341,7 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
     const profs = Array.isArray(s.profs) ? s.profs.filter((n) => typeof n === "string").slice(0, 10) : [];
     t.push({ label: "Profil laden", enabled: profs.length > 0, submenu: profs.length ? profs.map((n) => ({ label: n, click: act("profile", n) })) : [{ label: "Noch kein Profil gespeichert", enabled: false }] });
     t.push({ label: "Anordnung zurücksetzen", click: act("reset") });
-    t.push({ label: "Aussparung", submenu: [{ label: "Aktiv", type: "checkbox", checked: !!config.holeOn, click: act("holetoggle") }, { label: "Aussparung neu anordnen …", click: act("holeplace") }] });
+    if (process.platform !== "darwin") t.push({ label: "Aussparung", submenu: [{ label: "Aktiv", type: "checkbox", checked: !!config.holeOn, click: act("holetoggle") }, { label: "Aussparung neu anordnen …", click: act("holeplace") }] });
     // mit × ausgeblendete Fenster zurückholen
     const hid = Array.isArray(s.hidden) ? s.hidden.filter((h) => Array.isArray(h) && typeof h[0] === "string" && typeof h[1] === "string").slice(0, 20) : [];
     if (hid.length || s.media) t.push({ label: "Ausgeblendete Fenster", submenu: [...hid.map(([id, n]) => ({ label: n, click: act("unhide", id) })), ...(s.media ? [{ label: "Musik-Player", click: act("media") }] : []), ...(hid.length > 1 ? [{ type: "separator" }, { label: "Alle einblenden", click: act("unhide", "*") }] : [])] });
@@ -1392,7 +1421,7 @@ ipcMain.on("win-mode", (_e, mode) => {
 ipcMain.on("quit", () => app.quit());
 // Einstellungen aus der Oberfläche speichern (nur bekannte Schlüssel)
 const SETTABLE = { aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceOutput: "boolean", micOnStart: "boolean",
-  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", dcWebOn: "boolean", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
+  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 ipcMain.handle("set-config", (_e, patch) => {
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -1416,7 +1445,6 @@ ipcMain.handle("set-config", (_e, patch) => {
   if (("themeHue" in patch || "winColor" in patch) && newsAlive()) pushMarket(); // Lagebild färbt sich mit
   if ("ytVideoOnly" in patch) { if (ytView) ytTrackNow(ytView.webContents); if (ytAlive()) ytTrackNow(ytWin.webContents); }
   if ("ytNoAds" in patch) { const u = ytView?.webContents.getURL(); if (ytView) { ytEmbedClose(); ytEmbedShow("").then(() => { if (u) ytView?.webContents.loadURL(u); }); } if (ytAlive()) ytWin.close(); }
-  if ("dcWebOn" in patch && config.dcWebOn !== true) dcViewClose();
   if (["holeOn", "holeW", "holeH", "holeCorner", "holeX", "holeY", "holeEdit"].some((k) => k in patch)) { lastShape = "x"; applyShape(); }
   if ("ytAdblock" in patch) { if (config.ytAdblock) ytAdblock(); else if (ytBlocker) { try { ytBlocker.disableBlockingInSession(session.fromPartition("persist:youtube")); } catch {} ytBlocker = null; } }
   if ("sensors" in patch) { if (patch.sensors) startSensors(); else { sensorState = "aus"; sensorPush(); execFile("schtasks", ["/End", "/TN", "Jarvis Sensoren"], { windowsHide: true }, () => {}); } }
@@ -1988,8 +2016,12 @@ ipcMain.handle("crash-get", (_e, manual) => {
   else if (config.crashReport === false) return null;
   return crash.build({ version: require("./package.json").version, backend: config.backend, gpu: watch?.data?.gpuName || "" });
 });
-ipcMain.handle("crash-send", (_e, title, text) => { shell.openExternal(crash.issueUrl(String(title || "Fehlerbericht"), String(text || ""))); crash.clear(); return true; });
-ipcMain.handle("crash-dismiss", (_e, ignore) => { crash.clear(!!ignore); return true; });
+ipcMain.handle("crash-send", (_e, title, text) => { crash.archive(title, text, "gesendet"); shell.openExternal(crash.issueUrl(String(title || "Fehlerbericht"), String(text || ""))); crash.clear(); return true; });
+ipcMain.handle("crash-dismiss", (_e, ignore, title, text) => { if (typeof text === "string" && text.trim()) crash.archive(title, text, "nicht gesendet"); crash.clear(!!ignore); return true; });
+ipcMain.handle("crash-archive", (_e, title, text, state) => crash.archive(String(title || ""), String(text || ""), String(state || "")));
+ipcMain.handle("crash-list", () => crash.history());
+ipcMain.handle("crash-view", (_e, id) => crash.view(String(id || "")));
+ipcMain.handle("crash-del", (_e, id) => crash.remove(String(id || "")));
 
 // ---------- Eigener Discord-Bot: Kamera, Stream, Stumm/Taub, private Kanäle ----------
 let botSnap = { status: "aus", guilds: [] }, botT = null;
@@ -2191,40 +2223,6 @@ function openYoutube(query) {
   if (config.ytOpen !== "win") { config.ytOpen = "win"; saveConfig(); } // beim nächsten Start wieder öffnen
   ytWin.loadURL(url).catch((e) => logError(e));
 }
-// Discord (Web) im Panel: ein ganz normaler Browser-Ausschnitt mit eigener Anmeldung des Nutzers. Argus liest weder Token noch Nachrichten mit.
-let dcView = null, dcRect = null, dcShown = null;
-const DC_HOST = /(^|\.)(discord\.com|discordapp\.com|discord\.gg|discordapp\.net|discord\.media)$/i;
-function dcViewMake() {
-  if (dcView) return dcView;
-  const part = "persist:discordweb", ses = session.fromPartition(part);
-  const okHost = (u) => { try { return DC_HOST.test(new URL(u).hostname); } catch { return false; } };
-  ses.setPermissionRequestHandler((_wc, perm, cb, d) => cb(["media", "fullscreen", "clipboard-sanitized-write", "notifications"].includes(perm) && okHost(d?.requestingUrl || "")));
-  ses.setPermissionCheckHandler((_wc, perm, origin) => ["media", "fullscreen", "clipboard-sanitized-write", "notifications"].includes(perm) && okHost(origin || ""));
-  dcView = new WebContentsView({ webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false, sandbox: true } }); dcShown = null;
-  try { dcView.setBackgroundColor("#1e1f22"); } catch {}
-  const wc = dcView.webContents;
-  wc.setUserAgent(wc.getUserAgent().replace(/\s(Electron|Argus[^\s]*)\/\S+/g, ""));
-  wc.setWindowOpenHandler(({ url }) => { if (okHost(url)) wc.loadURL(url).catch(() => {}); else if (/^https:/i.test(url)) shell.openExternal(url); return { action: "deny" }; });
-  wc.on("will-navigate", (e, u) => { if (!okHost(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
-  win.contentView.addChildView(dcView);
-  wc.loadURL("https://discord.com/app").catch((e) => logError(e));
-  return dcView;
-}
-function dcViewClose() {
-  if (!dcView) return;
-  try { win?.contentView.removeChildView(dcView); } catch {}
-  try { dcView.webContents.close(); } catch {}
-  dcView = null; dcRect = null; dcShown = null;
-}
-ipcMain.on("dcweb-rect", (_e, r) => {
-  if (config.dcWebOn !== true || config.gfxSafe || !alive()) { dcViewClose(); return; }
-  dcRect = r && [r.x, r.y, r.width, r.height].every(Number.isFinite) && r.width > 120 && r.height > 90 ? r : null;
-  if (!dcRect || !expanded) { if (dcView && dcShown !== false) { dcView.setVisible(false); dcShown = false; } return; }
-  const v = dcViewMake(), nb = { x: Math.round(dcRect.x), y: Math.round(dcRect.y), width: Math.round(dcRect.width), height: Math.round(dcRect.height) }, ob = v.getBounds();
-  if (nb.x !== ob.x || nb.y !== ob.y || nb.width !== ob.width || nb.height !== ob.height) v.setBounds(nb);
-  if (!dcShown) { v.setVisible(true); dcShown = true; }
-});
-ipcMain.on("dcweb-reload", () => { try { dcView?.webContents.loadURL("https://discord.com/app"); } catch {} });
 // YouTube im Panel: eigene Ansicht über der Fläche, die die Oberfläche dafür freihält (unten links über der Statuszeile)
 let ytView = null, ytRect = null, ytShown = null;
 function ytViewMake() {

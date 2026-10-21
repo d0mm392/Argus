@@ -20,21 +20,25 @@
 </style></head>
 <body><div id="m"></div>
 <script>
-  const m = document.getElementById("m");
+  const m = document.getElementById("m"); let isSub = false;
   const mk = (it, host) => {
     if (it.type === "separator") { const s = document.createElement("div"); s.className = "sep"; host.append(s); return; }
     if (it.type === "title") { const t = document.createElement("div"); t.className = "t"; t.textContent = it.label; host.append(t); return; }
     const b = document.createElement("button"); b.type = "button"; if (it.danger) b.className = "danger"; if (it.enabled === false) b.disabled = true;
     const ck = document.createElement("span"); ck.className = "ck"; ck.textContent = it.checked ? "✓" : ""; const lb = document.createElement("span"); lb.textContent = it.label; b.append(ck, lb);
-    if (it.sub) {
+    if (it.sid) {
       const ar = document.createElement("span"); ar.className = "ar"; ar.textContent = "▶"; b.append(ar);
-      const box = document.createElement("div"); box.className = "sub"; box.hidden = true; for (const s of it.sub) mk(s, box);
-      b.addEventListener("click", () => { box.hidden = !box.hidden; b.classList.toggle("open", !box.hidden); report(); }); host.append(b, box);
-    } else b.addEventListener("click", () => { if (!b.disabled) window.menu.pick(it.id); });
+      let t = 0; const open = () => { clearTimeout(t); window.menu.sub(it.sid, b.getBoundingClientRect().top); };
+      b.addEventListener("pointerenter", () => { clearTimeout(t); t = setTimeout(open, 90); }); b.addEventListener("click", open);
+    } else {
+      b.addEventListener("pointerenter", () => { if (!isSub) window.menu.sub(0, 0); });
+      b.addEventListener("click", () => { if (!b.disabled) window.menu.pick(it.id); });
+    }
     host.append(b);
   };
   const report = () => requestAnimationFrame(() => window.menu.size(Math.ceil(m.scrollWidth) + 14, Math.ceil(m.scrollHeight) + 14));
-  window.menu.onShow(({ items, vars }) => {
+  window.menu.onShow(({ items, vars, sub }) => {
+    isSub = !!sub;
     for (const [k, v] of Object.entries(vars || {})) document.body.style.setProperty(k, v);
     m.replaceChildren(); for (const it of items) mk(it, m); report();
   });

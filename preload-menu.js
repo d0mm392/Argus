@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("menu", {
   onShow: (fn) => ipcRenderer.on("menu-show", (_e, d) => fn(d)),
   size: (w, h) => ipcRenderer.send("menu-size", w, h),
+  sub: (sid, y) => ipcRenderer.send("menu-sub", sid, y),
   pick: (id) => ipcRenderer.send("menu-pick", id),
   close: () => ipcRenderer.send("menu-close"),
 });
