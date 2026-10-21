@@ -48,7 +48,7 @@
   applyBtn();
   const applyShimmer = (on) => { document.body.classList.toggle("no-shimmer", on === false); $("setShimmer").checked = on !== false; };
   $("setShimmer").addEventListener("change", (e) => { applyShimmer(e.target.checked); window.jarvis.setConfig({ loadShimmer: e.target.checked }); });
-  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); applyShimmer(c.loadShimmer); $("setYtAlpha").value = c.ytAlpha ?? 100; $("setYtAlpha").dispatchEvent(new Event("input")); markPalette(c.palette || ""); syncCustomColors(); });
+  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); applyShimmer(c.loadShimmer); $("setYtAlpha").value = c.ytAlpha ?? 100; $("setYtAlpha").dispatchEvent(new Event("input")); $("setYtFeather").value = c.ytFeather ?? 0; $("setYtFeather").dispatchEvent(new Event("input")); markPalette(c.palette || ""); syncCustomColors(); });
 
   // ---------- Messwerte anklicken: Verlauf der letzten 30 Minuten ----------
   const SPARK_N = 360;
@@ -107,3 +107,4 @@
 
   // ---------- YouTube-Transparenz ----------
   $("setYtAlpha").addEventListener("change", (e) => window.jarvis.setConfig({ ytAlpha: +e.target.value }));
+  $("setYtFeather").addEventListener("change", (e) => window.jarvis.setConfig({ ytFeather: +e.target.value }));

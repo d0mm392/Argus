@@ -99,4 +99,6 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-OPT-8 mindestens 9 Button-Formen und 17 Materialien zur Auswahl", nv[0] >= 9 && nv[1] >= 17, nv);
   const vg = await ev(`(async()=>{ const l=document.getElementById('setBtnLook'); l.value='verlauf'; l.dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,300)); const t=document.querySelector('.temp:not(.off)'); const cs=getComputedStyle(t); const a=cs.backgroundImage; t.style.setProperty('--h','10'); await new Promise(r=>setTimeout(r,1500)); const b=getComputedStyle(t).backgroundImage; t.style.setProperty('--h','130'); await new Promise(r=>setTimeout(r,1500)); const c=getComputedStyle(t).backgroundImage; return [a.includes('gradient'), b!==c]; })()`);
   check("R-OPT-9 Farbverlauf: Farbe der Anzeige folgt dem Messwert (heiß ≠ kühl)", vg[0] === true && vg[1] === true, vg);
+  await ev(`(()=>{const e=document.getElementById('setYtFeather'); e.value=24; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  check("R-OPT-10 YouTube: weiche Ränder werden gespeichert (0–80 px)", (await cfg()).ytFeather === 24, (await cfg()).ytFeather);
 });
