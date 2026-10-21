@@ -1261,6 +1261,8 @@ async function createWindow(port) {
   win.on("move", () => { followDock(); if (config.holeFollow) applyShape(); }); win.on("resize", () => { followDock(); applyShape(); });
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
+  // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
+  win.on("show", () => { lastShape = "x"; applyShape(); setTimeout(() => { lastShape = "x"; applyShape(); }, 250); });
   win.on("restore", () => { if (!expanded || !win.isVisible()) setExpanded(true); });
   win.on("closed", () => { stopAnim(); hideMini(); clearInterval(moveTimer); win = null; });
   // Oberfläche abgestürzt: für den Fehlerbericht merken und neu laden
