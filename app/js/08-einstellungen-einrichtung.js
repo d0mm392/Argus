@@ -233,7 +233,8 @@
   $("setSteamOn").addEventListener("change", (e) => window.jarvis.setConfig({ steamOn: e.target.checked }));
   $("setDiscordOn").addEventListener("change", (e) => window.jarvis.setConfig({ discordOn: e.target.checked }));
   $("setDcVoice").addEventListener("change", (e) => { dcVoiceOnly = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordVoiceOnly: dcVoiceOnly }); });
-  $("setDcName").addEventListener("change", (e) => { myDc = normDc(e.target.value); friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordName: e.target.value.trim() }); });
+  $("setDcName").addEventListener("change", (e) => { myDc = normDc(e.target.value); friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordName: e.target.value.trim(), discordAuto: false }); });
+  window.jarvis.onDiscordSelf?.((me) => { myDc = normDc(me.name); $("setDcName").value = me.name; friendsSig = ""; buildFriends(); });
   // Zustand des eigenen Bots, mit Einladungslink sobald er verbunden ist
   function setBotStatus() {
     const el = $("dcBotState"); if (!el) return;

@@ -141,10 +141,17 @@
   $("shapePick").addEventListener("mouseleave", () => { if (shapePreview !== null) { shape = shapePreview; shapePreview = null; resize(); } });
   const RING_ICONS = { form: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 1l10 5.5" stroke-width="2.5"/>', kreis: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8" stroke-width="2.5"/>',
     balken: '<path d="M6 20V10M12 20V5M18 20v-7" stroke-width="3" stroke-linecap="round"/>', tacho: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/>',
-    verlauf: '<path d="M3 18l4-6 4 3 4-8 6 6"/><path d="M3 21h18" opacity=".5"/>', puls: '<circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>' };
+    verlauf: '<path d="M3 18l4-6 4 3 4-8 6 6"/><path d="M3 21h18" opacity=".5"/>', puls: '<circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>',
+    orbit: '<ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(-20 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="9" r="1.6" fill="currentColor"/>',
+    saeulen: '<path d="M3 17l3-1.5 3 1.5-3 1.5zM6 17V10l3 1.5V17M3 17V10l3-1.5 3 1.5"/><path d="M10 19l3-1.5 3 1.5-3 1.5zM13 19V6l3 1.5V19M10 19V6l3-1.5L16 6"/><path d="M17 17l2.5-1.2 2.5 1.2-2.5 1.2zM19.5 17v-5l2.5 1.2V17M17 17v-5l2.5-1.2L22 12"/>',
+    kugeln: '<circle cx="7" cy="15" r="3.5"/><circle cx="16" cy="9" r="4.5"/><circle cx="17" cy="19" r="2.5"/><circle cx="15" cy="7.5" r="1" fill="currentColor"/>',
+    segmente: '<path d="M4 14h3M9 14h3M14 14h3M19 14h2M4 9h3M9 9h3M14 9h3M4 19h3M9 19h3" stroke-width="3" stroke-linecap="butt"/>',
+    radar: '<path d="M12 3l8 6-3 10H7L4 9z"/><path d="M12 8l4 3-1.5 5h-5L8 11z"/><path d="M12 3v18M4 9l16 10M20 9L4 19" opacity=".4"/>',
+    zahlen: '<path d="M5 8l2-2v12M11 8a3 3 0 0 1 6 0c0 3-6 6-6 10h6" stroke-linecap="round" stroke-linejoin="round"/>' };
+  const RING_FALLBACK = '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>';
   $("ringPick").replaceChildren(...RING_STYLES.map(([v, l]) => {
     const b = document.createElement("button"); b.type = "button"; b.role = "radio"; b.dataset.v = v;
-    b.innerHTML = `<svg viewBox="0 0 24 24">${RING_ICONS[v]}</svg><span></span>`; b.lastChild.textContent = l;
+    b.innerHTML = `<svg viewBox="0 0 24 24">${RING_ICONS[v] || RING_FALLBACK}</svg><span></span>`; b.lastChild.textContent = l;
     b.addEventListener("mouseenter", () => { ringPreview = v; });
     b.addEventListener("click", () => { ringPreview = null; viz = { ...viz, ringStyle: v, rings: true }; markRing(); window.jarvis.setConfig({ viz }); const cb = document.querySelector('[data-viz="rings"]'); if (cb) cb.checked = true; });
     return b;

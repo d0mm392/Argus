@@ -103,6 +103,7 @@ const DEFAULTS = {
   notesPages: null, notesCur: "", // Notiz-Seiten [{id,name,folder,text}], aktuelle Seite
   miningOn: true, // Mining-Rubrik (Blöcke, Seite, Einstellungen, Abfragen) insgesamt ein/aus
   dcJoinBot: true, // „Beitreten“ in der Freundesliste verschiebt per Bot, statt Discord zu öffnen
+  discordAuto: true, discordUser: "", // Name automatisch aus der angemeldeten Discord-App lesen
   discordName: "",  // eigener Name auf den Servern, damit Argus erkennt, in welchem Sprachkanal man sitzt
   strataOn: false, strataDir: "", strataArgs: "--no-browser", strataUrl: "", // Strata (große lokale KI) per Knopf; Ordner leer = automatisch suchen
   foremanOn: false, fmEvOn: true, fmView: "blaettern", look3d: false, foremanClient: "", foremanKey: "", foremanAccounts: [], foremanPx: {}, // Farm-Daten aus Foreman, mehrere Konten [{name, client, key}] (Schlüssel nur lokal)
@@ -1086,7 +1087,9 @@ function fitOnScreen(p) {
 }
 function rescueWindow() { // Tray: „Fenster zurückholen“
   if (!alive()) return;
-  config.panelBox = null; winMode = "normal"; saveConfig();
+  config.panelBox = null; config.panelW = 0; config.panelH = 0; winMode = "normal";
+  if (config.holeOn || config.holeFollow) { config.holeOn = false; config.holeFollow = false; try { followStop(); applyShape(); } catch {} } // eine verirrte Aussparung kann das Fenster klein wirken lassen
+  saveConfig();
   if (!win.isVisible()) win.show();
   setExpanded(true); win.focus();
 }
@@ -1512,7 +1515,7 @@ ipcMain.on("win-mode", (_e, mode) => {
 ipcMain.on("quit", () => app.quit());
 // Einstellungen aus der Oberfläche speichern (nur bekannte Schlüssel)
 const SETTABLE = { aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceOutput: "boolean", micOnStart: "boolean",
-  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeFollow: "boolean", holeApps: "string", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
+  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeFollow: "boolean", holeApps: "string", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 ipcMain.handle("set-config", (_e, patch) => {
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -1591,6 +1594,14 @@ ipcMain.on("open-changelog", () => {
   shell.openPath(f);
 });
 let prevAction = "";
+// Laufendes Programm in den Vordergrund holen (statt es noch einmal zu starten); false = kein Fenster gefunden
+ipcMain.handle("focus-app", (_e, key) => new Promise((resolve) => {
+  if (process.platform !== "win32" || !/^[\w .-]{1,60}$/.test(String(key || ""))) return resolve(false);
+  const ps = "Add-Type 'using System;using System.Runtime.InteropServices;public class AW{[DllImport(\"user32.dll\")]public static extern bool ShowWindow(IntPtr h,int c);[DllImport(\"user32.dll\")]public static extern bool SetForegroundWindow(IntPtr h);[DllImport(\"user32.dll\")]public static extern bool IsIconic(IntPtr h);}';" +
+    "$p = Get-Process -Name '" + String(key) + "' -ErrorAction SilentlyContinue | ? { $_.MainWindowHandle -ne 0 } | select -First 1;" +
+    "if (-not $p) { 'none'; exit }; $h = $p.MainWindowHandle; if ([AW]::IsIconic($h)) { [AW]::ShowWindow($h, 9) | Out-Null }; [AW]::SetForegroundWindow($h) | Out-Null; 'ok'";
+  execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { timeout: 8000, windowsHide: true }, (err, out) => resolve(!err && /ok/.test(String(out))));
+}));
 ipcMain.handle("action", async (_e, text) => { try { const prev = prevAction; prevAction = text; const self = selfimprove.parse(text, prev); if (self) return handleSelf(self);
   const mem = memory.parse(text); if (mem) { const r = memory.run(mem); remember(text, r, "Argus"); return r; }
   const did = await actions.run(text); if (did) remember(text, did, "Argus"); return did; } catch (e) { return "Das hat nicht geklappt: " + (e.message || e); } });
@@ -2122,12 +2133,23 @@ ipcMain.handle("crash-view", (_e, id) => crash.view(String(id || "")));
 ipcMain.handle("crash-del", (_e, id) => crash.remove(String(id || "")));
 
 // ---------- Eigener Discord-Bot: Kamera, Stream, Stumm/Taub, private Kanäle ----------
-let botSnap = { status: "aus", guilds: [] }, botT = null;
+let botSnap = { status: "aus", guilds: [] }, botT = null, selfTriedFor = "";
+// Eigenen Discord-Namen automatisch erkennen (angemeldete Discord-App auf diesem PC); schlägt es fehl, bleibt der Name aus den Einstellungen
+async function detectDiscordSelf() {
+  const id = dcbot.appId(); selfTriedFor = id;
+  if (config.discordAuto === false) return;
+  let me = null; try { me = await require("./discord-self").detectSelf(id); } catch {}
+  if (!me) { selfTriedFor = ""; return; }
+  if (normName(config.discordName) === normName(me.name) && config.discordUser === me.username) return;
+  config.discordName = me.name; config.discordUser = me.username; saveConfig();
+  if (alive()) win.webContents.send("discord-self", me);
+}
 function startDcBot() {
   dcbot.start(config.discordOn !== false ? config.dcBotToken : "", (snap) => {
     botSnap = snap; clearTimeout(botT);
     // kurz sammeln, beim Verbinden kommen viele Ereignisse auf einmal
     botT = setTimeout(() => { if (alive()) win.webContents.send("voice-bot", botSnap); skSync(); updateOverlay(); }, 250);
+    if (dcbot.appId() && dcbot.appId() !== selfTriedFor) detectDiscordSelf();
   });
 }
 

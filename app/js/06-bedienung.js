@@ -325,7 +325,7 @@
       let o = appEls.get(a.key);
       if (!o) {
         const el = document.createElement("button"); el.type = "button"; el.className = "appf gone"; el.dataset.name = a.name; el.setAttribute("aria-label", a.name + " öffnen");
-        el.addEventListener("click", (e) => { e.stopPropagation(); window.jarvis.action("öffne " + a.name); });
+        el.addEventListener("click", (e) => { e.stopPropagation(); window.jarvis.focusApp(a.key).then((ok) => { if (!ok) window.jarvis.action("öffne " + a.name); }); });
         makeDraggable(el, () => "app:" + a.key); el.dataset.pk = "app:" + a.key;
         lblLayer.append(el);
         o = { el, ph: Math.random() * 6.28, icon: null, x: null, y: null };

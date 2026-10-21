@@ -5,7 +5,7 @@ const WebSocket = require("ws");
 const GATEWAY = process.env.JARVIS_DC_GATEWAY || "wss://gateway.discord.gg/?v=10&encoding=json"; // Umgebungsvariable nur für Tests
 const INTENTS = 1 | 128; // GUILDS + GUILD_VOICE_STATES, beide ohne Freischaltung im Portal
 
-let ws = null, token = "", hb = null, seq = null, retry = 0, retryT = null, onChange = () => {}, status = "aus";
+let appId = "", ws = null, token = "", hb = null, seq = null, retry = 0, retryT = null, onChange = () => {}, status = "aus";
 const guilds = new Map(); // id -> { id, name, channels: Map(id -> {name, pos, parent}), voice: Map(userId -> state) }
 
 function avatarUrl(u, gid, member) {
@@ -72,7 +72,7 @@ function connect() {
 }
 
 function dispatch(t, d) {
-  if (t === "READY") { retry = 0; status = "verbunden als " + (d.user?.username || "Bot"); guilds.clear(); changed(); }
+  if (t === "READY") { appId = d.application?.id || d.user?.id || ""; retry = 0; status = "verbunden als " + (d.user?.username || "Bot"); guilds.clear(); changed(); }
   else if (t === "GUILD_CREATE") {
     if (d.unavailable) return;
     const g = { id: d.id, name: d.name, channels: new Map(), voice: new Map() };
@@ -118,4 +118,4 @@ async function move(gid, cid, myName, norm) {
   } catch (e) { return { ok: false, reason: "Netzwerkfehler" }; }
 }
 
-module.exports = { start, stop, snapshot, move };
+module.exports = { start, stop, snapshot, move, appId: () => appId };
