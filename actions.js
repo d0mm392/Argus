@@ -182,6 +182,13 @@ function parse(raw) {
   if ((m = /^mach(?:e)?\s+(?:mal\s+)?(.+?)\s+(?:auf|an)$/i.exec(t))) t = "öffne " + m[1];
   // Füllwörter vorn weg: "Gut, finde mir …", "Und dann such einfach …"
   t = t.replace(/^(?:(?:gut|ok|okay|und|dann|also|jetzt|nun|so|ja|na|hey|mal|einfach|du)[\s,]+)+/i, "").trim();
+  // Twitch wie YouTube: "Öffne Twitch", "Twitch shroud"
+  if (/\btwitch\b/i.test(t) && !/\.(?:com|de|tv)\b/i.test(t)) {
+    const q = t.replace(/\b(?:auf|in|bei|über|im|mit)\s+(?:dem\s+)?twitch(?:[\s-]*fenster)?\b/gi, " ").replace(/\btwitch(?:[\s-]*fenster)?\b/gi, " ")
+      .replace(/^\s*(?:öffne|oeffne|starte|start|zeig(?:e)?(?:\s+mir)?|mach|such(?:e)?|spiel(?:e)?|schau(?:e)?|geh(?:e)?\s+(?:auf|zu))\w*\s*/i, " ").replace(/^\s*(?:mir\s+)?(?:mal\s+)?(?:den\s+)?(?:kanal\s+)?/i, "")
+      .replace(/\s+(?:auf|an|ab|nach)\s*$/i, "").replace(/\s+/g, " ").trim();
+    return { kind: "twitch", q };
+  }
   // YouTube läuft im eigenen Argus-Fenster: "Öffne YouTube", "Spiel Lofi auf YouTube", "YouTube Antminer S21 Review"
   if (/\byou\s?tube\b/i.test(t) && !/\.(?:com|de)\b/i.test(t)) {
     const q = t.replace(/\b(?:auf|in|bei|über|im|mit)\s+(?:dem\s+)?you\s?tube(?:[\s-]*fenster)?\b/gi, " ").replace(/\byou\s?tube(?:[\s-]*fenster)?\b/gi, " ")
@@ -222,6 +229,7 @@ function parse(raw) {
 async function run(text) {
   const c = parse(text);
   if (!c) return null;
+  if (c.kind === "twitch") { if (!hooks.twitch) return null; hooks.twitch(c.q); return c.q ? `Ich öffne den Twitch-Kanal ${c.q}.` : "Twitch ist offen."; }
   if (c.kind === "youtube") { if (!hooks.youtube) return null; hooks.youtube(c.q); return c.q ? `Ich suche auf YouTube nach ${c.q}.` : "YouTube ist offen."; }
   if (c.kind === "search") { await shell.openExternal("https://www.google.com/search?q=" + encodeURIComponent(c.q)); return `Ich suche im Internet nach ${c.q}.`; }
   if (c.kind === "url") {

@@ -122,6 +122,10 @@
     stern: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/>', herz: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
     atom: '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9" ry="3.5"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(120 12 12)"/>',
     ikosaeder: '<path d="M12 2l8 5v10l-8 5-8-5V7z"/><path d="M12 2v20M4 7l16 10M20 7L4 17"/>',
+    trapez: '<path d="M3 18l4-12h10l4 12z"/>', parallelogramm: '<path d="M3 18l4-12h14l-4 12z"/>', oktagon: '<path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/>', diamant: '<path d="M7 4h10l5 5-10 12L2 9z M2 9h20M9 4l3 5 3-5M12 9l-3-5"/>', tornado: '<path d="M3 5h18M5 9h14M8 13h8M10 17h4M12 21v0"/>',
+    oktaeder: '<path d="M12 2l8 10-8 10-8-10z M4 12h16M12 2v20"/>', dodekaeder: '<path d="M12 2l7 5-2.5 8h-9L5 7z M12 2v5M19 7l-2.5 8M5 7l2.5 8M7.5 15L12 22l4.5-7"/>',
+    zylinder: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/>', kegel: '<path d="M12 3l8 15c0 1.7-3.6 3-8 3s-8-1.3-8-3z"/><path d="M4 18c0 1.7 3.6 3 8 3"/>',
+    prisma: '<path d="M12 3l8 5v9l-8 5-8-5V8z M12 12v10M4 8l8 4 8-4"/>', spirale: '<path d="M12 21c-5 0-8-2-8-4s3-3 8-3 8-1 8-3-3-3-8-3-7 0-7-2 3-3 7-3"/>',
     stella: '<path d="M12 3l8 14H4z"/><path d="M12 21L4 7h16z"/>',
     knoten: '<path d="M12 4c4 0 8 3 7 7s-6 6-9 9-7 0-6-5 6-5 9-9 2-2-1-2"/><circle cx="12" cy="12" r="2.5"/>',
     tropfen: '<path d="M12 2c2 4 7 8 7 13a7 7 0 0 1-14 0c0-5 5-9 7-13z"/>',
@@ -155,7 +159,7 @@
   // Skins: fertige Kombinationen aus Form, Grundfarbe, Fensterfarbe, Glühen und Drehtempo
   const SKINS = [
     ["Bitcoin", "muenze", 38, ["Braun", 28, 35, 8], 1.5, 0.8], ["Atom", "atom", 188, ["Petrol", 190, 50, 7], 1.3, 1.6], ["Sternenstaub", "stern", 275, ["Lila", 270, 45, 8], 1.4, 0.7],
-    ["Herzschlag", "herz", 350, ["Bordeaux", 350, 45, 8], 1.2, 0.6], ["Pharao", "pyramide", 45, ["Schwarz", 0, 0, 3], 1.1, 0.5], ["Matrix", "wuerfel", 135, ["Schwarz", 0, 0, 3], 1.2, 1.2],
+    ["Herzschlag", "kugel", 350, ["Bordeaux", 350, 45, 8], 1.2, 0.6], ["Pharao", "pyramide", 45, ["Schwarz", 0, 0, 3], 1.1, 0.5], ["Matrix", "wuerfel", 135, ["Schwarz", 0, 0, 3], 1.2, 1.2],
     ["Venom", "symbiont", 205, ["Schwarz", 0, 0, 3], 1, 1], ["Nebula", "galaxie", 300, ["Nachtblau", 219, 54, 5], 1.6, 1.4], ["Eis", "kristall", 195, ["Graphit", 220, 8, 11], 1, 1], ["Klassik", "kugel", 205, ["Nachtblau", 219, 54, 5], 1, 1]];
   function applySkin([name, sh, hue, win, glow, spin]) {
     shape = sh; $("setShape").value = sh; theme.hue = hue; $("setHue").value = hue; glowK = glow; $("setGlow").value = glow; spinK = spin; $("setSpin").value = spin;
@@ -282,11 +286,14 @@
   }
 
   // ---------- Transparenz je Bereich ----------
-  const OP_ROWS = [["ball", "Kugel"], ["labels", "Beschriftungen"], ["badges", "Anzeigen (Temperatur, Takt, Lüfter, BTC)"], ["apps", "Programm-Symbole"], ["ai", "KI-Anzeige"], ["panel", "Panel-Hintergrund"], ["friends", "Freundesliste"], ["news", "Lagebild-Fenster"]];
+  const OP_ROWS = [["ball", "Kugel"], ["labels", "Beschriftungen"], ["badges", "Anzeigen (Temperatur, Takt, Lüfter, BTC)"], ["apps", "Programm-Symbole"], ["ai", "KI-Anzeige"], ["panel", "Panel-Hintergrund"], ["friends", "Freundesliste"], ["news", "News & Uhren-Fenster"]];
   let opacity = { ball: 1, labels: 1, badges: 1, apps: 1, ai: 1, panel: 1, friends: 1, news: 1 };
   function applyOpacity() { for (const [k] of OP_ROWS) document.documentElement.style.setProperty("--op-" + k, String(opacity[k] ?? 1)); }
+  $("setPanelOp").addEventListener("input", (e) => { opacity.panel = +e.target.value; applyOpacity(); });
+  $("setPanelOp").addEventListener("change", () => window.jarvis.setConfig({ opacity: { ...opacity } }));
   function buildOpRows() {
-    $("opRows").replaceChildren(...OP_ROWS.map(([k, label]) => {
+    $("setPanelOp").value = String(opacity.panel ?? 1);
+    $("opRows").replaceChildren(...OP_ROWS.filter(([k]) => k !== "panel").map(([k, label]) => {
       const row = document.createElement("label"); row.className = "row";
       const r = document.createElement("input"); r.type = "range"; r.min = k === "panel" ? "0" : "0.1"; r.max = "1"; r.step = "0.05"; r.value = String(opacity[k] ?? 1);
       r.addEventListener("input", () => { opacity[k] = +r.value; applyOpacity(); });

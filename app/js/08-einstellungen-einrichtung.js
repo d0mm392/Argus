@@ -77,11 +77,14 @@
   $("setFriendsStill").addEventListener("change", (e) => { friendsStill = e.target.checked; window.jarvis.setConfig({ friendsStill }); });
   { const hs = (k, v) => window.jarvis.setConfig({ [k]: v });
     $("setHoleOn").addEventListener("change", (e) => hs("holeOn", e.target.checked));
+    $("setHoleFollow").addEventListener("change", (e) => hs("holeFollow", e.target.checked));
+    $("setHoleApps").addEventListener("change", (e) => hs("holeApps", e.target.value.slice(0, 200)));
+    $("setHoleRound").addEventListener("input", (e) => { $("holeBox").style.borderRadius = e.target.value + "px"; hs("holeRound", +e.target.value); });
     $("setHolePlace").addEventListener("click", () => holePlace()); }
   $("setDcJoin").addEventListener("change", (e) => { dcJoinBot = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcJoinBot }); });
   $("setFriendsHold").addEventListener("change", (e) => { friendsHold = +e.target.value; window.jarvis.setConfig({ friendsHold }); });
   for (const [id, k] of [["setScaleAi", "ai"], ["setScaleStrata", "strata"]]) $(id).addEventListener("input", (e) => { const v = +e.target.value; if (Math.abs(v - 1) < 0.03) delete scales[k]; else scales[k] = v; clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ scales }), 400); });
-  window.jarvis.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
+  window.jarvis.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; $("setHoleRound").value = c.holeRound ?? 16; $("setHoleFollow").checked = !!c.holeFollow; $("setHoleApps").value = c.holeApps || ""; $("holeBox").style.borderRadius = (c.holeRound ?? 16) + "px"; dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
   $("setWake").addEventListener("change", (e) => {
     const words = e.target.value.split(",").map((w) => w.trim().toLowerCase()).filter(Boolean);
     if (words.length) { WAKE = buildWake(words); window.jarvis.setConfig({ wakeWords: words }); }
@@ -254,6 +257,10 @@
   $("setYtNoAds").addEventListener("change", (e) => window.jarvis.setConfig({ ytNoAds: e.target.checked }));
   $("setYtAdblock").addEventListener("change", (e) => window.jarvis.setConfig({ ytAdblock: e.target.checked }));
   $("setYtTop").addEventListener("change", (e) => window.jarvis.setConfig({ ytOnTop: e.target.checked }));
+  $("setTwMode").addEventListener("change", (e) => window.jarvis.setConfig({ twMode: e.target.value }));
+  $("setTwTop").addEventListener("change", (e) => window.jarvis.setConfig({ twOnTop: e.target.checked }));
+  $("setTwChan").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.jarvis.openTwitch(v.slice(0, 200)); e.target.value = ""; } });
+  window.jarvis.getConfig?.().then((c) => { $("setTwMode").value = c.twMode || "panel"; $("setTwTop").checked = !!c.twOnTop; $("setTwAlpha").value = c.twAlpha ?? 100; $("setTwRound").value = c.twRound ?? 14; $("setTwFeather").value = c.twFeather ?? 0; for (const id of ["setTwAlpha", "setTwRound", "setTwFeather"]) $(id).dispatchEvent(new Event("input")); });
   $("ytBtn").addEventListener("click", () => { if (ytOn) window.jarvis.ytEmbed("close"); else window.jarvis.openYoutube(""); });
   // ---------- Strata: Ein/Aus-Knopf ----------
   function renderStrata(st) {

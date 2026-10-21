@@ -451,15 +451,21 @@
     const sel = $("notesFolder"); sel.replaceChildren(new Option("Alle", ""), ...folders.map((f) => new Option("📁 " + f, f))); sel.value = nFolder; sel.hidden = !folders.length;
     const shown = nPages.filter((p) => !nFolder || p.folder === nFolder);
     if (!shown.includes(nPage())) { nCur = shown[0]?.id || nCur; }
-    $("notesTabs").replaceChildren(...shown.map((p) => { const b = document.createElement("button"); b.type = "button"; b.textContent = p.name; b.title = (p.folder ? "📁 " + p.folder + " · " : "") + "Doppelklick: umbenennen · Rechtsklick: Optionen"; b.classList.toggle("on", p.id === nCur);
+    $("notesTabs").replaceChildren(...shown.map((p) => { const b = document.createElement("button"); b.type = "button"; b.append(document.createTextNode(p.name)); b.title = (p.folder ? "📁 " + p.folder + " · " : "") + "Doppelklick: umbenennen · Rechtsklick: Optionen · ×: löschen"; b.classList.toggle("on", p.id === nCur);
+      const x = document.createElement("span"); x.className = "nt-x"; x.textContent = "×"; x.title = "Notiz löschen (zweimal klicken)"; b.append(x);
+      x.addEventListener("click", (e) => { // × am Reiter: erster Klick fragt nach, zweiter löscht; die letzte Seite wird nur geleert
+        e.stopPropagation();
+        if (!x.classList.contains("ask")) { x.classList.add("ask"); x.textContent = "Löschen?"; setTimeout(() => { if (x.isConnected) { x.classList.remove("ask"); x.textContent = "×"; } }, 3000); return; }
+        if (nPages.length > 1) { nPages = nPages.filter((q) => q !== p); if (nCur === p.id) nCur = nPages[0].id; } else { p.text = ""; p.name = "Notizen"; nCur = p.id; }
+        $("notesText").value = nPage().text; nRender(); nSave();
+      });
       b.addEventListener("dblclick", () => nAsk("Name der Seite", p.name, (v) => { p.name = v; nRender(); nSave(); }));
       b.addEventListener("click", () => { nCommit(); nCur = p.id; $("notesText").value = p.text; nRender(); nSave(); });
       b.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [
         ["Umbenennen", () => nAsk("Neuer Name", p.name, (v) => { p.name = v; nRender(); nSave(); })],
         ["In Ordner legen …", () => nAsk("Ordnername (leer = kein Ordner)", p.folder || "", (v) => { p.folder = v; nRender(); nSave(); }, true)],
-        ...(nPages.length > 1 ? [[`„${p.name}“ löschen`, () => { nPages = nPages.filter((q) => q !== p); if (nCur === p.id) nCur = nPages[0].id; $("notesText").value = nPage().text; nRender(); nSave(); }, true]] : [])]); });
+        [nPages.length > 1 ? `„${p.name}“ löschen` : "Notiz leeren", () => { if (nPages.length > 1) { nPages = nPages.filter((q) => q !== p); if (nCur === p.id) nCur = nPages[0].id; } else { p.text = ""; } $("notesText").value = nPage().text; nRender(); nSave(); }, true]]); });
       return b; }));
-    $("notesTabs").querySelector(".on")?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function nAsk(title, val, done, allowEmpty) {
     const i = $("notesAsk"); i.placeholder = title; i.value = val; i.hidden = false; i.focus(); i.select();

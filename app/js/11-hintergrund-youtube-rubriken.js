@@ -170,6 +170,36 @@
   $("ytPop").addEventListener("click", () => window.jarvis.ytEmbed("popout"));
   const ytResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(ytSize) + d)); ytSize = o[i]; ytLast = ""; ytLayout(); window.jarvis.setConfig({ ytEmbedSize: ytSize }); };
   $("ytSmaller").addEventListener("click", () => ytResize(-1)); $("ytBigger").addEventListener("click", () => ytResize(1));
+
+  // ---------- Twitch im Panel (wie YouTube) ----------
+  let twOn = false, twSize = "m", twLastKey = "", twOffN = 0;
+  function twLayout() {
+    const box = $("tw");
+    if (!twOn || !expanded || !$("settings").hidden || box.classList.contains("gone") || box.hidden || !box.offsetWidth) { if (twLastKey !== "off" && (!$("settings").hidden || ++twOffN >= 3)) { twLastKey = "off"; window.jarvis.twRect(null); } return; }
+    twOffN = 0;
+    const pw = document.querySelector(".panel").clientWidth - 28;
+    const maxH = Math.max(110, Math.min(window.innerHeight * { s: 0.2, m: 0.28, l: 0.38 }[twSize], window.innerHeight - 470));
+    let w = Math.round(Math.min(Math.max(200, Math.min(pw, pw * YT_W[twSize])) - 20, maxH * 16 / 9)), bh = Math.round(w * 9 / 16);
+    if (freeLayout?.tw) { const cs = getComputedStyle(box), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight); w = Math.max(160, Math.floor(box.clientWidth - padX)); bh = Math.round(w * 9 / 16);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), headH = $("twBody").previousElementSibling?.offsetHeight || 18, gap = parseFloat(cs.rowGap) || 6;
+      const availH = Math.floor(box.clientHeight - padY - headH - gap);
+      if (availH >= 90 && bh > availH) { bh = availH; w = Math.round(bh * 16 / 9); } }
+    $("twBody").style.width = w + "px"; $("twBody").style.height = bh + "px";
+    const r = $("twBody").getBoundingClientRect(), key = [r.x, r.y, r.width, r.height].map(Math.round).join();
+    if (key !== twLastKey) { twLastKey = key; window.jarvis.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
+  }
+  setInterval(twLayout, 250); window.addEventListener("resize", twLayout);
+  window.jarvis.onTwEmbed?.((d) => { twOn = !!d.on; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
+  window.jarvis.onTwTitle?.((t) => { $("twTitle").textContent = t || "Twitch"; });
+  $("twClose").addEventListener("click", () => window.jarvis.twEmbed("close"));
+  let twVo = false;
+  const applyTwVo = () => { $("tw").classList.toggle("vo", twVo); $("twVo").setAttribute("aria-pressed", String(twVo)); twLastKey = ""; twLayout(); };
+  $("twVo").addEventListener("click", () => { twVo = !twVo; applyTwVo(); window.jarvis.setConfig({ twVideoOnly: twVo }); });
+  window.jarvis.getConfig?.().then((c) => { twVo = c.twVideoOnly !== false; twSize = c.twEmbedSize || "m"; applyTwVo(); });
+  $("twPop").addEventListener("click", () => window.jarvis.twEmbed("popout"));
+  const twResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(twSize) + d)); twSize = o[i]; twLastKey = ""; twLayout(); window.jarvis.setConfig({ twEmbedSize: twSize }); };
+  $("twSmaller").addEventListener("click", () => twResize(-1)); $("twBigger").addEventListener("click", () => twResize(1));
+  $("twBtn").addEventListener("click", () => { if (twOn) window.jarvis.twEmbed("close"); else window.jarvis.openTwitch(""); });
   $("setFriendsOn").addEventListener("change", (e) => setFriendsOn(e.target.checked));
   window.jarvis.getConfig?.().then((c) => { $("setFriendsOn").checked = c.widgets?.friends?.on !== false; });
   $("setFriendsReset").addEventListener("click", () => { friendsBox = { w: 180, h: 0, scale: 1 }; applyFriendsBox(); window.jarvis.setConfig({ friendsBox }); });
@@ -200,16 +230,16 @@
     const body = document.querySelector(".set-body"), names = [], secs = [];
     let cur = null, sec = null;
     for (const el of [...body.children]) {
-      if (el.tagName === "H4") { if (el.dataset.tab) cur = el.dataset.tab; sec = { h: el, key: el.textContent, items: [], tab: cur || "Aussehen" }; secs.push(sec); }
+      if (el.tagName === "H4") { if (el.dataset.tab) cur = el.dataset.tab; sec = { h: el, key: el.textContent, items: [], tab: cur || "Themes" }; secs.push(sec); }
       else if (sec) sec.items.push(el);
-      el.dataset.in = cur || "Aussehen";
+      el.dataset.in = cur || "Themes";
       if (!names.includes(el.dataset.in)) names.push(el.dataset.in);
       if (el.classList.contains("set-note") && !el.id) { el.classList.add("clamp"); el.title = "Klick: ganzen Hinweis zeigen"; el.addEventListener("click", () => el.classList.toggle("open")); }
     }
     let open = {}; try { open = JSON.parse(localStorage.getItem("jarvisSetOpen") || "{}"); } catch {}
     const firstOf = {}; for (const x of secs) firstOf[x.tab] ??= x.key;
     const isOpen = (x) => open[x.key] ?? firstOf[x.tab] === x.key;
-    let sel = "Aussehen", q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
+    let sel = "Themes", q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
     if (!names.includes(sel)) sel = names[0];
     const render = () => {
       const s2 = q.trim().toLowerCase();
@@ -236,7 +266,7 @@
     show(sel);
   })();
   // Texte nennen die gewählte Form statt immer „Kugel“ (Reiter, Überschriften, Hinweise)
-  const SHAPE_WORDS = { kugel: ["Kugel", "der Kugel", "der Kugel"], hexagon: ["Hexagon", "des Hexagons", "dem Hexagon"], wuerfel: ["Würfel", "des Würfels", "dem Würfel"],
+  const SHAPE_WORDS = { trapez: ["Trapez", "des Trapezes", "dem Trapez"], parallelogramm: ["Parallelogramm", "des Parallelogramms", "dem Parallelogramm"], oktagon: ["Oktagon", "des Oktagons", "dem Oktagon"], diamant: ["Diamant", "des Diamanten", "dem Diamanten"], tornado: ["Tornado", "des Tornados", "dem Tornado"], oktaeder: ["Oktaeder", "des Oktaeders", "dem Oktaeder"], dodekaeder: ["Dodekaeder", "des Dodekaeders", "dem Dodekaeder"], zylinder: ["Zylinder", "des Zylinders", "dem Zylinder"], kegel: ["Kegel", "des Kegels", "dem Kegel"], prisma: ["Prisma", "des Prismas", "dem Prisma"], spirale: ["Wirbel", "des Wirbels", "dem Wirbel"], kugel: ["Kugel", "der Kugel", "der Kugel"], hexagon: ["Hexagon", "des Hexagons", "dem Hexagon"], wuerfel: ["Würfel", "des Würfels", "dem Würfel"],
     kristall: ["Kristall", "des Kristalls", "dem Kristall"], gehirn: ["Gehirn", "des Gehirns", "dem Gehirn"], ring: ["Ring", "des Rings", "dem Ring"],
     helix: ["DNA-Helix", "der DNA-Helix", "der DNA-Helix"], galaxie: ["Galaxie", "der Galaxie", "der Galaxie"], symbiont: ["Symbiont", "des Symbionten", "dem Symbionten"],
     muenze: ["Münze", "der Münze", "der Münze"], pyramide: ["Pyramide", "der Pyramide", "der Pyramide"], stern: ["Stern", "des Sterns", "dem Stern"], herz: ["Herz", "des Herzens", "dem Herzen"], atom: ["Atom", "des Atoms", "dem Atom"], ikosaeder: ["Ikosaeder", "des Ikosaeders", "dem Ikosaeder"], stella: ["Stern-Tetraeder", "des Stern-Tetraeders", "dem Stern-Tetraeder"], knoten: ["Torusknoten", "des Torusknotens", "dem Torusknoten"], tropfen: ["Tropfen", "des Tropfens", "dem Tropfen"] };

@@ -49,7 +49,7 @@
   //  form   = Linien folgen der Umrisslinie der gewählten Form, von oben im Uhrzeigersinn gefüllt
   //  kreis  = klassische Kreisbögen   balken = drei Säulen neben der Form   tacho = drei Rundinstrumente unter der Form
   //  verlauf = Liniendiagramm der letzten Minute unter der Form   puls = Strahlen rund um die Form, die mit der Last ausschlagen
-  const RING_STYLES = [["form", "An der Form"], ["kreis", "Kreis"], ["balken", "Balken"], ["tacho", "Tacho"], ["verlauf", "Verlauf"], ["puls", "Strahlen"]];
+  const RING_STYLES = [["form", "An der Form"], ["kreis", "Kreis"], ["balken", "Balken"], ["tacho", "Tacho"], ["verlauf", "Verlauf"], ["puls", "Strahlen"], ["orbit", "Orbit 3D"], ["saeulen", "Säulen 3D"], ["kugeln", "Kugeln 3D"], ["segmente", "Segmente"], ["radar", "Radar"], ["zahlen", "Zahlen"]];
   const gHist = { cpu: [], gpu: [], ram: [] }; let gHistT = 0;
   const GROWS = [["cpu", 205, "CPU"], ["gpu", 130, "GPU"], ["ram", 285, "RAM"]];
   const gaugeHue = (v, hue) => (v > 0.9 ? 8 : v > 0.75 ? 30 : hue);
@@ -85,6 +85,7 @@
   let ringHandleOn = false;
   function ringAnchor(w, h, defA, defR) {
     const p = anchor("rings", defA, defR, 3.3, w, h, 0.2);
+    if (gTiltX || gTiltY) { const rx = gTiltX * Math.PI / 180, ry = gTiltY * Math.PI / 180, cx = p.x + w / 2, cy = p.y + h / 2; ctx.translate(cx, cy); ctx.transform(Math.cos(ry), Math.sin(ry) * Math.sin(rx), 0, Math.cos(rx), 0, 0); ctx.translate(-cx, -cy); }
     ringHandleOn = true; Object.assign(ringHandle.style, { width: w + 12 + "px", height: h + 12 + "px", transform: `translate(${Math.round((p.x - 6))}px, ${Math.round((p.y - 6))}px)` });
     return p;
   }
@@ -161,6 +162,99 @@
           const len = S * (0.03 + v * 0.22 * (0.75 + 0.25 * Math.sin(time * 6 + j * 0.9))) * rs;
           ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx / l * len, y + dy / l * len); ctx.stroke();
         }
+      });
+    } else if (style === "orbit") {
+      // Drei geneigte Ringe um die Form, drehen mit ihr mit; der gefüllte Teil zeigt die Last, ein Punkt läuft an der Spitze
+      const tilts = [[0.5, 0.2], [1.15, -0.9], [-0.7, 1.9]].map(([a, b]) => [a + gTiltX * Math.PI / 180, b + gTiltY * Math.PI / 180]);
+      rows.forEach(([key, hue, lab], i) => {
+        const v = Math.min(100, gauge[key]) / 100, h = gaugeHue(v, hue), R = 0.98 + i * 0.09, [ta, tb] = tilts[i % 3], N = 72;
+        const ca = Math.cos(ta), sa = Math.sin(ta), cb = Math.cos(tb), sb = Math.sin(tb), pt = (t) => {
+          let x = Math.cos(t) * R, y = Math.sin(t) * R, z = 0; const y2 = y * ca - z * sa, z2 = y * sa + z * ca; y = y2; z = z2;
+          const x3 = x * cb - y * sb, y3 = x * sb + y * cb; return rot(x3, y3, z);
+        };
+        ctx.lineWidth = w * 1.2;
+        let prev = null;
+        for (let j = 0; j <= N; j++) {
+          const t = -Math.PI / 2 + j / N * Math.PI * 2, c = pt(t), q = proj(c), front = c[2] > -0.1 ? 1 : 0.4;
+          if (prev) {
+            const on = j / N <= v;
+            ctx.strokeStyle = on ? `hsla(${h},85%,62%,${(0.5 + v * 0.4) * front})` : `hsla(${hue},40%,60%,${0.12 * front})`;
+            ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+          }
+          prev = q;
+        }
+        const tc = -Math.PI / 2 + v * Math.PI * 2, cc = pt(tc), qq = proj(cc);
+        ctx.fillStyle = `hsla(${h},90%,75%,${cc[2] > -0.1 ? 0.95 : 0.5})`; ctx.shadowColor = `hsla(${h},90%,60%,0.8)`; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(qq[0], qq[1], Math.max(2.5, S * 0.03) * rs, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        if (cc[2] > -0.1) gText(lab + " " + Math.round(gauge[key]), qq[0], qq[1] - Math.max(9, S * 0.07) * rs, Math.max(8, S * 0.06) * rs, `hsla(${h},90%,78%,0.95)`);
+      });
+    } else if (style === "saeulen") {
+      // Drei Quader in Schrägansicht rechts neben der Form, von unten gefüllt: Vorderseite, Seite und Deckel verschieden hell
+      const fs = Math.max(9, SB * 0.07) * rs, bh = SB * 1.4 * rs, bw = Math.max(8, SB * 0.1) * rs, d = bw * 0.55, gap = Math.max(bw * 2.2, fs * 2.8);
+      const P = ringAnchor(gap * (rows.length - 1) + bw + d, bh + fs * 3.6 + d, 0.05, 1.45), x0 = P.x, y1 = P.y + fs * 1.6 + d + bh;
+      const box = (x, y, bwid, hgt, col, a) => { // y = Unterkante der Vorderseite
+        ctx.fillStyle = `hsla(${col[0]},${col[1]}%,${col[2]}%,${a})`; ctx.fillRect(x, y - hgt, bwid, hgt);
+        ctx.fillStyle = `hsla(${col[0]},${col[1]}%,${col[2] - 14}%,${a})`; ctx.beginPath(); ctx.moveTo(x + bwid, y); ctx.lineTo(x + bwid + d, y - d); ctx.lineTo(x + bwid + d, y - d - hgt); ctx.lineTo(x + bwid, y - hgt); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = `hsla(${col[0]},${col[1]}%,${col[2] + 12}%,${a})`; ctx.beginPath(); ctx.moveTo(x, y - hgt); ctx.lineTo(x + d, y - hgt - d); ctx.lineTo(x + bwid + d, y - hgt - d); ctx.lineTo(x + bwid, y - hgt); ctx.closePath(); ctx.fill();
+      };
+      rows.forEach(([key, hue, lab], i) => {
+        const v = Math.min(100, gauge[key]) / 100, x = x0 + i * gap, h = gaugeHue(v, hue);
+        box(x, y1, bw, bh, [hue, 40, 45], 0.14);
+        if (v > 0.01) box(x, y1, bw, Math.max(2, bh * v), [h, 80, 55], 0.92);
+        gText(lab, x + bw / 2 + d / 2, y1 + fs * 0.95, fs * 0.85, `hsla(${hue},50%,75%,0.85)`);
+        gText(Math.round(gauge[key]) + "", x + bw / 2 + d / 2, y1 - bh * v - d - fs * 0.9, fs, `hsla(${h},90%,72%,0.95)`);
+      });
+    } else if (style === "kugeln") {
+      // Drei Glaskugeln untereinander, gefüllt wie ein Tank, mit Glanz und Schatten
+      const r = SB * 0.2 * rs, span = r * 2.5, P = ringAnchor(r * 2.4, span * rows.length, 0.05, 1.45), x = P.x + r * 1.2;
+      rows.forEach(([key, hue, lab], i) => {
+        const v = Math.min(100, gauge[key]) / 100, y = P.y + span * (i + 0.5), h = gaugeHue(v, hue);
+        const g0 = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r); g0.addColorStop(0, `hsla(${hue},40%,70%,0.22)`); g0.addColorStop(1, `hsla(${hue},50%,25%,0.35)`);
+        ctx.fillStyle = g0; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, Math.PI * 2); ctx.clip();
+        const ly = y + r - 2 * r * v; ctx.beginPath(); ctx.moveTo(x - r, y + r);
+        for (let px = -r; px <= r; px += r / 8) ctx.lineTo(x + px, ly + Math.sin(time * 2 + px / r * 3 + i) * r * 0.04 * (v > 0.02 && v < 0.98 ? 1 : 0));
+        ctx.lineTo(x + r, y + r); ctx.closePath();
+        const g1 = ctx.createLinearGradient(0, ly, 0, y + r); g1.addColorStop(0, `hsla(${h},90%,62%,0.85)`); g1.addColorStop(1, `hsla(${hue},80%,38%,0.9)`); ctx.fillStyle = g1; ctx.fill();
+        ctx.restore();
+        const g2 = ctx.createRadialGradient(x - r * 0.4, y - r * 0.5, 0, x - r * 0.4, y - r * 0.5, r * 0.55); g2.addColorStop(0, "rgba(255,255,255,0.45)"); g2.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = Math.max(1, r * 0.05); ctx.strokeStyle = `hsla(${hue},60%,75%,0.45)`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+        gText(Math.round(gauge[key]) + "%", x, y + r * 0.1, Math.max(8, r * 0.4), `hsla(${h},40%,96%,0.95)`);
+        gText(lab, x, y - r * 0.4, Math.max(7, r * 0.28), `hsla(${hue},30%,92%,0.8)`);
+      });
+    } else if (style === "segmente") {
+      // LED-Leisten: drei Zeilen aus kleinen Segmenten, die von grün über gelb nach rot aufleuchten
+      const fs = Math.max(9, SB * 0.06) * rs, n = 20, sw = Math.max(4, SB * 0.05) * rs, sh = Math.max(6, SB * 0.065) * rs, gp = sw * 0.35, rowH = sh + fs * 1.5;
+      const P = ringAnchor(n * (sw + gp) + fs * 3, rowH * rows.length, 0.05, 1.6), x0 = P.x + fs * 3;
+      rows.forEach(([key, hue, lab], i) => {
+        const v = Math.min(100, gauge[key]) / 100, y = P.y + i * rowH + fs * 0.8;
+        gText(lab, P.x, y + sh / 2, fs, `hsla(${hue},50%,75%,0.85)`, "left");
+        for (let j = 0; j < n; j++) {
+          const on = (j + 0.5) / n <= v, f = j / (n - 1), hh = 140 - f * 140;
+          ctx.fillStyle = on ? `hsla(${hh},85%,58%,0.95)` : `hsla(${hue},30%,60%,0.1)`;
+          if (on) { ctx.shadowColor = `hsla(${hh},90%,55%,0.7)`; ctx.shadowBlur = 5; }
+          ctx.beginPath(); ctx.roundRect(x0 + j * (sw + gp), y, sw, sh, 1.5); ctx.fill(); ctx.shadowBlur = 0;
+        }
+      });
+    } else if (style === "radar") {
+      // Netzdiagramm: eine Achse je Last, Fläche spannt sich mit den Werten auf
+      const R = SB * 0.45 * rs, P = ringAnchor(R * 2.6, R * 2.6, 0.05, 1.45), cx = P.x + R * 1.3, cy = P.y + R * 1.3, m = Math.max(3, rows.length);
+      const ang = (i) => -Math.PI / 2 + i / m * Math.PI * 2;
+      ctx.lineWidth = 1; ctx.strokeStyle = "rgba(140,180,220,0.16)";
+      for (const g of [0.25, 0.5, 0.75, 1]) { ctx.beginPath(); for (let i = 0; i < m; i++) { const a = ang(i); i ? ctx.lineTo(cx + Math.cos(a) * R * g, cy + Math.sin(a) * R * g) : ctx.moveTo(cx + Math.cos(a) * R * g, cy + Math.sin(a) * R * g); } ctx.closePath(); ctx.stroke(); }
+      for (let i = 0; i < m; i++) { const a = ang(i); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); ctx.stroke(); }
+      const vals = rows.map(([key]) => Math.min(100, gauge[key]) / 100), mx = Math.max(0, ...vals), hh = gaugeHue(mx, 190);
+      ctx.beginPath(); for (let i = 0; i < m; i++) { const a = ang(i), v = vals[i] ?? 0; i ? ctx.lineTo(cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v) : ctx.moveTo(cx + Math.cos(a) * R * v, cy + Math.sin(a) * R * v); } ctx.closePath();
+      ctx.fillStyle = `hsla(${hh},85%,60%,0.22)`; ctx.fill(); ctx.strokeStyle = `hsla(${hh},90%,68%,0.9)`; ctx.lineWidth = Math.max(1.5, SB * 0.012) * rs; ctx.stroke();
+      rows.forEach(([key, hue, lab], i) => { const a = ang(i), v = vals[i]; gText(lab + " " + Math.round(gauge[key]), cx + Math.cos(a) * (R + Math.max(10, R * 0.2)), cy + Math.sin(a) * (R + Math.max(10, R * 0.2)), Math.max(8, R * 0.2), `hsla(${gaugeHue(v, hue)},80%,76%,0.95)`); });
+    } else if (style === "zahlen") {
+      // Große Zahlen ohne Grafik, jede in der Farbe ihrer Last
+      const fs = Math.max(14, SB * 0.16) * rs, P = ringAnchor(fs * 4.2, fs * 1.5 * rows.length, 0.05, 1.5);
+      rows.forEach(([key, hue, lab], i) => {
+        const v = Math.min(100, gauge[key]) / 100, y = P.y + fs * 1.5 * (i + 0.5), h = gaugeHue(v, hue);
+        gText(lab, P.x, y - fs * 0.55, Math.max(8, fs * 0.38), `hsla(${hue},50%,75%,0.75)`, "left");
+        ctx.shadowColor = `hsla(${h},90%,60%,0.5)`; ctx.shadowBlur = 8; gText(Math.round(gauge[key]) + "%", P.x, y + fs * 0.1, fs, `hsla(${h},90%,72%,0.95)`, "left"); ctx.shadowBlur = 0;
       });
     }
     ctx.restore();
@@ -297,7 +391,7 @@
     });
   }
   new ResizeObserver(fitPanel).observe(document.querySelector(".panel"));
-  for (const id of ["sys", "yt", "log"]) new ResizeObserver(fitPanel).observe($(id));
+  for (const id of ["sys", "yt", "tw", "log"]) new ResizeObserver(fitPanel).observe($(id));
   window.addEventListener("resize", fitPanel);
 
   let ay = 0, ax = 0.32, vy = 0, vx = 0, dragging = false, swing = 0;

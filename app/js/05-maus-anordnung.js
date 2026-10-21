@@ -149,12 +149,29 @@
   document.addEventListener("click", (e) => { if (noClick && noClick.contains(e.target)) { e.stopPropagation(); e.preventDefault(); noClick = null; } }, true);
   // Ankerpunkt (Mitte) eines Teils: gezogene Stelle oder Standardplatz, dazu leichtes Schweben
   let uiR = [], uiRT = -1;
+  // Lage und Größe eines Teils ohne Neigung (offsetWidth/-Height plus Verschiebung), damit gekippte Buttons die Ausweich-Berechnung nicht zappeln lassen
+  function baseRect(e) {
+    const m = /translate\((-?\d+)px, (-?\d+)px\)/.exec(e.style.transform), sr = stage.getBoundingClientRect();
+    if (!m) { const b = e.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top, bottom: b.bottom, width: b.width, height: b.height }; }
+    const l = sr.left + +m[1], t = sr.top + +m[2]; return { left: l, top: t, right: l + e.offsetWidth, bottom: t + e.offsetHeight, width: e.offsetWidth, height: e.offsetHeight };
+  }
   function uiRects() {
     if (time - uiRT < 0.25 && uiRT >= 0) return uiR;
     uiRT = time; const sr = stage.getBoundingClientRect();
     uiR = [who, strataBtn, $("pill")].filter((e) => e.offsetWidth && !e.classList.contains("off") && getComputedStyle(e).visibility !== "hidden")
-      .map((e) => { const b = e.getBoundingClientRect(); return { x: b.left - sr.left, y: b.top - sr.top, w: b.width, h: b.height }; });
+      .map((e) => { const b = baseRect(e); return { x: b.left - sr.left, y: b.top - sr.top, w: b.width, h: b.height }; });
     return uiR;
+  }
+  // Panel-Fenster (auch das YouTube-Fenster, das als natives Fenster über allem liegt): Beschriftungen weichen aus, schieben aber nichts weg
+  // Das YouTube-Bild liegt als eigenes Fenster über allem: Anzeigen (Pillen) suchen sich einen Platz daneben
+  const ytBlock = () => winRects().filter((r) => r.id === "yt" || r.id === "tw");
+  const WIN_IDS = ["yt", "tw", "mOver", "mTick", "mHeat", "mLive", "proc", "sys", "mine", "farm", "wx", "clocks", "notes", "quick", "mirror", "game", "aiLog", "log", "transcript", "notice", "askForm"];
+  let winR = [], winRT = -1;
+  function winRects() {
+    if (time - winRT < 0.25 && winRT >= 0) return winR;
+    winRT = time; const sr = stage.getBoundingClientRect(); winR = [];
+    for (const id of WIN_IDS) { const e = document.getElementById(id); if (!e || !e.offsetWidth || e.hidden || e.classList.contains("gone") || e.classList.contains("off")) continue; const b = e.getBoundingClientRect(); if (b.width > 30 && b.height > 20) winR.push({ id, x: b.left - sr.left, y: b.top - sr.top, w: b.width, h: b.height }); }
+    return winR;
   }
   function anchor(key, defA, defR, ph, w, h, sway = 1) {
     const pp = pinPos(key), live = drag?.key === key && drag.moved;

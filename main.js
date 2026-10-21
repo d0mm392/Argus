@@ -91,14 +91,14 @@ const DEFAULTS = {
   dockFx: true,            // Tropfen-Effekt beim An- und Abdocken
   btcCur: "USD",
   viz: { cores: true, heat: true, rings: false, apps: true }, pins: {}, micFloat: true, // Auslastung in der Kugel: Kerne als Neuronen, Glut nach Temperatur, Ringe für CPU/GPU/RAM
-  taskbarOn: false, btnShape: "kapsel", btnLook: "standard", palette: "", loadShimmer: true, ytAlpha: 100, ytFeather: 0, ytRound: 14, flashK: 1, onTop: "kugel",   // Vordergrund: "immer", "kugel" (nur die kleine Kugel, Panel wie ein normales Fenster), "nie"
+  taskbarOn: false, btnShape: "kapsel", btnLook: "standard", btnTiltX: 0, btnTiltY: 0, btnTiltFollow: false, gaugeTiltX: 0, gaugeTiltY: 0, twAlpha: 100, twFeather: 0, twRound: 14, twVideoOnly: true, twOnTop: false, twMode: "panel", twEmbedSize: "m", twBox: null, twLast: null, twOpen: "", palette: "", loadShimmer: true, ytAlpha: 100, ytFeather: 0, ytRound: 14, flashK: 1, onTop: "kugel",   // Vordergrund: "immer", "kugel" (nur die kleine Kugel, Panel wie ein normales Fenster), "nie"
   wakeFront: true,  // bei "Hallo Claude" oder einer Antwort kurz nach vorn holen
   autoOpen: true,   // Panel bei Fragen automatisch aufklappen
   steamOn: true, steamKey: "", steamId: "",   // Steam-Freunde: eigener Web-API-Schlüssel und Profil
   userName: "", userInfo: "", setupDone: false, crashReport: true, mirrorQ: 1280, procKill: true, quickOn: false, quickItems: [], quickSize: 44, quickLabels: true, mirrorOn: false, mirrorMatch: "discord", mirrorFps: 15, ballLabels: "aktiv", bgShoot: 1, micId: "", spkId: "", friendsSplit: false, friendsHold: 3, // Wer Argus benutzt (Anrede, ein Satz über sich für die KI); setupDone: Einrichtung beim ersten Start erledigt
   discordOn: true, discordServers: "", // Discord: Server-IDs mit eingeschaltetem Widget
   discordVoiceOnly: true,  // Discord: nur Leute im Sprachkanal zeigen
-  holeOn: false, holeCorner: "br", holeW: 360, holeH: 260, holeX: null, holeY: null, holeEdit: false, menuAlpha: 96, // Aussparung in einer Ecke, damit Discord-Popup und Co. nicht überdeckt werden
+  holeOn: false, holeCorner: "br", holeW: 360, holeH: 260, holeRound: 16, holeFollow: false, holeApps: "", holeX: null, holeY: null, holeEdit: false, menuAlpha: 96, // Aussparung in einer Ecke, damit Discord-Popup und Co. nicht überdeckt werden
   friendsStill: true, // Freundeslisten starr (kein leichtes Schweben)
   notesPages: null, notesCur: "", // Notiz-Seiten [{id,name,folder,text}], aktuelle Seite
   miningOn: true, // Mining-Rubrik (Blöcke, Seite, Einstellungen, Abfragen) insgesamt ein/aus
@@ -832,7 +832,7 @@ ipcMain.handle("sensor-status", () => sensorState);
 ipcMain.on("sensor-setup", () => { config.sensors = true; saveConfig(); setupSensors(); });
 
 ipcMain.handle("game-info", (_e, name, appid) => require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })));
-ipcMain.handle("get-config", () => ({ aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarOn, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, friendsStill: config.friendsStill, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine,
+ipcMain.handle("get-config", () => ({ aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarOn, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeFollow: config.holeFollow, holeApps: config.holeApps, friendsStill: config.friendsStill, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine,
   autostart: config.autostart, backend: config.backend, ollamaModel: config.ollamaModel || localModel(), hasApiKey: !!config.anthropicApiKey,
   ballScale: config.ballScale, labelScale: config.labelScale, tempScale: config.tempScale, appScale: config.appScale, wakeWords: config.wakeWords, voiceOutput: config.voiceOutput, micOnStart: config.micOnStart, systemAlertsVoice: config.systemAlertsVoice, voice: voiceState, system: watch?.data.ts ? withIcons(watch.data) : null }));
 // Kurz-Lagebild für die KI, nur echte abgerufene Werte
@@ -973,19 +973,65 @@ function place(corner, size, area) {
 // Aussparung: eine Ecke des Argus-Fensters wird herausgeschnitten, dort liegt dann ein anderes Programm (z. B. das Discord-Popup mit den Kameras)
 // ungestört darüber, auch wenn man auf Argus klickt. Nur wenn das Panel offen ist.
 let lastShape = "";
+// Aussparung folgt dem Programm: ein kleiner Dauer-Prozess meldet das vorderste Fenster (nur lesend, nur solange „Folgen“ an ist)
+let followRect = null, followProc = null;
+function followStop() { if (followProc) { try { followProc.kill(); } catch {} followProc = null; } if (followRect) { followRect = null; lastShape = "x"; applyShape(); } }
+function followStart() {
+  if (process.platform !== "win32" || followProc || !config.holeFollow) return;
+  const ps = path.join(__dirname, "sysmon", "fenster.ps1"); if (!fs.existsSync(ps)) return;
+  const p = followProc = require("child_process").spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps, "-Parent", String(process.pid)], { windowsHide: true });
+  let buf = "";
+  p.stdout.on("data", (d) => {
+    buf += d.toString("utf8"); let i;
+    while ((i = buf.indexOf("\n")) >= 0) { const l = buf.slice(0, i).trim(); buf = buf.slice(i + 1); try { followUpdate(JSON.parse(l)); } catch {} }
+  });
+  p.on("exit", () => { if (followProc === p) { followProc = null; if (config.holeFollow) setTimeout(followStart, 5000); } });
+}
+function followUpdate(m) {
+  if (!alive() || !config.holeFollow) return;
+  if (m.none) { if (followRect) { followRect = null; applyShape(); } return; }
+  // Argus selbst, Desktop und Taskleiste ändern nichts (die Aussparung bleibt beim zuletzt benutzten Programm)
+  if (m.pid === process.pid || /^(Progman|WorkerW|Shell_TrayWnd|Shell_SecondaryTrayWnd)$/.test(m.cls || "")) return;
+  const apps = String(config.holeApps || "").toLowerCase().split(/[,;\n]+/).map((x) => x.trim().replace(/\.exe$/, "")).filter(Boolean);
+  if (apps.length && !apps.includes(String(m.app || "").toLowerCase())) { if (followRect) { followRect = null; applyShape(); } return; }
+  const d = screen.screenToDipRect(win, { x: m.l, y: m.t, width: m.r - m.l, height: m.b - m.t }), pad = 6;
+  const r = { x: Math.round(d.x - pad), y: Math.round(d.y - pad), w: Math.round(d.width + 2 * pad), h: Math.round(d.height + 2 * pad) }; // absolute Bildschirmposition
+  if (followRect && followRect.x === r.x && followRect.y === r.y && followRect.w === r.w && followRect.h === r.h) return;
+  followRect = r; applyShape();
+}
 function applyShape() {
   if (!alive() || typeof win.setShape !== "function") return;
   try {
     const b = win.getContentBounds(), W = b.width, H = b.height;
-    if (!config.holeOn || config.holeEdit || !expanded || W < 500 || H < 400) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
-    const hw = Math.max(80, Math.min(W - 200, Math.round(config.holeW || 360))), hh = Math.max(80, Math.min(H - 200, Math.round(config.holeH || 260))), c = config.holeCorner || "br";
-    // Ohne gesetzte Position sitzt die Aussparung in der Ecke; sonst frei an holeX/holeY (linke obere Ecke)
-    const fx = c.endsWith("r") ? W - hw : 0, fy = c.startsWith("b") ? H - hh : 0;
-    const hx = Math.max(0, Math.min(W - hw, Math.round(Number.isFinite(config.holeX) ? config.holeX : fx))), hy = Math.max(0, Math.min(H - hh, Math.round(Number.isFinite(config.holeY) ? config.holeY : fy)));
-    // Fenster minus Rechteck = bis zu vier Rechtecke (oben, unten, links, rechts der Aussparung)
-    const rects = [{ x: 0, y: 0, width: W, height: hy }, { x: 0, y: hy + hh, width: W, height: H - hy - hh }, { x: 0, y: hy, width: hx, height: hh }, { x: hx + hw, y: hy, width: W - hx - hw, height: hh }].filter((r) => r.width > 0 && r.height > 0);
-    const key = [W, H, hw, hh, hx, hy].join();
+    if (!(config.holeOn || config.holeFollow) || config.holeEdit || !expanded || W < 500 || H < 400) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
+    let hw, hh, hx, hy;
+    if (config.holeFollow) {
+      // Folgen: Aussparung = Fläche des zuletzt aktiven fremden Programms (nur Überschneidung mit Argus)
+      if (!followRect) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
+      const fxr = followRect.x - b.x, fyr = followRect.y - b.y;
+      hx = Math.max(0, fxr); hy = Math.max(0, fyr);
+      hw = Math.min(W, fxr + followRect.w) - hx; hh = Math.min(H, fyr + followRect.h) - hy;
+      if (hw < 60 || hh < 60) { if (lastShape) { win.setShape([{ x: 0, y: 0, width: W, height: H }]); lastShape = ""; } return; }
+    } else {
+      hw = Math.max(80, Math.min(W - 200, Math.round(config.holeW || 360))); hh = Math.max(80, Math.min(H - 200, Math.round(config.holeH || 260)));
+      const c = config.holeCorner || "br";
+      // Ohne gesetzte Position sitzt die Aussparung in der Ecke; sonst frei an holeX/holeY (linke obere Ecke)
+      const fx = c.endsWith("r") ? W - hw : 0, fy = c.startsWith("b") ? H - hh : 0;
+      hx = Math.max(0, Math.min(W - hw, Math.round(Number.isFinite(config.holeX) ? config.holeX : fx))); hy = Math.max(0, Math.min(H - hh, Math.round(Number.isFinite(config.holeY) ? config.holeY : fy)));
+    }
+    // Fenster minus abgerundetes Rechteck: Zeile für Zeile berechnet, gleiche Nachbarzeilen werden zu einem Rechteck zusammengefasst
+    const rr = Math.max(0, Math.min(40, Math.round(Number.isFinite(config.holeRound) ? config.holeRound : 16), Math.floor(hw / 2), Math.floor(hh / 2)));
+    const key = [W, H, hw, hh, hx, hy, rr].join();
     if (key === lastShape) return;
+    const inset = (d) => (d >= rr ? 0 : Math.ceil(rr - Math.sqrt(Math.max(0, rr * rr - (rr - d - 0.5) ** 2))));
+    const rects = []; let run = null;
+    const flush = () => { if (run) { if (run.a > 0) rects.push({ x: 0, y: run.y, width: run.a, height: run.n }); if (run.b < W) rects.push({ x: run.b, y: run.y, width: W - run.b, height: run.n }); run = null; } };
+    for (let y = 0; y < H; y++) {
+      let a = W, b = W; // außerhalb der Aussparung: ganze Breite ist Fenster (a = b = W → linkes Rechteck deckt alles)
+      if (y >= hy && y < hy + hh) { const i = Math.max(inset(y - hy), inset(hy + hh - 1 - y)); a = hx + i; b = hx + hw - i; }
+      if (run && run.a === a && run.b === b) run.n++; else { flush(); run = { y, a, b, n: 1 }; }
+    }
+    flush();
     win.setShape(rects); lastShape = key;
   } catch (e) { logError(e); }
 }
@@ -1054,6 +1100,7 @@ function setExpanded(on, focus = true) {
   applyBounds(corner);
   sendUI("expanded", expanded);
   if (ytView && !expanded) { ytView.setVisible(false); ytShown = false; }
+  if (twView && !expanded) { twView.setVisible(false); twShown = false; }
   if (expanded && focus) win.focus();
   applyTop();
 }
@@ -1130,7 +1177,7 @@ async function createWindow(port) {
     }
     saveConfig();
   });
-  win.on("move", followDock); win.on("resize", () => { followDock(); applyShape(); });
+  win.on("move", () => { followDock(); if (config.holeFollow) applyShape(); }); win.on("resize", () => { followDock(); applyShape(); });
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   win.on("closed", () => { stopAnim(); clearInterval(moveTimer); win = null; });
@@ -1325,6 +1372,41 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
   if (s.edit) t.push({ role: "cut", label: "Ausschneiden" }, { role: "copy", label: "Kopieren" }, { role: "paste", label: "Einfügen" }, { role: "selectAll", label: "Alles markieren" }, { type: "separator" });
   else if (s.sel) t.push({ role: "copy", label: "Kopieren" }, { type: "separator" });
   const tg = s.target, fl = s.flags || {};
+  // Rechtsklick AUF ein Element: nur dessen eigene Einstellungen und Ausblenden (Kugel, Buttons, Anzeigen, Fenster)
+  const o = s.opts || {}, okId = (x) => typeof x === "string" && /^[a-z0-9_-]{1,24}$/.test(x);
+  const pairs = (a) => (Array.isArray(a) ? a.filter((q) => Array.isArray(q) && okId(q[0]) && typeof q[1] === "string").slice(0, 40).map(([k, l]) => [k, String(l).slice(0, 44)]) : []);
+  const near = (arr, v) => { let b = 0; arr.forEach(([x], i) => { if (Math.abs(x - v) < Math.abs(arr[b][0] - v)) b = i; }); return b; };
+  const set = (k, v) => act("ctxset", { k, v });
+  const levels = (k, cur, list) => { const i = near(list, Number(cur) || 0); return list.map(([x, l], j) => ({ label: l, type: "radio", checked: i === j, click: set(k, x) })); };
+  const more = () => t.push({ type: "separator" }, { label: "Weitere Einstellungen …", click: act("settings", null, true) });
+  if (tg?.kind === "ball") {
+    t.push({ label: "Form", submenu: pairs(o.shapes).map(([k, l]) => ({ label: l, type: "radio", checked: o.shape === k, click: set("shape", k) })) });
+    t.push({ label: "Farbe", submenu: [
+      ...[["Blau", 210], ["Cyan", 185], ["Türkis", 165], ["Grün", 140], ["Limette", 75], ["Gold", 45], ["Orange", 25], ["Rot", 355], ["Pink", 320], ["Violett", 275]].map(([l, h]) => ({ label: l, type: "radio", checked: Math.abs(((Number(o.hue) || 0) - h + 540) % 360 - 180) < 8, click: set("hue", h) })),
+      { type: "separator" },
+      { label: "Regionen bunt", type: "radio", checked: o.regions === "bunt", click: set("regions", "bunt") },
+      { label: "Regionen in der Grundfarbe", type: "radio", checked: o.regions === "thema", click: set("regions", "thema") }] });
+    t.push({ label: "Glühen", submenu: levels("glow", o.glow, [[0, "Aus"], [0.5, "Schwach"], [1, "Normal"], [1.8, "Stark"]]) });
+    t.push({ label: "Drehtempo", submenu: levels("spin", o.spin, [[0, "Steht"], [0.5, "Langsam"], [1, "Normal"], [2, "Schnell"]]) });
+    t.push({ label: "Aufleuchten der Aktivität", submenu: levels("flash", o.flash, [[0, "Aus"], [0.4, "Wenig"], [1, "Normal"], [1.8, "Stark"]]) });
+    t.push({ label: "Beschriftungen", submenu: [["aktiv", "Wie bisher (bis zu 3)"], ["eine", "Nur eine"], ["aus", "Aus"]].map(([k, l]) => ({ label: l, type: "radio", checked: o.labels === k, click: set("labels", k) })) });
+    t.push({ label: "Rand der Form", type: "checkbox", checked: o.rim !== false, click: set("rim", o.rim === false) });
+    t.push({ type: "separator" }, { label: fl.ball === false ? "Kugel einblenden" : "Kugel ausblenden", danger: fl.ball !== false, click: act("tog", "ball") });
+    more(); return showStyledMenu(t, s.vars, "Kugel");
+  }
+  if (tg?.kind === "temp" && typeof tg.key === "string") {
+    t.push({ label: "Form", submenu: pairs(o.bshapes).map(([k, l]) => ({ label: l, type: "radio", checked: o.bshape === k, click: set("bshape", k) })) });
+    t.push({ label: "Material", submenu: pairs(o.blooks).map(([k, l]) => ({ label: l, type: "radio", checked: o.blook === k, click: set("blook", k) })) });
+    t.push({ type: "separator" }, { label: `„${String(tg.name || "").slice(0, 30)}“ ausblenden`, danger: true, click: act("hidetemp", tg.key) });
+    more(); return showStyledMenu(t, s.vars, "Button");
+  }
+  if (tg?.kind === "pill") { t.push({ label: "Statusanzeige ausblenden", danger: true, click: act("tog", "status") }); more(); return showStyledMenu(t, s.vars, "Statusanzeige"); }
+  if (tg?.kind === "who") { t.push({ label: "„Claude · Lokal“ ausblenden", danger: true, click: act("tog", "ai") }); more(); return showStyledMenu(t, s.vars, "Claude · Lokal"); }
+  if (tg?.kind === "strata") { t.push({ label: "Strata-Knopf ausblenden", danger: true, click: act("tog", "strata") }); more(); return showStyledMenu(t, s.vars, "Strata"); }
+  if (tg?.kind === "blk" && typeof tg.id === "string") {
+    t.push({ label: "Nach vorn holen", click: act("blkfront", tg.id) }, { label: "Nach hinten legen", click: act("blkback", tg.id) }, { type: "separator" }, { label: `„${String(tg.name || "").slice(0, 30)}“ ausblenden`, danger: true, click: act("hideblk", tg.id) });
+    more(); return showStyledMenu(t, s.vars, String(tg.name || "Fenster").slice(0, 30));
+  }
   if (tg?.kind === "ball") t.push({ label: fl.ball === false ? "Kugel einblenden" : "Kugel entfernen", danger: fl.ball !== false, click: act("tog", "ball") }, { type: "separator" });
   else if (tg?.kind === "pill") t.push({ label: "Statusanzeige ausblenden", danger: true, click: act("tog", "status") }, { type: "separator" });
   else if (tg?.kind === "who") t.push({ label: "„Claude · Lokal“ ausblenden", danger: true, click: act("tog", "ai") }, { type: "separator" });
@@ -1359,6 +1441,7 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
   t.push({ type: "separator" },
     { label: "Notizblock", type: "checkbox", checked: !!config.notesOn, click: act("notes", null, true) },
     { label: "YouTube", click: act("yt", null, true) },
+    { label: "Twitch", click: act("tw", null, true) },
     { type: "separator" },
     { label: "Fenster zurückholen (mittig, Standardgröße)", click: rescueWindow },
     { label: "Nach Updates suchen", click: () => { checkUpdates(); win.webContents.send("notice", "Suche nach Updates …"); } },
@@ -1428,8 +1511,8 @@ ipcMain.on("win-mode", (_e, mode) => {
 });
 ipcMain.on("quit", () => app.quit());
 // Einstellungen aus der Oberfläche speichern (nur bekannte Schlüssel)
-const SETTABLE = { aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", btnShape: "string", btnLook: "string", palette: "string", loadShimmer: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceOutput: "boolean", micOnStart: "boolean",
-  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
+const SETTABLE = { aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceOutput: "boolean", micOnStart: "boolean",
+  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeFollow: "boolean", holeApps: "string", friendsStill: "boolean", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordName: "string", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 ipcMain.handle("set-config", (_e, patch) => {
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -1453,11 +1536,16 @@ ipcMain.handle("set-config", (_e, patch) => {
   if (("themeHue" in patch || "winColor" in patch) && newsAlive()) pushMarket(); // Lagebild färbt sich mit
   if ("ytVideoOnly" in patch) { if (ytView) ytTrackNow(ytView.webContents); if (ytAlive()) ytTrackNow(ytWin.webContents); }
   if ("ytNoAds" in patch) { const u = ytView?.webContents.getURL(); if (ytView) { ytEmbedClose(); ytEmbedShow("").then(() => { if (u) ytView?.webContents.loadURL(u); }); } if (ytAlive()) ytWin.close(); }
-  if (["holeOn", "holeW", "holeH", "holeCorner", "holeX", "holeY", "holeEdit"].some((k) => k in patch)) { lastShape = "x"; applyShape(); }
+  if ("holeFollow" in patch) { if (config.holeFollow) followStart(); else followStop(); }
+  if ("holeApps" in patch) { followRect = null; }
+  if (["holeOn", "holeFollow", "holeApps", "holeW", "holeH", "holeRound", "holeCorner", "holeX", "holeY", "holeEdit"].some((k) => k in patch)) { lastShape = "x"; applyShape(); }
   if ("ytAdblock" in patch) { if (config.ytAdblock) ytAdblock(); else if (ytBlocker) { try { ytBlocker.disableBlockingInSession(session.fromPartition("persist:youtube")); } catch {} ytBlocker = null; } }
   if ("sensors" in patch) { if (patch.sensors) startSensors(); else { sensorState = "aus"; sensorPush(); execFile("schtasks", ["/End", "/TN", "Jarvis Sensoren"], { windowsHide: true }, () => {}); } }
   if ("updateUrl" in patch || "updateChannel" in patch) checkUpdates();
   if ("ytAlpha" in patch || "ytFeather" in patch || "ytRound" in patch || "winColor" in patch || "themeHue" in patch) ytAlphaAll();
+  if ("twAlpha" in patch || "twFeather" in patch || "twRound" in patch || "winColor" in patch || "themeHue" in patch) twAlphaAll();
+  if ("twVideoOnly" in patch) { if (twView) twTrackNow(twView.webContents); if (twAlive()) twTrackNow(twWin.webContents); }
+  if ("twOnTop" in patch && twAlive()) twWin.setAlwaysOnTop(!!config.twOnTop, "floating");
   if ("ytOnTop" in patch && ytAlive()) ytWin.setAlwaysOnTop(!!config.ytOnTop, "floating");
   if ("newsCats" in patch || "btcCur" in patch || "themeHue" in patch) pushMarket();
   if ("autostart" in patch) applyAutostart();
@@ -1600,13 +1688,14 @@ app.whenReady().then(async () => {
   session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === "media");
   const port = await startServer();
   await createWindow(port);
+  followStart();
   buildTray();
   applyAutostart();
   setupUpdater();
   if (config.setupDone) startSensors();
   win?.on("session-end", () => { quitting = true; }); // Windows fährt herunter: zählt wie Beenden
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
-  setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); else if (config.ytOpen === "win") openYoutube(""); } catch (e) { logError(e); } }, 3000);
+  setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); else if (config.ytOpen === "win") openYoutube(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
   strata.init(() => config, (s) => {
     if (s.state === "an" && strataPrev !== "an") { strataUsed = Date.now(); unloadOllama(); } // Strata übernimmt: kleines Modell aus dem Grafikspeicher werfen
     strataPrev = s.state; sendUI("strata", s); pushAiStatus();
@@ -2186,15 +2275,19 @@ async function ytAlphaApply(wc) {
   const a = Math.max(30, Math.min(100, Number(config.ytAlpha) || 100)), f = Math.max(0, Math.min(80, Number(config.ytFeather) || 0)), rd = Math.max(0, Math.min(40, Number(config.ytRound ?? 14))), old = ytAlphaKeys.get(wc);
   if (old) { try { await wc.removeInsertedCSS(old); } catch {} ytAlphaKeys.delete(wc); }
   const view = ytView && wc === ytView.webContents;
-  if (view) { try { ytView.setBackgroundColor(a < 100 ? "#00000000" : "#000000"); } catch {} }
+  // Mit weichen Rändern oder runden Ecken färbt sich auch die schwarze Videofläche (Balken oben/unten) in die Fensterfarbe, sonst bleibt ein harter schwarzer Kasten
+  const blend = f > 0 || rd > 0, wcl = config.winColor || {}, wh = Math.round(wcl.follow ? (config.themeHue ?? 205) : (wcl.h ?? 219)), ws = (wcl.s ?? 54) / 100, wl = (wcl.l ?? 5) / 100;
+  const hx = (n) => { const k = (n + wh / 30) % 12, aa = ws * Math.min(wl, 1 - wl), v = wl - aa * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1))); return Math.round(v * 255).toString(16).padStart(2, "0"); };
+  const winHex = "#" + hx(0) + hx(8) + hx(4);
+  if (view) { try { ytView.setBackgroundColor(a < 100 ? "#00000000" : blend ? winHex : "#000000"); ytView.setBorderRadius(rd); } catch {} } // runde Ecken: Fläche wirklich rund beschnitten, nicht aufgemalt
   if (!view) return; // eigenes Fenster: Transparenz über die Fensterdeckkraft (ytAlphaAll); weiche Ränder nur in der eingebetteten Ansicht
   let css = a < 100 ? `html { opacity: ${a / 100} !important; }\n` : "";
-  if (f > 0 || rd > 0) {
+  if (blend) css += `html.jv-vo, html.jv-vo body, html.jv-vo ytd-app, html.jv-vo #content, html.jv-vo ytd-page-manager, html.jv-vo ytd-watch-flexy, html.jv-vo #columns, html.jv-vo #primary, html.jv-vo #player, html.jv-vo #full-bleed-container, html.jv-vo #player-full-bleed-container, html.jv-vo #movie_player, html.jv-vo #movie_player .html5-video-container, html.jv-vo #movie_player video { background: ${winHex} !important; }\n`;
+  if (f > 0) {
     // Weiche Ränder: ein Farbrand in der Fensterfarbe liegt über den Kanten der Seite und blendet sie ins Panel aus (kein Maskieren, das Video bleibt unberührt)
     const wc2 = config.winColor || {}, h = Math.round(wc2.follow ? (config.themeHue ?? 205) : (wc2.h ?? 219)), c = (al) => `hsl(${h} ${wc2.s ?? 54}% ${wc2.l ?? 5}% / ${al})`;
-    const corner = (pos, at) => `radial-gradient(circle at ${at}, transparent ${rd - 0.5}px, ${c(1)} ${rd + 0.5}px) ${pos} / ${rd}px ${rd}px no-repeat`;
     const edge = (dir) => `linear-gradient(${dir}, ${c(1)} 0, ${c(0.72)} ${Math.round(f * 0.3)}px, ${c(0.25)} ${Math.round(f * 0.65)}px, ${c(0)} ${f}px, ${c(0)} calc(100% - ${f}px), ${c(0.25)} calc(100% - ${Math.round(f * 0.65)}px), ${c(0.72)} calc(100% - ${Math.round(f * 0.3)}px), ${c(1)} 100%)`;
-    css += `html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; background: ${[rd > 0 && corner("top left", "100% 100%"), rd > 0 && corner("top right", "0 100%"), rd > 0 && corner("bottom left", "100% 0"), rd > 0 && corner("bottom right", "0 0"), f > 0 && edge("to right"), f > 0 && edge("to bottom")].filter(Boolean).join(", ")}; }\n`;
+    css += `html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; background: ${edge("to right")}, ${edge("to bottom")}; }\n`;
   }
   if (css) { try { ytAlphaKeys.set(wc, await wc.insertCSS(css)); } catch {} }
 }
@@ -2332,6 +2425,121 @@ function openBraveYoutube(q) {
 }
 actions.hooks.youtube = (q) => (config.ytMode === "brave" ? openBraveYoutube(q) : config.ytMode === "fenster" || config.gfxSafe ? openYoutube(q) : ytEmbedShow(q));
 ipcMain.on("open-youtube", (_e, q) => actions.hooks.youtube(typeof q === "string" ? q.slice(0, 200) : ""));
+// ---------- Twitch-Fenster ----------
+// Wie das YouTube-Fenster: im Panel eingebettet oder als eigenes Fenster, eigene Sitzung (Anmeldung bleibt), Transparenz, runde Ecken, weiche Ränder, „Nur Video“, Größe, zuletzt gesehener Kanal.
+// Twitch-Werbung kommt vom Server und lässt sich hier nicht herausfiltern (Turbo-Abo oder Anmeldung ohne Werbung ist dafür der Weg).
+let twWin = null, twView = null, twRect = null, twShown = null;
+const twAlive = () => twWin && !twWin.isDestroyed();
+const TW_HOST = /(^|\.)(twitch\.tv|twitchcdn\.net|ttvnw\.net|jtvnw\.net|twimg\.com|twitchapps\.com|arkoselabs\.com|funcaptcha\.com|recaptcha\.net|google\.com|gstatic\.com|amazon\.com|cloudfront\.net)$/i;
+const twPrefs = () => ({ partition: "persist:twitch", contextIsolation: true, nodeIntegration: false, sandbox: true });
+const twUrl = (q) => {
+  q = String(q || "").trim();
+  if (/^[A-Za-z0-9_]{3,25}$/.test(q)) return "https://www.twitch.tv/" + q.toLowerCase();
+  try { const u = new URL(/^https?:/i.test(q) ? q : "https://" + q); if (/(^|\.)twitch\.tv$/i.test(u.hostname)) return u.toString(); } catch {}
+  return config.twLast || "https://www.twitch.tv/";
+};
+// „Nur Video“: auf Kanalseiten alles außer dem Player ausblenden (Klasse jv-vo am <html>); Twitch ändert seine Klassen manchmal, dann bleibt die normale Seite sichtbar
+const TW_VO_CSS = `html.jv-vo, html.jv-vo body { background: transparent !important; overflow: hidden !important; }
+html.jv-vo .top-nav__menu, html.jv-vo nav, html.jv-vo [data-test-selector="top-nav"], html.jv-vo .side-nav, html.jv-vo #side-nav, html.jv-vo .right-column, html.jv-vo .chat-shell, html.jv-vo [data-test-selector="channel-info-content"], html.jv-vo .channel-root__info, html.jv-vo .channel-root__right-column, html.jv-vo .consent-banner, html.jv-vo [data-a-target="consent-banner"], html.jv-vo .tw-toast, html.jv-vo .stream-chat, html.jv-vo .community-points-summary { display: none !important; }
+html.jv-vo .video-player, html.jv-vo [data-a-target="video-player"], html.jv-vo .video-player__container { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; z-index: 2147483000 !important; background: #000 !important; }
+html.jv-vo video { object-fit: contain !important; }`;
+const twAlphaKeys = new WeakMap();
+async function twAlphaApply(wc) {
+  if (!wc || wc.isDestroyed()) return;
+  const a = Math.max(30, Math.min(100, Number(config.twAlpha) || 100)), f = Math.max(0, Math.min(80, Number(config.twFeather) || 0)), rd = Math.max(0, Math.min(40, Number(config.twRound ?? 14))), old = twAlphaKeys.get(wc);
+  if (old) { try { await wc.removeInsertedCSS(old); } catch {} twAlphaKeys.delete(wc); }
+  const view = twView && wc === twView.webContents;
+  const blend = f > 0 || rd > 0, wcl = config.winColor || {}, wh = Math.round(wcl.follow ? (config.themeHue ?? 205) : (wcl.h ?? 219)), ws = (wcl.s ?? 54) / 100, wl = (wcl.l ?? 5) / 100;
+  const hx = (n) => { const k = (n + wh / 30) % 12, aa = ws * Math.min(wl, 1 - wl), v = wl - aa * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1))); return Math.round(v * 255).toString(16).padStart(2, "0"); };
+  const winHex = "#" + hx(0) + hx(8) + hx(4);
+  if (view) { try { twView.setBackgroundColor(a < 100 ? "#00000000" : blend ? winHex : "#000000"); twView.setBorderRadius(rd); } catch {} }
+  if (!view) return;
+  let css = a < 100 ? `html { opacity: ${a / 100} !important; }\n` : "";
+  if (f > 0) {
+    const h = Math.round(wcl.follow ? (config.themeHue ?? 205) : (wcl.h ?? 219)), c = (al) => `hsl(${h} ${wcl.s ?? 54}% ${wcl.l ?? 5}% / ${al})`;
+    const edge = (dir) => `linear-gradient(${dir}, ${c(1)} 0, ${c(0.72)} ${Math.round(f * 0.3)}px, ${c(0.25)} ${Math.round(f * 0.65)}px, ${c(0)} ${f}px, ${c(0)} calc(100% - ${f}px), ${c(0.25)} calc(100% - ${Math.round(f * 0.65)}px), ${c(0.72)} calc(100% - ${Math.round(f * 0.3)}px), ${c(1)} 100%)`;
+    css += `html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; background: ${edge("to right")}, ${edge("to bottom")}; }\n`;
+  }
+  if (css) { try { twAlphaKeys.set(wc, await wc.insertCSS(css)); } catch {} }
+}
+function twAlphaAll() { if (twView) twAlphaApply(twView.webContents); if (twAlive()) { try { twWin.setOpacity(Math.max(0.3, Math.min(1, (Number(config.twAlpha) || 100) / 100))); } catch {} } }
+async function twTrackNow(wc) {
+  if (!wc || wc.isDestroyed()) return;
+  let u; try { u = new URL(wc.getURL()); } catch { return; }
+  if (!/(^|\.)twitch\.tv$/i.test(u.hostname)) return;
+  const channel = /^\/[A-Za-z0-9_]{3,25}\/?$/.test(u.pathname) && !/^\/(directory|downloads|jobs|turbo|settings|subscriptions|wallet|drops|login|signup)\b/i.test(u.pathname);
+  try { await wc.executeJavaScript(`document.documentElement.classList.toggle("jv-vo", ${!!config.twVideoOnly} && ${channel}); window.dispatchEvent(new Event("resize")); 0`); } catch {}
+  u.search = ""; const url = u.toString();
+  if (channel && config.twLast !== url) { config.twLast = url; saveConfig(); }
+}
+function twSetup(wc) {
+  wc.on("dom-ready", () => { wc.insertCSS(TW_VO_CSS).catch(() => {}); twAlphaApply(wc); twTrackNow(wc); });
+  const iv = setInterval(() => { if (wc.isDestroyed()) return clearInterval(iv); twTrackNow(wc); }, 5000);
+  wc.on("did-navigate-in-page", () => setTimeout(() => twTrackNow(wc), 800)); wc.on("destroyed", () => clearInterval(iv));
+  wc.setUserAgent(wc.getUserAgent().replace(/\s(Electron|Argus[^\s]*)\/\S+/g, ""));
+  const external = (u) => { try { return !TW_HOST.test(new URL(u).hostname); } catch { return true; } };
+  wc.setWindowOpenHandler(({ url }) => { if (external(url)) { if (/^https:/i.test(url)) shell.openExternal(url); } else wc.loadURL(url); return { action: "deny" }; });
+  wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
+}
+function openTwitch(q) {
+  const url = twUrl(q);
+  if (twAlive()) { if (q) twWin.loadURL(url); twWin.show(); twWin.focus(); return; }
+  const wa = screen.getPrimaryDisplay().workArea;
+  const b = config.twBox && screen.getAllDisplays().some((d) => d.workArea.x <= config.twBox.x + 40 && config.twBox.x + 40 <= d.workArea.x + d.workArea.width && d.workArea.y <= config.twBox.y && config.twBox.y <= d.workArea.y + d.workArea.height)
+    ? config.twBox : { width: 960, height: 600, x: wa.x + Math.round((wa.width - 960) / 2) + 30, y: wa.y + Math.round((wa.height - 600) / 2) + 30 };
+  twWin = new BrowserWindow({ ...b, minWidth: 360, minHeight: 240, title: "Twitch · Argus", backgroundColor: "#0e0e10", autoHideMenuBar: true, show: false, alwaysOnTop: !!config.twOnTop, icon: path.join(__dirname, "assets", "icon.png"), webPreferences: twPrefs() });
+  twSetup(twWin.webContents);
+  if (config.twOnTop) twWin.setAlwaysOnTop(true, "floating");
+  twWin.webContents.on("page-title-updated", (e, t) => { e.preventDefault(); twWin.setTitle(t.replace(/ - Twitch$/, "") + " · Twitch"); });
+  const save = () => { if (twAlive() && !twWin.isMaximized() && !twWin.isFullScreen()) { config.twBox = twWin.getBounds(); saveConfig(); } };
+  twWin.on("moved", save); twWin.on("resized", save);
+  twWin.once("ready-to-show", () => { twAlphaAll(); twWin.show(); });
+  twWin.on("closed", () => { twWin = null; if (!quitting && config.twOpen === "win") { config.twOpen = ""; saveConfig(); } });
+  if (config.twOpen !== "win") { config.twOpen = "win"; saveConfig(); }
+  twWin.loadURL(url).catch((e) => logError(e));
+}
+function twViewMake() {
+  if (twView) return twView;
+  twView = new WebContentsView({ webPreferences: twPrefs() }); twShown = null;
+  try { twView.setBackgroundColor("#000000"); } catch {}
+  const wc = twView.webContents; twSetup(wc);
+  wc.on("page-title-updated", (_e, t) => sendUI("tw-title", t.replace(/ - Twitch$/, "")));
+  win.contentView.addChildView(twView);
+  return twView;
+}
+async function twEmbedShow(q) {
+  if (!alive()) return;
+  if (config.gfxSafe) return openTwitch(q);
+  if (!expanded) setExpanded(true);
+  const v = twViewMake();
+  if (q || !v.webContents.getURL()) v.webContents.loadURL(twUrl(q)).catch((e) => logError(e));
+  sendUI("tw-embed", { on: true });
+  if (config.twOpen !== "panel") { config.twOpen = "panel"; saveConfig(); }
+}
+function twEmbedClose() {
+  if (!twView) return;
+  twTrackNow(twView.webContents);
+  try { win?.contentView.removeChildView(twView); } catch {}
+  twView.webContents.close(); twView = null; twRect = null; twShown = null;
+  if (!quitting && config.twOpen === "panel") { config.twOpen = ""; saveConfig(); }
+  sendUI("tw-embed", { on: false });
+}
+ipcMain.on("tw-rect", (_e, r) => {
+  if (!twView) return;
+  twRect = r && [r.x, r.y, r.width, r.height].every(Number.isFinite) && r.width > 40 && r.height > 30 ? r : null;
+  if (twRect && expanded) {
+    const nb = { x: Math.round(twRect.x), y: Math.round(twRect.y), width: Math.round(twRect.width), height: Math.round(twRect.height) }, ob = twView.getBounds();
+    if (nb.x !== ob.x || nb.y !== ob.y || nb.width !== ob.width || nb.height !== ob.height) twView.setBounds(nb);
+    if (!twShown) { twView.setVisible(true); twShown = true; }
+  } else if (twShown !== false) { twView.setVisible(false); twShown = false; }
+});
+ipcMain.on("tw-embed", (_e, a) => {
+  if (a === "close") { const wc = twView?.webContents; (wc ? twTrackNow(wc) : Promise.resolve()).then(twEmbedClose); }
+  else if (a === "popout") { (async () => { if (twView) await twTrackNow(twView.webContents); twEmbedClose(); openTwitch(""); })(); }
+  else twEmbedShow("");
+});
+actions.hooks.twitch = (q) => (config.twMode === "fenster" || config.gfxSafe ? openTwitch(q) : twEmbedShow(q));
+ipcMain.on("open-twitch", (_e, q) => actions.hooks.twitch(typeof q === "string" ? q.slice(0, 200) : ""));
 function fileIndexInfo() {
   try { const st = fs.statSync(files.INDEX()); return { ok: true, ts: st.mtimeMs, mb: Math.round(st.size / 1048576) }; } catch { return { ok: false }; }
 }
@@ -2556,3 +2764,21 @@ let quitting = false; // beim Beenden geschlossenes YouTube nicht als „zu“ m
 app.on("before-quit", () => { quitting = true; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
   if (strata.ownProcess()) strata.stop(); watch?.stop(); stopAnim(); clearInterval(moveTimer); });
 app.on("window-all-closed", () => app.quit());
+
+// Speicher-Protokoll: alle 5 Minuten eine Zeile je Prozess (Fenster, MB), damit ein schleichender Zuwachs einem Fenster zugeordnet werden kann.
+// Nur lokale Datei argus-speicher.csv (letzte ~600 Zeilen), nichts wird gesendet.
+{
+  const MEM_LOG = path.join(app.getPath("userData"), "argus-speicher.csv");
+  const memRow = () => {
+    try {
+      const names = new Map();
+      for (const w of BrowserWindow.getAllWindows()) { try { names.set(w.webContents.getOSProcessId(), w.getTitle() || "Fenster"); } catch {} }
+      if (ytView && !ytView.webContents.isDestroyed()) { try { names.set(ytView.webContents.getOSProcessId(), "YouTube-Ansicht"); } catch {} }
+      const t = new Date().toISOString(), rows = app.getAppMetrics().map((m) => `${t};${m.type};${m.pid};${names.get(m.pid) || ""};${Math.round((m.memory.privateBytes || m.memory.workingSetSize) / 1024)}`);
+      let old = ""; try { old = fs.readFileSync(MEM_LOG, "utf8"); } catch {}
+      const lines = (old ? old.split("\n").filter(Boolean) : ["zeit;typ;pid;fenster;mb"]).concat(rows);
+      fs.writeFileSync(MEM_LOG, lines.slice(-600).join("\n") + "\n");
+    } catch {}
+  };
+  app.whenReady().then(() => { setTimeout(memRow, 60e3); setInterval(memRow, 5 * 60e3); });
+}

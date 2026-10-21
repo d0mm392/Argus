@@ -21,7 +21,7 @@
   // ---------- Formen: Kugel, Hexagon, Würfel, Kristall, Gehirn, Ring, DNA-Helix, Galaxie ----------
   let structK = 1, edgeK = 3, nodeK = 1, ballOn = true, statusOn = true, miniMore = false, look3dK = 0.35, structRings = [], structSkel = [];
   let flashK = 1, shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
-  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["stern", "Stern"], ["herz", "Herz"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"]];
+  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"], ["trapez", "Trapez"], ["parallelogramm", "Parallelogramm"], ["oktagon", "Oktagon"], ["diamant", "Diamant"], ["tornado", "Tornado"]];
   // Herz- und Sternumriss als Radius je Winkel (Tabelle), für Punkte und Umriss
   const HEART_R = (() => { const pts = []; for (let k = 0; k < 720; k++) { const t = (k / 720) * Math.PI * 2, x = 16 * Math.sin(t) ** 3, y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); pts.push([x / 17, (y + 2.5) / 17]); }
     const tab = new Array(360).fill(0); for (const [x, y] of pts) { const a = Math.round(((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360) % 360; tab[a] = Math.max(tab[a], Math.hypot(x, y)); }
@@ -149,14 +149,17 @@
       }
       case "pyramide": { let t = 9; for (const [a, b, c, dd] of PYR) { const dot = a * x + b * y + c * z; if (dot > 1e-6) t = Math.min(t, dd / dot); } return [x * t * rad, y * t * rad, z * t * rad]; }
       case "stern": { const th = Math.atan2(y, x), rho = Math.hypot(x, y) || 1e-6, t = Math.min(starR(th) / rho, 0.26 / (Math.abs(z) || 1e-6)); return [x * t * rad, y * t * rad, z * t * rad]; }
-      case "herz": { const th = Math.atan2(y, x), rho = Math.hypot(x, y) || 1e-6, t = Math.min(heartR(th) / rho, 0.32 / (Math.abs(z) || 1e-6)); return [x * t * rad, y * t * rad, z * t * rad]; }
       case "atom": { // Kern plus drei gekippte Elektronenbahnen
         if (i % 4 === 0) { const b = 0.26 * Math.cbrt(R()); return [x * b, y * b, z * b]; }
         const k = i % 3, a = R() * Math.PI * 2, rr = 0.9 + (R() - 0.5) * 0.05, px = Math.cos(a) * rr, pz = Math.sin(a) * rr * 0.32, tilt = k * Math.PI / 3;
         return [px * Math.cos(tilt) - pz * Math.sin(tilt) * 0, (R() - 0.5) * 0.03 + px * Math.sin(tilt), pz + (R() - 0.5) * 0.03];
       }
-      case "ikosaeder": return [x * 0.7 * rad, y * 0.7 * rad, z * 0.7 * rad];
-      case "stella": return [x * 0.6 * rad, y * 0.6 * rad, z * 0.6 * rad];
+      case "ikosaeder": case "trapez": case "parallelogramm": case "oktagon": case "diamant": { const t = solidR(shape, x, y, z) * 0.97, rr = Math.pow(rad, 0.6); return [x * t * rr, y * t * rr, z * t * rr]; }
+      case "tornado": { // offener Wirbel: Spiralarme um eine Achse, oben weit, unten spitz
+        if (i % 9 === 0) { const t = R(); return [(R() - 0.5) * 0.08, -0.95 + t * 1.9, (R() - 0.5) * 0.08]; }
+        const t = Math.pow(R(), 0.85), arm = i % 3, ang = t * 13 + arm * 2.094 + (R() - 0.5) * 0.35, rr = (0.06 + 0.86 * Math.pow(t, 1.35)) * (0.82 + 0.3 * R());
+        return [Math.cos(ang) * rr, -0.95 + t * 1.9, Math.sin(ang) * rr]; }
+      case "stella": { const t = solidR("stella", x, y, z) * 0.97, rr = Math.pow(rad, 0.6); return [x * t * rr, y * t * rr, z * t * rr]; }
       case "knoten": { const t = R() * Math.PI * 2, k0 = 0.3, c = [(2 + Math.cos(3 * t)) * Math.cos(2 * t) * k0, Math.sin(3 * t) * k0 * 1.15, (2 + Math.cos(3 * t)) * Math.sin(2 * t) * k0], rr = 0.12 * Math.sqrt(R()), a = R() * Math.PI * 2;
         return [c[0] + rr * Math.cos(a) * 0.9, c[1] + rr * Math.sin(a), c[2] + rr * Math.sin(a * 1.7) * 0.9]; }
       case "tropfen": { const sN = Math.pow(R(), 0.8), y = -0.72 + sN * 1.7, rp = Math.sin(Math.PI * Math.pow(sN, 0.72)) * 0.56 * (1 - 0.15 * sN) * 0.85, a = R() * Math.PI * 2, q = Math.sqrt(R()); return [rp * q * Math.cos(a), y, rp * q * Math.sin(a)]; }
@@ -235,7 +238,7 @@
   function computeHull() {
     if (shape === "symbiont") { symMeshUpdate(); return; } // Umriss aus dem 3D-Netz (02b-koerper.js)
     if (OPEN_SHAPES.has(shape)) { hull = null; sharp = false; return; } // offene Formen: kein dunkler Untergrund
-    if (shape === "stern" || shape === "herz") { // nicht konvex: Umriss direkt aus der Vorderseite der Form
+    if (shape === "stern") { // nicht konvex: Umriss direkt aus der Vorderseite der Form
       sharp = shape === "stern"; hull = [];
       const pts = shape === "stern" ? STAR_V.map(([x, y]) => [x * 1.08, y * 1.08]) : Array.from({ length: 72 }, (_, k) => { const th = (k / 72) * Math.PI * 2, r = heartR(th) * 1.08; return [Math.cos(th) * r, Math.sin(th) * r]; });
       for (const [x, y] of pts) { const q = proj(rot(x, y, 0)); hull.push([q[0], q[1]]); }

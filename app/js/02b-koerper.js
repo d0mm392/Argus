@@ -1,8 +1,8 @@
 "use strict";
 // Körper: schattierte 3D-Flächen für Würfel, Hexagon, Kristall, Pyramide, Ring (Torus), Ikosaeder, Stern-Tetraeder, Torusknoten, Tropfen,
 // dazu der Symbiont als echte 3D-Masse (Netz aus Flächen, das ständig wabert). Alles läuft auf Canvas 2D ohne WebGL.
-  const SOLID_SHAPES = new Set(["wuerfel", "hexagon", "kristall", "pyramide", "ring", "ikosaeder", "stella", "knoten", "tropfen"]);
-  const OPEN_SHAPES = new Set(["ring", "helix", "galaxie", "atom", "knoten"]); // offene Formen: kein dunkler Untergrund, nur Hof
+  const SOLID_SHAPES = new Set(["wuerfel", "hexagon", "kristall", "pyramide", "ring", "ikosaeder", "stella", "knoten", "tropfen", "trapez", "parallelogramm", "oktagon", "diamant"]);
+  const OPEN_SHAPES = new Set(["ring", "helix", "galaxie", "atom", "knoten", "tornado"]); // offene Formen: kein dunkler Untergrund, nur Hof
   const LIGHT = (() => { const l = Math.hypot(-0.45, 0.6, 0.66); return [-0.45 / l, 0.6 / l, 0.66 / l]; })();
   const HALF = (() => { const h = [LIGHT[0], LIGHT[1], LIGHT[2] + 1], l = Math.hypot(...h); return [h[0] / l, h[1] / l, h[2] / l]; })(); // Halbvektor für den Glanz (Blick entlang z)
   const solidCache = {};
@@ -17,6 +17,35 @@
     return { v, f, sg, smooth: !!smooth, vx: new Float32Array(v.length), vy: new Float32Array(v.length), vz: new Float32Array(v.length), sx: new Float32Array(v.length), sy: new Float32Array(v.length) };
   }
   const tri = (a, b, c) => [a, b, c];
+  // Gerades Prisma über einem Vieleck (xy), Tiefe ±d in z, Stirnseite zum Betrachter
+  function extrude(poly, d) {
+    const n = poly.length, v = []; for (const [x, y] of poly) v.push([x, y, -d]); for (const [x, y] of poly) v.push([x, y, d]);
+    const f = [Array.from({ length: n }, (_, i) => i), Array.from({ length: n }, (_, i) => n + i)];
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; f.push([i, j, n + j, n + i]); }
+    return makeMesh(v, f);
+  }
+  // Ebenen eines konvexen Körpers (nach außen), damit die Punktwolke seinen ganzen Raum füllt statt nur eine Kugel darin
+  const planeCache = {};
+  function solidPlanes(sh) {
+    if (planeCache[sh]) return planeCache[sh];
+    const m = solidCache[sh] || (solidCache[sh] = buildSolid(sh)); if (!m) return (planeCache[sh] = []);
+    const out = [];
+    for (const face of m.f) {
+      let nx = 0, ny = 0, nz = 0, cx = 0, cy = 0, cz = 0;
+      for (let i = 0; i < face.length; i++) { const a = m.v[face[i]], b = m.v[face[(i + 1) % face.length]]; nx += (a[1] - b[1]) * (a[2] + b[2]); ny += (a[2] - b[2]) * (a[0] + b[0]); nz += (a[0] - b[0]) * (a[1] + b[1]); cx += a[0]; cy += a[1]; cz += a[2]; }
+      const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l; const k = face.length; cx /= k; cy /= k; cz /= k;
+      let h = nx * cx + ny * cy + nz * cz; if (h < 0) { nx = -nx; ny = -ny; nz = -nz; h = -h; }
+      out.push([nx, ny, nz, h]);
+    }
+    return (planeCache[sh] = out);
+  }
+  // Abstand von der Mitte bis zur Oberfläche in Richtung (x, y, z)
+  function stellaR(x, y, z) { // Vereinigung zweier Tetraeder um die Mitte: jeweils der größere Abstand
+    let best = 0; const q = 1 / Math.sqrt(3), h = 0.82 * 1.7320508 / 3;
+    for (const sg of [1, -1]) { let t = 9; for (const [a, b, c] of [[-1, -1, -1], [-1, 1, 1], [1, -1, 1], [1, 1, -1]]) { const dot = sg * (a * x + b * y + c * z) * q; if (dot > 1e-6) t = Math.min(t, h / dot); } best = Math.max(best, t); }
+    return best;
+  }
+  function solidR(sh, x, y, z) { if (sh === "stella") return stellaR(x, y, z); let t = 9; for (const [a, b, c, h] of solidPlanes(sh)) { const dot = a * x + b * y + c * z; if (dot > 1e-6) t = Math.min(t, h / dot); } return t; }
   function buildSolid(sh) {
     switch (sh) {
       case "wuerfel": { const m = 0.78 * 0.94, v = []; for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) v.push([x * m, y * m, z * m]);
@@ -29,6 +58,15 @@
       case "ikosaeder": { const p = (1 + Math.sqrt(5)) / 2, raw = []; for (const a of [-1, 1]) for (const b of [-p, p]) raw.push([0, a, b], [a, b, 0], [b, 0, a]);
         const l = Math.hypot(1, p), v = raw.map((q) => q.map((x) => x / l * 0.95)), e = 2 / l * 0.95, f = [], d = (i, j) => Math.hypot(v[i][0] - v[j][0], v[i][1] - v[j][1], v[i][2] - v[j][2]);
         for (let i = 0; i < 12; i++) for (let j = i + 1; j < 12; j++) for (let k = j + 1; k < 12; k++) if (Math.abs(d(i, j) - e) < 1e-3 && Math.abs(d(j, k) - e) < 1e-3 && Math.abs(d(i, k) - e) < 1e-3) f.push([i, j, k]);
+        return makeMesh(v, f); }
+      case "trapez": return extrude([[-0.92, -0.62], [0.92, -0.62], [0.5, 0.62], [-0.5, 0.62]], 0.42);
+      case "parallelogramm": return extrude([[-0.95, -0.58], [0.4, -0.58], [0.95, 0.58], [-0.4, 0.58]], 0.42);
+      case "oktagon": return extrude(Array.from({ length: 8 }, (_, i) => { const a = (i + 0.5) / 8 * Math.PI * 2; return [Math.cos(a) * 0.9, Math.sin(a) * 0.9]; }), 0.4);
+      case "diamant": { // Brillantschliff: Tafel oben, Krone, Rundiste, spitze Unterseite
+        const v = [], N = 8; for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; v.push([Math.cos(a) * 0.46, 0.62, Math.sin(a) * 0.46]); }
+        for (let i = 0; i < N; i++) { const a = (i + 0.5) / N * Math.PI * 2; v.push([Math.cos(a) * 0.92, 0.2, Math.sin(a) * 0.92]); }
+        v.push([0, -0.95, 0]); const f = [Array.from({ length: N }, (_, i) => i)];
+        for (let i = 0; i < N; i++) { const b = (i + 1) % N, gi = N + i, gp = N + (i + N - 1) % N; f.push([i, b, gi], [i, gi, gp]); f.push([gi, N + (i + 1) % N, 2 * N]); }
         return makeMesh(v, f); }
       case "stella": { const m = 0.82, A = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]].map((q) => q.map((x) => x * m)), B = A.map((q) => q.map((x) => -x)), v = A.concat(B), f = [];
         for (const o of [0, 4]) for (let k = 0; k < 4; k++) f.push([0, 1, 2, 3].filter((i) => i !== k).map((i) => i + o));

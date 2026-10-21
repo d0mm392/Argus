@@ -108,7 +108,12 @@ body.expanded .edge { display: block; }
 .edge-se::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border-right: 2px solid rgba(219, 231, 243, 0.4); border-bottom: 2px solid rgba(219, 231, 243, 0.4); border-bottom-right-radius: 3px; }
 .edge-se:hover::after { border-color: var(--accent, #5fd4ff); }
 .edge:hover, .edge.active { background: rgba(95, 212, 255, 0.12); }
-.shape-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin: -2px 0 6px; }
+.shape-pick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: -2px 0 6px; max-width: 620px; }
+.shape-pick[hidden] { display: none; }
+.pick-toggle { align-self: flex-start; display: flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--ink); font: inherit; font-size: 0.82rem; cursor: pointer; padding: 2px 0; }
+.pick-toggle::before { content: ""; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; transition: transform 0.15s; }
+.pick-toggle.closed::before { transform: rotate(-90deg); }
+.pick-toggle b { color: var(--accent); font-weight: 600; }
 .shape-pick button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--ink-dim); font: inherit; font-size: 0.72rem; cursor: pointer; transition: border-color 0.15s, color 0.15s, transform 0.15s, background 0.15s; }
 .shape-pick button svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linejoin: round; transition: transform 0.4s; }
 .shape-pick button:hover { color: var(--ink); border-color: var(--accent); transform: translateY(-1px); }
@@ -721,3 +726,22 @@ body[data-blook="scan"] :is(.temp, .who span) { background: repeating-linear-gra
 body[data-blook="kontur"] :is(.temp, .who span) { background: transparent; border: 1px solid hsl(var(--h, 205) 90% 62%); box-shadow: 0 0 0 3px hsl(var(--h, 205) 90% 62% / 0.18), 0 0 14px hsl(var(--h, 205) 90% 55% / 0.35); text-shadow: none; }
 body[data-blook="sonnenuntergang"] :is(.temp, .who span) { background: linear-gradient(90deg, #ff5f6d, #ffc371); border: 1px solid rgba(255, 255, 255, 0.45); color: #2b0f16; text-shadow: none; box-shadow: 0 0 12px rgba(255, 130, 100, 0.45); }
 body[data-blook="aurora"] :is(.temp, .who span) { background: linear-gradient(90deg, #11998e, #38ef7d 60%, #7f7fd5); border: 1px solid rgba(255, 255, 255, 0.4); color: #04251d; text-shadow: none; box-shadow: 0 0 12px rgba(56, 239, 125, 0.4); }
+/* Einstellungen: Erklärungen beim Darüberfahren, Zeilen kompakt und ausgerichtet */
+.set-body .note-folded { display: none !important; }
+.set-body .has-tip { cursor: help; }
+.set-body h4.has-tip > :last-child::after, .set-body h4.has-tip::after { content: "ⓘ"; margin-left: 6px; font-size: 0.8rem; opacity: 0.55; text-transform: none; letter-spacing: 0; }
+#tipBox { position: fixed; z-index: 99; max-width: min(340px, calc(100vw - 16px)); padding: 8px 10px; border-radius: 8px; background: var(--win-solid); color: var(--ink); border: 1px solid var(--accent); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45); font-size: 0.76rem; line-height: 1.45; white-space: pre-line; pointer-events: none; }
+#tipBox[hidden] { display: none; }
+.set-body .row, .set-body .col { max-width: 620px; }
+.set-body input[type=range] { flex: 0 0 min(220px, 46%); width: min(220px, 46%); }
+.set-body .row > select, .set-body .row > input[type=text], .set-body .row > input[type=password], .set-body .row > input[type=number] { width: min(220px, 52%); }
+.set-body .row > input[type=checkbox] { margin-left: auto; }
+.set-body .row { min-height: 28px; }
+.nt-tabs button .nt-x { margin-left: 6px; opacity: 0; font-size: 0.8rem; line-height: 1; padding: 0 2px; border-radius: 4px; }
+.nt-tabs button:hover .nt-x, .nt-tabs button.on .nt-x { opacity: 0.6; }
+.nt-tabs button .nt-x:hover { opacity: 1; background: rgba(255, 92, 77, 0.25); }
+.nt-tabs button .nt-x.ask { opacity: 1; color: #ff9a8f; font-size: 0.66rem; }
+/* Notiz-Reiter: höchstens 3 pro Zeile, weitere darunter */
+.nt-bar { align-items: flex-start; }
+.nt-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+.nt-tabs button { max-width: none; }

@@ -1,7 +1,7 @@
 "use strict";
   // ---------- Anordnen: Teile des Panels frei verschieben und in der Größe ändern ----------
   // Lage als Anteil der Fläche unter der Kopfleiste (x, y, w; h = 0 heißt Höhe nach Inhalt), damit es bei jeder Fenstergröße passt
-  const BLOCKS = [["yt", "YouTube", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["game", "Gaming", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
+  const BLOCKS = [["yt", "YouTube", true], ["tw", "Twitch", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["game", "Gaming", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
   const panelEl = document.querySelector(".panel");
   function applyLayout() {
     document.body.classList.toggle("free", !!freeLayout);
@@ -14,7 +14,7 @@
       el.style.left = r.x * 100 + "%"; el.style.top = r.y * 100 + "%"; el.style.width = r.w * 100 + "%";
       el.style.height = hRes && r.h ? r.h * 100 + "%" : "";
     }
-    applyZ(); fitBlocks(); resize(); ytLast = ""; ytLayout?.(); placeOverlays();
+    applyZ(); fitBlocks(); resize(); ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.(); placeOverlays();
   }
   // Stapelreihenfolge: zuletzt angefasstes Fenster liegt oben und bleibt dort (Fenster dürfen sich überlappen)
   function applyZ() {
@@ -48,7 +48,7 @@
     const ph = panelEl.clientHeight || 600, pw = panelEl.clientWidth || 900, s = freeLayout.sys || { x: 0.02, y: 0.4, w: 0.45 };
     const EST = { mine: 200, wx: 300, clocks: 72, farm: 160, farm2: 160, farm3: 160, farm4: 160, notes: 160, quick: 90, mirror: 220, game: 300 }; // Höhe, bevor Daten da sind, ist noch klein: geschätzt
     const w = Math.min(0.96, Math.max(0.28, id === "mine" ? s.w : 380 / pw)), h = (EST[id] || 120) / ph;
-    const taken = Object.entries(freeLayout).filter(([k]) => k !== id && $(k) && !$(k).hidden && (k !== "yt" || $(k).classList.contains("on")))
+    const taken = Object.entries(freeLayout).filter(([k]) => k !== id && $(k) && !$(k).hidden && (!["yt", "tw"].includes(k) || $(k).classList.contains("on")))
       .map(([k, r]) => ({ x: r.x, y: r.y, w: r.w, h: r.h || Math.max($(k).offsetHeight || 60, EST[k] || 0) / ph }));
     const free = (x, y) => taken.every((r) => x + w + 0.008 <= r.x || r.x + r.w + 0.008 <= x || y + h + 0.008 <= r.y || r.y + r.h + 0.008 <= y);
     for (let y = 0.02; y + h <= 0.98; y += 0.02) for (let x = 0.01; x + w <= 0.99; x += 0.02) if (free(x, y)) return { x, y, w, h: 0 };
@@ -74,7 +74,7 @@
       const b = $(id).getBoundingClientRect();
       const ok = b.width > 0 && b.height > 0;
       out[id] = ok ? { x: Math.max(0, (b.left - pr.left) / aw), y: Math.max(0, Math.min((b.top - top) / ah, 1 - Math.min(1, b.height / ah))), w: Math.min(1, b.width / aw), h: hRes ? Math.min(1, b.height / ah) : 0 }
-        : { x: 0.02, y: id === "yt" ? 0.05 : 0.5, w: id === "yt" ? 0.45 : 0.5, h: hRes ? 0.25 : 0 };
+        : { x: 0.02, y: id === "yt" ? 0.05 : id === "tw" ? 0.3 : 0.5, w: id === "yt" || id === "tw" ? 0.45 : 0.5, h: hRes ? 0.25 : 0 };
     }
     return out;
   }
@@ -97,7 +97,7 @@
     });
   }
   // ein schwebendes × für das Fenster unter der Maus (nicht in den Blöcken selbst: Protokoll/Antworten zählen ihre Kinder, Inhalt scrollt)
-  { const bx = document.createElement("button"), NO_X = ["askForm", "notice", "proc", "yt"]; let cur = null;
+  { const bx = document.createElement("button"), NO_X = ["askForm", "notice", "proc", "yt", "tw"]; let cur = null;
     bx.type = "button"; bx.className = "blk-x float"; bx.textContent = "×"; panelEl.append(bx);
     const hide = () => { cur = null; bx.classList.remove("show"); };
     panelEl.addEventListener("pointermove", (e) => {
@@ -213,10 +213,10 @@
     if (on && !expanded) return;
     if (on && !freeLayout) { freeLayout = captureLayout(); applyLayout(); window.jarvis.setConfig({ panelLayout: freeLayout }); }
     document.body.classList.toggle("arrange", on); $("arrangeBtn").setAttribute("aria-pressed", String(on)); placeOverlays();
-    ytLast = ""; ytLayout?.();
+    ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.();
   }
   $("arrangeBtn").addEventListener("click", () => setArrange(!document.body.classList.contains("arrange")));
-  // Fenster aus- und wieder einblenden (× im Anordnen-Modus, Liste in der Leiste, Einstellungen → Aussehen)
+  // Fenster aus- und wieder einblenden (× im Anordnen-Modus, Liste in der Leiste, Einstellungen → Themes)
   const MINE_IDS = ["mOver", "mTick", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
   let miningOn = true;
   const BLOCK_NAMES = { ...Object.fromEntries(BLOCKS.map(([id, n]) => [id, n])), strataBtn: "Strata-Knopf" };
@@ -361,8 +361,8 @@
       window.jarvis.setConfig({ mOverInit: true, pages, hiddenBlocks: [...hiddenSet] });
     }
     // 0.31.9: YouTube nur auf der Start-Seite (0.31.8 hatte es auf Mining mitgenommen)
-    if (pages.Mining) pages.Mining.hiddenBlocks = [...new Set([...(pages.Mining.hiddenBlocks || []), "yt"])];
-    if (page === "Mining" && !hiddenSet.has("yt")) { hiddenSet.add("yt"); applyHidden(); window.jarvis.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); }
+    if (pages.Mining) pages.Mining.hiddenBlocks = [...new Set([...(pages.Mining.hiddenBlocks || []), "yt", "tw"])];
+    if (page === "Mining" && (!hiddenSet.has("yt") || !hiddenSet.has("tw"))) { hiddenSet.add("yt"); hiddenSet.add("tw"); applyHidden(); window.jarvis.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); }
     if (!pagesOn && page !== "Start") { pagesOn = true; switchPage("Start"); pagesOn = false; }
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); applyMiningOn();
   });
@@ -443,7 +443,8 @@
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    window.jarvis.ctxMenu?.({ target, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS };
+    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   window.jarvis.onCtxAction?.(({ a, v }) => {
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
@@ -468,11 +469,16 @@
       if (freeLayout[v]) { if (a === "blkfront") bringFront(v); else { for (const k of Object.keys(freeLayout)) if (freeLayout[k]) freeLayout[k].z = (freeLayout[k].z || 0) + 1; freeLayout[v].z = 0; applyZ(); } window.jarvis.setConfig({ panelLayout: freeLayout }); }
     }
     else if (a === "holetoggle") window.jarvis.getConfig().then((c) => { window.jarvis.setConfig({ holeOn: !c.holeOn, holeEdit: false }); $("setHoleOn").checked = !c.holeOn; });
+    else if (a === "ctxset" && v && typeof v.k === "string") { // Rechtsklick-Menü am Element: stellt über die Einstellungs-Steuerung ein, damit alles den gleichen Weg nimmt
+      const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim" }, el = ids[v.k] && $(ids[v.k]);
+      if (el) { if (el.type === "checkbox") el.checked = !!v.v; else el.value = v.v; if (el.type === "range") el.dispatchEvent(new Event("input")); el.dispatchEvent(new Event("change")); }
+    }
     else if (a === "reset") $("arrReset").click();
     else if (a === "profile" && profs[v]) { $("arrProf").value = v; $("arrProf").dispatchEvent(new Event("change")); }
     else if (a === "skin") [...document.querySelectorAll("#skinPick button")].find((b) => b.dataset.n === v)?.click();
     else if (a === "notes") { $("setNotesOn").checked = !$("setNotesOn").checked; $("setNotesOn").dispatchEvent(new Event("change")); }
     else if (a === "yt") $("ytBtn").click();
+    else if (a === "tw") $("twBtn").click();
     else if (a === "unhide") { if (v === "*") { for (const id of [...hiddenSet]) setHidden(id, false); } else if (BLOCK_NAMES[v]) setHidden(v, false); }
     else if (a === "media") { mediaOn = true; $("setMedia").checked = true; renderMedia(); window.jarvis.setConfig({ mediaOn }); }
   });

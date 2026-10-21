@@ -366,7 +366,7 @@
       const pos = anchor(key, ang, 1.16, o.ph, sz, sz, 0.7);
       const k = o.x == null || live ? 1 : 1 - Math.exp(-dt * 6); // neue Plätze weich anfahren, wenn Programme dazukommen oder gehen
       o.x = o.x == null ? pos.x : o.x + (pos.x - o.x) * k; o.y = o.y == null ? pos.y : o.y + (pos.y - o.y) * k;
-      o.el.style.transform = `translate(${Math.round(o.x)}px, ${Math.round(o.y)}px)`;
+      o.el.style.transform = `translate(${Math.round(o.x)}px, ${Math.round(o.y)}px)`; tiltApply(o.el);
     });
   }
 
@@ -644,8 +644,9 @@
       } else {
         // Nicht über Anzeigen und Symbole legen: nach unten ausweichen, weich
         let off = 0;
-        for (let it = 0; it < 4; it++) {
-          const hit = obstacles.find((o) => tx < o.x + o.w + 4 && tx + w > o.x - 4 && ty + off < o.y + o.h + 4 && ty + off + hgt > o.y - 4);
+        const blockers = obstacles.concat(uiRects(), winRects());
+        for (let it = 0; it < 6; it++) {
+          const hit = blockers.find((o) => tx < o.x + o.w + 4 && tx + w > o.x - 4 && ty + off < o.y + o.h + 4 && ty + off + hgt > o.y - 4);
           if (!hit) break;
           off = hit.y + hit.h + 6 - ty;
         }
@@ -654,6 +655,7 @@
       }
       const al = r.lab * Math.max(r.depthK, r.glow);
       r.el.style.transform = `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`;
+      tiltApply(r.el, -Math.sin(ax) * 6, (r.side ? -1 : 1) * 16 + Math.sin(ay) * 8); // Beschriftungen stehen schräg im Raum und neigen sich mit der Kugel mit
       r.el.style.opacity = (al * opacity.labels).toFixed(3);
       r.el.style.pointerEvents = al > 0.15 ? "auto" : "none";
       const [ax0, ay0] = r.anchor, g = r.glow;
@@ -729,7 +731,7 @@
     if (showHint) rimHint.style.transform = `translate(${(CX - rimHint.offsetWidth / 2).toFixed(0)}px, ${(CY + S * 0.6).toFixed(0)}px)`; // im unteren Teil der Kugel, damit nichts darunter verrutscht
     // Mikrofon-Knopf: standardmäßig rechts am Kugelrand, frei verschiebbar, abschaltbar
     const mpos = anchor("mic", -0.2, 1.18, 0, 30, 30, 0);
-    micFloat.style.transform = `translate(${Math.round(mpos.x)}px, ${Math.round(mpos.y)}px)`;
+    micFloat.style.transform = `translate(${Math.round(mpos.x)}px, ${Math.round(mpos.y)}px)`; tiltApply(micFloat);
     micFloat.classList.toggle("show", micFloatOn && (hov > 0.3 || drag?.el === micFloat) && !expanded);
     micFloat.style.visibility = !expanded && (micFloatOn || micFloat.getAttribute("aria-pressed") === "true") ? "" : "hidden"; // im Panel gibt es den Knopf an der Eingabe
     placeFriends();
@@ -783,7 +785,7 @@
       // selbst hingelegte Anzeigen bleiben genau da, wo Domi sie abgelegt hat; nur nicht abgelegte weichen aus
       if (drag?.el === t.el && drag.moved) tDragBox = { x: pos.x, y: pos.y, w, h };
       else if (!pins["t:" + t.key]) {
-        const occ = [...uiRects(), ...obsNext], free = (x, y) => x >= 4 && y >= 4 && x + w <= W - 4 && y + h <= H - 4 && occ.every((o) => x >= o.x + o.w + 4 || x + w + 4 <= o.x || y >= o.y + o.h + 4 || y + h + 4 <= o.y);
+        const occ = [...uiRects(), ...ytBlock(), ...obsNext], free = (x, y) => x >= 4 && y >= 4 && x + w <= W - 4 && y + h <= H - 4 && occ.every((o) => x >= o.x + o.w + 4 || x + w + 4 <= o.x || y >= o.y + o.h + 4 || y + h + 4 <= o.y);
         // zuletzt gefundenen Ausweichplatz behalten, solange er frei ist: sonst springt die Anzeige beim leichten Schweben hin und her
         if (t.av && free(pos.x + t.av[0], pos.y + t.av[1])) { pos.x += t.av[0]; pos.y += t.av[1]; }
         else if (free(pos.x, pos.y)) t.av = null;
@@ -793,7 +795,7 @@
             if (free(pos.x + dx, pos.y + dy)) { pos.x += dx; pos.y += dy; t.av = [dx, dy]; break search; }
         }
       }
-      t.el.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`;
+      t.el.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`; tiltApply(t.el);
       obsNext.push({ x: pos.x, y: pos.y, w, h });
     }
     obstacles = obsNext;
@@ -808,7 +810,7 @@
     if (media.classList.contains("on")) {
       media.style.setProperty("--mfs", 12 * (scales.media || 1) + "px");
       const mw = media.offsetWidth, mh = media.offsetHeight, p = anchor("media", 2.45, 1.55, 2.6, mw, mh, 0.4);
-      media.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+      media.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`; tiltApply(media);
       // Fortschritt zwischen den Meldungen selbst weiterrechnen
       const m = mediaSt, pos = m.len ? Math.min(m.len, (m.pos || 0) + (m.playing ? (Date.now() - m.rx) / 1000 : 0)) : 0;
       media.querySelector(".mbar i").style.width = (m.len ? pos / m.len * 100 : 0).toFixed(1) + "%";
@@ -826,15 +828,16 @@
       const ww = who.offsetWidth, wh = who.offsetHeight;
       if (pins.ai) { const p = anchor("ai", 0, 0, 1.7, ww, wh, 0.3); who.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`; }
       else who.style.transform = `translate(${Math.round(Math.max(4, Math.min(W - 4 - ww, (expanded ? W / 2 : homeX || CX) - ww / 2)))}px, ${Math.round(Math.max(4, (expanded ? H / 2 + 6 : homeY || CY) - S * 1.12 - wh + Math.sin(time * 0.55) * S * 0.012))}px)`;
+      tiltApply(who);
     }
     // Strata-Knopf: ohne eigene Stelle rechts neben „Claude · Lokal“, sonst wie gezogen
     const sOn = expanded && strataHas && !hiddenSet.has("strataBtn") && widgets.strata?.on !== false;
     strataBtn.classList.toggle("off", !sOn);
     if (sOn) {
       const ss = scales.strata || 1; if (strataBtn.ssSet !== ss) { strataBtn.ssSet = ss; strataBtn.style.setProperty("--ss", ss); }
-      const sw = strataBtn.offsetWidth, sh = strataBtn.offsetHeight, wb = !pins.strata && !(drag?.key === "strata" && drag.moved) && !who.classList.contains("off") ? who.getBoundingClientRect() : null, cr = wb && canvas.getBoundingClientRect();
+      const sw = strataBtn.offsetWidth, sh = strataBtn.offsetHeight, wb = !pins.strata && !(drag?.key === "strata" && drag.moved) && !who.classList.contains("off") ? baseRect(who) : null, cr = wb && canvas.getBoundingClientRect();
       const sp = wb ? { x: Math.min(W - 4 - sw, wb.right - cr.left + 10), y: wb.top - cr.top + (wb.height - sh) / 2 } : anchor("strata", -0.62, 1.42, 0, sw, sh, 0);
-      strataBtn.style.transform = `translate(${Math.round(sp.x)}px, ${Math.round(sp.y)}px)`;
+      strataBtn.style.transform = `translate(${Math.round(sp.x)}px, ${Math.round(sp.y)}px)`; tiltApply(strataBtn);
     }
 
     updateCaption();
