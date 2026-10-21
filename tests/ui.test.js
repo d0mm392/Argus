@@ -37,6 +37,12 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   const startBall = (await cfg()).ballOn;
   await click("[data-pg=Mining]"); await wait(800); const minBall = (await cfg()).ballOn;
   check("R-PAGE-1 Kugel ein/aus gilt nur für die eigene Seite", startBall === true && minBall === false, { startBall, minBall });
+  await click("[data-pg=Start]"); await wait(600); await click("[data-pg=Gaming]"); await wait(800);
+  await ev(`setFriendsOn(false); true`); await wait(300);
+  await click("[data-pg=Start]"); await wait(800); const fStart = await ev(`widgets.friends?.on !== false`);
+  await click("[data-pg=Gaming]"); await wait(800); const fGame = await ev(`widgets.friends?.on !== false`);
+  await ev(`setFriendsOn(true); true`); await click("[data-pg=Start]"); await wait(600);
+  check("R-PAGE-3 Freundesliste auf Gaming schließen lässt sie auf Start stehen", fStart === true && fGame === false, { fStart, fGame });
   await click("[data-pg=Start]"); await wait(800);
 
   // R-MENU-1..3: Rechtsklick-Menü
@@ -101,4 +107,13 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-OPT-9 Farbverlauf: Farbe der Anzeige folgt dem Messwert (heiß ≠ kühl)", vg[0] === true && vg[1] === true, vg);
   await ev(`(()=>{const e=document.getElementById('setYtFeather'); e.value=24; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
   check("R-OPT-10 YouTube: weiche Ränder werden gespeichert (0–80 px)", (await cfg()).ytFeather === 24, (await cfg()).ytFeather);
+  const shp = await ev(`(async()=>{ const sel=document.getElementById('setShape'), bad=[]; const n=sel.options.length; for (const o of [...sel.options]) { sel.value=o.value; sel.dispatchEvent(new Event('change')); await new Promise(r=>setTimeout(r,350)); if (!nodes.length || nodes.some(q=>!Number.isFinite(q.near)||!Number.isFinite(q.sx)||!Number.isFinite(q.x))) bad.push(o.value); } sel.value='kugel'; sel.dispatchEvent(new Event('change')); return [n,bad]; })()`);
+  check("R-OPT-11 mindestens 18 Formen, jede baut gültige Punkte (kein NaN), Wechsel ohne Fehler", shp[0] >= 18 && shp[1].length === 0, shp);
+  await ev(`(()=>{const e=document.getElementById('setBgFx'); e.value='nordlicht'; e.dispatchEvent(new Event('change')); return true})()`); await wait(300);
+  const r1 = await ev(`document.querySelector('[data-bgfor="sterne"]').hidden`);
+  await ev(`(()=>{const e=document.getElementById('setBgFx'); e.value='sterne'; e.dispatchEvent(new Event('change')); return true})()`); await wait(300);
+  const r2 = await ev(`document.querySelector('[data-bgfor="sterne"]').hidden`);
+  check("R-OPT-12 Sternschnuppen-Zeile erscheint nur beim Hintergrund Sternenhimmel", r1 === true && r2 === false, [r1, r2]);
+  await ev(`(()=>{const e=document.getElementById('setBgHue'); e.value='275'; e.dispatchEvent(new Event('change')); return true})()`); await wait(500);
+  check("R-OPT-13 Hintergrundfarbe wird gespeichert, mindestens 12 Hintergründe", (await cfg()).bgFx?.hue === "275" && (await ev(`document.getElementById('setBgFx').options.length`)) >= 12, (await cfg()).bgFx);
 });

@@ -9,5 +9,5 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let expanded = false;
 // Hintergrund-Zustand steht hier, weil frühe Konfig-Antworten ihn schon vor dem Laden von 11-hintergrund-youtube.js brauchen
-  const bg = { mode: "partikel", amt: 1, cv: $("bgfx"), parts: [], kind: "", w: 0, h: 0, last: 0, flash: 0, raf: 0 };
+  const bg = { mode: "partikel", hueMode: "auto", hueN: 210, amt: 1, cv: $("bgfx"), parts: [], kind: "", w: 0, h: 0, last: 0, flash: 0, raf: 0 };
   bg.ctx = bg.cv.getContext("2d");

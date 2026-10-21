@@ -189,13 +189,19 @@ function openSecrets(c) {
   for (const k of SEALED) if (c[k]) c[k] = unseal(c[k]);
   if (Array.isArray(c.foremanAccounts)) c.foremanAccounts = c.foremanAccounts.map((a) => (a && a.key ? { ...a, key: unseal(a.key) } : a));
 }
-function saveConfig() {
+// Speichern gebündelt: Verschieben, Regler und Größenänderung lösen sonst bei jedem Ereignis ein
+// synchrones Schreiben samt Verschlüsselung der Schlüssel aus und lassen das Fenster ruckeln
+let cfgTimer = null;
+function writeConfigNow() {
+  clearTimeout(cfgTimer); cfgTimer = null;
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
   const out = { ...config };
   for (const k of SEALED) if (out[k]) out[k] = seal(out[k]);
   if (Array.isArray(out.foremanAccounts)) out.foremanAccounts = out.foremanAccounts.map((a) => (a && a.key ? { ...a, key: seal(a.key) } : a));
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(out, null, 2));
 }
+function saveConfig() { if (cfgTimer) return; cfgTimer = setTimeout(() => { try { writeConfigNow(); } catch {} }, 300); }
+{ const realExit = app.exit.bind(app); app.exit = (c) => { try { if (cfgTimer) writeConfigNow(); } catch {} realExit(c); }; }
 
 // Anrede des Nutzers aus der Einrichtung; ohne Namen neutral
 const userName = () => String(config.userName || "").trim().slice(0, 40);
@@ -1451,7 +1457,7 @@ ipcMain.handle("set-config", (_e, patch) => {
   if ("ytAdblock" in patch) { if (config.ytAdblock) ytAdblock(); else if (ytBlocker) { try { ytBlocker.disableBlockingInSession(session.fromPartition("persist:youtube")); } catch {} ytBlocker = null; } }
   if ("sensors" in patch) { if (patch.sensors) startSensors(); else { sensorState = "aus"; sensorPush(); execFile("schtasks", ["/End", "/TN", "Jarvis Sensoren"], { windowsHide: true }, () => {}); } }
   if ("updateUrl" in patch || "updateChannel" in patch) checkUpdates();
-  if ("ytAlpha" in patch || "ytFeather" in patch) ytAlphaAll();
+  if ("ytAlpha" in patch || "ytFeather" in patch || "winColor" in patch || "themeHue" in patch) ytAlphaAll();
   if ("ytOnTop" in patch && ytAlive()) ytWin.setAlwaysOnTop(!!config.ytOnTop, "floating");
   if ("newsCats" in patch || "btcCur" in patch || "themeHue" in patch) pushMarket();
   if ("autostart" in patch) applyAutostart();
@@ -2180,13 +2186,16 @@ async function ytAlphaApply(wc) {
   const a = Math.max(30, Math.min(100, Number(config.ytAlpha) || 100)), f = Math.max(0, Math.min(80, Number(config.ytFeather) || 0)), old = ytAlphaKeys.get(wc);
   if (old) { try { await wc.removeInsertedCSS(old); } catch {} ytAlphaKeys.delete(wc); }
   const view = ytView && wc === ytView.webContents;
-  if (view) { try { ytView.setBackgroundColor(a < 100 || f > 0 ? "#00000000" : "#000000"); } catch {} }
+  if (view) { try { ytView.setBackgroundColor(a < 100 ? "#00000000" : "#000000"); } catch {} }
   if (!view) return; // eigenes Fenster: Transparenz über die Fensterdeckkraft (ytAlphaAll); weiche Ränder nur in der eingebetteten Ansicht
-  if (a < 100 || f > 0) {
-    // Weiche Ränder: Maske, die die Seite zu allen vier Kanten hin ausblendet (Verlauf in Pixeln)
-    const m = f > 0 ? `-webkit-mask-image: linear-gradient(to right, transparent 0, #000 ${f}px, #000 calc(100% - ${f}px), transparent 100%), linear-gradient(to bottom, transparent 0, #000 ${f}px, #000 calc(100% - ${f}px), transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect;` : "";
-    try { ytAlphaKeys.set(wc, await wc.insertCSS(`html { opacity: ${a / 100} !important; ${m} }`)); } catch {}
+  let css = a < 100 ? `html { opacity: ${a / 100} !important; }\n` : "";
+  if (f > 0) {
+    // Weiche Ränder: ein Farbrand in der Fensterfarbe liegt über den Kanten der Seite und blendet sie ins Panel aus (kein Maskieren, das Video bleibt unberührt)
+    const wc2 = config.winColor || {}, h = Math.round(wc2.follow ? (config.themeHue ?? 205) : (wc2.h ?? 219)), c = (al) => `hsl(${h} ${wc2.s ?? 54}% ${wc2.l ?? 5}% / ${al})`;
+    const edge = (dir) => `linear-gradient(${dir}, ${c(1)} 0, ${c(0.72)} ${Math.round(f * 0.3)}px, ${c(0.25)} ${Math.round(f * 0.65)}px, ${c(0)} ${f}px, ${c(0)} calc(100% - ${f}px), ${c(0.25)} calc(100% - ${Math.round(f * 0.65)}px), ${c(0.72)} calc(100% - ${Math.round(f * 0.3)}px), ${c(1)} 100%)`;
+    css += `html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; background: ${edge("to right")}, ${edge("to bottom")}; }\n`;
   }
+  if (css) { try { ytAlphaKeys.set(wc, await wc.insertCSS(css)); } catch {} }
 }
 function ytAlphaAll() { if (ytView) ytAlphaApply(ytView.webContents); if (ytAlive()) { try { ytWin.setOpacity(Math.max(0.3, Math.min(1, (Number(config.ytAlpha) || 100) / 100))); } catch {} } }
 function ytNoAdsCss(wc) { wc.on("dom-ready", () => { if (config.ytNoAds !== false) wc.insertCSS(YT_CSS).catch(() => {}); wc.insertCSS(YT_VO_CSS).catch(() => {}); ytAlphaApply(wc); ytTrackNow(wc); }); ytTrack(wc); }
@@ -2543,6 +2552,6 @@ function linkClaudeDesktop() {
 app.on("second-instance", () => { win?.showInactive(); setExpanded(true); });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 let quitting = false; // beim Beenden geschlossenes YouTube nicht als „zu“ merken, damit es beim nächsten Start wiederkommt
-app.on("before-quit", () => { quitting = true; try { saveConfig(); } catch {} // letzte YouTube-Stelle u. a. sichern
+app.on("before-quit", () => { quitting = true; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
   if (strata.ownProcess()) strata.stop(); watch?.stop(); stopAnim(); clearInterval(moveTimer); });
 app.on("window-all-closed", () => app.quit());

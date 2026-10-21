@@ -102,10 +102,12 @@
       <label class="row">KI-Verlauf im Panel (welche KI, Werkzeuge, Dauer, Tokens) <input type="checkbox" id="setAiLog"></label>
       <div class="set-note">Ein freies Textfeld im Panel, z. B. für To-dos oder Miner-Nummern. Wird beim Tippen gespeichert, bleibt nur auf diesem PC. Im Anordnen-Modus verschiebst du ihn und änderst die Größe wie die anderen Fenster.</div>
       <h4 data-tab="Aussehen">Hintergrund</h4>
-      <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="wetter">Wetter am Standort (live)</option></select></label>
-      <label class="row">Menge <input type="range" id="setBgAmt" min="0.3" max="2" step="0.1"></label>
-      <label class="row">Sternschnuppen <select id="setBgShoot"><option value="0">Keine</option><option value="0.4">Selten</option><option value="1">Normal</option><option value="3">Viele</option><option value="8">Sternenregen</option></select></label>
-      <div class="set-note">Nordlicht: wehende Lichtbänder. Netzwerk: Knoten, die sich verbinden. Hash-Regen: fallende Hex-Zeichen wie Blöcke im Mining. „Wetter“ zeigt, was draußen gerade los ist: Regen, Schnee, Gewitter, Nebel, Wolken, nachts Sterne. Läuft mit 30 Bildern pro Sekunde und pausiert, wenn das Panel zu ist, Argus versteckt ist oder der Spielmodus greift.</div>
+      <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="funken">Funkenflug</option><option value="blasen">Blasen</option><option value="wellen">Wellen</option><option value="schnee">Schneefall</option><option value="regen">Regen</option><option value="gewitter">Gewitter</option><option value="nebel">Nebel</option><option value="wolken">Wolken</option><option value="sonne">Sonnenstaub</option><option value="wetter">Wetter am Standort (live)</option></select></label>
+      <label class="row" data-bgfor="not:aus">Farbe <select id="setBgHue"><option value="auto">Automatisch (Zustandsfarbe)</option><option value="bunt">Regenbogen (wandert)</option><option value="210">Blau</option><option value="185">Cyan</option><option value="165">Türkis</option><option value="140">Grün</option><option value="68">Limette</option><option value="45">Gold</option><option value="25">Orange</option><option value="355">Rot</option><option value="320">Pink</option><option value="275">Violett</option><option value="custom">Eigener Farbton</option></select></label>
+      <label class="row" data-bgfor="custom"><span>Eigener Farbton</span> <input type="range" id="setBgHueN" min="0" max="359" step="1"></label>
+      <label class="row" data-bgfor="not:aus">Menge <input type="range" id="setBgAmt" min="0.3" max="2" step="0.1"></label>
+      <label class="row" data-bgfor="sterne">Sternschnuppen <select id="setBgShoot"><option value="0">Keine</option><option value="0.4">Selten</option><option value="1">Normal</option><option value="3">Viele</option><option value="8">Sternenregen</option></select></label>
+      <div class="set-note">Optionen, die nur zu einem Hintergrund gehören (Sternschnuppen bei Sternenhimmel), erscheinen nur, wenn dieser Hintergrund gewählt ist. Nordlicht: wehende Lichtbänder. Netzwerk: Knoten, die sich verbinden. Hash-Regen: fallende Hex-Zeichen wie Blöcke im Mining. Funkenflug: aufsteigende Glut. Wellen: weiche Sinuswellen. „Wetter“ zeigt, was draußen gerade los ist. Läuft mit 30 Bildern pro Sekunde und pausiert, wenn das Panel zu ist, Argus versteckt ist oder der Spielmodus greift.</div>
       <h4 data-tab="Aussehen">Transparenz</h4>
       <div id="opRows"></div>
       <h4 data-tab="Stimme und KI">Stimme</h4>
@@ -240,7 +242,7 @@
       <label class="row">Zusätzlich Werbelisten (kann schwarzes Bild verursachen) <input type="checkbox" id="setYtAdblock"></label>
       <label class="row">Eigenes YouTube-Fenster immer im Vordergrund <input type="checkbox" id="setYtTop"></label>
       <label class="row" title="100 % = undurchsichtig. Darunter schimmert das Panel durch, das Video verschmilzt mit der Oberfläche. Falls unter Windows Farbschleier oder Streifen im Video auftauchen: wieder auf 100 % stellen.">YouTube-Transparenz (experimentell) <input type="range" id="setYtAlpha" min="30" max="100" step="5" data-unit=" %"></label>
-      <label class="row" title="Blendet die Kanten des eingebetteten YouTube-Fensters weich aus, damit es mit der Oberfläche verschmilzt. 0 = harte Kante. Falls unter Windows Farbschleier oder Streifen auftauchen: wieder auf 0 stellen.">YouTube: weiche Ränder (experimentell) <input type="range" id="setYtFeather" min="0" max="80" step="2" data-unit=" px"></label>
+      <label class="row" title="Blendet die Kanten des eingebetteten YouTube-Fensters weich aus, damit es mit der Oberfläche verschmilzt. 0 = harte Kante. Der Rand verläuft in deiner Fensterfarbe.">YouTube: weiche Ränder (experimentell) <input type="range" id="setYtFeather" min="0" max="80" step="2" data-unit=" px"></label>
       <div class="set-note">Öffnen mit dem Knopf oben im Panel oder per Satz: „Öffne YouTube“, „Spiel Lofi auf YouTube“. Die Anmeldung bleibt gespeichert.</div>
       <h4 data-tab="Benachrichtigungen">Wie gemeldet wird</h4>
       <label class="row">Hinweis im Panel <input type="checkbox" id="setNotifyPanel"></label>
@@ -510,6 +512,7 @@
   <div class="rp-act"><select id="rpDay" title="Anderen Tag ansehen"></select><button class="btn" type="button" id="rpCopy">Kopieren</button><button class="btn primary" type="button" id="rpClose">Schließen</button></div></div>
 <script src="js/01-grundlagen.js"></script>
 <script src="js/02-kugel-formen.js"></script>
+<script src="js/02b-koerper.js"></script>
 <script src="js/03-freundesliste.js"></script>
 <script src="js/04-auslastung-zustand.js"></script>
 <script src="js/05-maus-anordnung.js"></script>

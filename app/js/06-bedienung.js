@@ -474,18 +474,13 @@
       symPh += Math.min(dt, 0.1) * (0.6 + symAg * 0.8); const ph = symPh;
       for (const n of nodes) {
         const [x, y, z] = n.d, w = 1 + 0.13 * Math.sin(x * 3 + ph * 0.9) * Math.cos(y * 2.5 - ph * 0.7) + 0.08 * Math.sin(z * 4 + y * 2 + ph * 1.3);
-        n.x = x * n.rad * w; n.y = y * n.rad * w; n.z = z * n.rad * w;
+        n.x = x * n.rad * w * 0.62; n.y = y * n.rad * w * 0.62; n.z = z * n.rad * w * 0.62;
       }
     }
     // Projektion
     for (const n of nodes) {
       const p = rot(n.x, n.y, n.z), s = proj(p);
       n.sx = s[0]; n.sy = s[1]; n.f = s[2]; n.sz = p[2];
-      if (shape === "symbiont") { // Neuronen bleiben in der Masse (ohne die Ranken), nichts springt mehr heraus
-        const dx = n.sx - CX, dy = n.sy - CY, d = Math.hypot(dx, dy), th = Math.atan2(dy, dx);
-        let lim = 0.84 + 0.7 * (symLobe[0].v * Math.sin(2 * th + time * 0.7) + symLobe[1].v * Math.sin(3 * th - time * 1.1 + 1.3)); lim = Math.max(0.6, lim) * S * 0.86;
-        if (d > lim) { n.sx = CX + dx / d * lim; n.sy = CY + dy / d * lim; }
-      }
       n.flash *= Math.pow(0.15, dt);
       let nr = 0;
       if (inSphere && p[2] > -0.3) { const d = Math.hypot(n.sx - mx, n.sy - my); if (d < nearR) nr = (1 - d / nearR) ** 2; }
@@ -513,15 +508,16 @@
     // Dunkle Kugel als Untergrund, damit sie auf jedem Desktop-Hintergrund lesbar bleibt
     computeHull();
     if (ballOn) { // Kugel entfernt: nur die Last-Anzeigen (CPU, GPU, RAM) bleiben, sie hängen nicht an der Kugel
-    ctx.fillStyle = "rgba(4,8,16,0.9)"; outlinePath(); ctx.fill();
+    const openShape = OPEN_SHAPES.has(shape);
+    if (!openShape) { ctx.fillStyle = "rgba(4,8,16,0.9)"; outlinePath(); ctx.fill(); }
 
-    if (hull) { // Formen: Leuchten folgt dem Umriss statt einem runden Hof
+    if (hull && !openShape) { // Formen: Leuchten folgt dem Umriss statt einem runden Hof
       ctx.save(); ctx.shadowColor = `hsla(${stateHue},80%,55%,${Math.min(1, 0.55 * glowK)})`; ctx.shadowBlur = S * 0.3;
       ctx.fillStyle = "rgba(4,8,16,0.9)"; outlinePath(); ctx.fill(); ctx.restore();
-    } else {
+    } else if (!openShape) { // offene Formen: kein Hof (der Verlauf bändert sich dort zu einer blauen Scheibe)
       const halo = ctx.createRadialGradient(CX, CY, S * 0.2, CX, CY, S * 1.45);
       halo.addColorStop(0, `hsla(${stateHue},80%,55%,${0.16 * glowK})`);
-      halo.addColorStop(1, "hsla(220,80%,40%,0)");
+      halo.addColorStop(1, `hsla(${stateHue},80%,55%,0)`);
       ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
     }
 
@@ -529,9 +525,10 @@
     glass.addColorStop(0, "hsla(210,60%,80%,0.05)");
     glass.addColorStop(0.75, "hsla(210,60%,40%,0.02)");
     glass.addColorStop(1, `hsla(${stateHue},80%,60%,0.16)`);
-    ctx.fillStyle = glass; outlinePath(); ctx.fill();
-    if (shapeRim) { ctx.strokeStyle = `hsla(${stateHue},70%,70%,0.28)`; ctx.lineWidth = 1; outlinePath(); ctx.stroke(); }
+    if (!openShape) { ctx.fillStyle = glass; outlinePath(); ctx.fill(); }
+    if (shapeRim && !openShape) { ctx.strokeStyle = `hsla(${stateHue},70%,70%,0.28)`; ctx.lineWidth = 1; outlinePath(); ctx.stroke(); }
     if (shape === "symbiont") drawSymbiont();
+    else if (SOLID_SHAPES.has(shape)) drawSolid();
     if (shape === "muenze") drawCoin();
     drawFolds(); drawStructure();
     }
@@ -572,7 +569,7 @@
 
     for (const n of nodes) {
       const act = actOf(n), depth = 0.3 + 0.7 * (n.sz + 1) / 2, h = hueOf(n), mk = orbMine && fmTotC ? (h === 4 ? 2.4 : h === 38 ? 1.9 : 1.5) : 1; // Mining-Kugel: Punkte größer, Ausfälle am größten
-      const r = (0.9 + n.flash * 2.2 + act * 1.3 + n.near * 1.6) * n.f * unit * mk * nodeK;
+      const r = (0.9 + n.flash * 2.2 + act * 1.3 + n.near * 1.6) * n.f * unit * mk * nodeK * (OPEN_SHAPES.has(shape) ? 1.7 : 1);
       if (n.near > 0.05) {
         ctx.fillStyle = `hsla(${h},95%,65%,${n.near * 0.22 * depth})`;
         ctx.beginPath(); ctx.arc(n.sx, n.sy, r * 3.5, 0, Math.PI * 2); ctx.fill();
@@ -581,7 +578,7 @@
         ctx.fillStyle = `hsla(${h},90%,60%,${n.flash * 0.18 * depth})`;
         ctx.beginPath(); ctx.arc(n.sx, n.sy, r * 4, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = `hsla(${h},85%,${55 + n.flash * 35 + n.near * 20}%,${Math.min(1, (0.35 + act * 0.5 + n.flash * 0.3) * depth * lift + n.near * 0.5)})`;
+      ctx.fillStyle = `hsla(${h},85%,${55 + n.flash * 35 + n.near * 20}%,${Math.min(1, (0.35 + act * 0.5 + n.flash * 0.3) * depth * lift * (OPEN_SHAPES.has(shape) ? 1.6 : 1) + n.near * 0.5)})`;
       ctx.beginPath(); ctx.arc(n.sx, n.sy, r, 0, Math.PI * 2); ctx.fill();
     }
 

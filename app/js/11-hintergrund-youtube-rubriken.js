@@ -14,6 +14,8 @@
     if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) return "regen"; if (c === 45 || c === 48) return "nebel";
     if (c === 2 || c === 3) return "wolken"; return day ? "sonne" : "sterne";
   }
+  // Farbe des Hintergrunds: Zustandsfarbe, fester Farbton oder wandernder Regenbogen
+  function bgHue(t) { const m = bg.hueMode; if (m === "bunt") return Math.round((t * 14) % 360); if (m === "custom") return bg.hueN; if (m !== "auto") return +m; return Math.round(CORE_HUE); }
   function bgBuild() {
     const k = bgKind(), A = bg.w * bg.h / 1e6, n = (base) => Math.round(Math.min(400, base * A * bg.amt * (lite ? 0.5 : 1)));
     const rnd = Math.random; bg.kind = k; bg.parts = [];
@@ -26,6 +28,9 @@
     if (k === "netz") for (let i = 0; i < Math.min(90, n(55)); i++) P({ x: rnd() * bg.w, y: rnd() * bg.h, vx: (rnd() - 0.5) * 22, vy: (rnd() - 0.5) * 22, r: 2 + rnd() * 2.5 });
     if (k === "hash") { const cw = 17; for (let x = cw / 2; x < bg.w; x += cw / Math.min(1.5, bg.amt)) if (rnd() < 0.55 * Math.min(1, bg.amt)) P({ x, y: rnd() * bg.h, v: 40 + rnd() * 90, len: 6 + Math.floor(rnd() * 12), ch: Array.from({ length: 18 }, () => "0123456789abcdef"[Math.floor(rnd() * 16)]), sw: 0 }); }
     if (k === "gluehw") for (let i = 0; i < n(40); i++) P({ x: rnd() * bg.w, y: (0.3 + rnd() * 0.7) * bg.h, a: rnd() * 6.3, v: 8 + rnd() * 16, ph: rnd() * 6.3, sp: 0.5 + rnd() * 1.2, r: 3 + rnd() * 4 });
+    if (k === "funken") for (let i = 0; i < n(60); i++) P({ x: rnd() * bg.w, y: rnd() * bg.h, r: 1.5 + rnd() * 3, vy: -14 - rnd() * 34, ph: rnd() * 6.3, sp: 0.8 + rnd() * 2 });
+    if (k === "blasen") for (let i = 0; i < n(36); i++) P({ x: rnd() * bg.w, y: rnd() * bg.h, r: 4 + rnd() * 14, vy: -8 - rnd() * 22, ph: rnd() * 6.3 });
+    if (k === "wellen") for (let i = 0; i < 4 + Math.round(bg.amt * 2); i++) P({ y: 0.25 + i * 0.12, amp: 0.025 + rnd() * 0.03, f: 1 + rnd() * 2, sp: 0.1 + rnd() * 0.15, ph: rnd() * 6.3 });
     if (k === "nebel" || k === "wolken") for (let i = 0; i < Math.max(4, n(k === "nebel" ? 9 : 6)); i++) P({ x: rnd() * bg.w, y: (k === "wolken" ? 0.05 + rnd() * 0.45 : rnd()) * bg.h, r: 120 + rnd() * 220, vx: 4 + rnd() * 8, a: 0.05 + rnd() * 0.07 });
   }
   function bgFrame(now) {
@@ -39,7 +44,7 @@
     const w = bg.cv.clientWidth, h = bg.cv.clientHeight; if (!w || !h) return;
     if (w !== bg.w || h !== bg.h) { bg.w = bg.cv.width = w; bg.h = bg.cv.height = h; bgBuild(); } // Pixelzahl 1:1, nicht ×DPI: weicher Hintergrund braucht keine Schärfe
     if (bgKind() !== bg.kind) bgBuild();
-    const g = bg.ctx, t = now / 1000, k = bg.kind, hue = Math.round(CORE_HUE), wind = Math.min(1, (wxData?.data?.cur?.wind || 8) / 40);
+    const g = bg.ctx, t = now / 1000, k = bg.kind, hue = bgHue(t), fx = bg.hueMode !== "auto", wind = Math.min(1, (wxData?.data?.cur?.wind || 8) / 40);
     g.clearRect(0, 0, w, h);
     if (k === "partikel" || k === "sonne") {
       g.globalCompositeOperation = "lighter";
@@ -51,9 +56,9 @@
       }
     } else if (k === "sterne") {
       g.globalCompositeOperation = "lighter";
-      for (const p of bg.parts) { g.globalAlpha = 0.08 + 0.32 * (0.5 + 0.5 * Math.sin(t * p.sp + p.ph)) ** 3; g.drawImage(tint("hsl(210 60% 92%)"), p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); }
+      for (const p of bg.parts) { g.globalAlpha = 0.08 + 0.32 * (0.5 + 0.5 * Math.sin(t * p.sp + p.ph)) ** 3; g.drawImage(tint(fx ? `hsl(${hue} 60% 90%)` : "hsl(210 60% 92%)"), p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); }
       bg.shoots ||= []; // Sternschnuppen: Menge einstellbar (0 = keine)
-      if (bgShoot > 0 && bg.shoots.length < 8 && Math.random() < dt * bgShoot / 25) bg.shoots.push({ x: Math.random() * w * 0.7, y: Math.random() * h * 0.4, l: 0 });
+      if (bg.mode === "sterne" && bgShoot > 0 && bg.shoots.length < 8 && Math.random() < dt * bgShoot / 25) bg.shoots.push({ x: Math.random() * w * 0.7, y: Math.random() * h * 0.4, l: 0 });
       for (let i = bg.shoots.length - 1; i >= 0; i--) { const s2 = bg.shoots[i]; s2.l += dt * 2.2; g.globalAlpha = Math.max(0, 0.5 * (1 - s2.l)); g.strokeStyle = "rgb(220,235,255)"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(s2.x + s2.l * 260, s2.y + s2.l * 90); g.lineTo(s2.x + s2.l * 260 - 60, s2.y + s2.l * 90 - 21); g.stroke(); if (s2.l >= 1) bg.shoots.splice(i, 1); }
     } else if (k === "regen" || k === "gewitter") {
       g.globalCompositeOperation = "source-over"; g.strokeStyle = "rgba(170,200,235,0.28)"; g.lineWidth = 1; g.beginPath();
@@ -63,13 +68,13 @@
       if (k === "gewitter") { if (bg.flash <= 0 && Math.random() < dt / 9) bg.flash = 1; if (bg.flash > 0) { g.globalAlpha = 0.16 * bg.flash * (Math.random() < 0.7 ? 1 : 0.3); g.fillStyle = "rgb(210,225,255)"; g.fillRect(0, 0, w, h); bg.flash -= dt * 2.5; } }
     } else if (k === "schnee") {
       g.globalCompositeOperation = "lighter";
-      for (const p of bg.parts) { p.y += p.v * dt; p.x += (Math.sin(t * 0.8 + p.ph) * 14 + wind * 30) * dt; if (p.y > h + 8) { p.y = -8; p.x = Math.random() * w; } if (p.x > w + 8) p.x = -8; g.globalAlpha = 0.45; g.drawImage(tint("hsl(210 40% 96%)"), p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); }
+      for (const p of bg.parts) { p.y += p.v * dt; p.x += (Math.sin(t * 0.8 + p.ph) * 14 + wind * 30) * dt; if (p.y > h + 8) { p.y = -8; p.x = Math.random() * w; } if (p.x > w + 8) p.x = -8; g.globalAlpha = 0.45; g.drawImage(tint(fx ? `hsl(${hue} 45% 94%)` : "hsl(210 40% 96%)"), p.x - p.r, p.y - p.r, p.r * 2, p.r * 2); }
     } else if (k === "nordlicht") {
       // Lichtbänder: oben Kante, darunter weich ausblendender Vorhang, Wellen wandern langsam seitwärts
       g.globalCompositeOperation = "lighter";
       for (const b of bg.parts) {
-        const y0 = b.y * h, ys = []; for (let x = 0; x <= w + 24; x += 24) ys.push(y0 + h * b.amp * (Math.sin(x / w * b.f * 6.28 + t * b.sp * 6.28 + b.ph) + 0.5 * Math.sin(x / w * b.f * 13 - t * b.sp * 4 + b.ph * 2)));
-        const gr = g.createLinearGradient(0, y0 - h * b.amp, 0, y0 + h * b.th); gr.addColorStop(0, `hsla(${b.hue},90%,65%,0)`); gr.addColorStop(0.15, `hsla(${b.hue},90%,62%,0.16)`); gr.addColorStop(1, `hsla(${b.hue + 30},80%,50%,0)`);
+        const y0 = b.y * h, ys = [], bh = fx ? hue + (b.hue % 60) - 30 : b.hue; for (let x = 0; x <= w + 24; x += 24) ys.push(y0 + h * b.amp * (Math.sin(x / w * b.f * 6.28 + t * b.sp * 6.28 + b.ph) + 0.5 * Math.sin(x / w * b.f * 13 - t * b.sp * 4 + b.ph * 2)));
+        const gr = g.createLinearGradient(0, y0 - h * b.amp, 0, y0 + h * b.th); gr.addColorStop(0, `hsla(${bh},90%,65%,0)`); gr.addColorStop(0.15, `hsla(${bh},90%,62%,0.16)`); gr.addColorStop(1, `hsla(${bh + 30},80%,50%,0)`);
         g.fillStyle = gr; g.globalAlpha = 0.6 + 0.4 * Math.sin(t * 0.3 + b.ph); g.beginPath(); g.moveTo(0, ys[0]); ys.forEach((y, i) => g.lineTo(i * 24, y)); g.lineTo(w + 24, y0 + h * b.th + h * 0.1); g.lineTo(0, y0 + h * b.th + h * 0.1); g.closePath(); g.fill();
       }
     } else if (k === "netz") {
@@ -94,8 +99,17 @@
         p.a += (Math.sin(t * 0.7 + p.ph) * 1.2) * dt; p.x += Math.cos(p.a) * p.v * dt; p.y += Math.sin(p.a) * p.v * dt * 0.6;
         if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10; if (p.y < h * 0.15) p.a = 0.6 + Math.random() * 1.9; else if (p.y > h + 10) p.a = -Math.abs(p.a);
         const bl = Math.max(0, Math.sin(t * p.sp + p.ph)) ** 4; if (bl < 0.02) continue;
-        g.globalAlpha = 0.75 * bl; g.drawImage(tint("hsl(68 95% 62%)"), p.x - p.r * 2, p.y - p.r * 2, p.r * 4, p.r * 4);
+        g.globalAlpha = 0.75 * bl; g.drawImage(tint(`hsl(${fx ? hue : 68} 95% 62%)`), p.x - p.r * 2, p.y - p.r * 2, p.r * 4, p.r * 4);
       }
+    } else if (k === "funken") {
+      g.globalCompositeOperation = "lighter"; const fc = fx ? hue : 28;
+      for (const p of bg.parts) { p.y += p.vy * dt; p.x += Math.sin(t * p.sp + p.ph) * 12 * dt; if (p.y < -8) { p.y = h + 8; p.x = Math.random() * w; } g.globalAlpha = 0.25 + 0.5 * (0.5 + 0.5 * Math.sin(t * p.sp * 2 + p.ph)) * Math.min(1, p.y / (h * 0.5)); g.drawImage(tint(`hsl(${fc} 95% 58%)`), p.x - p.r * 2, p.y - p.r * 2, p.r * 4, p.r * 4); }
+    } else if (k === "blasen") {
+      g.globalCompositeOperation = "lighter"; g.lineWidth = 1; g.strokeStyle = `hsl(${hue} 70% 75%)`;
+      for (const p of bg.parts) { p.y += p.vy * dt; p.x += Math.sin(t * 0.9 + p.ph) * 9 * dt; if (p.y < -p.r) { p.y = h + p.r; p.x = Math.random() * w; } g.globalAlpha = 0.28; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.2832); g.stroke(); g.globalAlpha = 0.5; g.drawImage(tint("hsl(0 0% 100%)"), p.x - p.r * 0.55, p.y - p.r * 0.6, p.r * 0.5, p.r * 0.5); }
+    } else if (k === "wellen") {
+      g.globalCompositeOperation = "lighter"; g.lineWidth = 1.6;
+      for (let i = 0; i < bg.parts.length; i++) { const b = bg.parts[i]; g.strokeStyle = `hsl(${(hue + i * (fx ? 12 : 8)) % 360} 80% 62%)`; g.globalAlpha = 0.22; g.beginPath(); for (let x = 0; x <= w + 10; x += 10) { const y = b.y * h + h * b.amp * Math.sin(x / w * b.f * 6.28 + t * b.sp * 6.28 + b.ph) + h * b.amp * 0.5 * Math.sin(x / w * b.f * 15 - t * b.sp * 5); x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
     } else if (k === "nebel" || k === "wolken") {
       g.globalCompositeOperation = "source-over";
       for (const p of bg.parts) { p.x += p.vx * (0.5 + wind) * dt; if (p.x - p.r > w) p.x = -p.r; g.globalAlpha = p.a; g.drawImage(blobSprite, p.x - p.r, p.y - p.r * 0.55, p.r * 2, p.r * 1.1); }
@@ -112,10 +126,15 @@
   }
   const bgKick = () => { if (!bg.raf) { bg.last = 0; bg.raf = requestAnimationFrame(bgFrame); } };
   setInterval(bgKick, 1000); document.addEventListener("visibilitychange", bgKick);
-  const applyBg = () => { $("setBgFx").value = bg.mode; $("setBgAmt").value = bg.amt; bg.w = 0; bgKick(); };
-  $("setBgFx").addEventListener("change", (e) => { bg.mode = e.target.value; applyBg(); window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt } }); });
-  $("setBgAmt").addEventListener("input", (e) => { bg.amt = +e.target.value; bg.w = 0; clearTimeout(bg.save); bg.save = setTimeout(() => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt } }), 400); });
-  window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); applyBg(); });
+  // Zeilen mit data-bgfor erscheinen nur beim passenden Hintergrund (Regel: Optionen eines Hintergrunds nie bei anderen zeigen)
+  const bgRows = () => { for (const r of document.querySelectorAll("[data-bgfor]")) { const f = r.dataset.bgfor; r.hidden = f.startsWith("not:") ? bg.mode === f.slice(4) : f === "custom" ? bg.hueMode !== "custom" || bg.mode === "aus" : f !== bg.mode; } };
+  const bgSave = () => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt, hue: bg.hueMode, hueN: bg.hueN } });
+  const applyBg = () => { $("setBgFx").value = bg.mode; $("setBgAmt").value = bg.amt; $("setBgHue").value = bg.hueMode; $("setBgHueN").value = bg.hueN; bgRows(); bg.w = 0; bgKick(); };
+  $("setBgFx").addEventListener("change", (e) => { bg.mode = e.target.value; applyBg(); bgSave(); });
+  $("setBgHue").addEventListener("change", (e) => { bg.hueMode = e.target.value; applyBg(); bgSave(); });
+  $("setBgHueN").addEventListener("input", (e) => { bg.hueN = +e.target.value; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
+  $("setBgAmt").addEventListener("input", (e) => { bg.amt = +e.target.value; bg.w = 0; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
+  window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); bg.hueMode = c.bgFx?.hue || "auto"; bg.hueN = c.bgFx?.hueN ?? 210; applyBg(); });
 
   // ---------- YouTube im Panel ----------
   let ytOn = false, ytSize = "m", ytLast = "", ytOffN = 0;
@@ -219,7 +238,7 @@
   const SHAPE_WORDS = { kugel: ["Kugel", "der Kugel", "der Kugel"], hexagon: ["Hexagon", "des Hexagons", "dem Hexagon"], wuerfel: ["Würfel", "des Würfels", "dem Würfel"],
     kristall: ["Kristall", "des Kristalls", "dem Kristall"], gehirn: ["Gehirn", "des Gehirns", "dem Gehirn"], ring: ["Ring", "des Rings", "dem Ring"],
     helix: ["DNA-Helix", "der DNA-Helix", "der DNA-Helix"], galaxie: ["Galaxie", "der Galaxie", "der Galaxie"], symbiont: ["Symbiont", "des Symbionten", "dem Symbionten"],
-    muenze: ["Münze", "der Münze", "der Münze"], pyramide: ["Pyramide", "der Pyramide", "der Pyramide"], stern: ["Stern", "des Sterns", "dem Stern"], herz: ["Herz", "des Herzens", "dem Herzen"], atom: ["Atom", "des Atoms", "dem Atom"] };
+    muenze: ["Münze", "der Münze", "der Münze"], pyramide: ["Pyramide", "der Pyramide", "der Pyramide"], stern: ["Stern", "des Sterns", "dem Stern"], herz: ["Herz", "des Herzens", "dem Herzen"], atom: ["Atom", "des Atoms", "dem Atom"], ikosaeder: ["Ikosaeder", "des Ikosaeders", "dem Ikosaeder"], stella: ["Stern-Tetraeder", "des Stern-Tetraeders", "dem Stern-Tetraeder"], knoten: ["Torusknoten", "des Torusknotens", "dem Torusknoten"], tropfen: ["Tropfen", "des Tropfens", "dem Tropfen"] };
   const shapeOrig = new WeakMap();
   function applyShapeWords() {
     const [nom, gen, dat] = SHAPE_WORDS[shape] || SHAPE_WORDS.kugel;

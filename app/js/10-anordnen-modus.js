@@ -314,7 +314,7 @@
     for (const p of pulses) p.hue = hueOf(nodes[p.a]);
   }
   // Kugel (Größe, Lage, an/aus) und die Knöpfe (Claude · Lokal, Strata, Leerlauf) gehören mit zur Seite: auf Start vergrößern oder ausblenden ändert Mining nicht
-  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsBox: { ...friendsBox } }; }
+  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsOn: widgets.friends?.on !== false, friendsBox: { ...friendsBox } }; }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
   function switchPage(n) {
     if (n === page) return;
@@ -322,9 +322,9 @@
     const pf = pages[n] || (PAGE_DEF[n] ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !PAGE_DEF[n].includes(id)), pins: {}, scales: {} } : null);
     if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming") hiddenSet.add("game"); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
       ballOn = pf.ballOn !== false; statusOn = pf.statusOn !== false; $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; applyUi();
-      widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; try { buildWidgetRows(); } catch {}
+      widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; widgets.friends = { ...widgets.friends, on: pf.friendsOn !== false }; $("setFriendsOn").checked = widgets.friends.on; try { buildWidgetRows(); } catch {}
       friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; fgRes = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
-      window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata } });
+      window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
       applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }

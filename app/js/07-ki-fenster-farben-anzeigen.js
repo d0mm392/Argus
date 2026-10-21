@@ -121,6 +121,10 @@
     muenze: '<circle cx="12" cy="12" r="9"/><path d="M10 7v10M10 7h3a2.5 2.5 0 0 1 0 5h-3h3.5a2.5 2.5 0 0 1 0 5H10M11 5v2M11 17v2M13 5v2M13 17v2"/>', pyramide: '<path d="M12 3l9 15H3z M12 3l-3 15M12 3l5 15"/>',
     stern: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/>', herz: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
     atom: '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9" ry="3.5"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(120 12 12)"/>',
+    ikosaeder: '<path d="M12 2l8 5v10l-8 5-8-5V7z"/><path d="M12 2v20M4 7l16 10M20 7L4 17"/>',
+    stella: '<path d="M12 3l8 14H4z"/><path d="M12 21L4 7h16z"/>',
+    knoten: '<path d="M12 4c4 0 8 3 7 7s-6 6-9 9-7 0-6-5 6-5 9-9 2-2-1-2"/><circle cx="12" cy="12" r="2.5"/>',
+    tropfen: '<path d="M12 2c2 4 7 8 7 13a7 7 0 0 1-14 0c0-5 5-9 7-13z"/>',
     symbiont: '<path d="M12 4c3 0 4 2 6 1-1 2 1 3 0 5 2 1 3 3 1 4 0 2-2 3-3 2-1 2-3 3-5 2-2 1-4 0-4-2-2 0-3-2-2-4-2-1-2-3 0-4 0-2 2-3 4-3 1-1 2-1 3-1z"/><path d="M18 5l3-2M4 14l-2 3"/>' };
   let shapePreview = null;
   $("shapePick").replaceChildren(...SHAPES.map(([v, l]) => {

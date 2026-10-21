@@ -21,7 +21,7 @@
   // ---------- Formen: Kugel, Hexagon, Würfel, Kristall, Gehirn, Ring, DNA-Helix, Galaxie ----------
   let structK = 1, edgeK = 3, nodeK = 1, ballOn = true, statusOn = true, miniMore = false, look3dK = 0.35, structRings = [], structSkel = [];
   let shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
-  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["gehirn", "Gehirn"], ["ring", "Ring"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["stern", "Stern"], ["herz", "Herz"], ["atom", "Atom"]];
+  const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["gehirn", "Gehirn"], ["ring", "Ring"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["stern", "Stern"], ["herz", "Herz"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"], ["tropfen", "Tropfen"]];
   // Herz- und Sternumriss als Radius je Winkel (Tabelle), für Punkte und Umriss
   const HEART_R = (() => { const pts = []; for (let k = 0; k < 720; k++) { const t = (k / 720) * Math.PI * 2, x = 16 * Math.sin(t) ** 3, y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); pts.push([x / 17, (y + 2.5) / 17]); }
     const tab = new Array(360).fill(0); for (const [x, y] of pts) { const a = Math.round(((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360) % 360; tab[a] = Math.max(tab[a], Math.hypot(x, y)); }
@@ -142,7 +142,7 @@
       case "galaxie": {
         const r = Math.pow(R(), 0.7) * 0.95, arm = (i % 3) * (Math.PI * 2 / 3), th = arm + r * 4.2 + (R() - 0.5) * 0.5;
         if (i % 7 === 0) { const b = 0.18 * Math.cbrt(R()); return [x * b, y * b * 0.7, z * b]; } // Kern
-        return [Math.cos(th) * r, (R() - 0.5) * 0.12 * (1 - r), Math.sin(th) * r];
+        { const gx = Math.cos(th) * r, gy = (R() - 0.5) * 0.14 * (1 - r), gz = Math.sin(th) * r, ca = 0.82, sa = 0.57; return [gx, gy * ca - gz * sa, gy * sa + gz * ca]; } // Scheibe leicht zum Betrachter gekippt
       }
       case "muenze": { // Münze: flache Scheibe zum Betrachter, das ₿ zeichnet drawCoin darauf
         const rho = Math.hypot(x, y) || 1e-6, t = Math.min(0.92 / rho, 0.1 / (Math.abs(z) || 1e-6)); return [x * t * rad, y * t * rad, z * t * rad];
@@ -155,6 +155,11 @@
         const k = i % 3, a = R() * Math.PI * 2, rr = 0.9 + (R() - 0.5) * 0.05, px = Math.cos(a) * rr, pz = Math.sin(a) * rr * 0.32, tilt = k * Math.PI / 3;
         return [px * Math.cos(tilt) - pz * Math.sin(tilt) * 0, (R() - 0.5) * 0.03 + px * Math.sin(tilt), pz + (R() - 0.5) * 0.03];
       }
+      case "ikosaeder": return [x * 0.7 * rad, y * 0.7 * rad, z * 0.7 * rad];
+      case "stella": return [x * 0.6 * rad, y * 0.6 * rad, z * 0.6 * rad];
+      case "knoten": { const t = R() * Math.PI * 2, k0 = 0.3, c = [(2 + Math.cos(3 * t)) * Math.cos(2 * t) * k0, Math.sin(3 * t) * k0 * 1.15, (2 + Math.cos(3 * t)) * Math.sin(2 * t) * k0], rr = 0.12 * Math.sqrt(R()), a = R() * Math.PI * 2;
+        return [c[0] + rr * Math.cos(a) * 0.9, c[1] + rr * Math.sin(a), c[2] + rr * Math.sin(a * 1.7) * 0.9]; }
+      case "tropfen": { const sN = Math.pow(R(), 0.8), y = -0.72 + sN * 1.7, rp = Math.sin(Math.PI * Math.pow(sN, 0.72)) * 0.56 * (1 - 0.15 * sN) * 0.85, a = R() * Math.PI * 2, q = Math.sqrt(R()); return [rp * q * Math.cos(a), y, rp * q * Math.sin(a)]; }
       default: return [x * rad, y * rad, z * rad];
     }
   }
@@ -181,7 +186,7 @@
   // Struktur der Form: Kanten (Hexagon, Würfel, Kristall, Pyramide) oder Längen-/Breitenkreise auf der Oberfläche (alle anderen)
   function buildStructure() {
     structRings = []; structSkel = [];
-    if (shape === "symbiont" || shape === "muenze" || shape === "atom") return;
+    if (shape === "symbiont" || shape === "muenze" || shape === "atom" || shape === "ring" || SOLID_SHAPES.has(shape) && !CORNERS[shape]) return;
     const cv = CORNERS[shape];
     if (cv) {
       let md = Infinity; for (let i = 0; i < cv.length; i++) for (let j = i + 1; j < cv.length; j++) md = Math.min(md, Math.hypot(cv[i][0] - cv[j][0], cv[i][1] - cv[j][1], cv[i][2] - cv[j][2]));
@@ -228,12 +233,8 @@
     }
   }
   function computeHull() {
-    if (shape === "symbiont") { // eigener, eingebuchteter Umriss statt konvexer Hülle
-      sharp = false; hull = [];
-      // dicht abgetastet, sonst springen dünne Ranken von Punkt zu Punkt (Zittern)
-      for (let k = 0; k < 220; k++) { const th = (k / 220) * Math.PI * 2, r = symR(th, time) * S; hull.push([CX + Math.cos(th) * r, CY + Math.sin(th) * r]); }
-      return;
-    }
+    if (shape === "symbiont") { symMeshUpdate(); return; } // Umriss aus dem 3D-Netz (02b-koerper.js)
+    if (OPEN_SHAPES.has(shape)) { hull = null; sharp = false; return; } // offene Formen: kein dunkler Untergrund
     if (shape === "stern" || shape === "herz") { // nicht konvex: Umriss direkt aus der Vorderseite der Form
       sharp = shape === "stern"; hull = [];
       const pts = shape === "stern" ? STAR_V.map(([x, y]) => [x * 1.08, y * 1.08]) : Array.from({ length: 72 }, (_, k) => { const th = (k / 72) * Math.PI * 2, r = heartR(th) * 1.08; return [Math.cos(th) * r, Math.sin(th) * r]; });
@@ -266,29 +267,6 @@
     const a = hull[0], b = hull[1 % n]; ctx.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
     ctx.closePath();
   }
-  // Glanz der schwarzen Masse: tiefschwarz, oben links nasse Lichtreflexe, am Rand ein Schimmer in der Zustandsfarbe
-  function drawSymbiont() {
-    ctx.save(); outlinePath(); ctx.clip();
-    const body = ctx.createRadialGradient(CX + S * 0.15, CY + S * 0.2, S * 0.1, CX, CY, S * 1.3);
-    body.addColorStop(0, "rgba(10,12,18,0.96)"); body.addColorStop(0.7, "rgba(3,4,8,0.97)"); body.addColorStop(1, "rgba(0,0,0,0.98)");
-    ctx.fillStyle = body; ctx.fillRect(CX - S * 2.2, CY - S * 2.2, S * 4.4, S * 4.4);
-    for (let k = 0; k < 3; k++) { // wandernde Glanzlichter wie auf nasser Oberfläche
-      const a = -2.2 + k * 0.5 + 0.25 * Math.sin(time * 0.5 + k * 2), r = S * (0.5 + 0.12 * k);
-      const gx = CX + Math.cos(a) * r, gy = CY + Math.sin(a) * r, g = ctx.createRadialGradient(gx, gy, 0, gx, gy, S * (0.22 - k * 0.04));
-      g.addColorStop(0, `rgba(220,235,255,${0.2 - k * 0.05})`); g.addColorStop(1, "rgba(220,235,255,0)");
-      ctx.fillStyle = g; ctx.fillRect(gx - S, gy - S, S * 2, S * 2);
-    }
-    ctx.restore();
-    // Spitzen der Prozess-Ranken leuchten in der Farbe ihres Programms
-    for (const t of symTen.values()) {
-      if (t.hue == null || t.len < 0.05) continue;
-      const r = symR(t.a, time) * S * 0.97, x = CX + Math.cos(t.a) * r, y = CY + Math.sin(t.a) * r, g = ctx.createRadialGradient(x, y, 0, x, y, S * 0.07);
-      g.addColorStop(0, `hsla(${t.hue},90%,65%,${Math.min(0.8, t.len * 1.6)})`); g.addColorStop(1, `hsla(${t.hue},90%,55%,0)`);
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, S * 0.07, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.save(); ctx.lineWidth = Math.max(1, S * 0.012); ctx.strokeStyle = `hsla(${stateHue},70%,70%,${0.25 + symAg * 0.25})`;
-    ctx.shadowColor = `hsla(${stateHue},90%,60%,0.8)`; ctx.shadowBlur = S * 0.08 * (0.5 + symAg); outlinePath(); ctx.stroke(); ctx.restore();
-  }
   function buildNetwork(n) {
     nodes = []; edges = []; adj = []; shapeBuilt = shape; buildFolds();
     const golden = Math.PI * (3 - Math.sqrt(5));
@@ -300,7 +278,7 @@
       let best = -1, bestDot = 0.62;
       REGIONS.forEach((r, ri) => { const dt = d[0] * r.dir[0] + d[1] * r.dir[1] + d[2] * r.dir[2]; if (dt > bestDot) { bestDot = dt; best = ri; } });
       const sp = shapePoint(d, rad, i, n);
-      nodes.push({ i: nodes.length, x: sp[0], y: sp[1], z: sp[2], region: best, flash: 0, sx: 0, sy: 0, sz: 0, f: 1, stem: shape === "gehirn" && i / n >= 0.1 && i / n < 0.14, d, rad: rad * 0.86 });
+      nodes.push({ i: nodes.length, x: sp[0], y: sp[1], z: sp[2], region: best, flash: 0, near: 0, sx: 0, sy: 0, sz: 0, f: 1, stem: shape === "gehirn" && i / n >= 0.1 && i / n < 0.14, d, rad: rad * 0.86 });
       adj.push([]);
     }
     regionNodes = REGIONS.map((_, ri) => nodes.map((nd, i) => (nd.region === ri ? i : -1)).filter((i) => i >= 0));
