@@ -1512,7 +1512,11 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
   else if (tg?.kind === "blk" && typeof tg.id === "string") t.push({ label: `„${String(tg.name || "").slice(0, 30)}“ ausblenden`, danger: true, click: act("hideblk", tg.id) }, { label: "Nach vorn holen", click: act("blkfront", tg.id) }, { label: "Nach hinten legen", click: act("blkback", tg.id) }, { type: "separator" });
   t.push({ label: "Einstellungen", click: act("settings", null, true) }, { label: "Argus ausblenden (Tray)", click: () => setExpanded(false) });
   const btns = Array.isArray(s.buttons) ? s.buttons.filter((b) => Array.isArray(b) && /^[A-Za-z0-9]{2,16}$/.test(b[0]) && typeof b[1] === "string").slice(0, 40) : [];
-  if (btns.length) t.push({ label: "Buttons", submenu: btns.map(([k, l, on]) => ({ label: String(l).slice(0, 44), type: "checkbox", checked: !!on, click: act("setw", { k, flip: true }) })) });
+  // Anzeige hinzufügen: nur ausgeblendete Anzeigen, für die Argus gerade Messwerte sieht (CPU-/GPU-Temperatur, Lüfter …); einzeln ausgeblendete Lüfter stehen mit Namen dabei
+  const hf = Array.isArray(s.hfans) ? s.hfans.filter((n) => typeof n === "string").slice(0, 16) : [];
+  const addable = [...btns.filter((b) => !b[2] && b[3] !== false).map(([k, l]) => ({ label: String(l).slice(0, 44), click: act("setw", { k, on: true }) })), ...hf.map((n) => ({ label: "Lüfter „" + n.slice(0, 30) + "“", click: act("showfan", n) }))];
+  t.push({ label: "Anzeige hinzufügen", enabled: addable.length > 0, submenu: addable.length ? addable : [{ label: "Keine weiteren Anzeigen verfügbar", enabled: false }] });
+  if (btns.length) t.push({ label: "Buttons", submenu: btns.map(([k, l, on, av]) => ({ label: String(l).slice(0, 44) + (!on && av === false ? " (keine Daten)" : ""), type: "checkbox", checked: !!on, enabled: !!on || av !== false, click: act("setw", { k, flip: true }) })) });
   t.push({ label: "Anzeigen", submenu: [
     { label: "Kugel", type: "checkbox", checked: fl.ball !== false, click: act("tog", "ball") },
     { label: "Statusanzeige (Leerlauf …)", type: "checkbox", checked: fl.status !== false, click: act("tog", "status") },
