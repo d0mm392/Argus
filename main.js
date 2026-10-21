@@ -994,7 +994,7 @@ function followStart() {
 function followUpdate(m) {
   if (!alive() || !config.holeFollow) return;
   const apps = String(config.holeApps || "").toLowerCase().split(/[,;\n]+/).map((x) => x.trim().replace(/\.exe$/, "")).filter(Boolean);
-  const ignored = m.pid === process.pid || /^(Progman|WorkerW|Shell_TrayWnd|Shell_SecondaryTrayWnd)$/.test(m.cls || "");
+  const ignored = m.pid === process.pid || /^(Progman|WorkerW|Shell_TrayWnd|Shell_SecondaryTrayWnd|NotifyIconOverflowWindow|TopLevelWindowForOverflowXamlIsland|Xaml_WindowedPopupClass|Windows\.UI\.Core\.CoreWindow|ForegroundStaging|MultitaskingViewFrame|XamlExplorerHostIslandWindow)$/.test(m.cls || "") || (m.r - m.l < 200 || m.b - m.t < 150); // Tray-, Start- und Alt-Tab-Fenster sowie winzige Fenster zählen nicht
   let t = null; // Rechteck des Programms, dem die Aussparung folgt
   if (!m.none && !ignored) {
     // Vorderstes fremdes Programm; steht eine Programmliste da, zählt nur ein Programm daraus (sonst wird die Aussparung geschlossen)
