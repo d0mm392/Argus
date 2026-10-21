@@ -997,14 +997,13 @@ function followUpdate(m) {
   let t = null; // Rechteck des Programms, dem die Aussparung folgt
   if (!m.none && !ignored) {
     // Vorderstes fremdes Programm; steht eine Programmliste da, zählt nur ein Programm daraus (sonst wird die Aussparung geschlossen)
-    if (apps.length && !apps.includes(String(m.app || "").toLowerCase())) { if (followRect) { followRect = null; applyShape(); } return; }
-    t = m;
+    if (apps.length && !apps.includes(String(m.app || "").toLowerCase())) { const bg = [].concat(m.bg || []); if (bg.length) t = bg[0]; else return; } // anderes Programm vorn: Aussparung bleibt beim gewünschten Programm
+    else t = m;
   } else if (apps.length) {
     // Argus oder Desktop vorn: das gewünschte Programm trotzdem suchen (liegt es hinter Argus, bleibt die Aussparung an seiner Stelle)
     const bg = [].concat(m.bg || []);
-    if (bg.length) t = bg[0]; else { if (followRect) { followRect = null; applyShape(); } return; }
-  } else if (m.none) { if (followRect) { followRect = null; applyShape(); } return; }
-  else return; // Argus, Desktop und Taskleiste ändern nichts (die Aussparung bleibt beim zuletzt benutzten Programm)
+    if (bg.length) t = bg[0]; else return;
+  } else return; // kein Fenster vorn (z. B. beim Wechsel des virtuellen Desktops), Argus, Desktop, Taskleiste: Aussparung bleibt, wo sie ist // Argus, Desktop und Taskleiste ändern nichts (die Aussparung bleibt beim zuletzt benutzten Programm)
   const d = screen.screenToDipRect(win, { x: t.l, y: t.t, width: t.r - t.l, height: t.b - t.t }), pad = 0;
   const r = { x: Math.round(d.x - pad), y: Math.round(d.y - pad), w: Math.round(d.width + 2 * pad), h: Math.round(d.height + 2 * pad) }; // absolute Bildschirmposition
   if (followRect && Math.abs(followRect.x - r.x) <= 2 && Math.abs(followRect.y - r.y) <= 2 && Math.abs(followRect.w - r.w) <= 2 && Math.abs(followRect.h - r.h) <= 2) return; // Kleinstbewegungen ignorieren (Flackern)

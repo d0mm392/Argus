@@ -276,34 +276,39 @@ const cleanName = (d) => (d || "").replace(/\s*(\(.*\)|setup|application|launche
 // Baum von LibreHardwareMonitor durchgehen: Hardware erkennt man am Symbol, Sensoren am Namen
 function parseLHM(root) {
   const num = (v) => { const m = /(-?\d+(?:[.,]\d+)?)/.exec(v || ""); return m ? Number(m[1].replace(",", ".")) : null; };
-  const cpu = [], gpu = [], cpuClk = [], gpuClk = [], fans = [], ctrl = []; let stopped = 0, gpuName = null, hwName = "", gpuLoad = null;
+  const cpu = [], cpuClk = [], fans = [], ctrl = []; let stopped = 0, hwName = ""; const gpus = [], rawFans = []; let curG = null;
   (function walk(n, hw) {
     const img = n.ImageURL || "";
     if (/cpu/i.test(img)) hw = "cpu";
-    else if (/nvidia|ati|amd|gpu|intel/i.test(img) && !/cpu/i.test(img)) { hw = "gpu"; gpuName = gpuName || n.Text; }
+    else if (/nvidia|ati|amd|gpu|intel/i.test(img) && !/cpu/i.test(img)) { hw = "gpu"; curG = { name: n.Text || "", temps: [], clk: [], load: null }; gpus.push(curG); }
     else if (/mainboard|chip/i.test(img)) hw = "board";
     if (img && !n.Type) hwName = n.Text || hwName;
     const leaf = !(n.Children || []).length;
     // Lüfteransteuerung in % (manche Laptops/Grafikkarten melden nur das, keine Drehzahl)
-    if (leaf && n.Type === "Control") { const v = num(n.Value); if (v != null) ctrl.push({ name: hw === "gpu" ? "GPU" : (n.Text || "Lüfter").replace(/^Fan( Control)?\s*/i, "Lüfter "), val: Math.round(v), unit: "%" }); }
-    if (leaf && (n.Type === "Fan" || /RPM/i.test(n.Value || ""))) {
-      const v = num(n.Value);
-      if (v === 0) stopped++;
-      // Grafikkarten- und CPU-Lüfter stehen im Leerlauf oft (Semi-Passiv): als „steht“ anzeigen, statt sie wegzulassen; unbelegte Mainboard-Anschlüsse bleiben verborgen
-      if (v > 0 || (v === 0 && (hw === "gpu" || hw === "cpu" || /cpu|gpu/i.test(n.Text || "")))) fans.push({ name: hw === "gpu" ? "GPU" + (/\d/.test(n.Text || "") ? " " + n.Text.replace(/\D+/g, "") : "") : (n.Text || "Lüfter").replace(/^Fan\s*/i, "Lüfter "), val: Math.round(v), unit: "rpm" });
-    }
+    if (leaf && n.Type === "Control") { const v = num(n.Value); if (v != null) ctrl.push({ raw: n.Text || "", name: hw === "gpu" ? "GPU" : (n.Text || "Lüfter").replace(/^Fan( Control)?\s*/i, "Lüfter "), val: Math.round(v), unit: "%" }); }
+    if (leaf && (n.Type === "Fan" || /RPM/i.test(n.Value || ""))) { const v = num(n.Value); if (v === 0) stopped++; if (v != null) rawFans.push({ text: n.Text || "", hw, v }); }
     if (leaf && hw && (n.Type === "Clock" || /MHz/i.test(n.Value || ""))) {
       const v = num(n.Value);
-      if (v > 100 && !/bus|memory|speicher|ring|uncore/i.test(n.Text || "")) (hw === "cpu" ? cpuClk : hw === "gpu" ? gpuClk : []).push({ name: n.Text || "", v });
+      if (v > 100 && !/bus|memory|speicher|ring|uncore/i.test(n.Text || "")) (hw === "cpu" ? cpuClk : hw === "gpu" && curG ? curG.clk : []).push({ name: n.Text || "", v });
     }
-    if (leaf && hw === "gpu" && gpuLoad == null && (n.Type === "Load" || /%/.test(n.Value || "")) && /gpu core|^core$|^d3d 3d$/i.test(n.Text || "")) gpuLoad = num(n.Value);
+    if (leaf && hw === "gpu" && curG && curG.load == null && (n.Type === "Load" || /%/.test(n.Value || "")) && /gpu core|^core$|^d3d 3d$/i.test(n.Text || "")) curG.load = num(n.Value);
     const isTemp = n.Type === "Temperature" || /°C/.test(n.Value || "");
     if (hw && isTemp && !(n.Children || []).length) {
       const v = num(n.Value);
-      if (v > 0 && v < 130) (hw === "cpu" ? cpu : gpu).push({ name: n.Text || "", v });
+      if (v > 0 && v < 130) if (hw === "cpu") cpu.push({ name: n.Text || "", v }); else if (hw === "gpu" && curG) curG.temps.push({ name: n.Text || "", v });
     }
     for (const c of n.Children || []) walk(c, hw);
   })(root, null);
+  // Mehrere Grafikeinheiten (z. B. Ryzen mit eingebauter Grafik plus GeForce): die eigenständige Karte nehmen, nicht die erste
+  const integ = (g) => /\(tm\) graphics|radeon graphics|uhd|iris|hd graphics|vega \d/i.test(g.name) && !/radeon rx|radeon pro/i.test(g.name);
+  const best = gpus.slice().sort((x, y) => (integ(x) ? 1 : 0) - (integ(y) ? 1 : 0) || (y.temps.length + y.clk.length + (y.load != null)) - (x.temps.length + x.clk.length + (x.load != null)))[0];
+  const gpu = best ? best.temps : [], gpuClk = best ? best.clk : [], gpuName = best ? best.name : null, gpuLoad = best ? best.load : null;
+  // Lüfter: Drehzahl > 0, CPU/GPU-Lüfter immer, Anschlüsse mit 0 U/min nur, wenn dafür eine Ansteuerung über 0 % gemeldet wird (Lüfter dahinter steht oder hängt an einem Hub)
+  const ckey = (t) => t.toLowerCase().replace(/\s*#1$/, "").trim(), cmap = new Map(ctrl.map((c) => [ckey(c.raw || ""), c.val]));
+  for (const f of rawFans) {
+    const nm = f.hw === "gpu" ? "GPU" + (/\d/.test(f.text) ? " " + f.text.replace(/\D+/g, "") : "") : f.text.replace(/^Fan\s*/i, "Lüfter ") || "Lüfter";
+    if (f.v > 0 || f.hw === "gpu" || f.hw === "cpu" || /cpu|gpu/i.test(f.text) || (cmap.get(ckey(f.text)) || 0) > 0) fans.push({ name: nm, val: Math.round(f.v), unit: "rpm" });
+  }
   const pick = (list, prefer) => { for (const re of prefer) { const f = list.find((x) => re.test(x.name)); if (f) return Math.round(f.v); } return list.length ? Math.round(Math.max(...list.map((x) => x.v))) : null; };
   const cores = cpuClk.filter((x) => /core/i.test(x.name));
   const cpuMHz = cores.length ? Math.max(...cores.map((x) => x.v)) : null; // höchster Kerntakt, wie im Task-Manager
@@ -311,7 +316,7 @@ function parseLHM(root) {
   const out = { cpu: pick(cpu, [/package/i, /tctl|tdie/i, /core.*(max|average)/i, /ccd/i]), gpu: pick(gpu, [/gpu core/i, /^core$/i, /hot ?spot/i]), gpuName,
     cpuMHz, gpuMHz: gpuCore ? gpuCore.v : null, gpuLoad: gpuLoad == null ? null : Math.round(gpuLoad),
     // Drehzahlen zuerst; ohne Drehzahl die Ansteuerung in %; stehen alle Lüfter (Laptop im Leerlauf), eine Zeile „steht“
-    fans: (fans.length ? fans.map((f, i) => ({ f, i, r: /cpu/i.test(f.name) ? 0 : /gpu/i.test(f.name) ? 2 : 1 })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.f) : ctrl.length ? ctrl : stopped ? [{ name: "Lüfter", val: 0, unit: "rpm" }] : []).slice(0, 12) };
+    fans: (fans.length ? fans.map((f, i) => ({ f, i, r: /cpu/i.test(f.name) ? 0 : /gpu/i.test(f.name) ? 2 : 1 })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.f) : ctrl.length ? ctrl : stopped ? [{ name: "Lüfter", val: 0, unit: "rpm" }] : []).slice(0, 16) };
   return out.cpu == null && out.gpu == null && !fans.length && !cpuMHz ? null : out;
 }
 const NVSMI = ["nvidia-smi", "C:\\Windows\\System32\\nvidia-smi.exe", "C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe"];

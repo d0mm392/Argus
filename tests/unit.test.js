@@ -57,3 +57,17 @@ test("R-UPD-1: Update-Prüfung nur beim Start und von Hand, kein wiederkehrender
   assert.ok(!/setInterval\(\s*checkUpdates/.test(src), "checkUpdates läuft noch in einem Intervall");
   assert.ok(/checkUpdates\(\);/.test(src), "Start-Prüfung fehlt");
 });
+
+test("R-SYS-5: bei integrierter plus eigener Grafikkarte zählt die eigene Karte; Lüfter mit Ansteuerung und 0 U/min erscheinen", () => {
+  const { parseLHM } = require("../system");
+  const hw = (img, text, kids) => ({ Text: text, ImageURL: img, Children: kids });
+  const s = (Type, Value, Text) => ({ Type, Value, Text, Children: [] });
+  const tree = { Text: "PC", Children: [
+    hw("images_icon/gpu.png", "AMD Radeon(TM) Graphics", [s("Load", "0.0 %", "GPU Core"), s("Clock", "600.0 MHz", "GPU Core"), s("Temperature", "41.0 °C", "GPU VR SoC")]),
+    hw("images_icon/gpu.png", "NVIDIA GeForce RTX 5070 Ti", [s("Load", "18.0 %", "GPU Core"), s("Clock", "1815.0 MHz", "GPU Core"), s("Temperature", "50.2 °C", "GPU Core")]),
+    hw("images_icon/chip.png", "Board", [s("Control", "74.0 %", "System Fan #2"), s("Fan", "0.0 RPM", "System Fan #2"), s("Fan", "0.0 RPM", "System Fan #3"), s("Fan", "1021.0 RPM", "System Fan #1")]),
+  ] };
+  const r = parseLHM(tree);
+  assert.equal(r.gpuName, "NVIDIA GeForce RTX 5070 Ti"); assert.equal(r.gpuLoad, 18); assert.equal(r.gpuMHz, 1815); assert.equal(r.gpu, 50);
+  const names = r.fans.map((f) => f.name); assert.ok(names.includes("Lüfter System Fan #2") || names.some((n) => /#2/.test(n)), names.join()); assert.ok(!names.some((n) => /#3/.test(n)));
+});
