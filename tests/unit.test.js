@@ -51,3 +51,9 @@ test("R-REP-2: Berichte enthalten keine Schlüssel oder Wallet-Adressen", () => 
   const id = C.archive("T", "key=geheimer-schluessel-123 wallet bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq sk-ant-abcdef123456", "kopiert");
   const t = C.view(id).text; assert.ok(!/geheimer-schluessel|bc1qar0|sk-ant-abc/.test(t), t);
 });
+
+test("R-UPD-1: Update-Prüfung nur beim Start und von Hand, kein wiederkehrender Zeitgeber", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "main.js"), "utf8");
+  assert.ok(!/setInterval\(\s*checkUpdates/.test(src), "checkUpdates läuft noch in einem Intervall");
+  assert.ok(/checkUpdates\(\);/.test(src), "Start-Prüfung fehlt");
+});

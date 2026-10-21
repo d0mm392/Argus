@@ -1191,7 +1191,7 @@ function setupUpdater() {
   });
   updater.on("error", (e) => { updState.text = "Update-Prüfung fehlgeschlagen: " + String(e?.message || e).split("\n")[0].slice(0, 160); });
   checkUpdates();
-  clearInterval(updTimer); updTimer = setInterval(checkUpdates, 4 * 3600e3);
+  // Nur beim Start prüfen (Domi 21.10.): kein Zeitgeber; manuell über Einstellungen oder Tray-Menü
 }
 // Neue Versionen liegen im Zweig „updates“ von Domis Repo d0mm392/Argus (früher d0mm392/jarvis; latest.yml + Setup).
 // Ein eigener Eintrag in den Einstellungen geht vor. Antwortet die Adresse nicht, wird die alte Repo-Adresse versucht.
