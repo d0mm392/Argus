@@ -444,7 +444,7 @@
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
     const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS };
-    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: hiddenFans, flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   // Gibt es für diese Anzeige gerade Messwerte? Argus erkennt das selbst aus den Live-Daten (Sensor fehlt = nicht anbieten)
   function btnAvail(k) {
@@ -454,7 +454,9 @@
     return ts.some((t) => { try { const v = t.get(); return v != null && !Number.isNaN(v); } catch { return false; } });
   }
   window.jarvis.onCtxAction?.(({ a, v }) => {
-    if (a === "showfan" && typeof v === "string") { hiddenFans = hiddenFans.filter((n) => n !== v); window.jarvis.setConfig({ hiddenFans }); if (widgets.fans?.on === false) hideWidget("fans", true); return; }
+    if (a === "showfan" && typeof v === "string") { // genau diesen Lüfter einblenden; war die ganze Lüfter-Anzeige aus, erscheint nur er allein
+      if (widgets.fans?.on === false) { hiddenFans = (sys.fans || []).map((f) => f.name).filter((n) => n !== v); hideWidget("fans", true); } else hiddenFans = hiddenFans.filter((n) => n !== v);
+      window.jarvis.setConfig({ hiddenFans }); return; }
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
     else if (a === "arrange") $("arrangeBtn").click();
     else if (a === "holeplace") holePlace();
