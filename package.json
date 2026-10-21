@@ -1,0 +1,111 @@
+{
+  "name": "argus-desktop",
+  "license": "GPL-3.0-only",
+  "version": "0.37.0",
+  "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
+  "main": "boot.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "keywords": [],
+  "author": "Argus",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@ghostery/adblocker-electron": "^2.9.0",
+    "adm-zip": "0.5.16",
+    "electron-updater": "^6.8.9",
+    "systeminformation": "^5.23.5",
+    "tar": "6.2.1",
+    "vosk-browser": "0.0.8",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "de.jarvis.desktop",
+    "productName": "Argus",
+    "files": [
+      "foreman.js",
+      "preload-yt.js",
+      "argus-mcp.js",
+      "memory.js",
+      "files.js",
+      "news.js",
+      "social.js",
+      "dcbot.js",
+      "steamdl.js",
+      "mining.js",
+      "games.js",
+      "weather.js",
+      "strata.js",
+      "report.js",
+      "crash.js",
+      "preload-news.js",
+      "preload-menu.js",
+      "selfimprove.js",
+      "boot.js",
+      "main.js",
+      "preload.js",
+      "system.js",
+      "actions.js",
+      "sensors/**",
+      "media/**",
+      "sysmon/**",
+      "app/**",
+      "assets/**",
+      "node_modules/**",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Argus-${version}-portable.exe"
+    },
+    "compression": "normal",
+    "asar": false,
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Argus",
+      "artifactName": "Argus-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1031",
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "multiLanguageInstaller": false
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://raw.githubusercontent.com/d0mm392/Argus/updates"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "icon": "assets/icon.png",
+      "artifactName": "Argus-${version}.AppImage",
+      "executableName": "argus-desktop",
+      "synopsis": "Argus Desktop-Widget"
+    }
+  },
+  "homepage": "https://github.com/d0mm392/Argus"
+}
