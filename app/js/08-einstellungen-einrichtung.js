@@ -20,7 +20,7 @@
     markRing(); $("setRingSize").value = scales.rings || 1; $("setMedia").checked = c.mediaOn !== false;
     $("setUpdUrl").value = c.updateUrl || ""; $("setUpdChannel").value = c.updateChannel || "stabil"; refreshUpd(); $("setSensors").checked = c.sensors !== false;
     $("setMicFloat").checked = c.micFloat !== false; $("setShape").value = shape; markShape(); $("setShapeRim").checked = shapeRim; $("setGlow").value = glowK; $("setSway").value = c.sway || "schweben";
-    $("setTaskbarOn").checked = c.taskbarOn === true; $("setTaskbarFront").checked = c.taskbarFront === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
+    $("setTaskbarShow").value = c.taskbarShow || "nie"; $("setAfterHide").value = c.afterHide || "mini"; $("setTaskbarFront").checked = c.taskbarFront === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
     $("setSteamOn").checked = c.steamOn !== false; $("setDiscordOn").checked = c.discordOn !== false;
     $("setDcVoice").checked = c.discordVoiceOnly !== false; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "panel"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
     $("setYtTop").checked = !!c.ytOnTop; winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
@@ -227,7 +227,8 @@
   $("setUpdInstall").addEventListener("click", () => window.jarvis.updateInstall());
   $("setPinsReset").addEventListener("click", () => { pins = {}; scales = {}; window.jarvis.setConfig({ pins, scales }); });
   $("setTaskbarFront").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarFront: e.target.checked }));
-  $("setTaskbarOn").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarOn: e.target.checked }));
+  $("setTaskbarShow").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarShow: e.target.value }));
+  $("setAfterHide").addEventListener("change", (e) => window.jarvis.setConfig({ afterHide: e.target.value }));
   $("setOnTop").addEventListener("change", (e) => window.jarvis.setConfig({ onTop: e.target.value }));
   $("setWakeFront").addEventListener("change", (e) => window.jarvis.setConfig({ wakeFront: e.target.checked }));
   $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.jarvis.setConfig({ autoOpen }); });
