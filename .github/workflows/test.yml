@@ -1,0 +1,36 @@
+name: Tests und Builds
+on:
+  push:
+    branches: [source]
+  workflow_dispatch:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: node --test tests/unit.test.js
+      - name: UI-Tests (Linux, virtueller Bildschirm)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb libgbm1 libasound2t64 || true
+          xvfb-run -a npx electron --no-sandbox tests/ui.test.js
+      - name: UI-Tests (Mac)
+        if: runner.os == 'macOS'
+        run: npx electron tests/ui.test.js
+      - name: Bau (ohne Signatur)
+        run: npx electron-builder ${{ runner.os == 'Linux' && '--linux AppImage' || '--mac zip' }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: argus-${{ runner.os }}
+          path: |
+            dist/*.AppImage
+            dist/*.zip
