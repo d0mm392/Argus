@@ -574,7 +574,6 @@ body.expanded .panel > .grabbed { cursor: grabbing !important; box-shadow: 0 0 0
 .qs span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .qs.add { opacity: 0.7; } .qs.missing { opacity: 0.35; }
 .quick.drop { outline: 2px dashed var(--accent); outline-offset: -3px; }
-body.noball #brain { opacity: 0; }
 .hx { position: absolute; top: -8px; right: -8px; width: 17px; height: 17px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: rgba(8, 14, 26, 0.96); color: var(--ink-dim);
   font: 13px/14px var(--f-body, system-ui); cursor: pointer; display: grid; place-items: center; opacity: 0; transition: opacity .12s, background .12s, color .12s; z-index: 5; }
 .hx:hover { background: rgba(255, 92, 77, 0.9); color: #fff; border-color: transparent; }
@@ -718,6 +717,7 @@ body.maxed .edge { display: none !important; }
       <label class="row">Form <select id="setShape" hidden></select></label>
       <div class="shape-pick" id="shapePick" role="radiogroup" aria-label="Form"></div>
       <label class="row">Rand der Form <input type="checkbox" id="setShapeRim"></label>
+      <label class="row" title="Wie durchsichtig das Rechtsklick-Menü ist. 100 % = undurchsichtig">Deckkraft Rechtsklick-Menü <input type="range" id="setMenuAlpha" min="30" max="100" step="5" data-unit=" %"></label>
       <label class="row" title="Gitterlinien und Kanten der Form (Hexagon, Würfel, Kristall … zeigen ihre Kanten, Kugel und Co. Längen- und Breitenkreise). 0 = aus">Struktur-Linien <input type="range" id="setStruct" min="0" max="250" step="5" data-unit=" %"></label>
       <label class="row" title="Wie viele Nachbarn jeder Punkt verbindet: mehr = dichteres Netz">Netz: Verbindungen je Punkt <input type="range" id="setEdgeK" min="2" max="6" step="1"></label>
       <label class="row">Punktgröße <input type="range" id="setNodeK" min="50" max="220" step="5" data-unit=" %"></label>
@@ -2803,6 +2803,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     ctx.clearRect(0, 0, W, H);
     // Dunkle Kugel als Untergrund, damit sie auf jedem Desktop-Hintergrund lesbar bleibt
     computeHull();
+    if (ballOn) { // Kugel entfernt: nur die Last-Anzeigen (CPU, GPU, RAM) bleiben, sie hängen nicht an der Kugel
     ctx.fillStyle = "rgba(4,8,16,0.9)"; outlinePath(); ctx.fill();
 
     if (hull) { // Formen: Leuchten folgt dem Umriss statt einem runden Hof
@@ -2824,8 +2825,10 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     if (shape === "symbiont") drawSymbiont();
     if (shape === "muenze") drawCoin();
     drawFolds(); drawStructure();
+    }
 
     drawGauges(dt);
+    if (ballOn) {
     ctx.globalCompositeOperation = "lighter";
     if (shape === "kugel" && shapeRim) { ctx.strokeStyle = `hsla(${stateHue},60%,65%,0.10)`; drawRing(0); drawRing(1); }
 
@@ -2882,16 +2885,18 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
       ctx.fillStyle = `hsla(${p.hue},100%,80%,${0.9 * depth})`;
       ctx.beginPath(); ctx.arc(x, y, 1.6 * unit * a.f, 0, Math.PI * 2); ctx.fill();
     }
+    }
 
     // Beschriftung aktiver Regionen: weich ein- und ausblenden, unter der Maus hell und stehen bleiben
     ctx.globalCompositeOperation = "source-over";
-    const ranked = ballLabels === "aus" ? [] : REGIONS.filter((r) => r.act >= (r.shown ? 0.15 : 0.22)).sort((p, q) => q.act - p.act).slice(0, ballLabels === "eine" ? 1 : 3);
+    const lblMode = ballOn ? ballLabels : "aus";
+    const ranked = lblMode === "aus" ? [] : REGIONS.filter((r) => r.act >= (r.shown ? 0.15 : 0.22)).sort((p, q) => q.act - p.act).slice(0, lblMode === "eine" ? 1 : 3);
     const fs = 12.5 * labelScale; // feste Größe: Kugel größer/kleiner ändert die Beschriftung nicht
     lblLayer.style.setProperty("--fs", fs + "px"); lblLayer.style.setProperty("--fsb", fs + "px");
     const vis = [];
     for (const r of REGIONS) {
       r.shown = ranked.includes(r);
-      const target = ballLabels === "aus" ? 0 : r === hoverRegion || r.shown ? 1 : 0;
+      const target = lblMode === "aus" ? 0 : r === hoverRegion || r.shown ? 1 : 0;
       r.lab += (target - r.lab) * (1 - Math.exp(-dt * (target > r.lab ? 2.2 : 0.8))); // rein ~0,5 s, raus ~1,5 s
       r.glow += ((r === hoverRegion ? 1 : 0) - r.glow) * (1 - Math.exp(-dt * 7));
       if (r.lab < 0.01) {
@@ -3328,6 +3333,8 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   $("setMiniMore").addEventListener("change", (e) => { miniMore = e.target.checked; applyUi(); sv({ miniMore }); });
   $("setUiFont").addEventListener("change", (e) => { uiFont = e.target.value; applyFont(); sv({ uiFont }); });
   $("setUiScale").addEventListener("input", (e) => { uiScale = +e.target.value; applyFont(); clearTimeout(applyFont.t); applyFont.t = setTimeout(() => { sv({ uiScale }); fitPanel?.(); }, 300); });
+  let menuAlpha = 96;
+  $("setMenuAlpha").addEventListener("input", (e) => { menuAlpha = +e.target.value; clearTimeout(bind.t2); bind.t2 = setTimeout(() => sv({ menuAlpha }), 300); });
   $("setStruct").addEventListener("input", (e) => { structK = +e.target.value / 100; clearTimeout(bind.t1); bind.t1 = setTimeout(() => sv({ structK: +e.target.value }), 300); });
   $("setNodeK").addEventListener("input", (e) => { nodeK = +e.target.value / 100; clearTimeout(bind.t2); bind.t2 = setTimeout(() => sv({ nodeK: +e.target.value }), 300); });
   $("setEdgeK").addEventListener("input", (e) => { edgeK = +e.target.value; shapeBuilt = ""; clearTimeout(bind.t3); bind.t3 = setTimeout(() => sv({ edgeK }), 300); });
@@ -3336,6 +3343,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     ballOn = c.ballOn !== false; statusOn = c.statusOn !== false; miniMore = !!c.miniMore; uiFont = c.uiFont || ""; uiScale = c.uiScale || 100;
     structK = (c.structK ?? 100) / 100; nodeK = (c.nodeK ?? 100) / 100; edgeK = c.edgeK || 3; look3dK = (c.look3dK ?? 35) / 100; shapeBuilt = "";
     $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; $("setMiniMore").checked = miniMore; $("setUiFont").value = uiFont; $("setUiScale").value = uiScale;
+    menuAlpha = c.menuAlpha || 96; $("setMenuAlpha").value = menuAlpha; $("setMenuAlpha").dispatchEvent(new Event("input"));
     $("setStruct").value = Math.round(structK * 100); $("setNodeK").value = Math.round(nodeK * 100); $("setEdgeK").value = edgeK; $("setLook3dK").value = Math.round(look3dK * 100);
     for (const i of ["setUiScale", "setStruct", "setNodeK", "setLook3dK"]) $(i).dispatchEvent(new Event("input"));
     applyUi(); applyFont();
@@ -4813,7 +4821,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     const out = [];
     if (!g) {
       out.push(gel("div", "Kein Spiel erkannt.", "g-dim"), gel("div", "Starte ein Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net, Riot, Xbox). Argus erkennt es am Programmpfad und zeigt hier Infos und Tipps. Es wird nichts im Spiel gelesen oder eingeklinkt, Anti-Cheat bleibt unberührt.", "g-dim"));
-      const dg = sys?.gameDiag; if (dg) out.push(gel("div", `Diagnose: ${dg.withPath} von ${dg.n} Prozessen mit Programmpfad.`, "g-dim"));
+      const dg = sys?.gameDiag; if (dg) out.push(gel("div", `Diagnose: ${dg.withPath} von ${dg.n} Prozessen mit Programmpfad. Steam meldet ${dg.steam?.id ? "AppID " + dg.steam.id : "kein laufendes Spiel"}${dg.steam?.err ? " (Fehler " + dg.steam.err + ")" : ""}.${dg.ship?.length ? " Gefunden: " + dg.ship.join(", ") + "." : ""}`, "g-dim"));
     } else {
       const f = gel("div", null, "g-facts"); f.append(gel("span", g.launcher));
       if (i?.genres?.length) f.append(gel("span", i.genres.join(", ")));
@@ -4845,7 +4853,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     for (const p of pulses) p.hue = hueOf(nodes[p.a]);
   }
   // Kugel (Größe, Lage, an/aus) und die Knöpfe (Claude · Lokal, Strata, Leerlauf) gehören mit zur Seite: auf Start vergrößern oder ausblenden ändert Mining nicht
-  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false }; }
+  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsBox: { ...friendsBox } }; }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
   function switchPage(n) {
     if (n === page) return;
@@ -4854,7 +4862,8 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming") hiddenSet.add("game"); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
       ballOn = pf.ballOn !== false; statusOn = pf.statusOn !== false; $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; applyUi();
       widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; try { buildWidgetRows(); } catch {}
-      window.jarvis.setConfig({ ballOn, statusOn, widgets: { ai: widgets.ai, strata: widgets.strata } });
+      friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; fgRes = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
+      window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata } });
       applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }
@@ -4958,9 +4967,10 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
     else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
     const cs = getComputedStyle(document.documentElement), vars = {};
     for (const k of ["--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
+    vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    window.jarvis.ctxMenu?.({ target, vars, flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id]).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.jarvis.ctxMenu?.({ target, vars, buttons: WIDGET_ROWS.map(([k, l]) => [k, l, widgets[k]?.on !== false]), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), skins: SKINS.map((k) => k[0]), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id]).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   window.jarvis.onCtxAction?.(({ a, v }) => {
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
@@ -4977,6 +4987,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
       }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
+    else if (a === "setw" && v && typeof v.k === "string") hideWidget(v.k, !!v.on);
     else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
     else if (a === "hideblk" && BLOCK_NAMES[v]) setHidden(v, true);
     else if ((a === "blkfront" || a === "blkback") && BLOCK_NAMES[v]) {

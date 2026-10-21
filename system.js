@@ -112,7 +112,7 @@ class SystemWatch {
     try {
       const G = require("./games"); let g = G.detect(p.list);
       if (!g) g = await G.steamRunning().catch(() => null); // Steam meldet das laufende Spiel selbst
-      this.data.game = g; this.data.gameDiag = { n: p.list.length, withPath: p.list.filter((x) => x.path).length };
+      this.data.game = g; this.data.gameDiag = { n: p.list.length, withPath: p.list.filter((x) => x.path).length, steam: G.steamDiag(), ship: p.list.filter((x) => /shipping/i.test(x.name || "")).map((x) => x.name).slice(0, 3) };
     } catch { this.data.game = null; }
     this.data.procCount = p.all;
     // Prozess, der über mehrere Messungen viel CPU zieht

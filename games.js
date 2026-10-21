@@ -39,19 +39,38 @@ function detect(list) {
       break;
     }
   }
-  if (!best) { seen.clear(); return null; }
+  if (!best) return byName(list);
   const app = best.launcher === "Steam" ? steamApp(best.pth, best.folder) : null;
   const name = app?.name || best.folder;
   if (!seen.has(name)) { seen.clear(); seen.set(name, Date.now()); }
   return { name, folder: best.folder, launcher: best.launcher, exe: best.exe, appid: app?.appid || null, since: seen.get(name) };
 }
 
+// Dritte Quelle, wenn Windows keinen Programmpfad herausgibt (z. B. bei Spielen mit Anti-Cheat): Unreal-Spiele heißen <Spiel>-Win64-Shipping.exe.
+// Der Name wird in Wörter zerlegt („ReadyOrNotSteam-Win64-Shipping.exe“ -> „Ready Or Not“), Steam-Infos findet Argus dann über die Suche im Steam-Shop.
+const SHIP = /^(.+?)[-_](?:Win64|WinGDK|Win32|WindowsNoEditor)[-_]Shipping(?:\.exe)?$/i;
+function prettyExe(n) {
+  let s = String(n).replace(/\.exe$/i, "").replace(/(?<=[a-z])(Steam|Epic|Game|Client|Retail)$/, "").replace(/[_]+/g, " ");
+  return s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").replace(/\s+/g, " ").trim();
+}
+function byName(list) {
+  let best = null;
+  for (const p of list || []) { const m = String(p.name || "").match(SHIP); if (!m || SKIP_EXE.test(m[1])) continue; if (!best || (p.cpu || 0) > (best.cpu || 0)) best = { cpu: p.cpu || 0, exe: p.name, n: prettyExe(m[1]) }; }
+  if (!best) { seen.clear(); return null; }
+  if (!seen.has("exe:" + best.n)) { seen.clear(); seen.set("exe:" + best.n, Date.now()); }
+  return { name: best.n, folder: best.n, launcher: "Programmname", exe: best.exe, appid: null, since: seen.get("exe:" + best.n) };
+}
+let lastSteam = { id: 0, err: "" };
+const steamDiag = () => lastSteam;
+
 // Zweite Quelle: Steam meldet das laufende Spiel selbst (Registry, nur Windows). Funktioniert auch, wenn Windows den Programmpfad nicht herausgibt.
 const { execFile } = require("child_process");
-const reg = (name) => new Promise((res) => execFile("reg", ["query", "HKCU\\Software\\Valve\\Steam", "/v", name], { timeout: 4000, windowsHide: true }, (e, out) => { const m = !e && String(out).match(new RegExp(name + "\\s+REG_\\w+\\s+(.+)")); res(m ? m[1].trim() : ""); }));
+const reg = (name) => new Promise((res) => execFile("reg", ["query", "HKCU\\Software\\Valve\\Steam", "/v", name], { timeout: 4000, windowsHide: true }, (e, out) => { const m = !e && String(out).match(new RegExp(name + "\\s+REG_\\w+\\s+(.+)")); if (e) lastSteam.err = String(e.code || e.message).slice(0, 40); res(m ? m[1].trim() : ""); }));
 async function steamRunning() {
   if (process.platform !== "win32") return null;
+  lastSteam = { id: 0, err: "" };
   const id = parseInt(await reg("RunningAppID"), 16) || 0; // reg gibt 0x… aus
+  lastSteam.id = id;
   if (!id) return null;
   let name = null;
   try {
@@ -106,4 +125,4 @@ async function info(name, appid) {
   return out;
 }
 
-module.exports = { detect, info, tipsFor, steamRunning };
+module.exports = { detect, info, tipsFor, steamRunning, steamDiag, prettyExe };
