@@ -4,6 +4,8 @@ Desktop-Assistent: eine animierte Neuronen-Kugel (Kugel, Hexagon, Würfel, Gehir
 
 Aktuelle Version: **0.57.1** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source`](https://github.com/d0mm392/Argus/tree/source)
 
+**Download (Windows):** [Argus-Setup-0.57.1.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.57.1.exe) direkt herunterladen. Das Setup liegt im Zweig `updates`; „Code → Download ZIP“ auf dieser Seite enthält nur die Dokumentation, kein Setup.
+
 ## Was Argus kann
 
 - **KI:** Claude (über [Claude Code](https://claude.com/download) mit eigenem Konto oder per API-Schlüssel), ChatGPT, Gemini, Mistral, Groq, OpenRouter oder ein eigener OpenAI-kompatibler Server, außerdem lokale Modelle (Ollama, Strata). Spracheingabe mit „Hallo Claude“, Gedächtnis, einfache Aktionen (Programme öffnen, Dateien suchen).
