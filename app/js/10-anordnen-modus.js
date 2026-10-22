@@ -1,17 +1,24 @@
 "use strict";
   // ---------- Anordnen: Teile des Panels frei verschieben und in der Größe ändern ----------
   // Lage als Anteil der Fläche unter der Kopfleiste (x, y, w; h = 0 heißt Höhe nach Inhalt), damit es bei jeder Fenstergröße passt
-  const BLOCKS = [["yt", "YouTube", true], ["tw", "Twitch", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["game", "Gaming", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
+  const BLOCKS = [["yt", "YouTube", true], ["tw", "Twitch", true], ["mOver", "Mining-Überblick", true], ["mTick", "Mining-Ticker", false], ["mHeat", "Miner-Heatmap", true], ["mLive", "Hashrate live", true], ["portal", "Portal-Miner", true], ["iob", "Smart Home", true], ["proc", "Statuszeile", false], ["sys", "Systemwache", true], ["mine", "Mining", true], ["farm", "Farm", true], ["farm2", "Farm 2", true], ["farm3", "Farm 3", true], ["farm4", "Farm 4", true], ["wx", "Wetter", true], ["clocks", "Weltuhren", false], ["notes", "Notizblock", true], ["quick", "Schnellstart", true], ["mirror", "Fenster-Spiegel", true], ["game", "Gaming", true], ["tMkt", "Trading: Markt", true], ["tWatch", "Trading: Watchlist", true], ["tPort", "Trading: Portfolio", true], ["aiLog", "KI-Verlauf", true], ["log", "Protokoll", true], ["transcript", "Antworten", true], ["notice", "Hinweise", false], ["askForm", "Eingabe", false]];
   const panelEl = document.querySelector(".panel");
+  var iobOn = false; // Smart-Home-Block (ioBroker): nur auf eigenen Seiten und wenn eingeschaltet (14n-iobroker.js)
+  var portalLast = null, portalOn = false; // Portal-Block: nur auf Mining oder eigenen Seiten und nur wenn eingeschaltet (14d-portal.js)
+  var customPages = []; const isCustom = (n) => customPages.includes(n), CUSTOM_DEF = ["notes", "notice"]; // eigene Seiten: starten mit Notizblock, alles andere einblendbar
+  var tradeCfg = { on: true }; // wird in 14b-trading.js gefüllt; hier schon da, weil die Skripte nacheinander laden
+  const TRADE_IDS = ["tMkt", "tWatch", "tPort"];
   function applyLayout() {
     document.body.classList.toggle("free", !!freeLayout);
     document.documentElement.style.setProperty("--barH", (document.querySelector(".bar").offsetHeight || 52) + "px");
     for (const [id, , hRes] of BLOCKS) {
       const el = $(id); el.classList.toggle("blk", !!freeLayout);
       let r = freeLayout?.[id];
-      if (!r && freeLayout && (id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "game" || id === "aiLog")) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 600); }
+      if (!r && freeLayout && (id === "yt" || id === "tw" || id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "portal" || id === "iob" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "game" || id === "aiLog" || TRADE_IDS.includes(id))) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 600); }
       if (!r) { el.style.left = el.style.top = el.style.width = ""; if (!(id === "sys" && sysBox.h)) el.style.height = ""; continue; }
       el.style.left = r.x * 100 + "%"; el.style.top = r.y * 100 + "%"; el.style.width = r.w * 100 + "%";
+      // Statuszeile und Hinweisleiste: über die ganze Breite gespeichert = nur so breit wie der Inhalt (kleiner ziehen geht trotzdem, dann zählt die gezogene Breite)
+      if ((id === "proc" || id === "notice") && r.w >= 0.9) { el.style.width = "fit-content"; el.style.maxWidth = "100%"; el.style.minWidth = "180px"; } else if (id === "proc" || id === "notice") { el.style.maxWidth = ""; el.style.minWidth = ""; }
       el.style.height = hRes && r.h ? r.h * 100 + "%" : "";
     }
     applyZ(); fitBlocks(); resize(); ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.(); placeOverlays();
@@ -19,7 +26,7 @@
   // Stapelreihenfolge: zuletzt angefasstes Fenster liegt oben und bleibt dort (Fenster dürfen sich überlappen)
   function applyZ() {
     const ids = BLOCKS.map(([id]) => id).filter((id) => freeLayout?.[id]).sort((a, b) => (freeLayout[a].z || 0) - (freeLayout[b].z || 0));
-    for (const [id] of BLOCKS) $(id).style.zIndex = freeLayout?.[id] ? String(ids.indexOf(id) + 1) : "";
+    for (const [id] of BLOCKS) $(id).style.zIndex = freeLayout?.[id] ? String(ids.indexOf(id) + 1 + (id === "notes" ? 10 : 0)) : ""; // Notizblock liegt über Freundeslisten und Anzeigen (z 6)
   }
   function bringFront(id, r) {
     if (!freeLayout?.[id]) return;
@@ -29,11 +36,17 @@
   }
   // Kein Teil darf aus dem Panel ragen: was unten oder rechts hinausgeht (kleineres Fenster, alte Anordnung), wird zur Anzeige
   // hineingeschoben. Die gespeicherte Lage bleibt, damit sie im größeren Fenster wieder stimmt
+  const FIT_H = ["wx", "clocks", "tMkt"]; // mOver nicht: wer das Fenster größer zieht, soll die Größe behalten
   function fitBlocks() {
     if (!freeLayout || !expanded) return;
     const ph = panelEl.clientHeight, pw = panelEl.clientWidth; if (!ph || !pw) return;
     for (const [id] of BLOCKS) {
       const el = $(id), r = freeLayout[id]; if (!r || el.hidden) continue;
+      if (FIT_H.includes(id) && r.h) { // nie viel Leerraum unter dem Inhalt: gespeicherte Höhe auf den Inhalt kürzen (nur anzeigen, gespeichert bleibt sie)
+        // immer von der gespeicherten Höhe ausgehen, sonst bleibt eine zu früh (leerer Inhalt) gekürzte Höhe stehen
+        const st = r.h * 100 + "%"; el.style.height = "auto"; const ch = el.offsetHeight; el.style.height = st;
+        if (ch > 40 && el.offsetHeight > ch + 12) el.style.height = ch + "px";
+      }
       const h = el.offsetHeight, w = el.offsetWidth; if (!h) continue;
       el.style.top = Math.max(0, Math.min(r.y, (ph - h) / ph)) * 100 + "%";
       el.style.left = Math.max(0, Math.min(r.x, (pw - w) / pw)) * 100 + "%";
@@ -42,11 +55,15 @@
   let fitBlkRaf = 0;
   const fitBlocksSoon = () => { cancelAnimationFrame(fitBlkRaf); fitBlkRaf = requestAnimationFrame(() => { fitBlocks(); placeOverlays(); }); };
   { const ro = new ResizeObserver(fitBlocksSoon); ro.observe(panelEl); for (const [id] of BLOCKS) ro.observe($(id)); }
+  // Inhalt ändert sich (Wetter lädt neu, Anzeige wechselt): Höhe neu aus dem Inhalt bestimmen; auch nach Minimieren und Wiederöffnen
+  { const mo = new MutationObserver(fitBlocksSoon); for (const id of FIT_H) mo.observe($(id), { childList: true, subtree: true, characterData: true }); }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { setTimeout(fitBlocksSoon, 150); setTimeout(fitBlocksSoon, 900); } });
+  window.addEventListener("focus", () => setTimeout(fitBlocksSoon, 200));
   // Mining, Wetter und Weltuhren gab es früher nicht: bei schon angeordnetem Panel in eine freie Lücke setzen
   // (Raster absuchen, nichts überdecken), sonst unter die Systemwache
   function newBlockSpot(id) {
     const ph = panelEl.clientHeight || 600, pw = panelEl.clientWidth || 900, s = freeLayout.sys || { x: 0.02, y: 0.4, w: 0.45 };
-    const EST = { mine: 200, wx: 300, clocks: 72, farm: 160, farm2: 160, farm3: 160, farm4: 160, notes: 160, quick: 90, mirror: 220, game: 300 }; // Höhe, bevor Daten da sind, ist noch klein: geschätzt
+    const EST = { yt: 240, tw: 240, mine: 200, wx: 300, clocks: 72, farm: 160, farm2: 160, farm3: 160, farm4: 160, notes: 160, quick: 90, mirror: 220, game: 300 }; // Höhe, bevor Daten da sind, ist noch klein: geschätzt
     const w = Math.min(0.96, Math.max(0.28, id === "mine" ? s.w : 380 / pw)), h = (EST[id] || 120) / ph;
     const taken = Object.entries(freeLayout).filter(([k]) => k !== id && $(k) && !$(k).hidden && (!["yt", "tw"].includes(k) || $(k).classList.contains("on")))
       .map(([k, r]) => ({ x: r.x, y: r.y, w: r.w, h: r.h || Math.max($(k).offsetHeight || 60, EST[k] || 0) / ph }));
@@ -91,6 +108,7 @@
       selectNudge({ kind: "blk", id, el: ov });
       const pr = panelEl.getBoundingClientRect(), r = { ...freeLayout[id] };
       r.x = $(id).offsetLeft / pr.width; r.y = $(id).offsetTop / pr.height;
+      if ($(id).style.width === "fit-content") r.w = Math.min(1, $(id).offsetWidth / pr.width);
       if (!r.h && hRes) r.h = $(id).offsetHeight / pr.height;
       bringFront(id, r);
       arrSt = { id, hRes, c: e.target.dataset?.c || "", sx: e.clientX, sy: e.clientY, r, aw: pr.width, ah: pr.height, h0: $(id).offsetHeight / pr.height };
@@ -110,6 +128,16 @@
     panelEl.addEventListener("pointerleave", hide);
     bx.addEventListener("pointerdown", (e) => e.stopPropagation());
     bx.addEventListener("click", (e) => { e.stopPropagation(); if (cur) setHidden(cur.id, true); hide(); });
+  }
+  // Anordnen-Leiste frei verschiebbar (am Text oder Rand greifen); Lage bleibt bis zum Neustart
+  { const bar = $("arrBar"); let d = null;
+    const place = (x, y) => { const m = 4, w = bar.offsetWidth, h = bar.offsetHeight; bar.style.transform = "none"; bar.style.left = Math.max(m, Math.min(innerWidth - w - m, x)) + "px"; bar.style.top = Math.max(m, Math.min(innerHeight - h - m, y)) + "px"; };
+    bar.style.cursor = "move"; bar.title = "Leiste ziehen, um sie zu verschieben";
+    bar.addEventListener("pointerdown", (e) => { if (e.button !== 0 || e.target.closest("select, button, input")) return; const r = bar.getBoundingClientRect(); d = { dx: e.clientX - r.left, dy: e.clientY - r.top }; bar.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation(); });
+    bar.addEventListener("pointermove", (e) => { if (d) place(e.clientX - d.dx, e.clientY - d.dy); });
+    const end = () => { d = null; };
+    bar.addEventListener("pointerup", end); bar.addEventListener("pointercancel", end);
+    window.addEventListener("resize", () => { if (bar.style.transform === "none") place(parseFloat(bar.style.left) || 0, parseFloat(bar.style.top) || 0); });
   }
   // Ziehen am ganzen Fenster verfolgen (wie bei den anderen Teilen), sonst geht es bei schnellen Bewegungen verloren
   let arrSt = null;
@@ -219,11 +247,11 @@
   }
   $("arrangeBtn").addEventListener("click", () => setArrange(!document.body.classList.contains("arrange")));
   // Fenster aus- und wieder einblenden (× im Anordnen-Modus, Liste in der Leiste, Einstellungen → Panel und Medien)
-  const MINE_IDS = ["mOver", "mTick", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
+  const MINE_IDS = ["portal", "mOver", "mTick", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
   let miningOn = true;
   const BLOCK_NAMES = { ...Object.fromEntries(BLOCKS.map(([id, n]) => [id, n])), strataBtn: "Strata-Knopf" };
   function applyHidden() {
-    for (const [id] of BLOCKS) $(id).classList.toggle("gone", hiddenSet.has(id) || (!miningOn && MINE_IDS.includes(id)));
+    for (const [id] of BLOCKS) $(id).classList.toggle("gone", hiddenSet.has(id) || (!miningOn && MINE_IDS.includes(id)) || (id === "portal" && (!portalOn || (page !== "Mining" && !isCustom(page)))) || (id === "iob" && (!iobOn || !isCustom(page))));
     const shown = (id) => BLOCK_NAMES[id] && (miningOn || !MINE_IDS.includes(id));
     const hid = [...hiddenSet].filter(shown), sel = $("arrAdd");
     sel.replaceChildren(new Option(hid.length ? `Einblenden (${hid.length})…` : "Alle Fenster sichtbar", ""), ...hid.map((id) => new Option(BLOCK_NAMES[id], id))); sel.disabled = !hid.length;
@@ -276,9 +304,35 @@
     if (key !== gameInfoFor) { gameInfoFor = key; gameInfo = null; gameDraw = ""; if (g) window.jarvis.gameInfo(g.name, g.appid).then((i) => { if (gameInfoFor === key) { gameInfo = i; gameDraw = ""; gameRender(); } }).catch(() => {}); }
     gameRender(force);
   }
+  // Verlauf von CPU-, GPU-Last und GPU-Temperatur seit Spielstart (aus den Systemdaten, nichts im Spiel gelesen)
+  const gamePerf = { key: "", cpu: [], gpu: [], temp: [] };
+  setInterval(() => {
+    const g = gameCur; if (!g) { gamePerf.key = ""; return; }
+    const k = g.name + "|" + g.since; if (k !== gamePerf.key) { gamePerf.key = k; gamePerf.cpu = []; gamePerf.gpu = []; gamePerf.temp = []; }
+    for (const [a, v] of [["cpu", sys?.cpu], ["gpu", sys?.gpuLoad], ["temp", sys?.gpuTemp]]) { gamePerf[a].push(v == null ? null : v); if (gamePerf[a].length > 120) gamePerf[a].shift(); }
+  }, 5000);
+  function gamePerfEl() {
+    const NS = "http://www.w3.org/2000/svg", wrap = gel("div", null, "g-perf"), svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 300 60"); svg.setAttribute("preserveAspectRatio", "none");
+    const line = (arr, max, cls) => { const pts = arr.map((v, i) => v == null ? null : (i * 300 / Math.max(1, arr.length - 1)).toFixed(1) + "," + (58 - Math.min(1, v / max) * 56).toFixed(1)).filter(Boolean); if (pts.length < 2) return; const p = document.createElementNS(NS, "polyline"); p.setAttribute("points", pts.join(" ")); p.setAttribute("class", cls); svg.append(p); };
+    line(gamePerf.cpu, 100, "pf-cpu"); line(gamePerf.gpu, 100, "pf-gpu"); line(gamePerf.temp, 100, "pf-t");
+    wrap.append(svg);
+    const st = (arr) => { const v = arr.filter((x) => x != null); return v.length ? `${Math.round(v[v.length - 1])} (Ø ${Math.round(v.reduce((a, b) => a + b, 0) / v.length)}, max ${Math.round(Math.max(...v))})` : "–"; };
+    const leg = gel("div", null, "g-perf-leg"); for (const [c, l, a, u] of [["pf-cpu", "CPU", gamePerf.cpu, " %"], ["pf-gpu", "GPU", gamePerf.gpu, " %"], ["pf-t", "GPU °C", gamePerf.temp, ""]]) { const s = gel("span", `${l} ${st(a)}${a.some((x) => x != null) ? u : ""}`); s.className = c; leg.append(s); }
+    wrap.append(leg); return wrap;
+  }
+  // Angeschlossener Controller (Gamepad-Schnittstelle meldet ihn erst nach der ersten Tasteneingabe)
+  function padNow() {
+    try {
+      const p = [...(navigator.getGamepads?.() || [])].find((x) => x && x.connected); if (!p) return null;
+      const id = String(p.id || ""), kind = /054c|sony|dualshock|dualsense|playstation/i.test(id) ? "ps" : "xbox";
+      return { kind, name: id.replace(/\s*\(.*$/, "").slice(0, 40) || (kind === "ps" ? "PlayStation" : "Xbox") };
+    } catch { return null; }
+  }
+  for (const ev of ["gamepadconnected", "gamepaddisconnected"]) window.addEventListener(ev, () => { gameDraw = ""; try { gameRender(); } catch {} });
   function gameRender() {
     const g = gameCur, i = gameInfo, body = $("gameBody"), minute = Math.floor(Date.now() / 60000);
-    const sig = (g ? g.name + minute : "-") + "|" + (i ? "i" : "") + "|" + (g ? "" : "");
+    const sig = (g ? g.name + Math.floor(Date.now() / 5000) : "-") + "|" + (i ? "i" : "") + "|" + (padNow()?.name || "");
     if (sig === gameDraw) return; gameDraw = sig;
     $("gameTitle").textContent = g ? (i?.title || g.name) : "Gaming"; $("gameState").textContent = g ? "läuft · " + fmtDur(Date.now() - g.since) : "";
     const out = [];
@@ -294,8 +348,14 @@
       if (i?.desc) out.push(gel("div", i.desc));
       else if (!i) out.push(gel("div", "Lade Infos …", "g-dim"));
       else if (i.error && !i.appid) out.push(gel("div", "Keine Steam-Infos gefunden.", "g-dim"));
-      if (i?.tips?.length) { out.push(gel("h5", "Tipps")); const ul = gel("ul"); for (const t of i.tips) ul.append(gel("li", t)); out.push(ul, gel("div", "Von Hand gesammelt, ohne Gewähr.", "g-dim")); }
-      else if (i) out.push(gel("div", "Für dieses Spiel habe ich noch keine eigenen Tipps. Unten sind Suchlinks.", "g-dim"));
+      out.push(gel("h5", "Leistung im Spiel"), gamePerfEl());
+      if (i?.tips?.length) { out.push(gel("h5", i.tipsGeneric ? "Allgemeine Tipps" : "Tipps")); const ul = gel("ul"); for (const t of i.tips) ul.append(gel("li", t)); out.push(ul, gel("div", i.tipsGeneric ? "Für dieses Spiel gibt es noch keine eigenen Tipps, diese gelten für die Art Spiel. Ohne Gewähr." : "Von Hand gesammelt, ohne Gewähr.", "g-dim")); }
+      if (i?.keys?.length) { out.push(gel("h5", "Typische Steuerung (je Spiel verschieden)")); const kt = gel("div", null, "g-keys"); for (const [k, v] of i.keys) { const r = gel("div"); r.append(gel("kbd", k), gel("span", v)); kt.append(r); } out.push(kt); }
+      const pad = padNow();
+      if (pad && i?.pads?.length) {
+        out.push(gel("h5", "Controller: " + pad.name)); const pt = gel("div", null, "g-keys"); const ps = pad.kind === "ps" ? { A: "✕", B: "○", X: "□", Y: "△", RT: "R2", LT: "L2", RB: "R1", LB: "L1", Start: "Options" } : null;
+        for (const [k, v] of i.pads) { const r = gel("div"); r.append(gel("kbd", ps ? k.replace(/\b(A|B|X|Y|RT|LT|RB|LB|Start)\b/g, (m) => ps[m]) : k), gel("span", v)); pt.append(r); } out.push(pt);
+      } else if (i?.pads?.length) out.push(gel("div", "Controller anschließen und eine Taste drücken, dann erscheint hier die Belegung.", "g-dim"));
       if (i?.news?.length) { out.push(gel("h5", "Neuigkeiten")); for (const n of i.news) { const d = gel("div", n.title, "g-news"); if (n.url) d.addEventListener("click", () => window.jarvis.openUrl(n.url)); out.push(d); } }
       out.push(gel("h5", "Nachschlagen")); const L = gel("div", null, "g-links"), q = encodeURIComponent(i?.title || g.name);
       for (const [lbl, url] of [["PCGamingWiki", "https://www.pcgamingwiki.com/w/index.php?search=" + q], ["Tipps auf YouTube", "https://www.youtube.com/results?search_query=" + q + "+tipps"], ["Steam-Guides", i?.appid || g.appid ? "https://steamcommunity.com/app/" + (i?.appid || g.appid) + "/guides/" : "https://steamcommunity.com/search/SearchResultsAjax?text=" + q], ["Reddit", "https://www.reddit.com/search/?q=" + q]]) { const b = gel("button", lbl, "btn"); b.type = "button"; b.addEventListener("click", () => window.jarvis.openUrl(url)); L.append(b); }
@@ -303,36 +363,72 @@
     }
     body.replaceChildren(...out);
   }
-  setInterval(() => { if (page === "Gaming" && gameCur) gameRender(); }, 20000);
-  const PAGE_DEF = { Gaming: ["game", "sys", "proc", "notes", "mirror", "notice"], Mining: ["proc", "mTick", "mOver", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4", "clocks", "notice"] };
+  setInterval(() => { if (page === "Gaming" && gameCur) gameRender(); }, 5000);
+  const PAGE_DEF = { Gaming: ["game", "sys", "proc", "notes", "mirror", "notice"], Trading: ["tMkt", "tWatch", "tPort", "proc", "notes", "notice"], Mining: ["proc", "portal", "mTick", "mOver", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4", "clocks", "notice"] };
   let pages = {}, page = "Start", gamingOn = true, pagesOn = true, mineOrb = true, pageFriends = false, orbMine = false;
   function onMining() { return miningOn && pagesOn && page === "Mining"; }
   function pageClasses() {
     const m = onMining(); orbMine = m && mineOrb;
-    document.body.classList.toggle("pg-gaming", page === "Gaming"); $("game").hidden = page !== "Gaming"; if (page === "Gaming") gameTick(true);
+    document.body.classList.toggle("pg-gaming", page === "Gaming"); $("game").hidden = page !== "Gaming" && !isCustom(page); if (page === "Gaming" || (isCustom(page) && !hiddenSet.has("game"))) gameTick(true);
+    for (const id of TRADE_IDS) $(id).hidden = page !== "Trading" && !isCustom(page); document.body.classList.toggle("pg-trading", page === "Trading"); if ((page === "Trading" || isCustom(page)) && typeof tradeRender === "function") { tradeRender(); tradeTick(true); }
     document.body.classList.toggle("pg-mining", m); document.body.classList.toggle("noorb", m && !mineOrb);
-    $("pageTabs").hidden = !gamingOn && !(miningOn && pagesOn);
-    for (const b of $("pageTabs").children) b.hidden = (b.dataset.pg === "Mining" && (!miningOn || !pagesOn)) || (b.dataset.pg === "Gaming" && !gamingOn); for (const t of temps) t.val = undefined;
+    $("pageTabs").hidden = !gamingOn && !tradeCfg.on && !(miningOn && pagesOn);
+    for (const b of $("pageTabs").children) b.hidden = (b.dataset.pg === "Mining" && (!miningOn || !pagesOn)) || (b.dataset.pg === "Gaming" && !gamingOn) || (b.dataset.pg === "Trading" && !tradeCfg.on); for (const t of temps) t.val = undefined;
     for (const p of pulses) p.hue = hueOf(nodes[p.a]);
   }
   // Kugel (Größe, Lage, an/aus) und die Knöpfe (Claude · Lokal, Strata, Leerlauf) gehören mit zur Seite: auf Start vergrößern oder ausblenden ändert Mining nicht
-  function snapPage() { return { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsOn: widgets.friends?.on !== false, friendsBox: { ...friendsBox } }; }
+  // Aussehen der Messwerte (Ringe, Anzeigen) gehört zur Seite: Änderung auf Gaming gilt nicht auf Start. Eine Seite ohne eigenes Aussehen übernimmt beim ersten Besuch den aktuellen Stand.
+  // Kugel-Optik gehört zur Seite (Form, Struktur, Neuronen-Stil, Aktivität, Aura, Atmen, Glühen, Tempo): Änderung auf Start gilt nicht auf Mining
+  const BALL_LOOK = { shape: "setShape", rim: "setShapeRim", flat: "setShape2d", glow: "setGlow", spin: "setSpin", flash: "setFlash", struct: "setStruct", nodek: "setNodeK", edgek: "setEdgeK", look3d: "setLook3dK", dens: "setDens", pulse: "setPulse", nodestyle: "setNodeStyle", aura: "setAura", breath: "setBreath" };
+  const ballLook = () => { const o = {}; for (const [k, id] of Object.entries(BALL_LOOK)) { const e = $(id); if (e) o[k] = e.type === "checkbox" ? e.checked : e.value; } return o; };
+  function applyBallLook(b) {
+    for (const [k, id] of Object.entries(BALL_LOOK)) { const e = $(id); if (!e || !(k in b) || b[k] == null) continue; const v = b[k], cur = e.type === "checkbox" ? e.checked : e.value; if (String(cur) === String(v)) continue;
+      if (e.type === "checkbox") e.checked = !!v; else e.value = v; if (e.type === "range") e.dispatchEvent(new Event("input")); e.dispatchEvent(new Event("change")); }
+  }
+  function applyLook(l) {
+    if (l.viz) { viz = { ...viz, ...l.viz }; for (const cb of document.querySelectorAll("[data-viz]")) if (cb.dataset.viz in viz) cb.checked = !!viz[cb.dataset.viz]; try { markRing(); } catch {} }
+    if (l.widgets) { widgets = JSON.parse(JSON.stringify(l.widgets)); try { buildWidgetRows(); } catch {} }
+    window.jarvis.setConfig({ viz, widgets });
+  }
+  function snapPage() { return { look: { viz: { ...viz }, widgets: JSON.parse(JSON.stringify(widgets)) }, panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsOn: widgets.friends?.on !== false, friendsBox: { ...friendsBox } }; }
+  // Je Seite gespeichert (pageLooks): Kugel-Optik, Fenster-Stil (Deckkraft, Textfarbe, Schrift) und Fenster-Designs. Nichts davon darf auf eine andere Seite durchschlagen.
+  // Regeln: Änderung speichert sofort für die aktuelle Seite; beim Seitenwechsel wird die Optik der Zielseite eingesetzt; eine Seite ohne Eintrag übernimmt einmal den aktuellen Stand und ist danach unabhängig.
+  let pageLooks = {}, applyingLook = false, pageLookTimer = 0;
+  const copyJ = (o) => JSON.parse(JSON.stringify(o ?? {}));
+  const pageLookNow = () => ({ ball: ballLook(), win: copyJ(window.winStyleGet?.()), looks: copyJ(window.looksGet?.()) });
+  function savePageLookNow() { clearTimeout(pageLookTimer); if (applyingLook) return; pageLooks[page] = pageLookNow(); window.jarvis.setConfig({ pageLooks }); }
+  const savePageLookSoon = () => { if (applyingLook) return; clearTimeout(pageLookTimer); pageLookTimer = setTimeout(savePageLookNow, 250); };
+  window.onPageStyle = savePageLookSoon;
+  for (const id of Object.values(BALL_LOOK)) { const e = $(id); if (e) { e.addEventListener("change", savePageLookSoon); e.addEventListener("input", savePageLookSoon); } }
+  function loadPageLook(n) {
+    const pl = pageLooks[n]; if (!pl) { pageLooks[n] = pageLookNow(); return; }
+    applyingLook = true;
+    try { if (pl.ball) applyBallLook(pl.ball); window.winStyleSet?.(pl.win || {}); window.looksSet?.(pl.looks || {}); } finally { applyingLook = false; }
+  }
+  // Einmal nach dem Start: jede Seite bekommt ihren eigenen Eintrag (bisheriger Stand, bei vorhandener Seiten-Optik diese); die aktuelle Seite setzt ihren gespeicherten Stand ein
+  function seedPageLooks() {
+    const names = ["Start", "Mining", "Gaming", "Trading", ...customPages], cur = pageLookNow(), had = !!pageLooks[page];
+    for (const n of names) if (!pageLooks[n]) pageLooks[n] = { ball: { ...cur.ball, ...(pages[n]?.look?.ball || {}) }, win: copyJ(cur.win), looks: copyJ(cur.looks) };
+    if (had) loadPageLook(page);
+    window.jarvis.setConfig({ pageLooks });
+  }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
   function switchPage(n) {
     if (n === page) return;
-    pages[page] = snapPage(); page = n;
-    const pf = pages[n] || (PAGE_DEF[n] ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !PAGE_DEF[n].includes(id)), pins: {}, scales: {} } : null);
-    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming") hiddenSet.add("game"); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
+    savePageLookNow(); pages[page] = snapPage(); page = n; loadPageLook(n);
+    const def = PAGE_DEF[n] || (isCustom(n) ? CUSTOM_DEF : null), pf = pages[n] || (def ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !def.includes(id)), pins: {}, scales: {} } : null);
+    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming" && !isCustom(n)) hiddenSet.add("game"); if (n !== "Trading" && !isCustom(n)) for (const id of TRADE_IDS) hiddenSet.add(id); else for (const id of TRADE_IDS) if (!pages[n]) hiddenSet.delete(id); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
+      if (pf.look) applyLook(pf.look);
       ballOn = pf.ballOn !== false; statusOn = pf.statusOn !== false; $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; applyUi();
       widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; widgets.friends = { ...widgets.friends, on: pf.friendsOn !== false }; $("setFriendsOn").checked = widgets.friends.on; try { buildWidgetRows(); } catch {}
-      friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; fgRes = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
+      friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; gripSt.f1 = null; gripSt.f2 = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
       window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
       applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }
   function applyMiningOn() {
     document.body.classList.toggle("nomining", !miningOn);
-    if ((!miningOn && page === "Mining") || (!gamingOn && page === "Gaming")) { const p = pagesOn; pagesOn = true; switchPage("Start"); pagesOn = p; }
+    if ((!miningOn && page === "Mining") || (!gamingOn && page === "Gaming") || (!tradeCfg.on && page === "Trading")) { const p = pagesOn; pagesOn = true; switchPage("Start"); pagesOn = p; }
     pageClasses(); applyHidden();
   }
   $("setGamingOn").addEventListener("change", (e) => { gamingOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ gamingOn }); if (gamingOn) { switchPage("Gaming"); try { notice?.("Gaming-Seite oben links neben ARGUS (Strg+3)"); } catch {} } });
@@ -344,9 +440,10 @@
   const applyMineView = (v) => { document.body.classList.toggle("mview-balken", v === "balken"); fitPanel?.(); };
   $("setMineView").addEventListener("change", (e) => { applyMineView(e.target.value); window.jarvis.setConfig({ mineView: e.target.value }); });
   for (const b of $("pageTabs").children) b.addEventListener("click", () => switchPage(b.dataset.pg));
-  addEventListener("keydown", (e) => { if (e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "1" || e.key === "2" || e.key === "3")) { e.preventDefault(); const t = e.key === "1" ? "Start" : e.key === "2" ? "Mining" : "Gaming"; if ((t === "Mining" && !miningOn) || (t === "Gaming" && !gamingOn)) return; switchPage(t); } });
+  addEventListener("keydown", (e) => { if (e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4" || (e.key >= "5" && e.key <= "9"))) { e.preventDefault(); const t = e.key === "1" ? "Start" : e.key === "2" ? "Mining" : e.key === "3" ? "Gaming" : e.key === "4" ? "Trading" : customPages[+e.key - 5]; if (!t) return; if ((t === "Mining" && !miningOn) || (t === "Gaming" && !gamingOn) || (t === "Trading" && !tradeCfg.on)) return; switchPage(t); } });
   window.jarvis.getConfig?.().then((c) => {
-    pages = c.pages || {}; gamingOn = c.gamingOn !== false; $("setGamingOn").checked = gamingOn; page = c.page === "Mining" ? "Mining" : c.page === "Gaming" && c.gamingOn !== false ? "Gaming" : "Start"; if (page !== "Gaming") hiddenSet.add("game"); miningOn = c.miningOn !== false; $("setMiningOn").checked = miningOn; pagesOn = c.pagesOn !== false; mineOrb = c.mineOrb !== false; pageFriends = !!c.pageFriends; oceanInTotal = c.oceanInTotal !== false; $("setOceanTotal").checked = oceanInTotal; fmTotC = null;
+    pageLooks = c.pageLooks && typeof c.pageLooks === "object" ? c.pageLooks : {}; setTimeout(seedPageLooks, 1800);
+    pages = c.pages || {}; gamingOn = c.gamingOn !== false; $("setGamingOn").checked = gamingOn; page = c.page === "Mining" ? "Mining" : c.page === "Gaming" && c.gamingOn !== false ? "Gaming" : c.page === "Trading" && c.tradeOn !== false ? "Trading" : Array.isArray(c.customPages) && c.customPages.includes(c.page) ? c.page : "Start"; customPages = Array.isArray(c.customPages) ? c.customPages.filter((x) => typeof x === "string").slice(0, 8) : []; if (page !== "Gaming" && !isCustom(page)) hiddenSet.add("game"); if (page !== "Trading" && !isCustom(page)) for (const id of TRADE_IDS) hiddenSet.add(id); miningOn = c.miningOn !== false; $("setMiningOn").checked = miningOn; pagesOn = c.pagesOn !== false; mineOrb = c.mineOrb !== false; pageFriends = !!c.pageFriends; oceanInTotal = c.oceanInTotal !== false; $("setOceanTotal").checked = oceanInTotal; fmTotC = null;
     $("setPagesOn").checked = pagesOn; $("setMineOrb").checked = mineOrb; $("setPageFriends").checked = pageFriends; $("setMineView").value = c.mineView || "kacheln"; applyMineView(c.mineView);
     // neuer Überblick (0.31.1): nur auf der Mining-Seite einblenden, auf Start nicht ungefragt dazwischenschieben
     // 0.31.3: Ticker, Heatmap, Hashrate live genauso nur auf der Mining-Seite einblenden
@@ -402,7 +499,7 @@
     applyLayout(); window.jarvis.setConfig({ panelLayout: freeLayout });
   });
   // Rahmen dürfen nie mitscrollen: sonst rutschen Kopfleiste (Einstellungen, Minimieren, Schließen) und Panel aus dem Bild
-  // (Domi: nach „Zurücksetzen“/Profil kam man an nichts mehr heran). Listen, Chat und Textfelder scrollen weiter normal.
+  // (Nutzerwunsch: nach „Zurücksetzen“/Profil kam man an nichts mehr heran). Listen, Chat und Textfelder scrollen weiter normal.
   const NO_SCROLL = ".shell, #stage, body.free .panel";
   const unscroll = (el) => { if (el && (el.scrollTop || el.scrollLeft)) { el.scrollTop = 0; el.scrollLeft = 0; } };
   document.addEventListener("scroll", (e) => { const t = e.target; if (t === document || t === document.documentElement || t === document.body) { unscroll(document.documentElement); unscroll(document.body); } else if (t.matches?.(NO_SCROLL)) unscroll(t); }, true);
@@ -415,12 +512,14 @@
     x.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); fn(); }); el.append(x);
   }
   // Das Rechtsklick-Menü zeigt nur, was auf der geöffneten Seite vorkommt (Mining-Dinge nicht auf Start usw.)
-  const MINE_BLK = ["mTick", "mOver", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
+  const MINE_BLK = ["portal", "mTick", "mOver", "mHeat", "mLive", "mine", "farm", "farm2", "farm3", "farm4"];
   function pageHas(id) {
     if (MINE_BLK.includes(id)) return miningOn && page === "Mining";
     if (page === "Mining") return PAGE_DEF.Mining.includes(id);
     if (page === "Gaming") return PAGE_DEF.Gaming.includes(id);
-    return id !== "game";
+    if (page === "Trading") return PAGE_DEF.Trading.includes(id);
+    if (isCustom(page)) return true;
+    return id !== "game" && id !== "iob" && !TRADE_IDS.includes(id);
   }
   function pageBtn(k) {
     const ts = temps.filter((t) => t.w === k); if (!ts.length) return true; // Knöpfe ohne Messwert-Anzeige (Claude · Lokal, Strata, Freundesliste …) gelten überall
@@ -434,19 +533,22 @@
     const moved = rDown && Math.hypot(e.screenX - rDown[0], e.screenY - rDown[1]) > 6; rDown = null;
     if (moved) return;
     // Was liegt unter der Maus? Danach richten sich die ersten Einträge im Menü
-    let target = null; const tEl = e.target.closest?.(".temp");
-    if (tEl) { const t = temps.find((x) => x.el === tEl); if (t) target = { kind: "temp", key: t.key, w: t.w, name: t.name + (t.key.endsWith("C") ? " Takt" : t.key.endsWith("T") ? " Temperatur" : "") }; }
+    let target = null; const tEl = e.target.closest?.(".temp"), lEl = e.target.closest?.(".lbl");
+    if (e.target.closest?.(".ringh")) target = { kind: "rings" };
+    else if (lEl) target = { kind: "lbl", name: String(lEl.dataset.pk || "").replace(/^lbl:/, "").slice(0, 30) };
+    else if (tEl) { const t = temps.find((x) => x.el === tEl); if (t) target = { kind: "temp", key: t.key, w: t.w, name: t.name + (t.key.endsWith("C") ? " Takt" : t.key.endsWith("T") ? " Temperatur" : "") }; }
     else if (e.target.closest?.("#pill")) target = { kind: "pill" };
     else if (e.target.closest?.(".who")) target = { kind: "who" };
     else if (e.target.closest?.("#strataBtn")) target = { kind: "strata" };
-    else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
+    else if (e.target.closest?.(".friends")) { const f2 = !!e.target.closest(".friends.f2"); target = { kind: "blk", id: f2 ? "friends2" : "friends", name: f2 ? "Discord-Liste" : "Freundesliste" }; }
+    else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt, #transcript, #askForm, #log") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
     const cs = getComputedStyle(document.documentElement), vars = {};
     for (const k of ["--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
-    const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS };
-    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS, pulse: pulseStyle, nodeStyle, aura: auraMode, breath: breathOn, structK: Math.round(structK * 100), nodeK: Math.round(nodeK * 100), edgeK, look3dK: Math.round(look3dK * 100), dens: densK, ringStyles: RING_STYLES, ringStyle: viz.ringStyle || "form", ringSize: scales.rings || 1, ringMono: !!viz.ringMono, tiltX: gTiltX, tiltY: gTiltY };
+    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn, trading: page === "Trading", undo: typeof undoStack !== "undefined" ? undoStack.length : 0, pageList: ["Start", ...(miningOn && pagesOn ? ["Mining"] : []), ...(gamingOn ? ["Gaming"] : []), ...(tradeCfg.on ? ["Trading"] : []), ...customPages], page, custom: isCustom(page) }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   // Gibt es für diese Anzeige gerade Messwerte? Argus erkennt das selbst aus den Live-Daten (Sensor fehlt = nicht anbieten)
   function btnAvail(k) {
@@ -476,8 +578,12 @@
       }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
-    else if (a === "setw" && v && typeof v.k === "string") hideWidget(v.k, v.flip ? widgets[v.k]?.on === false : !!v.on); // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
+    else if (a === "setw" && v && typeof v.k === "string") { const nv = v.flip ? widgets[v.k]?.on === false : !!v.on; if (v.k === "fans" && nv && hiddenFans.length) { hiddenFans = []; window.jarvis.setConfig({ hiddenFans }); } hideWidget(v.k, nv); } // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
     else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t && /^fan\d$/.test(t.key)) { const nm = fanOf(+t.key.slice(3))?.name; if (nm) { hiddenFans = [...hiddenFans, nm]; window.jarvis.setConfig({ hiddenFans }); } } else if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
+    else if (a === "gopage" && typeof v === "string" && (v === "Start" || PAGE_DEF[v] || isCustom(v))) switchPage(v);
+    else if (["newpage", "renamepage", "delpage"].includes(a) && typeof pgDialog === "function") pgDialog(a.slice(0, -4));
+    else if (a === "undo" && typeof undoMove === "function") undoMove();
+    else if (a === "tradeadd" && ["c", "s", "pos"].includes(v)) typeof tradeAdd === "function" && tradeAdd(v);
     else if (a === "hideblk" && BLOCK_NAMES[v]) setHidden(v, true);
     else if ((a === "blkfront" || a === "blkback") && BLOCK_NAMES[v]) {
       if (!freeLayout) { freeLayout = captureLayout(); applyLayout(); }
@@ -485,13 +591,20 @@
     }
     else if (a === "holetoggle") window.jarvis.getConfig().then((c) => { window.jarvis.setConfig({ holeOn: !c.holeOn, holeEdit: false }); $("setHoleOn").checked = !c.holeOn; });
     else if (a === "ctxset" && v && typeof v.k === "string") { // Rechtsklick-Menü am Element: stellt über die Einstellungs-Steuerung ein, damit alles den gleichen Weg nimmt
-      const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim", flat: "setShape2d" }, el = ids[v.k] && $(ids[v.k]);
+      const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim", struct: "setStruct", pulse: "setPulse", nodestyle: "setNodeStyle", aura: "setAura", breath: "setBreath", nodek: "setNodeK", edgek: "setEdgeK", look3d: "setLook3dK", dens: "setDens", flat: "setShape2d" }, el = ids[v.k] && $(ids[v.k]);
+      if (v.k === "ringstyle") { document.querySelector(`#ringPick [data-v="${String(v.v).replace(/[^a-z0-9]/gi, "")}"]`)?.click(); return; }
+      if (v.k === "ringmono") { viz = { ...viz, ringMono: !!v.v }; window.jarvis.setConfig({ viz }); return; }
+      if (v.k === "ringoff") { const cb = document.querySelector('[data-viz="rings"]'); if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change")); } return; }
+      if (v.k === "ringtilt") { $("setGaugeTiltX").value = v.v[0]; $("setGaugeTiltY").value = v.v[1]; $("setGaugeTiltX").dispatchEvent(new Event("input")); $("setGaugeTiltY").dispatchEvent(new Event("input")); return; }
+      if (v.k === "ringsize") { $("setRingSize").value = v.v; $("setRingSize").dispatchEvent(new Event("input")); $("setRingSize").dispatchEvent(new Event("change")); return; }
       if (el) { if (el.type === "checkbox") el.checked = !!v.v; else el.value = v.v; if (el.type === "range") el.dispatchEvent(new Event("input")); el.dispatchEvent(new Event("change")); }
     }
     else if (a === "reset") $("arrReset").click();
     else if (a === "profile" && profs[v]) { $("arrProf").value = v; $("arrProf").dispatchEvent(new Event("change")); }
     else if (a === "skin") [...document.querySelectorAll("#skinPick button")].find((b) => b.dataset.n === v)?.click();
-    else if (a === "notes") { $("setNotesOn").checked = !$("setNotesOn").checked; $("setNotesOn").dispatchEvent(new Event("change")); }
+    else if (a === "ws" && v && typeof v.id === "string") window.setWinStyle?.(v.id, v.k, v.v);
+    else if (a === "look" && v && typeof v.id === "string") window.setLook?.(v.id, String(v.v || ""));
+    else if (a === "notes") { $("setNotesOn").checked = !$("setNotesOn").checked; $("setNotesOn").dispatchEvent(new Event("change")); if ($("setNotesOn").checked && hiddenSet.has("notes")) setHidden("notes", false); }
     else if (a === "yt") $("ytBtn").click();
     else if (a === "tw") $("twBtn").click();
     else if (a === "unhide") { if (v === "*") { for (const id of [...hiddenSet]) setHidden(id, false); } else if (BLOCK_NAMES[v]) setHidden(v, false); }

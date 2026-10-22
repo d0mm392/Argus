@@ -30,7 +30,7 @@
     rimHot = h.rim; overBall = h.inside;
     canvas.style.cursor = h.rim ? resizeCursor(h.ang) : h.inside ? "pointer" : "default";
     // Durchklicken nur im kleinen Modus und nur, wenn nichts Bedienbares unter der Maus ist
-    const overUi = e.target.closest?.(".lbl, .temp, .appf, .who, .mic-float, .pill, .friends, .settings, .arr-bar, .setup"); // offene Einstellungen nie durchklicken, sonst kommt man nicht mehr raus
+    const overUi = e.target.closest?.(".lbl, .temp, .appf, .who, .mic-float, .pill, .friends, .settings, .arr-bar, .setup, .brief-card"); // offene Einstellungen nie durchklicken, sonst kommt man nicht mehr raus
     setThrough(!expanded && !h.rim && !h.inside && !overUi && !drag); // beim Ziehen nie durchklicken, sonst fällt das Teil unterwegs runter
   });
   document.documentElement.addEventListener("pointerleave", () => { if (!gesture) { rimHot = false; overBall = false; } });
@@ -230,7 +230,7 @@
       n.textContent = d.name + (d.phase === "installiert" ? " (installiert)" : "");
       const eta = d.rate > 0 ? Math.round((d.total - d.done) / d.rate) : 0;
       const etaT = eta ? (eta >= 3600 ? Math.floor(eta / 3600) + " h " + Math.round(eta % 3600 / 60) + " min" : Math.max(1, Math.round(eta / 60)) + " min") : "";
-      v.textContent = `${d.pct} %` + (d.active && d.rate > 0 ? ` · ${(d.rate / 1e6).toFixed(1)} MB/s · ${etaT}` : d.active ? "" : " · pausiert");
+      const gb = (b) => (b / 1e9).toFixed(1).replace(".", ","); v.textContent = (d.total ? `${gb(d.done)} / ${gb(d.total)} GB · ` : "") + `${d.pct} %` + (d.active && d.rate > 0 ? ` · ${(d.rate / 1e6).toFixed(1)} MB/s · ${etaT}` : d.active ? " · lädt …" : " · pausiert");
       el.title = `${d.name}: ${fmtB(d.done)} von ${fmtB(d.total)}`;
       bar.style.setProperty("--v", d.pct + "%"); el.append(n, v, bar); return el;
     }));
@@ -376,6 +376,9 @@
   let lastT = performance.now(), time = 0, lite = false;
   let lastAct = performance.now(), fpsIdle = 30, fpsMax = 60;
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) addEventListener(ev, () => { lastAct = performance.now(); }, { passive: true, capture: true });
+  // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
+  let videoWin = false; window.jarvis.onVideoWin?.((v) => { videoWin = v; });
+  window.videoBusy = () => videoWin || !!(window.videoEmbed?.yt || window.videoEmbed?.tw);
   function frame(now, once) {
     if (gameMode && sys?.fullscreen && !once && !drag) { // Spielmodus: läuft ein Programm im Vollbild, nur noch ein Bild pro Sekunde
       if (now - gmLast < 1000) { setTimeout(() => requestAnimationFrame(frame), 1000 - (now - gmLast)); return; }
@@ -384,8 +387,8 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / fpsIdle - 1 : 1000 / fpsMax - 1;
-    if (!once && now - lastT < minMs) { requestAnimationFrame(frame); return; }
+    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    if (!once && now - lastT < (window.videoBusy() && !drag ? Math.max(minMs, 33) : minMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)
     if (!once && setOpen && now - lastT < 500) { requestAnimationFrame(frame); return; }
@@ -474,8 +477,8 @@
       // Phase aufsummieren statt time * Tempo: sonst springt bei jeder kleinen Änderung der Unruhe die Phase um time·Δ (nach Stunden Laufzeit wild zitternde Neuronen)
       symPh += Math.min(dt, 0.1) * (0.6 + symAg * 0.8); const ph = symPh;
       for (const n of nodes) {
-        const [x, y, z] = n.d, w = 1 + 0.13 * Math.sin(x * 3 + ph * 0.9) * Math.cos(y * 2.5 - ph * 0.7) + 0.08 * Math.sin(z * 4 + y * 2 + ph * 1.3);
-        n.x = x * n.rad * w * 0.62; n.y = y * n.rad * w * 0.62; n.z = z * n.rad * w * 0.62;
+        const [x, y, z] = n.d, w = 1 + 0.05 * Math.sin(x * 3 + ph * 0.9) * Math.cos(y * 2.5 - ph * 0.7), rr = symRadiusAt(x, y, z) * Math.min(1, n.rad / 0.86) * 0.93 * w; // Neuronen füllen die Masse aus und folgen ihrer Form
+        n.x = x * rr; n.y = y * rr; n.z = z * rr;
       }
     }
     // Projektion
@@ -559,6 +562,8 @@
       }
     }
     const fine = shape === "symbiont" ? 0.55 : 1; // Symbiont: feinere Linien und Punkte
+    const br = breathOn ? 1 + 0.14 * Math.sin(time * 1.25) : 1; // Atmen: Neuronen und Aura pulsieren langsam
+    if (auraMode !== "aus") { const ar = S * (1.05 + (auraMode === "stark" ? 0.25 : 0.1)) * (breathOn ? 1 + 0.05 * Math.sin(time * 1.25) : 1), ag2 = ctx.createRadialGradient(CX, CY, S * 0.3, CX, CY, ar); ag2.addColorStop(0, `hsla(${stateHue},85%,60%,0)`); ag2.addColorStop(0.7, `hsla(${stateHue},85%,60%,${auraMode === "stark" ? 0.16 : 0.07})`); ag2.addColorStop(1, `hsla(${stateHue},85%,55%,0)`); ctx.fillStyle = ag2; ctx.beginPath(); ctx.arc(CX, CY, ar, 0, Math.PI * 2); ctx.fill(); }
     const unit = S / 230 * fine;
     ctx.lineWidth = Math.max(0.4, unit * 0.8);
     for (const [i, j] of edges) {
@@ -580,17 +585,42 @@
         ctx.beginPath(); ctx.arc(n.sx, n.sy, r * 4, 0, Math.PI * 2); ctx.fill();
       }
       ctx.fillStyle = `hsla(${h},85%,${55 + (n.flash * flashK) * 35 + n.near * 20}%,${Math.min(1, (0.35 + act * 0.5 + (n.flash * flashK) * 0.3) * depth * lift * (OPEN_SHAPES.has(shape) ? 1.6 : 1) + n.near * 0.5)})`;
-      ctx.beginPath(); ctx.arc(n.sx, n.sy, r, 0, Math.PI * 2); ctx.fill();
+      const rb = r * br;
+      if (nodeStyle === "ring") { ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = Math.max(0.6, unit * 0.7); ctx.beginPath(); ctx.arc(n.sx, n.sy, rb * 1.4, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = Math.max(0.4, unit * 0.8); }
+      else if (nodeStyle === "leucht") { ctx.globalAlpha = Math.min(1, (0.35 + act * 0.5 + (n.flash * flashK) * 0.4) * depth * lift); ctx.drawImage(tint(`hsl(${Math.round(h / 8) * 8},85%,66%)`), n.sx - rb * 3.2, n.sy - rb * 3.2, rb * 6.4, rb * 6.4); ctx.globalAlpha = 1; }
+      else if (nodeStyle === "stern") { ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = Math.max(0.5, unit * 0.7); const q = rb * 2.4; ctx.beginPath(); ctx.moveTo(n.sx - q, n.sy); ctx.lineTo(n.sx + q, n.sy); ctx.moveTo(n.sx, n.sy - q); ctx.lineTo(n.sx, n.sy + q); ctx.stroke(); ctx.lineWidth = Math.max(0.4, unit * 0.8); ctx.beginPath(); ctx.arc(n.sx, n.sy, rb * 0.8, 0, Math.PI * 2); ctx.fill(); }
+      else { ctx.beginPath(); ctx.arc(n.sx, n.sy, rb, 0, Math.PI * 2); ctx.fill(); }
     }
 
     for (const p of pulses) {
       const a = nodes[p.a], b = nodes[p.b], t0 = Math.max(0, p.t - 0.45);
       const x = a.sx + (b.sx - a.sx) * p.t, y = a.sy + (b.sy - a.sy) * p.t;
-      const depth = 0.35 + 0.65 * (a.sz + 1) / 2;
-      ctx.strokeStyle = `hsla(${p.hue},95%,70%,${0.55 * depth})`;
-      ctx.beginPath(); ctx.moveTo(a.sx + (b.sx - a.sx) * t0, a.sy + (b.sy - a.sy) * t0); ctx.lineTo(x, y); ctx.stroke();
-      ctx.fillStyle = `hsla(${p.hue},100%,80%,${0.9 * depth})`;
-      ctx.beginPath(); ctx.arc(x, y, 1.6 * unit * a.f, 0, Math.PI * 2); ctx.fill();
+      const depth = 0.35 + 0.65 * (a.sz + 1) / 2, ps = pulseStyle;
+      if (ps === "funken") { // kurze helle Striche mit ein paar versprühten Funken
+        const t1 = Math.max(0, p.t - 0.12); ctx.strokeStyle = `hsla(${p.hue},100%,85%,${0.9 * depth})`; ctx.lineWidth = 1.6 * unit * a.f;
+        ctx.beginPath(); ctx.moveTo(a.sx + (b.sx - a.sx) * t1, a.sy + (b.sy - a.sy) * t1); ctx.lineTo(x, y); ctx.stroke(); ctx.lineWidth = 1;
+        for (let q = 0; q < 3; q++) { const s2 = Math.sin((p.a * 13 + p.b * 7 + q * 31) * 12.9898) * 43758.5453, r1 = s2 - Math.floor(s2), ang = r1 * 6.283 + p.t * 9; ctx.fillStyle = `hsla(${p.hue},100%,80%,${0.7 * depth * (1 - q * 0.25)})`; ctx.beginPath(); ctx.arc(x + Math.cos(ang) * (3 + q * 3) * unit, y + Math.sin(ang) * (3 + q * 3) * unit, 0.9 * unit * a.f, 0, Math.PI * 2); ctx.fill(); }
+      } else if (ps === "komet") { // langer, ausblendender Schweif mit großem Kopf
+        const n = 7; for (let q = 0; q < n; q++) { const u0 = Math.max(0, p.t - 0.5 * (q + 1) / n), u1 = Math.max(0, p.t - 0.5 * q / n); ctx.strokeStyle = `hsla(${p.hue},95%,${70 - q * 3}%,${0.7 * depth * (1 - q / n)})`; ctx.lineWidth = (2.4 - q * 0.28) * unit * a.f; ctx.beginPath(); ctx.moveTo(a.sx + (b.sx - a.sx) * u0, a.sy + (b.sy - a.sy) * u0); ctx.lineTo(a.sx + (b.sx - a.sx) * u1, a.sy + (b.sy - a.sy) * u1); ctx.stroke(); }
+        ctx.lineWidth = 1; ctx.fillStyle = `hsla(${p.hue},100%,88%,${0.95 * depth})`; ctx.beginPath(); ctx.arc(x, y, 2.4 * unit * a.f, 0, Math.PI * 2); ctx.fill();
+      } else if (ps === "blitz") { // gezackter Blitz entlang der Verbindung, flackert
+        const seg = 6, dx = b.sx - a.sx, dy = b.sy - a.sy, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, fl = Math.floor((typeof time === "number" ? time : 0) * 14), ta = Math.max(0, p.t - 0.35);
+        ctx.strokeStyle = `hsla(${p.hue},100%,88%,${(0.55 + 0.4 * ((fl + p.a) % 2)) * depth})`; ctx.lineWidth = 1.3 * unit * a.f; ctx.beginPath();
+        for (let q = 0; q <= seg; q++) { const u = ta + (p.t - ta) * q / seg, s2 = Math.sin((p.a * 91 + q * 17 + fl * 5) * 12.9898) * 43758.5453, off = ((s2 - Math.floor(s2)) - 0.5) * 7 * unit * (q === 0 || q === seg ? 0.3 : 1); const px = a.sx + dx * u + nx * off, py = a.sy + dy * u + ny * off; q ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+        ctx.stroke(); ctx.lineWidth = 1;
+      } else if (ps === "welle") { // Ringe, die vom Punkt aus anwachsen und verblassen
+        const rr = (3 + p.t * 16) * unit * a.f; ctx.strokeStyle = `hsla(${p.hue},95%,75%,${0.6 * depth * (1 - p.t)})`; ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = `hsla(${p.hue},100%,85%,${0.8 * depth})`; ctx.beginPath(); ctx.arc(x, y, 1.1 * unit * a.f, 0, Math.PI * 2); ctx.fill();
+      } else if (ps === "licht") { // die ganze Verbindung leuchtet, die Helligkeit wandert als weiche Welle
+        const g = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy), c0 = `hsla(${p.hue},95%,70%,0)`, w = 0.22;
+        g.addColorStop(0, c0); g.addColorStop(Math.max(0.001, Math.min(0.998, p.t - w)), c0); g.addColorStop(Math.max(0.002, Math.min(0.999, p.t)), `hsla(${p.hue},100%,82%,${0.85 * depth})`); g.addColorStop(Math.min(1, Math.max(0.003, p.t + w)), c0); g.addColorStop(1, c0);
+        ctx.strokeStyle = g; ctx.lineWidth = 2.2 * unit * a.f; ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke(); ctx.lineWidth = 1;
+      } else {
+        ctx.strokeStyle = `hsla(${p.hue},95%,70%,${0.55 * depth})`;
+        ctx.beginPath(); ctx.moveTo(a.sx + (b.sx - a.sx) * t0, a.sy + (b.sy - a.sy) * t0); ctx.lineTo(x, y); ctx.stroke();
+        ctx.fillStyle = `hsla(${p.hue},100%,80%,${0.9 * depth})`;
+        ctx.beginPath(); ctx.arc(x, y, 1.6 * unit * a.f, 0, Math.PI * 2); ctx.fill();
+      }
     }
     }
 
@@ -755,7 +785,7 @@
     for (const t of temps.filter((x) => pins["t:" + x.key]).concat(temps.filter((x) => !pins["t:" + x.key]))) {
       const cfg = widgets[t.w] || {};
       const v = t.get() ?? null;
-      const show = cfg.on !== false && (v != null || t.keepNa) && (onMining() ? t.page === "Mining" || t.trend : t.page !== "Mining") && (expanded || miniMore || t.key === "cpuT" || t.key === "gpuT");
+      const show = cfg.on !== false && !(t.key.startsWith("c_") && widgets.btc?.on === false) && (v != null || t.keepNa) && (onMining() ? t.page === "Mining" || t.trend : t.page !== "Mining") && (expanded || miniMore || t.key === "cpuT" || t.key === "gpuT");
       if (t.trend && show && t.el.dataset.chg !== String(market?.btc?.ts)) { t.el.dataset.chg = String(market?.btc?.ts); t.val = undefined; } // neuer Kurs: Farbe und Hinweis auffrischen
       t.el.classList.toggle("off", !show);
       if (!show) continue;
@@ -793,7 +823,7 @@
         pins[key] = { a: Math.atan2(ny - c.y, nx - c.x), r: Math.max(0.2, Math.hypot(nx - c.x, ny - c.y) / SB) }; pos.x += nx - pp.x; pos.y += ny - pp.y; t.av = null;
         t.drift.x -= sx; t.drift.y -= sy; if (Math.abs(t.drift.x) + Math.abs(t.drift.y) < 0.4) { t.drift = null; savePins(); }
       }
-      // selbst hingelegte Anzeigen bleiben genau da, wo Domi sie abgelegt hat; nur nicht abgelegte weichen aus
+      // selbst hingelegte Anzeigen bleiben genau da, wo der Nutzer sie abgelegt hat; nur nicht abgelegte weichen aus
       if (drag?.el === t.el && drag.moved) tDragBox = { x: pos.x, y: pos.y, w, h };
       else if (!pins["t:" + t.key]) {
         const occ = [...uiRects(), ...ytBlock(), ...obsNext], free = (x, y) => x >= 4 && y >= 4 && x + w <= W - 4 && y + h <= H - 4 && occ.every((o) => x >= o.x + o.w + 4 || x + w + 4 <= o.x || y >= o.y + o.h + 4 || y + h + 4 <= o.y);

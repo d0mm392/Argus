@@ -8,7 +8,7 @@ const readline = require("readline");
 const { execFile } = require("child_process");
 
 const INDEX = () => process.env.JARVIS_INDEX || path.join(os.homedir(), "Argus-Gedaechtnis", ".dateiindex.txt");
-// Systemordner und Caches, in denen Domi nie etwas sucht, machen das Verzeichnis nur langsam
+// Systemordner und Caches, in denen der Nutzer nie etwas sucht, machen das Verzeichnis nur langsam
 const SKIP = new Set(["windows", "$recycle.bin", "system volume information", "$windows.~bt", "$windows.~ws", "$winreagent", "recovery", "config.msi",
   "node_modules", ".git", "__pycache__", "winsxs", "temp", "tmp", "inetcache", "cache", "caches", "code cache", "gpucache", "shadercache", ".cache",
   "packages", "crashdumps", "windowsapps", "msocache", "perflogs", ".ollama", "selfimprove-stage", "backups"]);

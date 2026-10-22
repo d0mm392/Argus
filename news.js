@@ -7,6 +7,8 @@ const FEEDS = [
   { cat: "tech", source: "t3n", url: "https://t3n.de/rss.xml" },
   { cat: "krypto", source: "BTC-ECHO", url: "https://www.btc-echo.de/feed/" },
   { cat: "krypto", source: "Cointelegraph", url: "https://de.cointelegraph.com/rss" },
+  { cat: "welt", source: "Tagesschau", url: "https://www.tagesschau.de/index~rss2.xml" },
+  { cat: "welt", source: "Spiegel", url: "https://www.spiegel.de/schlagzeilen/index.rss" },
   { cat: "krypto", source: "CoinDesk", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
 ];
 const CMC_BTC = "https://coinmarketcap.com/currencies/bitcoin/";

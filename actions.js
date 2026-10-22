@@ -1,4 +1,4 @@
-// Aktionen: Programme, Webseiten, Ordner und Dokumente öffnen, wenn Domi es sagt oder tippt.
+// Aktionen: Programme, Webseiten, Ordner und Dokumente öffnen, wenn der Nutzer es sagt oder tippt.
 // Erkennt einfache deutsche Befehle direkt (schnell und zuverlässig) und fällt sonst auf die KI zurück.
 const { shell } = require("electron");
 const { spawn, execFile } = require("child_process");

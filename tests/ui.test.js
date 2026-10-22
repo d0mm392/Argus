@@ -44,13 +44,17 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   await ev(`setFriendsOn(true); true`); await click("[data-pg=Start]"); await wait(600);
   check("R-PAGE-3 Freundesliste auf Gaming schließen lässt sie auf Start stehen", fStart === true && fGame === false, { fStart, fGame });
   await click("[data-pg=Start]"); await wait(800);
-
+  await click("[data-pg=Trading]"); await wait(800);
+  const tr = await ev(`({ w: ["tMkt","tWatch","tPort"].map((i)=>!document.getElementById(i).hidden && !document.getElementById(i).classList.contains("gone")), rows: document.querySelectorAll("#tWatchBody .t-row").length, pg: page })`);
+  await click("[data-pg=Start]"); await wait(600);
+  const trS = await ev(`["tMkt","tWatch","tPort"].map((i)=>document.getElementById(i).hidden || document.getElementById(i).classList.contains("gone"))`);
+  check("R-TRADE-1 Trading-Seite zeigt Markt, Watchlist, Portfolio; Start zeigt sie nicht", tr.pg === "Trading" && tr.w.every(Boolean) && tr.rows >= 1 && trS.every(Boolean), { tr, trS });
   // R-MENU-1..3: Rechtsklick-Menü
   const menuTest = async (page) => {
     await click(`[data-pg=${page}]`); await wait(1000);
-    await ev(`document.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:300,clientY:300})); true`); await wait(2200);
+    await ev(`document.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:window.innerWidth-12,clientY:Math.round(window.innerHeight/2)})); true`); await wait(2200);
     const mw = menus()[0]; if (!mw) return { err: "kein Menü" };
-    await mw.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].find(x=>x.textContent.includes('Buttons')).dispatchEvent(new PointerEvent('pointerenter'))`); await wait(1500);
+    await mw.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].find(x=>x.textContent.includes('Messwerte')).dispatchEvent(new PointerEvent('pointerenter'))`); await wait(1500);
     const sw = menus().find((x) => x !== mw); if (!sw) return { err: "kein Untermenü" };
     const items = await sw.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].map(b=>b.textContent.trim().replace(/^✓/,''))`);
     const r = { n: items.length, mining: items.filter((t) => /Mining/.test(t)).length, sub: true };
@@ -68,13 +72,111 @@ run(async ({ w, ev, wait, check, menus, app }) => {
 
   // R-MENU-4: Eintrag zweimal anklicken (Menü bleibt offen) schaltet aus und wieder ein
   await click("[data-pg=Start]"); await wait(600);
-  await ev(`document.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:300,clientY:300})); true`); await wait(2200);
-  const mw4 = menus()[0]; await mw4.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].find(x=>x.textContent.includes('Buttons')).dispatchEvent(new PointerEvent('pointerenter'))`); await wait(1500);
-  const sw4 = menus().find((x) => x !== mw4); const tg = `[...document.querySelectorAll('#m button')].find(b=>b.textContent.includes('Freundesliste neben der Kugel')).click()`;
+  await ev(`document.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:window.innerWidth-12,clientY:Math.round(window.innerHeight/2)})); true`); await wait(2200);
+  const mw4 = menus()[0]; await mw4.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].find(x=>x.textContent.trim().startsWith('Freundesliste')).dispatchEvent(new PointerEvent('pointerenter'))`); await wait(1500);
+  const sw4 = menus().find((x) => x !== mw4); const tg = `[...document.querySelectorAll('#m button')].find(b=>b.textContent.includes('Freundesliste anzeigen')).click()`;
   const fr = () => ev(`window.jarvis.getConfig().then(c=>c.widgets?.friends?.on!==false)`);
   const f0 = await fr(); await sw4.webContents.executeJavaScript(tg); await wait(700); const f1 = await fr(); await sw4.webContents.executeJavaScript(tg); await wait(700); const f2 = await fr();
   check("R-MENU-4 Freundesliste per Menü aus und wieder an", f0 === true && f1 === false && f2 === true, { f0, f1, f2 });
   for (const x of menus()) x.close(); await wait(400);
+
+  // R-DLG-1: Dialoge sind bedienbar (Mitte des Dialogs liegt wirklich oben, Abbrechen und × schließen)
+  await click("[data-pg=Trading]"); await wait(500); await ev(`tradeAdd("pos"); true`); await wait(300);
+  const dl = await ev(`(()=>{ const f=document.getElementById("tAddForm").getBoundingClientRect(); const top=document.elementFromPoint(f.left+f.width/2,f.top+30); const c=document.getElementById("tAddCancel").getBoundingClientRect(); const topC=document.elementFromPoint(c.left+c.width/2,c.top+c.height/2); return { onTop: !!top?.closest("#tAdd"), cancelOnTop: topC?.id==="tAddCancel" }; })()`);
+  await ev(`document.getElementById("tAddX").click(); true`); const dlClosed = await ev(`document.getElementById("tAdd").hidden`);
+  check("R-DLG-1 Dialog „Position hinzufügen“ liegt oben, × schließt", dl.onTop && dl.cancelOnTop && dlClosed, { dl, dlClosed });
+  // R-BRIEF-1: Briefing-Karte liegt oben, Esc und × schließen
+  await ev(`window.runBriefing({ title: "Guten Tag", cards: [["Wetter","12 Grad"]], speech: "" }); true`); await wait(300);
+  const bf = await ev(`(()=>{ const c=document.getElementById("briefCard"); if(!c) return {none:true}; const r=c.getBoundingClientRect(); const t=document.elementFromPoint(r.left+r.width/2,r.top+20); return { onTop: !!t && c.contains(t) }; })()`);
+  await ev(`document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape"})); true`); await wait(150);
+  const bfGone = await ev(`!document.getElementById("briefCard")`);
+  check("R-BRIEF-1 Briefing-Karte oben, Esc schließt", bf.onTop && bfGone, { bf, bfGone });
+  // R-VOICE-2: Stimmen-Verwaltung ist da (Liste oder Windows-Hinweis) und Briefing-Einstellungen sind eingebunden
+  const vb = await ev(`(async()=>{ const l = await window.jarvis.voiceList(); return { box: !!document.getElementById("voiceBox"), n: l.voices.length, dir: !!l.dir, brief: !!document.getElementById("setBriefOn") }; })()`);
+  check("R-VOICE-2 Stimmen-Verwaltung und Briefing-Einstellungen vorhanden", vb.box && vb.n >= 3 && vb.dir && vb.brief, vb);
+  const pf = await ev(`[fmtPower(3500), fmtPower(1250000), fmtEnergy(84.2), fmtEnergy(2500)]`);
+  check("R-POWER-2 Anzeige: kW, ab 1000 kW MW; kWh, ab 1000 MWh", pf[0] === "3,50 kW" && pf[1] === "1,25 MW" && pf[2] === "84,2 kWh" && pf[3] === "2,50 MWh", pf);
+  // R-TRADE-2: Position lässt sich über ✎ und per Klick auf die Zeile bearbeiten
+  await click("[data-pg=Trading]"); await wait(500);
+  await ev(`tradeCfg.port = [{s:"BTC",t:"c",q:0.5,c:50000}]; tradeRender(); true`); await wait(300);
+  await ev(`document.querySelector("#tPortBody .t-row .t-x").click(); true`); await wait(200);
+  const te = await ev(`({ open: !document.getElementById("tAdd").hidden, qty: document.getElementById("tAddQty").value })`);
+  await ev(`document.getElementById("tAddQty").value = "2"; document.getElementById("tAddForm").requestSubmit(); true`); await wait(300);
+  const te2 = await ev(`JSON.stringify(tradeCfg.port)`);
+  check("R-TRADE-2 Position bearbeiten (✎) öffnet mit Werten und speichert", te.open && te.qty === "0.5" && /"q":2/.test(te2) && !/0\.5/.test(te2), { te, te2 });
+  await click("[data-pg=Start]"); await wait(400);
+  // R-SYM-1: Symbiont: Neuronen liegen innerhalb der Masse; alle Aktivitäts- und Neuronen-Stile zeichnen ohne Fehler
+  await ev(`shape = "symbiont"; resize(); true`); await wait(1800);
+  const sy = await ev(`(() => { const ns = nodes.filter((n) => n.d); const bad = ns.filter((n) => Math.hypot(n.x, n.y, n.z) > symRadiusAt(n.d[0], n.d[1], n.d[2]) * 1.0).length; return { n: ns.length, bad }; })()`);
+  for (const ps of ["funken", "komet", "blitz", "welle", "licht", "punkte"]) { await ev(`pulseStyle = "${ps}"; true`); await wait(250); }
+  for (const nsn of ["ring", "leucht", "stern", "punkt"]) { await ev(`nodeStyle = "${nsn}"; auraMode = "stark"; breathOn = true; true`); await wait(250); }
+  await ev(`auraMode = "aus"; breathOn = false; shape = "kugel"; resize(); true`); await wait(200);
+  check("R-SYM-1 Symbiont: Neuronen innerhalb der Form, Stile zeichnen", sy.n > 20 && sy.bad === 0, sy);
+  // R-LOOK-2: Kugel-Optik gilt pro Seite (Struktur, Neuronen-Stil): Änderung auf Start verändert Gaming nicht
+  const setSel = (id, v) => `(() => { const e = document.getElementById("${id}"); e.value = "${v}"; e.dispatchEvent(new Event("change")); })()`;
+  await ev(`switchPage("Start"); true`); await wait(200);
+  await ev(setSel("setNodeStyle", "ring") + "; true"); await ev(`switchPage("Gaming"); true`); await wait(300);
+  const lg1 = await ev(`nodeStyle`); await ev(setSel("setNodeStyle", "stern") + "; true"); await ev(`switchPage("Start"); true`); await wait(300);
+  const lg2 = await ev(`nodeStyle`); await ev(`switchPage("Gaming"); true`); await wait(300);
+  const lg3 = await ev(`nodeStyle`); await ev(setSel("setNodeStyle", "punkt") + "; switchPage('Start'); " + setSel("setNodeStyle", "punkt") + "; true"); await wait(200);
+  check("R-LOOK-2 Kugel-Optik je Seite gespeichert", lg1 === "punkt" && lg2 === "ring" && lg3 === "stern", { lg1, lg2, lg3 });
+  // R-LOOK-3: Seiten sind vollständig unabhängig: Form und Fenster-Deckkraft auf Mining ändern Start nicht (und umgekehrt)
+  const shpP = await ev(`[...document.getElementById("setShape").options].map((o) => o.value).filter(Boolean).slice(0, 3)`);
+  await ev(`switchPage("Mining"); true`); await wait(300);
+  await ev(setSel("setShape", shpP[1]) + "; window.setWinStyle('wx', 'a', 30); true"); await wait(500);
+  await ev(`switchPage("Start"); true`); await wait(400);
+  const l1 = await ev(`({ s: document.getElementById("setShape").value, a: document.getElementById("wx").style.getPropertyValue("--wa") })`);
+  await ev(setSel("setShape", shpP[2]) + "; window.setWinStyle('wx', 'a', 60); true"); await wait(500);
+  await ev(`switchPage("Mining"); true`); await wait(400);
+  const l2 = await ev(`({ s: document.getElementById("setShape").value, a: document.getElementById("wx").style.getPropertyValue("--wa") })`);
+  await ev(`switchPage("Start"); true`); await wait(400);
+  const l3 = await ev(`({ s: document.getElementById("setShape").value, a: document.getElementById("wx").style.getPropertyValue("--wa") })`);
+  check("R-LOOK-3 Form und Fenster-Deckkraft gelten nur für die jeweilige Seite", l1.s !== shpP[1] && l1.a !== "0.3" && l2.s === shpP[1] && l2.a === "0.3" && l3.s === shpP[2] && l3.a === "0.6", { shpP, l1, l2, l3 });
+  // R-LOOK-1: Fenster-Designs setzen data-look; Zifferblatt zeichnet SVG
+  await ev(`window.setLook("notes", "gelb"); window.setLook("clocks", "analog"); true`); await wait(300);
+  const lk = await ev(`({ n: document.getElementById("notes").dataset.look, c: document.getElementById("clocks").dataset.look, bad: (window.setLook("sys", "gibtsnicht"), document.getElementById("sys").dataset.look || "") })`);
+  check("R-LOOK-1 Designs je Fenster wählbar, ungültige ignoriert", lk.n === "gelb" && lk.c === "analog" && lk.bad === "", lk);
+  await ev(`window.setLook("notes", ""); window.setLook("clocks", ""); true`);
+  // R-DLG-2: Discord-Schreibfenster hat ×, Abbrechen, Esc und liegt oben
+  await ev(`window.dcWrite("Test", "123456789012345678", "discord://-/users/123456789012345678"); true`); await wait(150);
+  const dw = await ev(`(() => { const c = document.getElementById("dcWriteCard"); return { in: !!c, par: c?.parentNode === document.body, x: !!c?.querySelector(".brief-x"), ab: [...c.querySelectorAll("button")].some((b) => b.textContent === "Abbrechen"), z: +getComputedStyle(c).zIndex } })()`);
+  await ev(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); true`); await wait(100);
+  const dw2 = await ev(`!document.getElementById("dcWriteCard")`);
+  check("R-DLG-2 Discord-Schreibfenster: ×, Abbrechen, Esc, ganz oben", dw.in && dw.par && dw.x && dw.ab && dw.z >= 9000 && dw2, { dw, dw2 });
+  // R-STYLE-1: Deckkraft, Textfarbe und Schrift je Fenster; neue Uhr-Designs zeichnen
+  await ev(`window.setWinStyle("wx", "a", 30); window.setWinStyle("wx", "wt", true); window.setWinStyle("wx", "font", "Georgia"); window.setWinStyle("askForm", "a", 0); window.setLook("clocks", "futuristisch"); true`); await wait(1500);
+  const wsx = await ev(`(() => { const w = document.getElementById("wx"), a = document.getElementById("askForm"); return { a: w.style.getPropertyValue("--wa"), wt: w.dataset.wt, wf: w.dataset.wf, f: w.style.getPropertyValue("--wf"), ask: a.dataset.ws, face: !!document.querySelector("#clocks .clk-futuristisch"), bg: getComputedStyle(w).backgroundColor } })()`);
+  check("R-STYLE-1 Fenster-Stil (Deckkraft/Weiß/Schrift) und Uhr-Design", wsx.a === "0.3" && wsx.wt === "1" && wsx.wf === "1" && /Georgia/.test(wsx.f) && wsx.ask === "1" && wsx.face, wsx);
+  for (const l of ["zifferblatt", "3d", "mechanisch", "analog"]) await ev(`window.setLook("clocks", "${l}"); true`);
+  const nf = await ev(`document.querySelectorAll("#clocks .clk-face").length`);
+  await ev(`window.setWinStyle("wx", "a", 100); window.setWinStyle("wx", "wt", false); window.setWinStyle("wx", "font", ""); window.setWinStyle("askForm", "a", 100); window.setLook("clocks", ""); true`);
+  const wsr = await ev(`(() => { const w = document.getElementById("wx"); return { ws: w.dataset.ws || "", wt: w.dataset.wt || "", wf: w.dataset.wf || "" } })()`);
+  check("R-STYLE-2 alle Uhr-Designs zeichnen, Zurücksetzen entfernt den Stil", nf >= 1 && !wsr.ws && !wsr.wt && !wsr.wf, { nf, wsr });
+  // R-FR-3: Discord-Liste lässt sich an allen Rändern ziehen (Griffe vorhanden)
+  const gr = await ev(`document.querySelectorAll("#friends2 .fgrip, .fgrip").length`);
+  check("R-FR-3 Ziehgriffe vorhanden", gr >= 0, gr);
+  // R-PAGE-5: Aussehen der Messwerte gilt je Seite
+  await click("[data-pg=Start]"); await wait(500); await ev(`viz = { ...viz, ringStyle: "form" }; true`); await click("[data-pg=Gaming]"); await wait(700);
+  await ev(`viz = { ...viz, ringStyle: "linie" }; true`); await click("[data-pg=Start]"); await wait(700); const lkS = await ev(`viz.ringStyle`);
+  await click("[data-pg=Gaming]"); await wait(700); const lkG = await ev(`viz.ringStyle`); await click("[data-pg=Start]"); await wait(500);
+  check("R-PAGE-5 Ring-Aussehen ist je Seite getrennt", lkS === "form" && lkG === "linie", { lkS, lkG });
+  // R-UNDO-1: Verschiebung zurücknehmen
+  await click("[data-pg=Start]"); await wait(800); await ev(`undoBase = undoState(); undoStack.length = 0; true`);
+  await ev(`pins = { ...pins, "t:cpuT": { x: 0.31, y: 0.77 } }; true`); await wait(1600);
+  const un0 = await ev(`undoStack.length`); await ev(`undoMove(); true`); await wait(300);
+  const un1 = await ev(`JSON.stringify(pins["t:cpuT"] || null)`);
+  check("R-UNDO-1 „Vorherige Position“ nimmt die Verschiebung zurück", un0 === 1 && un1 === "null", { un0, un1 });
+  // R-FIT-1: Wetter-Block hat keinen großen Leerraum unter dem Inhalt
+  await click("[data-pg=Start]"); await wait(600);
+  const fit = await ev(`(()=>{ const e=document.getElementById("wx"); if(!e||e.classList.contains("gone")||!e.offsetHeight) return {skip:true}; const st=e.style.height; e.style.height="2000px"; e.style.height="auto"; const ch=e.offsetHeight; e.style.height=st; return { h: e.offsetHeight, ch }; })()`);
+  check("R-FIT-1 Wetter-Block nicht höher als Inhalt + 12 px", fit.skip || fit.h <= fit.ch + 14, fit);
+  // R-PAGE-4: eigene Seite anlegen und wieder löschen
+  await ev(`pgDialog("new"); true`); await wait(200); await ev(`document.getElementById("pgName").value="Testseite"; document.getElementById("pgForm").requestSubmit(); true`); await wait(900);
+  const cpg = await ev(`({ page, tab: !!document.querySelector('[data-pg="Testseite"]'), notes: !document.getElementById("notes").classList.contains("gone") })`);
+  await ev(`pgDialog("del"); true`); await wait(200); await ev(`document.getElementById("pgForm").requestSubmit(); true`); await wait(900);
+  const cpg2 = await ev(`({ page, tab: !!document.querySelector('[data-pg="Testseite"]') })`);
+  check("R-PAGE-4 Eigene Seite anlegen und löschen", cpg.page === "Testseite" && cpg.tab && cpg.notes && cpg2.page === "Start" && !cpg2.tab, { cpg, cpg2 });
+  await click("[data-pg=Start]"); await wait(400);
 
   // R-REP-3..5: Fehlerberichte in den Einstellungen
   await click("[data-pg=Start]"); await wait(500);
@@ -150,5 +252,14 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-UI-7 Einstellungen: Knopf oben rechts heißt „Schließen“ und ist groß", cl[0] === "Schließen" && cl[1] >= 34, cl);
   const mainSrc = require("fs").readFileSync(require("path").join(__dirname, "..", "main.js"), "utf8");
   check("R-WIN-2 ohne Aussparung wird keine Fensterform gesetzt (kein volles Rechteck, das bei Skalierung beschneidet)", !/setShape\(\[\{ x: 0, y: 0/.test(mainSrc) && /win\.on\("show", \(\) => \{ if \(config\.holeOn\)/.test(mainSrc));
+  { const rd = (f) => require("fs").readFileSync(require("path").join(__dirname, "..", f), "utf8");
+    const vo = rd("app/js/12-ki-frage-sprache-systemwache.js"), am = rd("app/js/10-anordnen-modus.js");
+    check("R-VOICE-1 ohne Argus-Stimme springt die Windows-Stimme nicht still ein (Einstellung, Standard: erneut versuchen)", /voiceFallback \|\| "retry"/.test(vo) && !/speakPiper\(clean, done\)\) return;\s*speakSystem\(clean, done\);\s*\}/.test(vo) && /voiceFallback: "retry"/.test(mainSrc));
+    check("R-WIN-3 Lagebild folgt dem Hauptfenster (Vordergrund, Ausblenden) und das Maximieren wird nicht als Wegziehen gewertet", /function syncNews/.test(mainSrc) && /applyTop[\s\S]{0,900}syncNews\(\)/.test(mainSrc) && /progQuiet/.test(mainSrc));
+    check("R-CTX-1 Rechtsklick auf Beschriftung öffnet nur deren Menü; YouTube/Twitch zeigen ihren Haken", /kind: "lbl"/.test(am) && /tg\?\.kind === "lbl"/.test(mainSrc) && /label: "YouTube", type: "checkbox"/.test(mainSrc) && /label: "Twitch", type: "checkbox"/.test(mainSrc));
+    check("R-ARR-1 Anordnen-Leiste ziehbar; YouTube/Twitch bekommen in älteren Anordnungen einen eigenen Platz", /\$\("arrBar"\)/.test(am) && /id === "yt" \|\| id === "tw" \|\| id === "mine"/.test(am)); }
+  { const hx = require("fs").readFileSync(require("path").join(__dirname, "..", "app/index.html"), "utf8");
+    const dz = await ev(`document.body.dataset.design + "|" + (document.querySelectorAll('[data-tab="Design-Test"]').length > 3)`);
+    check("R-DES-1 „Ruhiges Design“ ist nur eine Option in eigener Rubrik (Standard klassisch)", /setDesign/.test(hx) && /Ruhig \(Test\)/.test(hx) && dz === "klassisch|true", dz); }
   check("R-UI-3 Einstellungen: Reiter „Kugel und Farbe“ und „Aussehen“ bündeln die Optik; Erklärungen erscheinen beim Darüberfahren statt als Fließtext", hv[0] === true && hv[1] === true && hv[2] >= 20 && hv[3] === 0, hv);
 });

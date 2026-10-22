@@ -5,6 +5,8 @@
   // ---------- Selbst angeordnete Teile ----------
   // Anzeigen, Symbole, Mikrofon und Freundesliste lassen sich ziehen. Die Stelle wird relativ zur Kugel gemerkt (Winkel und Abstand in Kugelradien),
   // dort schweben sie weiter leicht hin und her. Doppelklick schickt ein Teil an seinen Standardplatz zurück.
+  const msel = new Map(); // Mehrfachauswahl (Strg+Klick): Schlüssel -> Element, wird zusammen verschoben
+  const mselClear = () => { msel.forEach((el) => el.classList.remove("msel")); msel.clear(); };
   let pins = {}, drag = null, noClick = null, pinSave = null, hiddenSet = new Set();
   let gameMode = false, gmLast = 0, snapOn = true; // Spielmodus (1 Bild pro Sekunde bei Vollbild-Programm), Ausrichtlinien
   // Ausrichtlinien: beim Ziehen rasten Kanten und Mitte an Kanten und Mitten der anderen Teile ein (6 px), Alt gedrückt = frei
@@ -29,7 +31,7 @@
   let scales = {}, scaleSave = null; // Größe einzelner Anzeigen, Beschriftungen und Symbole (Mausrad darüber)
   let tDragBox = null, obstacles = []; // Lage der Anzeigen und Symbole im letzten Bild, damit Beschriftungen ausweichen können
   let swayMul = 1; // Schweben: 1 = wie bisher, 0.4 = leicht, 0 = fest
-  let winColor = { h: 219, s: 54, l: 5, follow: false }, friendsBox = { w: 180, h: 0, scale: 1 }, dcVoiceOnly = true;
+  let winColor = { h: 219, s: 54, l: 5, follow: false }, friendsBox = { w: 180, h: 0, scale: 1 }, dcVoiceOnly = true, dcAlsoOnline = false, dcOnlyMarked = false, dcMarked = [];
   // Freundesliste, „Läuft gerade“, KI-Anzeige und Mikrofon hängen im Panel nicht an der Form, sondern an der Fenstermitte:
   // Verschiebt man die Kugel, wandern nur die Anzeigen um sie herum mit
   const FIXED = new Set(["friends", "friends2", "media", "ai", "mic", "strata"]);
@@ -47,6 +49,7 @@
     const sn = snapTo(e.clientX - drag.ox, e.clientY - drag.oy, drag.w, drag.h, drag.lines.xs, drag.lines.ys, e); showGuides(sn.gx, sn.gy);
     const x = sn.cx - r.left - c.x, y = sn.cy - r.top - c.y;
     pins[drag.key] = { a: Math.atan2(y, x), r: Math.max(0.2, Math.hypot(x, y) / SB) };
+    if (drag.grp) for (const g of drag.grp) { const gx = g.x0 + x - drag.p0.x, gy = g.y0 + y - drag.p0.y; pins[g.key] = { a: Math.atan2(gy, gx), r: Math.max(0.2, Math.hypot(gx, gy) / SB) }; }
   }, true);
   const endDrag = () => {
     if (!drag) return;
@@ -89,6 +92,13 @@
   function makeDraggable(el, keyOf) {
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
+      if (e.ctrlKey && !el.classList.contains("friends")) { // Strg+Klick: Teil zur Auswahl hinzufügen oder entfernen
+        e.preventDefault(); e.stopPropagation(); const k = keyOf();
+        if (msel.has(k)) { msel.delete(k); el.classList.remove("msel"); } else { msel.set(k, el); el.classList.add("msel"); }
+        noClick = el; setTimeout(() => { if (noClick === el) noClick = null; }, 50);
+        if (msel.size === 1 && typeof notice === "function") notice("Weitere Teile mit Strg+Klick dazunehmen, dann ein gewähltes Teil ziehen. Esc hebt die Auswahl auf.");
+        return;
+      }
       const rb = el.getBoundingClientRect();
       if (el.classList.contains("friends") && e.clientX > rb.right - 18 && e.clientY > rb.bottom - 18) return; // Ecke zum Größe-Ändern
       const isFr = el.classList.contains("friends");
@@ -97,6 +107,10 @@
         const b = el.getBoundingClientRect();
         selectNudge({ kind: "pin", key: keyOf(), el });
         drag = { key: keyOf(), el, sx: x, sy: y, ox: x - (b.left + b.width / 2), oy: y - (b.top + b.height / 2), moved: false };
+        if (msel.size > 1 && msel.has(drag.key)) { // Gruppe: Startlagen aller gewählten Teile merken
+          const cr = canvas.getBoundingClientRect(), c = cOf(drag.key), rel = (e2) => { const q = e2.getBoundingClientRect(); return { x: q.left + q.width / 2 - cr.left - c.x, y: q.top + q.height / 2 - cr.top - c.y }; };
+          drag.p0 = rel(el); drag.grp = [...msel].filter(([k]) => k !== drag.key).map(([k, e2]) => ({ key: k, ...rel(e2) })).map((g) => ({ key: g.key, x0: g.x, y0: g.y }));
+        }
       };
       // Freundesliste: erst nach dem Halten verschiebbar, so bleibt ein Klick auf eine Person ein Klick (Einstellung „Verschieben erst nach“)
       const onHandle = isFr && e.clientY < rb.top + 14 && Math.abs(e.clientX - (rb.left + rb.width / 2)) < 30; // Ziehgriff oben in der Mitte
@@ -123,6 +137,8 @@
     if (nudgeSel?.el) nudgeSel.el.classList.remove("nsel");
     nudgeSel = s; if (s?.el) { s.el.classList.add("nsel"); document.activeElement?.blur?.(); } // Eingabefeld loslassen, sonst landen die Pfeiltasten dort
   }
+  document.addEventListener("pointerdown", (e) => { if (msel.size && !e.ctrlKey && ![...msel.values()].some((m) => m.contains(e.target))) mselClear(); }, true);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && msel.size) mselClear(); }, true);
   document.addEventListener("pointerdown", (e) => { if (nudgeSel && !nudgeSel.el?.contains(e.target)) selectNudge(null); }, true);
   window.addEventListener("keydown", (e) => {
     if (!nudgeSel) return;
@@ -165,7 +181,7 @@
   // Panel-Fenster (auch das YouTube-Fenster, das als natives Fenster über allem liegt): Beschriftungen weichen aus, schieben aber nichts weg
   // Das YouTube-Bild liegt als eigenes Fenster über allem: Anzeigen (Pillen) suchen sich einen Platz daneben
   const ytBlock = () => winRects().filter((r) => r.id === "yt" || r.id === "tw");
-  const WIN_IDS = ["yt", "tw", "mOver", "mTick", "mHeat", "mLive", "proc", "sys", "mine", "farm", "wx", "clocks", "notes", "quick", "mirror", "game", "aiLog", "log", "transcript", "notice", "askForm"];
+  const WIN_IDS = ["yt", "tw", "mOver", "mTick", "mHeat", "mLive", "portal", "proc", "sys", "mine", "farm", "wx", "clocks", "notes", "quick", "mirror", "game", "tMkt", "tWatch", "tPort", "aiLog", "log", "transcript", "notice", "askForm"];
   let winR = [], winRT = -1;
   function winRects() {
     if (time - winRT < 0.25 && winRT >= 0) return winR;

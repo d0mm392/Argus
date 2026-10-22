@@ -20,6 +20,7 @@
   async function ask(raw) {
     const text = raw.replace(WAKE, "").trim();
     if (busy || !text) return;
+    if (/^(?:das\s+|mein\s+)?(?:tages)?briefing[.!?\s]*$/i.test(text) && window.runBriefing) { $("askInput").value = ""; window.runBriefing(); return; }
     busy = true; notice(""); autoExpand();
     showTurn("user", text).dataset.done = "1";
     turns.push({ role: "user", content: text });
@@ -86,23 +87,39 @@
   }
   function applySink() { try { if (ttsCtx?.setSinkId) ttsCtx.setSinkId(spkId || "").catch(() => {}); } catch {} }
   function stopSpeaking() { try { ttsSrc?.stop(); } catch (e) {} ttsSrc = null; try { speechSynthesis.cancel(); } catch (e) {} talking = false; }
+  // Eine Antwort mit der Argus-Stimme (Piper) sprechen; false, wenn sie nicht verfügbar ist oder scheitert
+  async function speakPiper(clean, done, id) {
+    let wav = null;
+    try { wav = await window.jarvis?.tts?.(clean, id); } catch (e) {}
+    if (!wav) return false;
+    try {
+      const c = voiceChain(); if (c.state === "suspended") await c.resume();
+      const buf = await c.decodeAudioData(new Uint8Array(wav).buffer);
+      const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.97; // etwas tiefer
+      let osc = null;
+      if (window.voiceRobot) { // Roboterfilter: Ringmodulation (Sinus 55 Hz moduliert die Lautstärke)
+        const g = c.createGain(); g.gain.value = 0; osc = c.createOscillator(); osc.frequency.value = 55; osc.connect(g.gain); osc.start();
+        src.connect(g); g.connect(c.input);
+      } else src.connect(c.input);
+      ttsSrc = src; talking = true;
+      src.onended = () => { try { osc?.stop(); } catch (e) {} if (ttsSrc === src) { ttsSrc = null; talking = false; done(); } };
+      src.start();
+      return true;
+    } catch (e) { return false; }
+  }
   async function speak(text, done) {
     const clean = text.replace(/[*#_`>]/g, "");
     stopSpeaking();
-    let wav = null;
-    try { wav = await window.jarvis?.tts?.(clean); } catch (e) {}
-    if (wav) {
-      try {
-        const c = voiceChain(); if (c.state === "suspended") await c.resume();
-        const buf = await c.decodeAudioData(new Uint8Array(wav).buffer);
-        const src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = 0.97; // etwas tiefer
-        src.connect(c.input); ttsSrc = src; talking = true;
-        src.onended = () => { if (ttsSrc === src) { ttsSrc = null; talking = false; done(); } };
-        src.start();
-        return;
-      } catch (e) { /* weiter mit Windows-Stimme */ }
-    }
-    speakSystem(clean, done);
+    const vc = await window.jarvis?.getConfig?.().catch(() => ({})) || {};
+    if (vc.voiceEngine === "windows") return speakSystem(clean, done); // ausdrücklich gewählt
+    if (await speakPiper(clean, done)) return;
+    const fb = vc.voiceFallback || "retry";
+    if (fb === "windows") return speakSystem(clean, done);
+    if (fb === "retry") { await new Promise((r) => setTimeout(r, 1500)); if (await speakPiper(clean, done)) return; }
+    // Argus-Stimme fehlt: nicht heimlich mit der Windows-Stimme antworten, sondern sagen, warum nichts gesprochen wird
+    let ready = true; try { const st = await window.jarvis?.ttsState?.(); ready = !st || st.ready || !st.win; } catch (e) {}
+    notice(ready ? "Argus-Stimme gerade nicht verfügbar, Antwort nicht vorgelesen (Grund im Fehlerprotokoll)." : "Argus-Stimme wird noch geladen, Antwort nicht vorgelesen. Alternativ in den Einstellungen die Windows-Stimme wählen.");
+    done();
   }
   function speakSystem(text, done) {
     try {
@@ -265,7 +282,10 @@
     const h = state === "idle" ? sys.health : "ok";
     $("pill").dataset.health = h;
     $("pill").style.setProperty("--dot", h === "crit" ? "#ff5c4d" : h === "warn" ? "#f3a54b" : STATES[state].color);
-    if (state === "idle" && h !== "ok") $("stateLabel").textContent = HEALTH_LABEL[h];
+    // Mit Grund: „Warnung: Laufwerk G“ statt nur „Warnung“, Einzelheiten im Hinweistext
+    const bad = (sys.checks || []).filter((c) => c.status !== "ok"), why = bad[0] ? (bad[0].key.startsWith("hog:") ? bad[0].key.slice(4).replace(/\.exe$/i, "") + " Last" : bad[0].label) : "";
+    if (state === "idle" && h !== "ok") $("stateLabel").textContent = HEALTH_LABEL[h] + (why ? ": " + String(why).slice(0, 26) : "") + (bad.length > 1 ? " (+" + (bad.length - 1) + ")" : "");
+    $("pill").title = h !== "ok" && bad.length ? bad.map((c) => "• " + c.text).join("\n") : "";
     $("capRegion").dataset.health = h;
   }
 

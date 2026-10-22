@@ -142,11 +142,11 @@
   // ---------- Symbiont in 3D ----------
   let symMesh = null, symLiteBuilt = null;
   function symBuild() {
-    const NL = lite ? 26 : 34, NM = lite ? 40 : 52, d = [], f = [];
+    const NL = lite ? 26 : 40, NM = lite ? 40 : 60, d = [], f = [];
     for (let i = 0; i <= NL; i++) { const ph = (i / NL) * Math.PI; for (let j = 0; j < NM; j++) { const th = (j / NM) * Math.PI * 2; d.push([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)]); } }
     for (let i = 0; i < NL; i++) for (let j = 0; j < NM; j++) f.push([i * NM + j, (i + 1) * NM + j, (i + 1) * NM + (j + 1) % NM, i * NM + (j + 1) % NM]);
     const m = makeMesh(d.map((q) => q.slice()), f); m.d = d; m.nx = new Float32Array(d.length); m.ny = new Float32Array(d.length); m.nz = new Float32Array(d.length); m.bins = new Float32Array(120);
-    m.smooth = true; symLiteBuilt = !!lite; return m;
+    m.NL = NL; m.NM = NM; m.rr = new Float32Array(d.length); m.smooth = true; symLiteBuilt = !!lite; return m;
   }
   const _tent = [];
   function symMeshUpdate() {
@@ -163,13 +163,13 @@
     for (let i = 0; i < n; i++) {
       const [x, y, z] = m.d[i], pv = rot(x, y, z); // pv = Richtung im Blickraum (Einheitsvektor)
       let r = 0.84 + ag * 1.7 * (l2 * Math.sin(2.3 * x + 1.7 * y + t * 0.7) * Math.sin(2.1 * z - 1.3 * y - t * 0.5) + l3 * Math.sin(3.1 * y + 1.2 * z - t * 1.1 + 1.3) * Math.sin(2.7 * x + t * 0.9)
-        + l5 * Math.sin(4.7 * x + 3.9 * z + t * 1.7 + 2.1) * Math.sin(4.1 * y - t * 1.3) + l8 * Math.sin(7.3 * (x + y + z) - t * 2.3)) + 0.011 * Math.sin(13 * x + 11 * z + t * 3.1) + 0.006 * Math.sin(21 * y - t * 4.7 + 0.8);
+        + l5 * Math.sin(4.7 * x + 3.9 * z + t * 1.7 + 2.1) * Math.sin(4.1 * y - t * 1.3) + l8 * Math.sin(7.3 * (x + y + z) - t * 2.3)) + ag * 0.1 * Math.sin(2.4 * x + 1.5 * Math.sin(1.7 * y + t * 0.55) + t * 0.45) * Math.sin(2 * z + 1.3 * Math.sin(1.9 * x - t * 0.4)) + 0.006 * Math.sin(13 * x + 11 * z + t * 3.1) + 0.003 * Math.sin(21 * y - t * 4.7 + 0.8); // zähflüssiges Fließen statt feinem Zittern
       for (const q of _tent) {
         const dot = pv[0] * q.dx + pv[1] * q.dy + pv[2] * q.dz; if (dot < 0.6) continue;
         const ang = Math.acos(Math.min(1, dot)), w = q.w;
         r += q.len * Math.exp(-((ang / w) ** 2)) + q.len * 0.35 * Math.exp(-((ang / (w * 2.8)) ** 2));
       }
-      r = Math.max(0.6, Math.min(1.9, r));
+      r = Math.max(0.6, Math.min(1.9, r)); m.rr[i] = r;
       m.v[i][0] = x * r; m.v[i][1] = y * r; m.v[i][2] = z * r;
     }
     meshView(m);
@@ -188,19 +188,50 @@
     for (let b = 0; b < B; b++) { const a = ((b + 0.5) / B) * Math.PI * 2 - Math.PI, r = sm[b] + S * 0.015; hull.push([CX + Math.cos(a) * r, CY + Math.sin(a) * r]); }
   }
   const hslRgb = (h, s, l) => { s /= 100; l /= 100; const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [f(0) * 255, f(8) * 255, f(4) * 255]; };
+  // Radius der Masse in Richtung (x,y,z) (Einheitsvektor): so füllen die Neuronen die Form aus und wandern mit ihr
+  function symRadiusAt(x, y, z) {
+    const m = symMesh; if (!m || !m.rr) return 0.84;
+    const fi = Math.acos(Math.max(-1, Math.min(1, y))) / Math.PI * m.NL, th = (Math.atan2(z, x) + Math.PI * 2) % (Math.PI * 2), fj = th / (Math.PI * 2) * m.NM;
+    const i0 = Math.min(m.NL - 1, Math.floor(fi)), j0 = Math.floor(fj) % m.NM, j1 = (j0 + 1) % m.NM, a = fi - i0, b = fj - Math.floor(fj), R = m.rr, NM = m.NM;
+    return (R[i0 * NM + j0] * (1 - b) + R[i0 * NM + j1] * b) * (1 - a) + (R[(i0 + 1) * NM + j0] * (1 - b) + R[(i0 + 1) * NM + j1] * b) * a;
+  }
+  // Tropfende Fäden: unten an der Masse wachsen dünne Fäden mit Tropfen, lösen sich, fallen und ziehen sich zurück (rein zeitgesteuert, ohne Zustand)
+  const DRIP_A = [0.36, 0.43, 0.5, 0.57, 0.64, 0.71].map((v) => v * Math.PI);
+  function drawDrips(m) {
+    const B = m.bins.length, t = time, nd = lite ? 3 : DRIP_A.length, ag = 0.7 + symAg * 0.5;
+    ctx.save(); ctx.lineCap = "round";
+    for (let k = 0; k < nd; k++) {
+      const a = DRIP_A[lite ? k * 2 : k] + 0.05 * Math.sin(t * 0.3 + k), bi = Math.floor(((a + Math.PI) / (Math.PI * 2)) * B) % B, r = m.bins[bi] * 0.95, ax = CX + Math.cos(a) * r, ay = CY + Math.sin(a) * r;
+      const T = 5.5 + k * 0.9, u = ((t + k * 2.3) % T) / T, Lmax = S * (0.11 + 0.045 * ((k * 7) % 3)) * ag;
+      let len = 0, dropY = null, al = 1;
+      if (u < 0.6) len = Lmax * (1 - Math.pow(1 - u / 0.6, 2.2));
+      else if (u < 0.75) len = Lmax * (1 + 0.02 * Math.sin(t * 9 + k));
+      else { const v = (u - 0.75) / 0.25; len = Lmax * Math.max(0, 1 - v * 5); dropY = ay + Lmax + S * 2.2 * v * v; al = 1 - v; }
+      if (len > 1) {
+        const w0 = S * 0.024, w1 = S * 0.0065;
+        ctx.fillStyle = "rgb(7,9,16)"; ctx.beginPath(); ctx.moveTo(ax - w0, ay - 3); ctx.quadraticCurveTo(ax - w1 * 1.2, ay + len * 0.45, ax - w1, ay + len); ctx.lineTo(ax + w1, ay + len); ctx.quadraticCurveTo(ax + w1 * 1.2, ay + len * 0.45, ax + w0, ay - 3); ctx.closePath(); ctx.fill();
+        if (u < 0.75) { ctx.beginPath(); ctx.arc(ax, ay + len, S * 0.0135 * (0.8 + 0.5 * Math.min(1, u / 0.6)), 0, Math.PI * 2); ctx.fill(); }
+        ctx.strokeStyle = `rgba(190,215,255,${0.35 * Math.min(1, len / (S * 0.05))})`; ctx.lineWidth = Math.max(0.8, S * 0.0035); ctx.beginPath(); ctx.moveTo(ax - w1 * 0.9, ay + len * 0.15); ctx.lineTo(ax - w1 * 0.5, ay + len * 0.85); ctx.stroke();
+      }
+      if (dropY != null && al > 0.02) { ctx.globalAlpha = al; ctx.fillStyle = "rgb(7,9,16)"; ctx.beginPath(); ctx.ellipse(ax, dropY, S * 0.011, S * 0.016, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "rgba(200,220,255,0.55)"; ctx.beginPath(); ctx.arc(ax - S * 0.004, dropY - S * 0.005, S * 0.0035, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    }
+    ctx.restore();
+  }
   function drawSymbiont() {
     const m = symMesh; if (!m || !m.nrm) return;
     const nf = m.f.length, order = []; const flip = m.flip;
     for (let k = 0; k < nf; k++) if (m.nrm[k * 3 + 2] * flip > -0.02) order.push(k);
     order.sort((a, b) => m.zs[a] - m.zs[b]);
     const rim = hslRgb(stateHue, 85, 58), rimK = 0.38 + 0.35 * symAg;
+    if (hull && hull.length) { ctx.save(); ctx.filter = `blur(${Math.max(1, S * 0.022).toFixed(1)}px)`; ctx.fillStyle = "rgba(4,6,12,0.55)"; outlinePath(); ctx.fill(); ctx.restore(); } // weicher Rand wie zähe Masse
+    drawDrips(m);
     ctx.save(); ctx.lineJoin = "round"; ctx.lineWidth = Math.max(0.8, S / 140);
     for (const k of order) {
       const face = m.f[k]; let nx = 0, ny = 0, nz = 0; for (const q of face) { nx += m.nx[q]; ny += m.ny[q]; nz += m.nz[q]; }
       const l = (Math.hypot(nx, ny, nz) || 1) * flip; nx /= l; ny /= l; nz /= l;
       const diff = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]), sp = Math.pow(Math.max(0, nx * HALF[0] + ny * HALF[1] + nz * HALF[2]), 9), sp2 = Math.pow(Math.max(0, nx * 0.7 - ny * 0.2 - nz * 0.3), 10) * 0.25,
-        rm = Math.pow(1 - Math.max(0, nz), 2.6) * rimK, base = 3 + diff * 12;
-      const r = Math.min(255, base + sp * 58 + sp2 * 30 + rim[0] * rm * 0.55), g = Math.min(255, base + 1 + sp * 66 + sp2 * 40 + rim[1] * rm * 0.55), b = Math.min(255, base + 3 + sp * 84 + sp2 * 60 + rim[2] * rm * 0.55);
+        rm = Math.pow(1 - Math.max(0, nz), 2.1) * rimK, sh = Math.pow(Math.max(0, nx * HALF[0] + ny * HALF[1] + nz * HALF[2]), 3) * 0.12, base = 3 + diff * 12 + sh * 30; // weiche, nasse Glanzflächen
+      const sp3 = Math.pow(Math.max(0, nx * HALF[0] + ny * HALF[1] + nz * HALF[2]), 28), r = Math.min(255, base + sp * 58 + sp3 * 150 + sp2 * 30 + rim[0] * rm * 0.55), g = Math.min(255, base + 1 + sp * 66 + sp3 * 160 + sp2 * 40 + rim[1] * rm * 0.55), b = Math.min(255, base + 3 + sp * 84 + sp3 * 190 + sp2 * 60 + rim[2] * rm * 0.55); // nasser Glanzpunkt
       const col = `rgb(${r | 0},${g | 0},${b | 0})`;
       ctx.beginPath(); for (let i = 0; i < face.length; i++) { const q = face[i]; if (i) ctx.lineTo(m.sx[q], m.sy[q]); else ctx.moveTo(m.sx[q], m.sy[q]); } ctx.closePath();
       ctx.fillStyle = col; ctx.strokeStyle = col; ctx.fill(); ctx.stroke();

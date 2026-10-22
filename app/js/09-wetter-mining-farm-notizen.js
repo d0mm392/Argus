@@ -124,7 +124,7 @@
     if (many) { const li = document.createElement("li"); li.className = "more"; li.textContent = mineAll ? "Weniger zeigen ▴" : rest === ws.length ? `Alle ${ws.length} Worker laufen normal · zeigen ▾` : `${rest} weitere laufen normal · zeigen ▾`;
       li.addEventListener("click", (e) => { e.stopPropagation(); mineAll = !mineAll; try { localStorage.setItem("jarvisMineAll", mineAll ? "1" : ""); } catch {} renderMine(); }); items.push(li); }
     $("mineW").replaceChildren(...items);
-    hint.textContent = p?.workersUnknown ? "Worker-Status konnte nicht gelesen werden, OCEAN liefert ein unbekanntes Format. Ein Beispiel liegt im Argus-Datenordner als ocean-worker-beispiel.json" : !mineAddr ? "OCEAN-Wallet unter Einstellungen → Mining eintragen, dann zeigt Argus hier deine Hashrate und Worker." : p?.error ? p.error : !n && !p ? "Hole Daten…" : "";
+    hint.textContent = p?.workersUnknown ? "Worker-Status konnte nicht gelesen werden, OCEAN liefert ein unbekanntes Format. Ein Beispiel liegt im Argus-Datenordner als ocean-worker-beispiel.json" : !mineAddr ? "OCEAN-Pool-Adresse unter Einstellungen → Mining eintragen, dann zeigt Argus hier deine Hashrate und Worker." : p?.error ? p.error : !n && !p ? "Hole Daten…" : "";
     fitPanel?.();
   }
   // Seite „Gesamt“ über alle Wallets
@@ -159,7 +159,7 @@
   }
   let fmTotC = null, fmTotK = null, fmTotM = null, oceanInTotal = true;
   const oceanPools = () => mineOn ? mineData?.pools || (mineData?.pool ? [mineData.pool] : []) : [];
-  // OCEAN-Wallets (Anlagen ohne Foreman) als eigene Anlage in den Farm-Fenstern: Worker statt Miner, Pool-Hashrate
+  // OCEAN-Pool-Adressen (Anlagen ohne Foreman) als eigene Anlage in den Farm-Fenstern: Worker statt Miner, Pool-Hashrate
   const oceanAccs = () => oceanInTotal ? oceanPools().map((p) => { const ws = (p.workers || []).map((w) => ({ name: w.name, on: w.on, hr: w.h3 || w.m1 || 0, algo: "sha" })), on = ws.filter((w) => w.on !== false).length;
     return { name: (p.label || "OCEAN") + " · OCEAN", client: "ocean:" + p.addr, ocean: true, miners: ws, hist: (p.hist || []).map((v) => [v, on, ws.length]), error: !ws.length ? p.error || "OCEAN lädt…" : "" }; }) : [];
   function renderFarm() {
@@ -246,54 +246,95 @@
   window.jarvis.onFarm?.((f) => { farmData = f; renderFarm(); renderMOver(); renderMineFx(); });
   let fmEvOn = true, fmUrl = "https://dashboard.foreman.mn/dashboard/miners/{id}/details/";
   // Summen über alle sichtbaren Farmen für Anzeigen, Überblick und Mining-Kugel (je Datenstand einmal gerechnet)
-  // OCEAN-Wallets ohne Foreman (z. B. Finnland) zählen mit: Worker als Miner, Pool-Hashrate (10 min) zur Hashrate
+  // OCEAN-Pool-Adressen ohne Foreman (z. B. Farm A) zählen mit: Worker als Miner, Pool-Hashrate (10 min) zur Hashrate
+  // Leistung in kW, ab 1000 kW in MW; Energie in kWh, ab 1000 in MWh
+  const nf = (v, d) => v.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
+  window.fmtPower = (w) => { const kw = w / 1000; return kw >= 1000 ? nf(kw / 1000, 2) + " MW" : nf(kw, 2) + " kW"; };
+  window.fmtEnergy = (kwh) => kwh >= 1000 ? nf(kwh / 1000, 2) + " MWh" : nf(kwh, kwh >= 100 ? 0 : 1) + " kWh";
+  var energyD = null; const energyTick = () => window.jarvis.energyGet?.().then((e) => { energyD = e; try { renderMOver(); } catch {} }).catch(() => {}); setTimeout(energyTick, 4000); setInterval(energyTick, 5 * 60e3);
   function fmTot() {
     if (fmTotK === farmData && fmTotM === mineData && fmTotC) return fmTotC;
-    fmTotK = farmData; fmTotM = mineData; const accs = (farmData?.accounts || []).filter((a) => !a.hidden), ms = accs.flatMap((a) => a.pxOff ? [] : a.miners || []);
+    fmTotK = farmData; fmTotM = mineData; const accs = (farmData?.accounts || []).filter((a) => !a.hidden), ms = accs.flatMap((a) => a.pxOff ? (a.miners || []).map((m) => ({ ...m, on: false, hr: 0, temp: null, watt: m.watt != null ? 0 : null })) : a.miners || []); // Standort ohne Verbindung (Pickaxe offline): alle Miner zählen als offline mit
+    // Zähler aus dem Foreman-Dashboard (wie auf den Pickaxe-Kacheln) gehen vor der Einzel-Liste: fehlen in der Liste Miner, zählen sie mit
+    let dN = 0, dOn = 0; for (const a of accs) if (a.dashN != null) { const l = a.miners || []; dN += Math.max(0, a.dashN - l.length); dOn += a.pxOff ? 0 : Math.max(0, a.dashOn - l.filter((m) => m.on !== false).length); }
     if (oceanInTotal) for (const p of oceanPools()) for (const w of p.workers || []) ms.push({ name: (p.label ? p.label + " · " : "") + w.name, on: w.on, hr: (w.h3 || w.m1 || 0), algo: "sha", ocean: true });
     if (!ms.length) return (fmTotC = null);
     const sha = ms.filter((m) => m.algo !== "scrypt" && m.on !== false && m.hr > 0), nom = ms.filter((m) => m.algo !== "scrypt" && m.nom), hot = ms.reduce((a, m) => m.temp != null && (!a || m.temp > a.temp) ? m : a, null);
-    const hr = sha.reduce((a, m) => a + m.hr, 0), hrN = nom.reduce((a, m) => a + (m.on !== false && m.hr > 0 ? m.hr : 0), 0), nomT = nom.reduce((a, m) => a + m.nom, 0);
-    return (fmTotC = { n: ms.length, on: ms.filter((m) => m.on !== false).length, off: ms.filter((m) => m.on === false).length, offNames: ms.filter((m) => m.on === false).map((m) => m.name),
+    const pm = ms.filter((m) => m.watt != null), pw = pm.reduce((a, m) => a + m.watt, 0), hr = sha.reduce((a, m) => a + m.hr, 0), hrN = nom.reduce((a, m) => a + (m.on !== false && m.hr > 0 ? m.hr : 0), 0), nomT = nom.reduce((a, m) => a + m.nom, 0);
+    return (fmTotC = { n: ms.length + dN, w: pw, wn: pm.length, on: ms.filter((m) => m.on !== false).length + dOn, off: ms.filter((m) => m.on === false).length + dN - dOn, offNames: ms.filter((m) => m.on === false).map((m) => m.name),
       hotN: ms.filter((m) => m.temp >= 85).length, hr, pct: nomT && hrN >= hr * 0.5 ? Math.round(hrN / nomT * 100) : 0, hot: hot?.temp, hotName: hot ? hot.name + " · " + Math.round(hot.temp) + " °C" : "", hotM: hot });
   }
   function minePool() { const ps = mineData?.pools || (mineData?.pool ? [mineData.pool] : []); return ps.length > 1 ? mineTotal(ps) : ps[0] || null; }
   // Mining-Überblick: große Zahlen oben, darunter je Farm eine Karte (Anteil online, Hashrate, Heißester, 24-h-Verlauf); Klick öffnet Foreman
+  const UP_ST = /work|mining|online|active|running|alive|^on$/i, DOWN_ST = /offline|off|broken|error|fail|stop|down|dead|disabled|defekt/i;
   function renderMOver() {
     const el = $("mOver"); el.hidden = !farmOn; if (!farmOn || el.classList.contains("gone")) return;
     const f = fmTot(), p = minePool(), cur = btcCur === "EUR" ? "eur" : "usd", CUR = btcCur === "EUR" ? "EUR" : "USD", hp = mineData?.net?.hashprice?.[cur];
     const tile = (k, v, cls = "") => { const d = document.createElement("div"), a = document.createElement("small"), b = document.createElement("b"); d.className = cls; a.textContent = k; b.textContent = v; d.append(a, b); return d; };
     const t = [];
-    if (f) {
-      const r = f.on / f.n; t.push(tile("Miner online", `${f.on} / ${f.n}`, r >= 0.97 ? "ok" : r >= 0.9 ? "warn" : "crit"));
-      t.push(tile("Hashrate", fmtHash(f.hr), !f.pct || f.pct >= 95 ? "ok" : f.pct >= 85 ? "warn" : "crit")); if (f.pct) t.push(tile("vom Nennwert (alle Miner)", f.pct + " %", f.pct >= 95 ? "ok" : f.pct >= 85 ? "warn" : "crit"));
-      t.push(tile("Offline", String(f.off), f.off ? "crit" : "ok")); if (f.hot != null) t.push(tile("Heißester", Math.round(f.hot) + " °C", f.hot >= 90 ? "crit" : f.hot >= 80 ? "warn" : "ok"));
+    // Foreman, OCEAN und Hosting-Portal werden zusammengerechnet (Portal: Zustand je Miner von der Seite)
+    const pl = portalOn && portalLast?.total ? portalLast : null, pSt = pl?.states || [];
+    // Nur Miner mit eindeutigem Zustand zählen mit; „unbekannt“ (z. B. ein Wort wie „off“) wird nicht als offline gewertet
+    const pUp = pl ? pl.up || 0 : 0, pDown = pl ? pl.down || 0 : 0, pTot = pUp + pDown, nAll = (f ? f.n : 0) + pTot, onAll = (f ? f.on : 0) + pUp, offAll = (f ? f.off : 0) + pDown;
+    if (pl && !pTot) { const ut = tile("Hosting-Portal", String(pl.total) + " Miner", "warn"); t.push(ut); ut.title = "Zustand der Miner ist unklar (" + pSt.map((s) => s.k + " " + s.n).join(", ") + "), deshalb nicht in „Miner online“ eingerechnet"; }
+    if (f || pTot) {
+      const r = nAll ? onAll / nAll : 1, mt = tile("Miner online", `${onAll} / ${nAll}`, r >= 0.97 ? "ok" : r >= 0.9 ? "warn" : "crit");
+      mt.title = (f ? `Foreman und OCEAN: ${f.on} von ${f.n}` : "") + (pl ? `${f ? " · " : ""}Hosting-Portal: ${pUp} von ${pl.total} (${pSt.map((s) => s.k + " " + s.n).join(", ")})${pl.total - pTot ? `, ${pl.total - pTot} mit unklarem Zustand nicht mitgezählt` : ""}` : ""); t.push(mt);
     }
+    if (f) {
+      t.push(tile("Hashrate", fmtHash(f.hr), !f.pct || f.pct >= 95 ? "ok" : f.pct >= 85 ? "warn" : "crit")); if (f.pct) t.push(tile("vom Nennwert (alle Miner)", f.pct + " %", f.pct >= 95 ? "ok" : f.pct >= 85 ? "warn" : "crit"));
+    }
+    if (f || pTot) t.push(tile("Offline", String(offAll), offAll ? "crit" : "ok"));
+    if (f?.hot != null) t.push(tile("Heißester", Math.round(f.hot) + " °C", f.hot >= 90 ? "crit" : f.hot >= 80 ? "warn" : "ok"));
+    const pPow = pl?.power ? pl.power.w : 0;
+    if (f?.wn || pPow) { const pt = tile("Leistung jetzt", fmtPower((f?.wn ? f.w : 0) + pPow)); pt.title = (f?.wn ? `Foreman: ${fmtPower(f.w)} (${f.wn} Miner gemessen, offline zählt 0)` : "") + (pPow ? `${f?.wn ? " · " : ""}Portal: ${fmtPower(pPow)} geschätzt (Modell-Watt × laufende Miner, ${pl.power.known} von ${pl.power.of} bekannt)` : ""); t.push(pt); }
+    if (f?.wn && energyD?.today != null) t.push(tile("Verbrauch heute", fmtEnergy(energyD.today)));
+    if (f?.wn && energyD?.yesterday != null) t.push(tile("Verbrauch gestern", fmtEnergy(energyD.yesterday)));
     if (p?.day != null) t.push(tile("Ertrag 24 h", sats(p.day / 1e8))); if (p?.hr?.m10) t.push(tile("Pool 10 min", fmtHash(p.hr.m10)));
     if (hp != null) t.push(tile("Hashprice", money(hp, CUR) + " /PH/Tag")); if (hp != null && f?.hr) t.push(tile("Wert pro Tag", money(hp * f.hr / 1e15, CUR)));
     $("mOverKpi").replaceChildren(...t);
-    const st = $("mOverState"); st.textContent = !f ? "Warte auf Foreman" : f.off ? `${f.off} offline` : f.hotN ? `${f.hotN} heiß` : "Alles läuft"; st.dataset.health = !f ? "warn" : f.off || f.hotN ? "crit" : "ok";
+    const st = $("mOverState"); st.textContent = !f && !pl ? "Warte auf Foreman" : offAll ? `${offAll} offline` : f?.hotN ? `${f.hotN} heiß` : "Alles läuft"; st.dataset.health = !f && !pl ? "warn" : offAll || f?.hotN ? "crit" : "ok";
     const accs = (farmData?.accounts || []).filter((a) => !a.hidden);
     const oc = oceanPools().map((p) => ({ name: (p.label || "OCEAN") + " · OCEAN", ocean: true, err: !p.workers?.length && !p.hr ? p.error || "lädt…" : "", url: p.addr ? "https://ocean.xyz/stats/" + encodeURIComponent(p.addr) : "",
-      miners: (p.workers || []).map((w) => ({ name: w.name, on: w.on, hr: w.h3 || w.m1 || 0, algo: "sha" })), poolHr: p.hr?.m10 || p.hr?.h3 || 0, hist: (p.hist || []).map((v) => [v]) }));
+      miners: (p.workers || []).map((w) => ({ name: w.name, on: w.on, hr: w.h3 || w.m1 || 0, algo: "sha" })), poolHr: p.hr?.m10 || p.hr?.h3 || 0, stale: p.workersStale || 0, hist: (p.hist || []).map((v) => [v]) }));
     $("mOverFarms").replaceChildren(...[...accs, ...oc].map((a) => {
-      const ms = a.miners || [], on = a.pxOff ? 0 : ms.filter((m) => m.on !== false).length, hr = a.poolHr || (a.pxOff ? 0 : ms.reduce((x, m) => x + (m.algo !== "scrypt" && m.on !== false && m.hr ? m.hr : 0), 0));
-      const mx = ms.reduce((x, m) => m.temp != null && m.temp > x ? m.temp : x, -1), r = ms.length ? on / ms.length : 0, d = document.createElement("div");
-      d.className = "link " + (a.pxOff || r < 0.9 ? "crit" : r < 0.97 || mx >= 85 ? "warn" : "ok"); d.title = a.ocean ? "Daten vom OCEAN-Pool (Worker statt Miner)" + (a.url ? " · Klick öffnet OCEAN" : "") : "Klick öffnet die Minerliste in Foreman";
+      const ms = a.miners || [], lOn = ms.filter((m) => m.on !== false).length, on = a.pxOff ? 0 : a.dashN != null ? Math.max(a.dashOn, lOn) : lOn, tot = a.dashN != null && !a.ocean ? Math.max(a.dashN, ms.length) : ms.length, hr = a.poolHr || (a.pxOff ? 0 : ms.reduce((x, m) => x + (m.algo !== "scrypt" && m.on !== false && m.hr ? m.hr : 0), 0));
+      const mx = ms.reduce((x, m) => m.temp != null && m.temp > x ? m.temp : x, -1), noW = !!a.ocean && !ms.length && hr > 0, r = noW ? 1 : tot ? on / tot : 0, d = document.createElement("div"); // OCEAN sieht Hashrate, liefert aber (kurz) keine Worker-Liste: nicht als „0 / 0 offline“ melden
+      d.className = "link " + (noW ? "warn" : a.pxOff || r < 0.9 ? "crit" : r < 0.97 || mx >= 85 ? "warn" : "ok"); d.title = a.ocean ? "Daten vom OCEAN-Pool (Worker statt Miner)" + (a.url ? " · Klick öffnet OCEAN" : "") : "Klick öffnet die Minerliste in Foreman";
       d.addEventListener("click", () => window.jarvis.openUrl(a.ocean ? a.url || "https://ocean.xyz/" : "https://dashboard.foreman.mn/dashboard/miners/"));
-      const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = a.name; sv.textContent = a.err || (a.pxOff ? "Pickaxe offline" : `${on} / ${ms.length}`); h.append(nm, sv);
+      const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = a.name; sv.textContent = a.err || (a.pxOff ? "Pickaxe offline" : noW ? "Worker-Liste fehlt kurz" : `${on} / ${tot}` + (a.stale ? ` · Stand vor ${agoTxt(a.stale)}` : "")); h.append(nm, sv);
       const bar = document.createElement("div"); bar.className = "mo-bar"; const bi = document.createElement("i"); bi.style.width = Math.round(r * 100) + "%"; bar.append(bi);
       const ps = document.createElement("div"); ps.className = "mo-ps";
       const row = (k, v) => { const q = document.createElement("p"), b = document.createElement("b"); q.append(k + " "); b.textContent = v; q.append(b); return q; };
-      ps.append(row(a.ocean ? "Pool 10 min" : "Hashrate", hr ? fmtHash(hr) : "–"), row("Offline", String(ms.length - on))); if (mx >= 0) ps.append(row("Heißester", Math.round(mx) + " °C"));
+      ps.append(row(a.ocean ? "Pool 10 min" : "Hashrate", hr ? fmtHash(hr) : "–"), row("Offline", noW ? "–" : String(tot - on))); if (mx >= 0) ps.append(row("Heißester", Math.round(mx) + " °C"));
       if (mineFx.since && !a.ocean) { const evs = farmData?.eventsAll || farmData?.events || [], last = evs.find((e) => e[2] && String(e[1]).startsWith(a.name + ":")), oldest = evs[evs.length - 1]?.[0];
         const q = row("Letzter Ausfall", last ? "vor " + agoTxt(Date.now() - last[0]) : oldest ? "keiner seit " + agoTxt(Date.now() - oldest) : "keiner bekannt"); q.className = "since" + (last && Date.now() - last[0] < 36e5 ? " recent" : ""); ps.append(q); }
       d.append(h, bar, ps);
       const hs = (a.hist || []).map((x) => x[0]);
       if (hs.length >= 3) { const sv2 = document.createElementNS("http://www.w3.org/2000/svg", "svg"), pl = document.createElementNS("http://www.w3.org/2000/svg", "polyline"), top = Math.max(...hs) * 1.05 || 1, lo = Math.min(...hs) * 0.9;
         sv2.setAttribute("viewBox", "0 0 300 26"); sv2.setAttribute("preserveAspectRatio", "none"); pl.setAttribute("points", hs.map((v, i) => (i * 300 / (hs.length - 1)).toFixed(1) + "," + (25 - (v - lo) / (top - lo || 1) * 23).toFixed(1)).join(" ")); sv2.append(pl); d.append(sv2); }
-      return d; }));
+      return d; }), ...portalCards());
     fitPanel?.();
+  }
+  // Karte des Hosting-Portals im Überblick: Zustände als Zeilen (Namen kommen von der Seite), Anteil laufend als Balken
+  function portalCards() {
+    if (portalOn && !portalLast?.total) { // Portal an, aber keine Zahlen (nicht angemeldet, Seite offline): Karte bleibt sichtbar, Klick öffnet die Anmeldung
+      const ps = window.portalSnap, d = document.createElement("div"); d.className = "link warn"; d.title = "Klick: Portal-Fenster öffnen und anmelden";
+      const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = "Hosting-Portal"; sv.textContent = ps?.state === "nohost" ? "Adresse fehlt" : ps?.err && ps.state !== "login" ? "keine Daten" : "bitte anmelden"; h.append(nm, sv);
+      const m = document.createElement("div"); m.className = "mo-ps"; const q = document.createElement("p"); q.textContent = ps?.err || "Nicht angemeldet oder Portal nicht erreichbar. Klick zum Anmelden."; m.append(q);
+      d.addEventListener("click", () => window.jarvis.portalLogin()); d.append(h, m); return [d];
+    }
+    if (!portalOn || !portalLast?.total) return [];
+    const L = { working: "laufen", broken: "defekt", stopped: "gestoppt", offline: "offline", off: "aus", online: "online" };
+    const st = portalLast.states || [], run = (portalLast.up || 0) + (portalLast.down || 0) ? portalLast.up || 0 : st.filter((x) => /work|mining|online|active|running/i.test(x.k)).reduce((x, y) => x + y.n, 0), bad = st.filter((x) => /broken|error|fail|defekt/i.test(x.k)).reduce((x, y) => x + y.n, 0), r = run / portalLast.total;
+    const d = document.createElement("div"); const unk = !((portalLast.up || 0) + (portalLast.down || 0)) && !run; d.className = "link " + (unk ? "warn" : r >= 0.97 ? "ok" : r >= 0.9 ? "warn" : "crit"); d.title = "Daten vom Hosting-Portal (nur Zähler)" + (unk ? ": Zustand der Miner ist unklar, deshalb keine Online-Zahl" : "");
+    const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = "Hosting-Portal"; sv.textContent = unk ? `${portalLast.total} Miner` : `${run} / ${portalLast.total}`; h.append(nm, sv);
+    const bar = document.createElement("div"); bar.className = "mo-bar"; const bi = document.createElement("i"); bi.style.width = unk ? "100%" : Math.round(r * 100) + "%"; bar.append(bi);
+    const ps = document.createElement("div"); ps.className = "mo-ps"; const row = (k, v) => { const q = document.createElement("p"), b = document.createElement("b"); q.append(k + " "); b.textContent = v; q.append(b); return q; };
+    for (const x of st.slice(0, 4)) ps.append(row(L[String(x.k).toLowerCase()] || x.k, String(x.n)));
+    if (portalLast.power) ps.append(row("Leistung (geschätzt)", fmtPower(portalLast.power.w)));
+    if (portalLast.locations) ps.append(row("Standorte", String(portalLast.locations)));
+    d.append(h, bar, ps); void bad; return [d];
   }
   // Mining-Seite lebendig: Ticker, Heatmap, Hashrate live, „seit letztem Ausfall“ (Einstellungen in mineFx)
   let mineFx = { tick: 100, tickFont: 1, heat: 9, live: 6, liveH: 120, since: true }, tickSig = "", tickSeen = 0;
@@ -576,15 +617,17 @@
     if (!clocksOn) return;
     // Uhren mit derselben Zeit wie hier (z. B. „Deutschland“, wenn du in Deutschland bist) weglassen
     const d = new Date(), list = [{ n: "Hier", tz: null }, ...clocks.filter((c) => tzOk(c.tz) && Math.abs(tzOff(c.tz, d)) >= 0.25)];
-    const key = d.getHours() + ":" + d.getMinutes() + JSON.stringify(list);
+    box.style.setProperty("--cn", String(list.length)); const look = box.dataset.look || "", face = (window.CLOCK_FACE_LOOKS || []).includes(look), key = d.getHours() + ":" + d.getMinutes() + JSON.stringify(list) + look + ((window.CLOCK_SECONDS || []).includes(look) ? ":" + d.getSeconds() : "");
     if (!force && key === clkLast) return; clkLast = key;
     $("clkRow").replaceChildren(...list.map((c) => {
       const el = document.createElement("div"), a = document.createElement("small"), b = document.createElement("b");
       a.textContent = c.n; b.textContent = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", ...(c.tz ? { timeZone: c.tz } : {}) });
       if (c.tz) { const o = tzOff(c.tz, d); if (Math.abs(o) >= 0.25) { const e = document.createElement("em"); e.textContent = (o > 0 ? "+" : "−") + String(Math.abs(o)).replace(".", ",") + " h"; b.append(e); } }
+      if (face) { b.hidden = true; if (c.tz) { const o = tzOff(c.tz, d); if (Math.abs(o) >= 0.25) a.textContent += " " + (o > 0 ? "+" : "−") + String(Math.abs(o)).replace(".", ",") + " h"; } } // Zifferblatt statt Digitalzeit: nicht doppelt
+      if (face) { const t = c.tz ? new Date(d.toLocaleString("en-US", { timeZone: c.tz })) : d; el.prepend(window.clockFace(look, t)); }
       el.append(a, b); return el; }));
   }
-  setInterval(renderClocks, 5000);
+  (function clkTick() { renderClocks(); setTimeout(clkTick, (window.CLOCK_SECONDS || []).includes($("clocks").dataset.look) ? 1000 : 5000); })(); window.renderClocksNow = () => renderClocks(true);
   // Zeitzone aus „Europe/Berlin“, einer Stadt („Asuncion“, „New York“) oder einem bekannten Land
   const TZ_LAND = { deutschland: "Europe/Berlin", germany: "Europe/Berlin", paraguay: "America/Asuncion", kasachstan: "Asia/Almaty", kazakhstan: "Asia/Almaty", usa: "America/New_York", amerika: "America/New_York",
     texas: "America/Chicago", kanada: "America/Toronto", dubai: "Asia/Dubai", emirate: "Asia/Dubai", vae: "Asia/Dubai", russland: "Europe/Moscow", china: "Asia/Shanghai", japan: "Asia/Tokyo", indien: "Asia/Kolkata",

@@ -1,5 +1,5 @@
 // Eigener Discord-Bot (offizielle Bot-API, kein Account-Token): sieht in Sprachkanälen Kamera, Stream, Stumm/Taub
-// und auch private Kanäle, in denen der Bot Leserechte hat. Domi legt ihn einmal an und lädt ihn auf seine Server ein.
+// und auch private Kanäle, in denen der Bot Leserechte hat. der Nutzer legt ihn einmal an und lädt ihn auf seine Server ein.
 const WebSocket = require("ws");
 
 const GATEWAY = process.env.JARVIS_DC_GATEWAY || "wss://gateway.discord.gg/?v=10&encoding=json"; // Umgebungsvariable nur für Tests
@@ -118,4 +118,18 @@ async function move(gid, cid, myName, norm) {
   } catch (e) { return { ok: false, reason: "Netzwerkfehler" }; }
 }
 
-module.exports = { start, stop, snapshot, move, appId: () => appId };
+// Kurze Nachricht an eine Person: Absender ist immer der Bot (die offizielle API erlaubt keine Nachrichten im Namen des Nutzers)
+async function dm(uid, text) {
+  if (!token) return { ok: false, reason: "Kein Discord-Bot eingerichtet." };
+  const H = { Authorization: "Bot " + token, "Content-Type": "application/json" };
+  try {
+    const c = await fetch("https://discord.com/api/v10/users/@me/channels", { method: "POST", headers: H, body: JSON.stringify({ recipient_id: String(uid) }) });
+    if (!c.ok) return { ok: false, reason: "Discord lehnt ab (" + c.status + ")" };
+    const ch = await c.json();
+    const r = await fetch(`https://discord.com/api/v10/channels/${ch.id}/messages`, { method: "POST", headers: H, body: JSON.stringify({ content: String(text).slice(0, 1800), allowed_mentions: { parse: [] } }) });
+    if (r.ok) return { ok: true };
+    return { ok: false, reason: r.status === 403 ? "Die Person erlaubt keine Nachrichten von Bots (Datenschutz-Einstellung)." : "Discord lehnt ab (" + r.status + ")" };
+  } catch (e) { return { ok: false, reason: "Netzwerkfehler" }; }
+}
+
+module.exports = { start, stop, snapshot, move, dm, appId: () => appId };

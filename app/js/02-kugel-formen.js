@@ -20,6 +20,8 @@
   let nodes = [], edges = [], adj = [], regionNodes = [];
   // ---------- Formen: Kugel, Hexagon, Würfel, Kristall, Gehirn, Ring, DNA-Helix, Galaxie ----------
   let structK = 1, edgeK = 3, nodeK = 1, ballOn = true, statusOn = true, miniMore = false, look3dK = 0.35, structRings = [], structSkel = [];
+  var nodeStyle = "punkt", auraMode = "aus", breathOn = false; // Neuronen-Stil (punkt, ring, leucht, stern), Aura um die Form (aus, weich, stark), Atmen
+  var pulseStyle = "punkte"; // Aussehen der Aktivität: punkte, funken, komet, blitz, welle, licht
   let flashK = 1, flashT = 0.5, flat2d = false, shape = "kugel", shapeBuilt = "", shapeRim = true, glowK = 1, spinK = 1, densK = 1;
   const SHAPES = [["kugel", "Kugel"], ["hexagon", "Hexagon"], ["wuerfel", "Würfel"], ["kristall", "Kristall"], ["helix", "DNA-Helix"], ["galaxie", "Galaxie"], ["symbiont", "Symbiont"], ["muenze", "Bitcoin"], ["pyramide", "Pyramide"], ["atom", "Atom"], ["ikosaeder", "Ikosaeder"], ["stella", "Stern-Tetraeder"], ["knoten", "Torusknoten"], ["trapez", "Trapez"], ["parallelogramm", "Parallelogramm"], ["oktagon", "Oktagon"], ["diamant", "Diamant"], ["tornado", "Tornado"], ["stern", "Stern"], ["herz", "Herz"]];
   // Herz- und Sternumriss als Radius je Winkel (Tabelle), für Punkte und Umriss

@@ -85,7 +85,9 @@ async function poll() {
       const fin = total > 0 && done >= total;
       // Laut Protokoll seit dem Start geladen; das Manifest hinkt hinterher
       const logDone = li && li.total ? li.start + li.dl : 0, tot0 = total || li?.total || 0;
-      const cur = fin ? stDone : Math.min(tot0, Math.max(done + extra, logDone)), tot = fin ? stTotal : tot0;
+      let cur = fin ? stDone : Math.min(tot0, Math.max(done + extra, logDone)); const tot = fin ? stTotal : tot0;
+      // Zwischen den seltenen Protokollzeilen mit Tempo × Zeit hochrechnen, damit die Anzeige nicht stehen bleibt
+      if (!fin && active && logDone && tot0) { const lr = logRateCache || 0, since = Math.max(0, (now - logInfoT) / 1000); cur = Math.min(tot0 - 1, cur + lr * Math.min(since, 600)); }
       out.push({ id: a.appid, name: a.name || "App " + a.appid, done: cur, total: tot, pct: Math.min(100, Math.round((cur / tot || 0) * 100)), rate: gr.rate || (active ? rate : 0), active, phase: fin ? "installiert" : "lädt" });
     }
   }
@@ -99,6 +101,7 @@ async function poll() {
   const live = out.find((d) => d.active && d.phase === "lädt");
   if (live) {
     const r = logRate();
+    if (r != null) logRateCache = r;
     if (r != null && !live.rate) live.rate = r;
   }
   return out.sort((x, y) => y.active - x.active || y.pct - x.pct).slice(0, 4);
@@ -108,7 +111,7 @@ async function poll() {
 // letzter Zustand („App update changed : Running Update,Downloading,“ bzw. „… (Suspended)“), Gesamtgröße aus „update started : download a/b“
 // und die seitdem geladenen Bytes aus den Statistik-Zeilen („stats: (Invalid, 0) : 821366496 Bytes“, alle ~5 Minuten).
 // Die Spieldateien (appmanifest) schreibt Steam beim Laden nur selten, der Download-Ordner ist vorab voll angelegt.
-let logCache = { key: "", map: new Map() };
+let logCache = { key: "", map: new Map() }, logInfoT = Date.now(), logRateCache = 0;
 function logInfo() {
   try {
     const f = path.join(steamDir, "logs", "content_log.txt"), st = fs.statSync(f), key = st.size + "|" + st.mtimeMs;
@@ -119,16 +122,17 @@ function logInfo() {
     const get = (id) => { if (!m.has(id)) m.set(id, { state: "", total: 0, start: 0, dl: 0, t: 0 }); return m.get(id); };
     for (const line of buf.toString("utf8").split(/\r?\n/)) {
       let x;
-      if ((x = /AppID (\d+) (?:App )?(?:state|update) changed : (.*)$/.exec(line))) get(x[1]).state = x[2];
-      else if ((x = /AppID (\d+) update started : download (\d+)\/(\d+)/.exec(line))) { const a = get(x[1]); a.start = +x[2]; a.total = +x[3]; a.dl = 0; cur = x[1]; }
+      if ((x = /AppID (\d+) (?:App )?(?:state|update) changed\s*:\s*(.*)$/i.exec(line))) get(x[1]).state = x[2];
+      else if ((x = /AppID (\d+) update started\s*:\s*download (\d+)\s*\/\s*(\d+)/i.exec(line))) { const a = get(x[1]); a.start = +x[2]; a.total = +x[3]; a.dl = 0; cur = x[1]; }
       else if ((x = /AppID (\d+) (?:update canceled|finished update)/.exec(line))) { if (cur === x[1]) cur = null; }
-      else if (cur && (x = /stats: \(Invalid, 0\) : (\d+) Bytes/.exec(line))) get(cur).dl += +x[1];
+      else if (cur && (x = /stats: \([^)]*\)\s*:\s*(\d+) Bytes/i.exec(line))) get(cur).dl += +x[1];
     }
-    logCache = { key, map: m };
+    logCache = { key, map: m }; logInfoT = Date.now();
     return m;
   } catch { return logCache.map; }
 }
-const logActive = (ls) => !!ls && /Downloading|Running|Staging|Committing|Verifying|Preallocating|Reconfiguring/i.test(ls) && !/Paused|Suspended|Stopping|^None/i.test(ls);
+// „App Running“ heißt nur: das Spiel läuft, kein Download. Nur Update-Zustände zählen
+const logActive = (ls) => !!ls && /Downloading|Update Running|Running Update|Staging|Committing|Verifying|Preallocating|Reconfiguring/i.test(ls) && !/Paused|Suspended|Stopping|^None/i.test(ls);
 // letzte „Current download rate: 28.84 Mbps“ aus den letzten 16 KB von logs/content_log.txt, in Byte/s
 function logRate() {
   try {
@@ -136,8 +140,10 @@ function logRate() {
     if (Date.now() - st.mtimeMs > 150000) return null; // Steam schreibt das Tempo etwa jede Minute // länger nichts geschrieben: kein aktueller Wert
     const fd = fs.openSync(f, "r"), n = Math.min(16384, st.size), buf = Buffer.alloc(n);
     fs.readSync(fd, buf, 0, n, st.size - n); fs.closeSync(fd);
-    const all = [...buf.toString("utf8").matchAll(/download rate:\s*([\d.]+)\s*Mbps/gi)];
-    return all.length ? Number(all[all.length - 1][1]) * 125000 : null;
+    const all = [...buf.toString("utf8").matchAll(/download rate:\s*([\d.,]+)\s*(Mbps|MB\/s|KB\/s)/gi)];
+    if (!all.length) return null;
+    const m = all[all.length - 1], v = Number(m[1].replace(",", ".")), u = m[2].toLowerCase();
+    return v * (u === "mbps" ? 125000 : u === "mb/s" ? 1e6 : 1e3);
   } catch { return null; }
 }
 

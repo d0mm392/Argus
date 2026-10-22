@@ -38,6 +38,7 @@ function worker(name, x) {
   return { name: name.replace(/^.*\./, "") || name, m1: m1 || 0, h3: h3 || any || 0, on };
 }
 
+const lastGood = new Map(); // je Adresse: letzte brauchbare Worker-Liste (OCEAN antwortet gelegentlich kurz leer oder gar nicht)
 async function pool(addr) {
   addr = String(addr).trim();
   const out = { ts: Date.now() };
@@ -66,6 +67,14 @@ async function pool(addr) {
       for (const x of out.workers) x.on = null;
       out.workersUnknown = true; out.sample = JSON.stringify(ok.slice(0, 2)).slice(0, 1500);
     }
+  }
+  // Leere oder fehlende Worker-Liste bei sichtbarer Pool-Hashrate = Aussetzer der API, nicht „0 Miner“: letzte gute Liste (bis 30 min) als veraltet zeigen
+  const seesHash = (out.hr?.m1 > 0 || out.hr?.m10 > 0 || out.hr?.h3 > 0);
+  if (out.workers && out.workers.length) lastGood.set(addr, { ts: Date.now(), workers: out.workers });
+  else if (full.status !== "fulfilled" || seesHash || out.active > 0) {
+    const g = lastGood.get(addr);
+    if (g && Date.now() - g.ts < 30 * 60e3) { out.workers = g.workers; out.workersStale = Date.now() - g.ts; }
+    else delete out.workers;
   }
   return out;
 }

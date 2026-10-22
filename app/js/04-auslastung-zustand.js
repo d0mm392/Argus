@@ -52,7 +52,7 @@
   const RING_STYLES = [["form", "An der Form"], ["kreis", "Kreis"], ["balken", "Balken"], ["tacho", "Tacho"], ["verlauf", "Verlauf"], ["puls", "Strahlen"], ["orbit", "Orbit 3D"], ["saeulen", "Säulen 3D"], ["kugeln", "Kugeln 3D"], ["segmente", "Segmente"], ["radar", "Radar"], ["zahlen", "Zahlen"]];
   const gHist = { cpu: [], gpu: [], ram: [] }; let gHistT = 0;
   const GROWS = [["cpu", 205, "CPU"], ["gpu", 130, "GPU"], ["ram", 285, "RAM"]];
-  const gaugeHue = (v, hue) => (v > 0.9 ? 8 : v > 0.75 ? 30 : hue);
+  const gaugeHue = (v, hue) => (v > 0.9 ? 8 : v > 0.75 ? 30 : viz.ringMono ? theme.hue : hue);
   const hasG = (k) => (k === "cpu" ? sys.cpu != null : k === "gpu" ? sys.gpuLoad != null : sys.ram != null);
   // Umriss als Punktliste, nach außen versetzt; Startpunkt oben, im Uhrzeigersinn
   function ringPoly(off) {
@@ -82,6 +82,17 @@
   // Balken, Tacho und Verlauf richten ihre Größe nach SB (Grundmaß ohne Kugel-Zoom), nicht nach der Kugel
   // Balken, Tacho und Verlauf sind ein eigenes Teil: ziehbar (Lage wie die Anzeigen relativ zur Form), Mausrad = Größe
   const ringHandle = document.createElement("div"); ringHandle.className = "ringh"; ringHandle.dataset.pk = "rings"; ringHandle.title = "Ziehen: verschieben · Mausrad: Größe · Doppelklick: zurück";
+  // × zum Ausblenden und Griff unten rechts zum Größe-Ändern (wie bei den anderen Fenstern)
+  { const x = document.createElement("button"); x.type = "button"; x.className = "ringh-x"; x.textContent = "×"; x.title = "Last-Anzeige ausblenden (zurück: Rechtsklick › Anzeigen oder Einstellungen)";
+    x.addEventListener("pointerdown", (e) => e.stopPropagation());
+    x.addEventListener("click", (e) => { e.stopPropagation(); const cb = document.querySelector('[data-viz="rings"]'); if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change")); } else { viz = { ...viz, rings: false }; window.jarvis.setConfig({ viz }); } });
+    const g = document.createElement("div"); g.className = "ringh-g"; g.title = "Ziehen: Größe ändern";
+    let gs = null;
+    g.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); g.setPointerCapture(e.pointerId); gs = { x: e.clientX, y: e.clientY, s: scales.rings || 1, w: ringHandle.offsetWidth || 100 }; });
+    g.addEventListener("pointermove", (e) => { if (!gs) return; const k = 1 + ((e.clientX - gs.x) + (e.clientY - gs.y)) / (2 * gs.w); scales.rings = Math.max(0.5, Math.min(3, gs.s * k)); if (Math.abs(scales.rings - 1) < 0.03) delete scales.rings; });
+    const end = () => { if (gs) { gs = null; window.jarvis.setConfig({ scales }); } };
+    g.addEventListener("pointerup", end); g.addEventListener("pointercancel", end);
+    ringHandle.append(x, g); }
   let ringHandleOn = false;
   function ringAnchor(w, h, defA, defR) {
     const p = anchor("rings", defA, defR, 3.3, w, h, 0.2);

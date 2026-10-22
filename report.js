@@ -21,9 +21,15 @@ function record(farm, miners, pxOff = false) {
   const keep = Math.max(2, Math.min(60, Math.round(Number(keepDays()) || 14)));
   for (const key of Object.keys(d).sort().slice(0, -keep)) delete d[key];
   const f = (day[farm] ||= { n: 0, hist: {}, tot: 0, px: 0, off: {} });
+  const prevT = f.lt; f.lt = now;
   if (pxOff) { f.px++; f.tot = Math.max(f.tot, miners.length); save(); return; }
   const on = miners.filter((m) => m.on !== false).length;
-  f.n++; f.hist[on] = (f.hist[on] || 0) + 1; f.tot = Math.max(f.tot, miners.length);
+  f.n++; f.up = (f.up || 0) + on; f.ex = (f.ex || 0) + miners.length; // Uptime = online-Stichproben / erwartete (Foreman-Definition)
+  if (miners.some((m) => m.watt != null)) { // Energie = Leistung × Zeit seit der letzten Stichprobe (höchstens 10 min, sonst war Argus aus)
+    const W = miners.reduce((a, m) => a + (m.on !== false && m.watt != null ? m.watt : 0), 0), dt = prevT ? Math.min(now - prevT, 600e3) : 295e3;
+    f.wh = (f.wh || 0) + W * dt / 36e5; f.wn = (f.wn || 0) + 1; f.pk = Math.max(f.pk || 0, W);
+  }
+  f.hist[on] = (f.hist[on] || 0) + 1; f.tot = Math.max(f.tot, miners.length);
   for (const m of miners) if (m.on === false) f.off[m.name] = (f.off[m.name] || 0) + 1;
   save();
 }
@@ -37,7 +43,7 @@ function build(k) {
     const min = vals.length ? vals[0][0] : null, max = vals.length ? vals[vals.length - 1][0] : null;
     const share = (c) => (n ? c / n : 0);
     const offAll = Object.entries(f.off).map(([m, c]) => [m, share(c)]).sort((a, b) => b[1] - a[1]);
-    return { name, total: f.tot, samples: n, pxShare: n + f.px ? f.px / (n + f.px) : 0, median, min, max,
+    return { name, kwh: f.wn ? f.wh / 1000 : null, peakKw: f.wn ? (f.pk || 0) / 1000 : null, uptime: f.ex ? f.up / f.ex : null, hours: Math.round(n * 5 / 6) / 10, total: f.tot, samples: n, pxShare: n + f.px ? f.px / (n + f.px) : 0, median, min, max,
       down: offAll.filter(([, s]) => s >= 0.8).map(([m]) => m),
       partly: offAll.filter(([, s]) => s >= 0.2 && s < 0.8).map(([m, s]) => [m, Math.round(s * 100)]),
       blips: offAll.filter(([, s]) => s < 0.2).length };

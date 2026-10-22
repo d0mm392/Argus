@@ -1,4 +1,4 @@
-// Gedächtnis: jedes Gespräch und jede "Merk dir"-Notiz landet als Datei in einem Ordner, den Domi selbst öffnen kann.
+// Gedächtnis: jedes Gespräch und jede "Merk dir"-Notiz landet als Datei in einem Ordner, den der Nutzer selbst öffnen kann.
 // Reines Node (kein Electron), damit es auch argus-mcp.js nutzen kann, wenn Claude Desktop es ohne laufenden Argus startet.
 const fs = require("fs");
 const path = require("path");
@@ -32,7 +32,7 @@ function logTurn(user, answer, who) {
   ensure();
   const d = new Date();
   fs.appendFileSync(path.join(TALKS(), `${d.getFullYear()}-${pad(d.getMonth() + 1)}.jsonl`),
-    JSON.stringify({ ts: d.toISOString(), domi: String(user).slice(0, 4000), antwort: String(answer).slice(0, 6000), von: who || "Argus" }) + "\n");
+    JSON.stringify({ ts: d.toISOString(), user: String(user).slice(0, 4000), antwort: String(answer).slice(0, 6000), von: who || "Argus" }) + "\n");
 }
 function remember(text) {
   const t = String(text || "").trim().replace(/\s+/g, " ");
@@ -61,9 +61,11 @@ function turns(months = 24) {
   for (const f of files) for (const line of fs.readFileSync(path.join(TALKS(), f), "utf8").split("\n")) { try { if (line) out.push(JSON.parse(line)); } catch {} }
   return out.reverse();
 }
+// Ältere Gesprächsdateien nannten das Feld anders: erstes Textfeld außer Zeit, Antwort und Absender
+const who0 = (t) => t.user ?? Object.entries(t).find(([k, v]) => !['ts', 'antwort', 'von'].includes(k) && typeof v === 'string')?.[1] ?? '';
 const short = (s, n) => (s.length > n ? s.slice(0, n) + "…" : s);
 let USER = "Nutzer"; // Anrede aus der Einrichtung (setUser)
-const fmt = (t, n = 400) => `[${stamp(t.ts)}] ${USER}: ${short(t.domi, n)}\n  ${t.von}: ${short(t.antwort, n)}`;
+const fmt = (t, n = 400) => `[${stamp(t.ts)}] ${USER}: ${short(who0(t), n)}\n  ${t.von}: ${short(t.antwort, n)}`;
 
 // Wortsuche mit Wortanfängen (Antminer findet auch Antminers), neuere Treffer leicht bevorzugt
 function search(query, n = 6, withFacts = true) {
@@ -73,7 +75,7 @@ function search(query, n = 6, withFacts = true) {
   const score = (text) => { const ws = new Set(words(text)); let s = 0; for (const st of stems) for (const w of ws) if (w.startsWith(st)) { s++; break; } return s; };
   if (withFacts) for (const f of facts()) { const s = score(f); if (s) hits.push({ s: s + 1, text: "Gemerkt: " + f }); }
   for (const t of turns()) {
-    const s = score(t.domi + " " + t.antwort); if (!s) continue;
+    const s = score(who0(t) + " " + t.antwort); if (!s) continue;
     const ageDays = (now - Date.parse(t.ts)) / 864e5;
     hits.push({ s: s + Math.max(0, 0.5 - ageDays / 60), text: fmt(t) });
   }
@@ -112,12 +114,19 @@ function parse(text) {
   let m;
   if ((m = /^(?:bitte\s+)?(?:merk|merke|notier|notiere)\s+(?:dir|das)\b\s*(?:bitte\s*)?[,:]?\s*(?:dass\s+)?([\s\S]+)$/i.exec(t)) && m[1].trim().length > 2)
     return { kind: "remember", text: m[1].trim().replace(/[.!]+$/, "") };
+  // „Suche in meinem Argus-Gedächtnis nach …“ ist keine Dateisuche
+  if ((m = /^(?:bitte\s+)?(?:such|suche|durchsuche|finde|schau|schaue|guck|gucke)\s+(?:mal\s+)?(?:bitte\s+)?(?:(?:(?:in|im)\s+)?(?:meinem\s+|deinem\s+|dem\s+|der\s+|den\s+|mein\s+|dein\s+|das\s+)?(?:argus[\s-]*)?(?:gedächtnis|gedaechtnis|erinnerungen|gemerkten(?:\s+notizen)?)|(?:im|in)\s+deinem\s+kopf)\s*(?:nach|zu|über|ueber|von|an)?\s*[:,]?\s*(.*)$/i.exec(t)))
+    return { kind: "search", text: m[1].replace(/^[\s„“”"'‚‘’»«]+|[\s„“”"'‚‘’»«.!?]+$/g, "") };
   if ((m = /^(?:bitte\s+)?vergiss\s+(?:bitte\s+)?(?:das\s+mit\s+|dass\s+)?(.+?)[.!]*$/i.exec(t))) return { kind: "forget", text: m[1] };
   if (/^was\s+(?:hast\s+du\s+dir\s+gemerkt|wei(ss|ß)t\s+du\s+(?:alles\s+)?(?:über|ueber)\s+mich)\??$/i.test(t)) return { kind: "list" };
   return null;
 }
 function run(cmd) {
   if (cmd.kind === "remember") { remember(cmd.text); return "Gemerkt: " + cmd.text + "."; }
+  if (cmd.kind === "search") {
+    if (!cmd.text) return "Wonach soll ich im Gedächtnis suchen? Sag zum Beispiel: Such im Gedächtnis nach Bitcoin Mining.";
+    const r = search(cmd.text, 5); return r.length ? `Das habe ich im Gedächtnis zu „${cmd.text}“:\n\n` + r.join("\n\n") : `Dazu steht nichts in meinem Gedächtnis: „${cmd.text}“.`;
+  }
   if (cmd.kind === "forget") { const n = forget(cmd.text); return n ? `Vergessen, ${n} ${n === 1 ? "Notiz" : "Notizen"} gelöscht.` : "Dazu habe ich mir nichts gemerkt."; }
   if (cmd.kind === "list") { const f = facts(); return f.length ? "Ich habe mir gemerkt: " + f.slice(-12).map((x) => x.replace(/^\[[\d-]+\]\s*/, "")).join("; ") + "." : "Ich habe mir noch nichts gemerkt. Sag zum Beispiel: Merk dir, dass mein S21 im Container 3 steht."; }
   return null;

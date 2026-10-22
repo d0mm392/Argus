@@ -45,7 +45,7 @@
     }
     host.append(b);
   };
-  const report = () => requestAnimationFrame(() => window.menu.size(Math.ceil(m.scrollWidth) + 14, Math.ceil(m.scrollHeight) + 14));
+  const report = () => requestAnimationFrame(() => { m.style.width = "max-content"; const w = Math.ceil(m.offsetWidth) + 14; m.style.width = ""; window.menu.size(w, Math.ceil(m.scrollHeight) + 14); }); // Breite nach dem Text, nicht nach dem Fenster
   window.menu.onShow(({ items, vars, sub }) => {
     isSub = !!sub;
     for (const [k, v] of Object.entries(vars || {})) document.body.style.setProperty(k, v);

@@ -49,4 +49,4 @@ Siehe Gedächtnisordner `jarvis-release`: Version erhöhen, ANLEITUNG-Abschnitt,
 
 ## Bekannte Grenzen
 - Gemeinsamer Namensraum statt echter Module: Dateien sind getrennt, aber nicht voneinander abgeschottet. Nächster Schritt wäre zentraler Zustand pro Seite (ein Objekt statt vieler Variablen), danach erst ein Framework.
-- Tests laufen unter Linux. Windows-Eigenheiten (Taskleiste, Schriften, Sensoren, Spiele) prüft Domi von Hand.
+- Tests laufen unter Linux. Windows-Eigenheiten (Taskleiste, Schriften, Sensoren, Spiele) prüft der Nutzer von Hand.

@@ -39,7 +39,7 @@
     bg.cv.classList.toggle("on", live);
     if (!live) return;
     bg.raf = requestAnimationFrame(bgFrame);
-    if (now - bg.last < (lite ? 66 : performance.now() - lastAct > 8000 ? Math.max(33, 1000 / Math.min(fpsIdle, 24)) : 33)) return; // 30 Bilder pro Sekunde reichen für so ruhige Bewegung, in Ruhe weniger
+    if (now - bg.last < (window.videoBusy?.() ? 66 : lite ? 66 : performance.now() - lastAct > 8000 ? Math.max(33, 1000 / Math.min(fpsIdle, performance.now() - lastAct > 60000 ? 10 : 24)) : 33)) return; // 30 Bilder pro Sekunde reichen für so ruhige Bewegung, in Ruhe weniger
     const dt = Math.min(0.1, (now - (bg.last || now)) / 1000); bg.last = now;
     const w = bg.cv.clientWidth, h = bg.cv.clientHeight; if (!w || !h) return;
     if (w !== bg.w || h !== bg.h) { bg.w = bg.cv.width = w; bg.h = bg.cv.height = h; bgBuild(); } // Pixelzahl 1:1, nicht ×DPI: weicher Hintergrund braucht keine Schärfe
@@ -124,6 +124,8 @@
     g.drawImage(dotSprite, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 32, 32);
     if (tintCache.size > 40) tintCache.clear(); tintCache.set(col, c); return c;
   }
+  // Nach Absturz oder Neustart des Grafikprozesses (Treiber-Reset) sind die Zeichenflächen leer: neu aufsetzen
+  window.jarvis.onGpuReset?.(() => { try { cancelAnimationFrame(bg.raf); } catch {} bg.raf = 0; bg.ctx = bg.cv.getContext("2d"); bg.w = bg.h = 0; bg.parts = []; bgKick(); window.dispatchEvent(new Event("resize")); });
   const bgKick = () => { if (!bg.raf) { bg.last = 0; bg.raf = requestAnimationFrame(bgFrame); } };
   setInterval(bgKick, 1000); document.addEventListener("visibilitychange", bgKick);
   // Zeilen mit data-bgfor erscheinen nur beim passenden Hintergrund (Regel: Optionen eines Hintergrunds nie bei anderen zeigen)
@@ -162,7 +164,7 @@
     if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { ytLast = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.ytRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
   }
   setInterval(ytLayout, 250); window.addEventListener("resize", ytLayout);
-  window.jarvis.onYtEmbed?.((d) => { ytOn = !!d.on; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
+  window.jarvis.onYtEmbed?.((d) => { ytOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, yt: ytOn }; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
   window.jarvis.onYtTitle?.((t) => { $("ytTitle").textContent = t || "YouTube"; });
   $("ytClose").addEventListener("click", () => window.jarvis.ytEmbed("close"));
   let ytVo = false;
@@ -193,7 +195,7 @@
     if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { twLastKey = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
   }
   setInterval(twLayout, 250); window.addEventListener("resize", twLayout);
-  window.jarvis.onTwEmbed?.((d) => { twOn = !!d.on; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
+  window.jarvis.onTwEmbed?.((d) => { twOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, tw: twOn }; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
   window.jarvis.onTwTitle?.((t) => { $("twTitle").textContent = t || "Twitch"; });
   $("twClose").addEventListener("click", () => window.jarvis.twEmbed("close"));
   let twVo = false;
@@ -243,7 +245,7 @@
     let open = {}; try { open = JSON.parse(localStorage.getItem("jarvisSetOpen") || "{}"); } catch {}
     const firstOf = {}; for (const x of secs) firstOf[x.tab] ??= x.key;
     const isOpen = (x) => open[x.key] ?? firstOf[x.tab] === x.key;
-    const ORDER = ["Kugel und Farbe", "Aussehen", "Panel und Medien", "Seiten", "Freunde", "Mining", "Stimme und KI", "Benachrichtigungen", "System", "Fehlerberichte"];
+    const ORDER = ["Kugel und Farbe", "Aussehen", "Panel und Medien", "Seiten", "Freunde", "Mining", "Smart Home", "Stimme und KI", "Benachrichtigungen", "System", "Design-Test", "Fehlerberichte"];
     names.sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     let sel = ORDER[0], q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
     if (!names.includes(sel)) sel = names[0];
@@ -296,7 +298,7 @@
   $("setDesktopLink").addEventListener("change", (e) => window.jarvis.setConfig({ claudeDesktopLink: e.target.checked }));
   $("setMemOpen").addEventListener("click", () => window.jarvis.openMemory());
 
-  // ---------- Selbstverbesserung: Änderung zeigen und auf Domis Okay warten ----------
+  // ---------- Selbstverbesserung: Änderung zeigen und auf des Nutzers Okay warten ----------
   function showOffer(o) {
     if (!o) { $("offer").hidden = true; return; }
     $("offerWish").textContent = "Wunsch: " + o.wish;

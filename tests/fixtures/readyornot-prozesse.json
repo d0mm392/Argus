@@ -1,5 +1,5 @@
 {
-  "quelle": "Echte Prozessdaten von Domis PC, 21.10.2026, Spiel lief (nur lesend gelesen, Schlüssel entfernt).",
+  "quelle": "Echte Prozessdaten eines Windows-PCs, Spiel lief (nur lesend gelesen, Schlüssel entfernt).",
   "steamRunningAppID": "0x117588",
   "prozesse": [
     { "name": "ReadyOrNot", "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Ready Or Not\\ReadyOrNot.exe", "fenster": "" },

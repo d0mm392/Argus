@@ -27,6 +27,7 @@
   $("palPick").replaceChildren(...PALETTES.map((p) => {
     const b = document.createElement("button"); b.type = "button"; b.dataset.n = p[0]; b.title = p[0];
     b.style.background = `linear-gradient(135deg, hsl(${p[1]} 95% 62%) 0 50%, hsl(${p[2][0]} ${Math.max(p[2][1], 20)}% ${Math.min(p[2][2] + 12, 40)}%) 50% 100%)`;
+    b.style.setProperty("--pa", `hsl(${p[1]} 95% 62%)`); b.style.setProperty("--pg", `hsl(${p[2][0]} ${Math.max(p[2][1], 20)}% ${Math.min(p[2][2] + 12, 40)}%)`);
     b.innerHTML = `<span></span>`; b.lastChild.textContent = p[0];
     b.addEventListener("click", () => applyPalette(p)); return b;
   }));
@@ -39,7 +40,7 @@
 
   // ---------- Buttons: Form und Material, unabhängig voneinander ----------
   const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"], ["hexagon", "Hexagon"], ["pfeil", "Pfeil"], ["schraeg", "Schräg"], ["ticket", "Ticket"], ["doppelt", "Doppelter Rand"], ["oktagon", "Oktagon"], ["raute", "Raute (spitz)"], ["pfeillinks", "Pfeil nach links"], ["schraeg2", "Schräg (andersrum)"], ["tab", "Reiter (oben rund)"], ["schild", "Schild (unten rund)"], ["blase", "Sprechblase"], ["blatt", "Blatt"], ["klammer", "Klammer [ ]"]];
-  const B_LOOKS = [["standard", "Standard"], ["glas", "Glas"], ["neon", "Neon"], ["relief", "Relief (3D)"], ["flach", "Flach"], ["umriss", "Nur Umriss"], ["verlauf", "Farbverlauf (Farbe folgt dem Messwert)"], ["chrom", "Chrom"], ["holo", "Hologramm"], ["karbon", "Karbon"], ["pixel", "Pixel (Retro)"], ["milchglas", "Milchglas"], ["seife", "Seifenblase"], ["gummi", "Gummi (glänzend)"], ["scan", "Scanlines"], ["kontur", "Kontur-Glühen"], ["sonnenuntergang", "Sonnenuntergang"], ["aurora", "Aurora"]];
+  const B_LOOKS = [["standard", "Standard"], ["ruhig", "Ruhig (flach)"], ["chips", "Chips ruhig (weich)"], ["glas", "Glas"], ["neon", "Neon"], ["relief", "Relief (3D)"], ["flach", "Flach"], ["umriss", "Nur Umriss"], ["verlauf", "Farbverlauf (Farbe folgt dem Messwert)"], ["chrom", "Chrom"], ["holo", "Hologramm"], ["karbon", "Karbon"], ["pixel", "Pixel (Retro)"], ["milchglas", "Milchglas"], ["seife", "Seifenblase"], ["gummi", "Gummi (glänzend)"], ["scan", "Scanlines"], ["kontur", "Kontur-Glühen"], ["sonnenuntergang", "Sonnenuntergang"], ["aurora", "Aurora"]];
   const fillSel = (id, list) => $(id).replaceChildren(...list.map(([v, l]) => Object.assign(document.createElement("option"), { value: v, textContent: l })));
   fillSel("setBtnShape", B_SHAPES); fillSel("setBtnLook", B_LOOKS);
   const applyBtn = (shape, look) => { document.body.dataset.bshape = shape || "kapsel"; document.body.dataset.blook = look || "standard"; $("setBtnShape").value = document.body.dataset.bshape; $("setBtnLook").value = document.body.dataset.blook; };

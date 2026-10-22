@@ -43,7 +43,7 @@ function Node($hw) {
   return @{ Text = $hw.Name; ImageURL = "images_icon/" + (Img $hw); Children = $kids }
 }
 # Alienware: Mainboard meldet keine Luefter, die Drehzahl gibt nur die eigene WMI-Schnittstelle (wie Alienware Command Center) heraus.
-# Nur lesend: Thermal_Information mit Befehl 5 = Drehzahl in U/min, Luefter-Kennungen ab 0x32 (bei Domi 0x32 und 0x33).
+# Nur lesend: Thermal_Information mit Befehl 5 = Drehzahl in U/min, Luefter-Kennungen ab 0x32 (bei einem Nutzer 0x32 und 0x33).
 $awcc = $null; $awFans = @()
 function AwTI($a) { [uint32](Invoke-CimMethod -InputObject $awcc -MethodName Thermal_Information -Arguments @{ arg2 = [uint32]$a } -ErrorAction Stop).argr }
 try {
@@ -70,7 +70,7 @@ while ($true) {
     Move-Item -Force "$Out.tmp" $Out
   } catch { [IO.File]::WriteAllText("$Out.err", $_.Exception.ToString()) }
   if (Get-Process -Name Argus, Jarvis -ErrorAction SilentlyContinue) { $idle = 0 } else { $idle++ }
-  if ($idle -gt 15) { break }
-  Start-Sleep -Seconds 2
+  if ($idle -gt 8) { break }
+  Start-Sleep -Seconds 4
 }
 $c.Close()

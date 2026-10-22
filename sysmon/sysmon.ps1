@@ -62,5 +62,5 @@ while ($true) {
   if ($best) { $o.net = $best } else { $o.net = @{ name = ""; up = $false; rx = 0; tx = 0 } }
   [Console]::Out.WriteLine(($o | ConvertTo-Json -Compress -Depth 4)); [Console]::Out.Flush()
   if ($Parent -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break } # Jarvis beendet
-  Start-Sleep -Seconds 3
+  Start-Sleep -Seconds 4
 }

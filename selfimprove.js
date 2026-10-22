@@ -1,5 +1,5 @@
-// Selbstverbesserung mit Freigabe: Domi sagt "Verbessere dich: ...", Claude Code (über sein Abo) ändert eine Kopie
-// von Argus' Quellcode. Domi sieht, was sich ändert, und erst nach seinem Okay wird übernommen und neu gestartet.
+// Selbstverbesserung mit Freigabe: der Nutzer sagt "Verbessere dich: ...", Claude Code (über sein Abo) ändert eine Kopie
+// von Argus' Quellcode. der Nutzer sieht, was sich ändert, und erst nach seinem Okay wird übernommen und neu gestartet.
 // Vorher wird gesichert; startet Argus danach nicht sauber, holt boot.js die Sicherung automatisch zurück.
 const { app } = require("electron");
 const { spawn } = require("child_process");
@@ -119,7 +119,7 @@ Regeln:
 - Du kannst das Werkzeug lokale_ki (die lokale KI auf diesem PC) für eine zweite Meinung zu deiner Änderung nutzen. Verlass dich aber nicht blind darauf, sie ist schwächer als du.
 - Antworte am Ende in zwei bis drei kurzen deutschen Sätzen ohne Markdown, was du geändert hast. Das wird dem Nutzer vorgelesen.`;
 
-let running = false, offer = null; // offer: fertige Änderung, die auf Domis Okay wartet
+let running = false, offer = null; // offer: fertige Änderung, die auf des Nutzers Okay wartet
 
 function improve(wish, { exe, model, onStep, mcpConfig }) {
   if (running) return Promise.resolve({ ok: false, text: "Ich arbeite schon an mir. Warte, bis das fertig ist." });

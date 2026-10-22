@@ -8,7 +8,7 @@ const files = require("./files.js");
 
 const PORT = Number(process.env.JARVIS_PORT), TOKEN = process.env.JARVIS_TOKEN || "";
 const TOOLS = [
-  { name: "lokale_ki", description: "Fragt die lokale KI auf dem PC des Nutzers (Ollama, qwen2.5). Läuft offline und kostenlos, die Daten verlassen den PC nicht. Gut für: zweite Meinung, Zusammenfassen langer Texte, Entwürfe, private Daten. Schwächer als du, prüfe das Ergebnis.",
+  { name: "lokale_ki", description: "Fragt die lokale KI auf dem PC des Nutzers (Strata, sonst eine lokale Ollama-KI). Läuft offline und kostenlos, die Daten verlassen den PC nicht. Gut für: zweite Meinung, Zusammenfassen langer Texte, Entwürfe, private Daten. Schwächer als du, prüfe das Ergebnis.",
     inputSchema: { type: "object", properties: { prompt: { type: "string", description: "Die vollständige Aufgabe für die lokale KI, auf Deutsch" } }, required: ["prompt"] } },
   { name: "systemstatus", description: "Aktuelle Messwerte des Windows-PCs des Nutzers: CPU, RAM, Laufwerke, Netz, Temperaturen, Lüfter, Takt, Top-Prozesse, laufende Programme.",
     inputSchema: { type: "object", properties: {} } },
@@ -17,12 +17,14 @@ const TOOLS = [
 ];
 const q = (d) => ({ type: "object", properties: { suchbegriff: { type: "string", description: d } }, required: ["suchbegriff"] });
 const LOCAL_TOOLS = [
-  { name: "gedaechtnis_suchen", description: "Durchsucht Argus' Gedächtnis: alle früheren Gespräche mit dem Nutzer (Sprache und Text in der Argus-App) und alles, was er sich merken ließ. Nutze das, wenn Domi sich auf etwas Früheres bezieht.",
+  { name: "gedaechtnis_suchen", description: "Durchsucht Argus' Gedächtnis: alle früheren Gespräche mit dem Nutzer (Sprache und Text in der Argus-App) und alles, was er sich merken ließ. Nutze das, wenn der Nutzer sich auf etwas Früheres bezieht.",
     inputSchema: q("Stichwörter, z. B. \"S21 Container Temperatur\"") },
   { name: "gedaechtnis_verlauf", description: "Die Gespräche eines Zeitraums aus Argus' Gedächtnis, älteste zuerst.",
     inputSchema: { type: "object", properties: { wann: { type: "string", description: "\"heute\", \"gestern\", ein Datum JJJJ-MM-TT oder leer für die letzten Gespräche" } } } },
   { name: "gedaechtnis_merken", description: "Speichert eine Notiz dauerhaft in Argus' Gedächtnis. Nur nutzen, wenn der Nutzer darum bittet oder es eindeutig eine dauerhafte Information über den Nutzer ist.",
     inputSchema: { type: "object", properties: { notiz: { type: "string" } }, required: ["notiz"] } },
+  { name: "strata_fragen", description: "Fragt Strata, die große lokale KI auf dem PC des Nutzers (127.0.0.1:8080, Qwen3.8-Flash-Next). Läuft offline und kostenlos, die Daten verlassen den PC nicht. Gut für: Zusammenfassen langer Texte, Entwürfe, Erstentwürfe, private Daten. Schwächer als du, prüfe das Ergebnis. Strata wird nicht automatisch gestartet (sie belegt rund 30 GB Arbeitsspeicher): läuft sie nicht, sagt das Werkzeug es.",
+    inputSchema: { type: "object", properties: { prompt: { type: "string", description: "Die vollständige Aufgabe für Strata, auf Deutsch" } }, required: ["prompt"] } },
   { name: "dateien_suchen", description: "Sucht Dateien und Ordner auf allen Laufwerken des PCs nach Namen. Mit inhalt=true stattdessen im Dateiinhalt (Windows-Suchindex, Benutzerordner). Gibt vollständige Pfade zurück.",
     inputSchema: { type: "object", properties: { suchbegriff: { type: "string" }, inhalt: { type: "boolean" } }, required: ["suchbegriff"] } },
   { name: "datei_lesen", description: "Liest eine Textdatei (bis 60 KB) oder listet einen Ordner auf dem PC des Nutzers auf. Nur lesen, nichts ändern.",
@@ -33,6 +35,17 @@ async function callLocal(name, a = {}) {
     if (name === "gedaechtnis_suchen") { const r = memory.search(a.suchbegriff, 10); return { ok: true, text: r.length ? r.join("\n\n") : "Dazu steht nichts im Gedächtnis." }; }
     if (name === "gedaechtnis_verlauf") { const r = memory.history(a.wann || "", 20); return { ok: true, text: r.length ? r.join("\n\n") : "Für diesen Zeitraum gibt es keine Gespräche." }; }
     if (name === "gedaechtnis_merken") return { ok: memory.remember(a.notiz), text: "Gemerkt." };
+    if (name === "strata_fragen") {
+      const base = String(process.env.JARVIS_STRATA_URL || "http://127.0.0.1:8080").replace(/\/+$/, "");
+      const get = async (p, ms) => { try { const r = await fetch(base + p, { signal: AbortSignal.timeout(ms) }); return r.ok ? await r.json().catch(() => ({})) : null; } catch { return null; } };
+      if (!(await get("/health", 2500))) return { ok: false, text: "Strata läuft gerade nicht. Der Nutzer startet sie in Argus mit dem Strata-Knopf (sie braucht rund 30 GB Arbeitsspeicher, darum wird sie nicht automatisch gestartet)." };
+      const model = (await get("/v1/models", 2500))?.data?.[0]?.id;
+      const r = await fetch(base + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(170000),
+        body: JSON.stringify({ model: model || undefined, stream: false, max_tokens: 1200, temperature: 0.5, reasoning_effort: "none", messages: [{ role: "system", content: "Du bist Strata, die lokale KI auf diesem PC, und hilfst Claude. Antworte sachlich auf Deutsch." }, { role: "user", content: String(a.prompt || "") }] }) });
+      if (!r.ok) return { ok: false, text: "Strata antwortet mit " + r.status };
+      const t = String((await r.json()).choices?.[0]?.message?.content || "").replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trim();
+      return { ok: true, text: t || "(leer)" };
+    }
     if (name === "dateien_suchen") {
       const r = a.inhalt ? await files.searchContent(a.suchbegriff, 20) : await files.search(a.suchbegriff, 20);
       return { ok: true, text: (r.length ? r.join("\n") : "Nichts gefunden.") + (!a.inhalt && !files.ready() ? "\n(Das Dateiverzeichnis wird noch aufgebaut, bisher nur der Benutzerordner durchsucht.)" : "") };

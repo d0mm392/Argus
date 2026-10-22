@@ -9,7 +9,7 @@
 <body>
 <div class="shell"><canvas id="bgfx" aria-hidden="true"></canvas>
   <header class="bar">
-    <div class="brand"><span class="bname"><b>ARGUS</b><small id="appVer"></small></span><span class="pages" id="pageTabs" title="Seite wechseln (Strg+1 / 2 / 3)"><button type="button" data-pg="Start">Start</button><button type="button" data-pg="Mining">Mining</button><button type="button" data-pg="Gaming">Gaming</button></span><span class="backend" id="backend" data-kind="wait"><i></i><span>Verbinde KI…</span></span></div>
+    <div class="brand"><span class="bname"><b>ARGUS</b><small id="appVer"></small></span><span class="pages" id="pageTabs" title="Seite wechseln (Strg+1 / 2 / 3 / 4)"><button type="button" data-pg="Start">Start</button><button type="button" data-pg="Mining">Mining</button><button type="button" data-pg="Gaming">Gaming</button><button type="button" data-pg="Trading">Trading</button></span><span class="backend" id="backend" data-kind="wait"><i></i><span>Verbinde KI…</span></span></div>
     <div class="bar-btns">
       <button class="btn icon" type="button" id="settingsBtn" title="Einstellungen" aria-label="Einstellungen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"></path></svg>
@@ -35,6 +35,7 @@
       <label class="row">Schriftgröße der Einstellungen <input type="range" id="setZoom" min="0.9" max="1.6" step="0.05"></label>
       <label class="row">Schriftart von Argus <select id="setUiFont"><option value="">Standard</option><option value="Segoe UI">Segoe UI</option><option value="Bahnschrift">Bahnschrift</option><option value="Calibri">Calibri</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Georgia">Georgia (Serif)</option><option value="Consolas">Consolas (Mono)</option><option value="Cascadia Mono">Cascadia Mono</option><option value="Courier New">Courier New</option><option value="Arial">Arial</option></select></label>
       <label class="row" title="Skaliert alle Texte in Argus (Schrift in rem). Die Einstellungen haben zusätzlich ihre eigene Größe.">Schriftgröße in Argus <input type="range" id="setUiScale" min="80" max="150" step="5" data-unit=" %"></label>
+      <label class="row" title="Texte und Anzeigen wachsen mit, wenn du das Fenster größer ziehst, und schrumpfen wieder">Inhalt mit Fenstergröße skalieren <input type="checkbox" id="setAutoFit"></label>
       <label class="row">Kugel anzeigen <input type="checkbox" id="setBallOn"></label>
       <label class="row">Statusanzeige (Leerlauf, Hört zu …) <input type="checkbox" id="setStatusOn"></label>
       <label class="row" hidden title="Aus: Das kleine Widget zeigt nur die Kugel mit CPU- und GPU-Temperatur. An: auch die übrigen Anzeigen und die Statusanzeige.">Mini-Widget zeigt alle Anzeigen <input type="checkbox" id="setMiniMore"></label>
@@ -47,6 +48,7 @@
       <div class="swatches" id="swatches"></div>
       <label class="row">Farbton <input type="range" id="setHue" min="0" max="359" step="1"></label>
       <label class="row">Form <select id="setShape" hidden></select></label>
+      <label class="row">Form wechselt zufällig <select id="setShapeRand"><option value="0">Aus</option><option value="5">alle 5 Minuten</option><option value="15">alle 15 Minuten</option><option value="30">alle 30 Minuten</option><option value="60">jede Stunde</option></select></label>
       <button type="button" class="pick-toggle" id="pickToggle"></button>
       <div class="shape-pick" id="shapePick" role="radiogroup" aria-label="Form"></div>
       <label class="row">Rand der Form <input type="checkbox" id="setShapeRim"></label>
@@ -64,9 +66,15 @@
       <label class="row" title="Die Beschriftungen an der Kugel, zum Beispiel „Hörzentrum“ und „Sprachausgabe“, wenn gerade etwas aktiv ist.">Beschriftungen an der Kugel (Hörzentrum, Sprachausgabe …) <select id="setBallLabels"><option value="aktiv">Wie bisher (bis zu 3)</option><option value="eine">Nur eine</option><option value="aus">Aus</option></select></label>
       <label class="row" title="Skalierung der Anzeige „Claude · Lokal“ und des Strata-Knopfs. Einzeln ausblenden: unten bei den Anzeigen. Auch per Mausrad auf dem Teil.">Größe „Claude · Lokal“ <input type="range" id="setScaleAi" min="0.5" max="3" step="0.05"></label>
       <label class="row">Größe Strata-Knopf <input type="range" id="setScaleStrata" min="0.5" max="3" step="0.05"></label>
+      <label class="row">Aktivität in der Kugel <select id="setPulse"><option value="punkte">Punkte</option><option value="funken">Funken</option><option value="komet">Kometen</option><option value="blitz">Blitze</option><option value="welle">Wellen</option><option value="licht">Lichtfluss</option></select></label>
+      <label class="row">Neuronen-Stil <select id="setNodeStyle"><option value="punkt">Punkte</option><option value="ring">Ringe</option><option value="leucht">Leuchtkugeln</option><option value="stern">Sterne</option></select></label>
+      <label class="row">Aura um die Form <select id="setAura"><option value="aus">Aus</option><option value="weich">Weich</option><option value="stark">Stark</option></select></label>
+      <label class="row">Atmen (langsames Pulsieren) <input type="checkbox" id="setBreath"></label>
       <label class="row">Neuronen-Dichte <select id="setDens"><option value="0.5">Locker</option><option value="1">Normal</option><option value="1.5">Dicht</option><option value="2">Sehr dicht</option></select></label>
       <label class="row">Hirnregionen
         <select id="setRegions"><option value="bunt">Bunt</option><option value="thema">In der Grundfarbe</option></select></label>
+      <h4 data-tab="Aussehen">Fenster-Designs</h4>
+      <div id="lookBox" data-tab="Aussehen"></div>
       <h4 data-tab="Aussehen">Buttons: Form und Material</h4>
       <div class="set-note">Gilt für die Anzeigen (CPU, GPU, Bitcoin …) und „Claude · Lokal“. Form und Material sind unabhängig wählbar.</div>
       <label class="row">Form <select id="setBtnShape"></select></label>
@@ -131,8 +139,24 @@
       <div id="opRows"></div>
       <h4 data-tab="Stimme und KI">Stimme</h4>
       <label class="row">Antworten vorlesen <input type="checkbox" id="setTts"></label>
-      <label class="row">Stimme <select id="setVoice"><option value="jarvis">Argus (natürlich, lokal)</option><option value="windows">Windows-Stimme</option></select></label>
+      <label class="row">Stimme <select id="setVoice"><option value="jarvis">Argus (natürlich, lokal)</option><option value="windows">Windows-Stimme</option><option value="server">Eigener Sprachserver (lokal)</option></select></label>
+      <label class="row">Wenn die Argus-Stimme fehlt <select id="setVoiceFb"><option value="retry">Erneut versuchen, sonst still</option><option value="none">Nicht vorlesen</option><option value="windows">Windows-Stimme nehmen</option></select></label>
       <button class="btn" type="button" id="setVoiceTest">Stimme testen</button>
+      <h4 data-tab="Stimme und KI">Argus-Stimmen (lokal)</h4>
+      <div id="voiceBox" data-voicebox data-tab="Stimme und KI"></div>
+      <label class="row" data-tab="Stimme und KI">Roboter-Klang (Filter) <input type="checkbox" id="setVoiceRobot"></label>
+      <div class="set-note" data-tab="Stimme und KI">Stärkere Stimmen (Kokoro, Chatterbox) sind geplant, sobald ihre Laufzeit auf Windows geprüft ist.</div>
+      <h4 data-tab="Stimme und KI">Tagesbriefing</h4>
+      <label class="row" data-tab="Stimme und KI">Automatisch vorlesen <input type="checkbox" id="setBriefOn"></label>
+      <label class="row" data-tab="Stimme und KI">Ab Uhrzeit (beim ersten Start danach) <input type="time" id="setBriefTime"></label>
+      <label class="row" data-tab="Stimme und KI">Umfang <select id="setBriefLen"><option value="short">Kurz</option><option value="long">Ausführlich</option></select></label>
+      <label class="row" data-tab="Stimme und KI">Wetter <input type="checkbox" data-bp="weather"></label>
+      <label class="row" data-tab="Stimme und KI">Bitcoin <input type="checkbox" data-bp="btc"></label>
+      <label class="row" data-tab="Stimme und KI">Mining (Ausfälle, Ertrag 24 h) <input type="checkbox" data-bp="mining"></label>
+      <label class="row" data-tab="Stimme und KI">Neue Argus-Version <input type="checkbox" data-bp="update"></label>
+      <label class="row" data-tab="Stimme und KI">Die 3 wichtigsten Schlagzeilen (Welt, Krypto, Tech) <input type="checkbox" data-bp="headlines"></label>
+      <button class="btn" type="button" id="setBriefTest" data-tab="Stimme und KI">Briefing jetzt anzeigen</button>
+      <div class="set-note" data-tab="Stimme und KI">Auch per Sprache: „Hallo Claude, Briefing“. Kalender fehlt noch (braucht ein Konto).</div>
       <h4 data-tab="Stimme und KI">Sprechen</h4>
       <label class="row">Mikrofon beim Start an <input type="checkbox" id="setMic"></label>
       <label class="row">Mikrofon <select id="setMicDev"></select></label>
@@ -163,7 +187,7 @@
       <label class="row">Bitcoin-Kurs im Fenster <input type="checkbox" data-cat="btc"></label>
       <label class="row">Krypto-News (BTC-ECHO, Cointelegraph, CoinDesk) <input type="checkbox" data-cat="krypto"></label>
       <label class="row">Tech-News (heise, Golem, t3n) <input type="checkbox" data-cat="tech"></label>
-      <label class="row">Immer im Vordergrund <input type="checkbox" id="setNewsTop"></label>
+      <label class="row">Immer im Vordergrund (sonst wie Argus) <input type="checkbox" id="setNewsTop"></label>
       <label class="row">Tropfen-Effekt beim Andocken <input type="checkbox" id="setDockFx"></label>
       <label class="row">Währung <select id="setCur"><option value="USD">US-Dollar</option><option value="EUR">Euro</option></select></label>
       <div class="col">Kurse neben der Kugel und in News &amp; Uhren (Bitcoin schaltest du oben bei den Anzeigen)<div class="coin-pick" id="setCoins"></div></div>
@@ -173,11 +197,15 @@
       <label class="row">Mining-Seite zeigen (Reiter oben) <input type="checkbox" id="setPagesOn"></label>
       <label class="row" title="Aus: Alle Mining-Fenster, die Mining-Seite, die Mining-Einstellungen, der Miner-Report und die Abfragen bei OCEAN und Foreman verschwinden. Deine Einträge bleiben gespeichert."><b>Mining in Argus anzeigen</b> <input type="checkbox" id="setMiningOn" checked></label>
       <label class="row" title="Dritte Seite für Spiele: erkennt das laufende Spiel (Steam, Epic, GOG, EA, Ubisoft, Battle.net …) und zeigt Infos und Tipps."><b>Gaming-Seite</b> <input type="checkbox" id="setGamingOn" checked></label>
+      <h4 data-tab="Seiten">Eigene Seiten</h4>
+      <div class="set-note" data-tab="Seiten">Mit „+“ neben den Reitern oder per Rechtsklick → Seite → Neue Seite legst du eigene Seiten an (bis 8, Strg+5 bis 9). Gestalten: Rechtsklick → Anordnen, dann Fenster einblenden, verschieben und in der Größe ziehen. Jede Seite merkt sich ihre Anordnung.</div>
+      <div id="pgRows" data-tab="Seiten"></div>
+      <button class="btn" type="button" id="pgNew" data-tab="Seiten">+ Neue Seite</button>
       <h4 data-tab="Seiten">Mining-Seite</h4>
       <div class="set-note">Eigene Seite nur fürs Mining, umschalten oben links (Start / Mining) oder mit Strg+1 / Strg+2. Jede Seite merkt sich ihre eigene Anordnung, auch die der Anzeigen.</div>
       <label class="row">Kugel auf der Mining-Seite (zeigt die Miner: grün läuft, gelb heiß, rot offline) <input type="checkbox" id="setMineOrb"></label>
       <label class="row">Freundesliste auf der Mining-Seite <input type="checkbox" id="setPageFriends"></label>
-      <label class="row">OCEAN-Wallets mit Foreman verschmelzen: eigene Anlage in den Farm-Fenstern und im Überblick (für Anlagen ohne Foreman; aus, wenn die Wallet zu einer Foreman-Farm gehört) <input type="checkbox" id="setOceanTotal"></label>
+      <label class="row">Pool-Adressen mit Foreman verschmelzen: eigene Anlage in den Farm-Fenstern und im Überblick (für Anlagen ohne Foreman; aus, wenn die Pool-Adresse zu einer Foreman-Farm gehört) <input type="checkbox" id="setOceanTotal"></label>
       <label class="row">Überblick <select id="setMineView"><option value="kacheln">Kacheln (große Zahlen, Farmen als Karten)</option><option value="balken">Balken (eine Zeile je Farm)</option></select></label>
       <label class="row">Ticker-Tempo <input type="range" id="setTickSpeed" min="20" max="200" step="5" data-unit=" %"></label>
       <label class="row">Ticker-Schrift <input type="range" id="setTickFont" min="0.8" max="1.8" step="0.05"></label>
@@ -191,9 +219,20 @@
       <label class="row">Spielmodus: Animationen pausieren, solange ein Programm im Vollbild läuft <input type="checkbox" id="setGameMode"></label>
       <h4 data-tab="Mining">Mining</h4>
       <label class="row">Mining-Block im Panel <input type="checkbox" id="setMineOn"></label>
-      <label class="col">OCEAN-Wallets (eine pro Zeile, optional „Name = Adresse“, bis zu 5) <textarea id="setMineAddr" rows="3" spellcheck="false" placeholder="Farm 1 = bc1q…&#10;Farm 2 = 1…"></textarea></label><button class="help-btn" type="button" data-help="ocean">So geht’s</button>
+      <label class="col">Pool-Adressen (eine pro Zeile, optional „Name = Adresse“, bis zu 5) <textarea id="setMineAddr" rows="3" spellcheck="false" placeholder="Farm 1 = bc1q…&#10;Farm 2 = 1…"></textarea></label><button class="help-btn" type="button" data-help="ocean">So geht’s</button>
       <div class="set-note">Nur lesend über die öffentliche OCEAN-Statistik, ohne Konto und ohne Schlüssel. Argus meldet sich, wenn ein Worker ausfällt oder die Hashrate einbricht (10-Minuten-Wert unter 60 % vom 3-Stunden-Schnitt). Netzwerte (Difficulty, Gebühren, Hashprice) kommen von mempool.space.</div>
-      <h4 data-tab="Mining">Farm (Foreman)</h4>
+      <h4 data-tab="Mining">Foreman-Leistung</h4>
+      <label class="row" data-tab="Mining">Watt je Miner aus dem Foreman-Dashboard lesen <input type="checkbox" id="setFmDashOn"></label>
+      <button class="btn" type="button" id="setFmDashLogin" data-tab="Mining">Foreman-Dashboard öffnen und anmelden</button>
+      <div class="set-note" id="setFmDashMsg" data-tab="Mining"></div>
+      <div class="set-note" data-tab="Mining">Die Foreman-Schnittstelle liefert keine Watt, das Dashboard schon (Spalte „Wattage“). Du meldest dich selbst im Fenster an, Argus speichert kein Passwort und liest die Tabelle alle 5 Minuten im Hintergrund. Die Summe fließt in „Leistung jetzt“ und die Energie-Auswertung ein.</div>
+      <h4 data-tab="Mining">Hosting-Portal</h4>
+      <label class="col" data-tab="Mining">Adresse des Hosting-Portals (https, leer = aus) <input type="text" id="setPortalUrl" placeholder="https://…" spellcheck="false"></label>
+      <label class="row" data-tab="Mining">Portal-Block im Panel <input type="checkbox" id="setPortalOn"></label>
+      <button class="btn" type="button" id="setPortalLogin" data-tab="Mining">Portal-Fenster öffnen und anmelden</button>
+      <div class="set-note" id="setPortalMsg" data-tab="Mining"></div>
+      <div class="set-note" data-tab="Mining">Du meldest dich selbst im Portal-Fenster an (auch das Captcha). Argus speichert kein Passwort; der Anmelde-Schlüssel der Seite bleibt nur im Arbeitsspeicher, nach einem Neustart meldet sich die gespeicherte Sitzung des Fensters meist von selbst wieder an. Abfrage alle 3 Minuten, nur lesend, es werden nur Zähler angezeigt (keine Seriennummern, Pools oder Adressen).</div>
+      <h4 data-tab="Mining">Foreman</h4>
       <label class="row">Farm-Block im Panel <input type="checkbox" id="setFmOn"></label>
       <label class="row">Letzte Ereignisse im Farm-Block <input type="checkbox" id="setFmEv"></label>
       <label class="row">Link zum Miner in Foreman <input type="text" id="setFmUrl" spellcheck="false" style="width: 55%"></label>
@@ -207,7 +246,7 @@
       <h4 data-tab="Panel und Medien">Wetter</h4>
       <label class="row">Wetter-Block im Panel <input type="checkbox" id="setWxOn"></label>
       <label class="col">Weitere Orte (bis zu 3, einer pro Zeile) <textarea id="setWxPlaces" rows="3" spellcheck="false" placeholder="Berlin&#10;Asunción"></textarea></label>
-      <div class="set-note">Mit mehreren Wallets oder Orten wechselt die Anzeige alle 20 Sekunden. Maus darauf hält sie an, die Punkte oben wählen direkt. Bei mehreren Wallets gibt es zusätzlich eine Seite „Gesamt“.</div>
+      <div class="set-note">Mit mehreren Pool-Adressen oder Orten wechselt die Anzeige alle 20 Sekunden. Maus darauf hält sie an, die Punkte oben wählen direkt. Bei mehreren Pool-Adressen gibt es zusätzlich eine Seite „Gesamt“.</div>
       <div class="set-note">Standort über die Windows-Ortung (genau, braucht in Windows „Standort“ und „Desktop-Apps Zugriff erlauben“), sonst grob über den Internet-Anschluss. Wetter von Open-Meteo, ohne Konto. Die Anzeige an der Kugel schaltest du unter „Anzeigen an der Kugel“. Frag einfach „Brauche ich heute eine Jacke?“.</div>
       <h4 data-tab="Panel und Medien">Weltuhren</h4>
       <label class="row">Weltuhren im Panel <input type="checkbox" id="setClocksOn"></label>
@@ -221,6 +260,8 @@
       <h4 data-tab="Freunde">Discord</h4>
       <label class="row">Discord anzeigen <input type="checkbox" id="setDiscordOn"></label>
       <label class="row">Nur Leute im Sprachkanal zeigen <input type="checkbox" id="setDcVoice"></label>
+      <label class="row">Auch Leute zeigen, die nur online sind <input type="checkbox" id="setDcOnline"></label>
+      <label class="row" title="Discord gibt die eigene Freundesliste nicht heraus. Rechtsklick auf eine Person in der Liste: „Als Freund markieren“. Mit diesem Schalter erscheinen nur noch die markierten.">Nur markierte Discord-Freunde zeigen <input type="checkbox" id="setDcMarked"></label>
       <label class="col">Discord-Server-IDs (mehrere mit Komma) <input type="text" id="setDiscord" placeholder="z. B. 123456789012345678"></label>
       <div class="set-note">Auf dem Server muss das Widget an sein: Servereinstellungen → Beteiligung → Server-Widget aktivieren. Discord gibt den Status deiner privaten Freunde nicht heraus, nur Server.</div><button class="help-btn" type="button" data-help="discordServer">So geht’s</button>
       <label class="col">Dein Name auf den Servern (wie er im Sprachkanal steht) <input type="text" id="setDcName" placeholder="z. B. OnkelDom"></label>
@@ -254,6 +295,15 @@
       <label class="row">Programme in eigener Farbe (feuern mit ihrer Last) <input type="checkbox" data-viz="apps"></label>
       <label class="row">Größe der Last-Anzeige <input type="range" id="setRingSize" min="0.6" max="1.8" step="0.05"></label>
       <div class="set-note">Drüberfahren zeigt die Darstellung sofort, Klick übernimmt sie. CPU blau, GPU grün, RAM lila; ab 75 % orange, ab 90 % rot. GPU-Last braucht NVIDIA oder die Temperatur-Messung.</div>
+      <h4 data-tab="Smart Home">ioBroker</h4>
+      <label class="row" data-tab="Smart Home">ioBroker-Seite anzeigen <input type="checkbox" id="setIobOn"></label>
+      <label class="col" data-tab="Smart Home">Adresse (http://IP:8082, der Web-Adapter) <input type="text" id="setIobUrl" placeholder="http://192.168.x.x:8082" spellcheck="false" autocomplete="off"></label>
+      <label class="col" data-tab="Smart Home">Benutzer <input type="text" id="setIobUser" spellcheck="false" autocomplete="off"></label>
+      <label class="col" data-tab="Smart Home">Passwort <input type="password" id="setIobPass" autocomplete="new-password" placeholder=""></label>
+      <label class="row" data-tab="Smart Home">Alle Datenpunkte anzeigen (nach Adapter und Gerät, einklappbar) <input type="checkbox" id="setIobAll"></label>
+      <label class="row" data-tab="Smart Home">Schalten erlauben (sonst nur Anzeigen) <input type="checkbox" id="setIobWrite"></label>
+      <div class="set-note" id="setIobMsg" data-tab="Smart Home"></div>
+      <div class="set-note" data-tab="Smart Home">Argus meldet sich wie im Browser an und liest die Datenpunkte, die du auf der Seite „Smart Home“ über „+ Datenpunkt“ auswählst. Das Passwort wird verschlüsselt gespeichert. Am besten legst du in ioBroker einen eigenen Benutzer für Argus an.</div>
       <h4 data-tab="Stimme und KI">Gedächtnis und Dateien</h4>
       <label class="row">Gespräche merken <input type="checkbox" id="setMemory"></label>
       <label class="row">In der Claude-Desktop-App nutzen <input type="checkbox" id="setDesktopLink"></label>
@@ -296,6 +346,12 @@
       <h4 data-tab="Benachrichtigungen">Warnschwellen</h4>
       <label class="row">CPU-Warnung ab <input type="range" id="setCpuHot" min="70" max="110" step="1" data-unit=" °C"></label>
       <label class="row">GPU-Warnung ab <input type="range" id="setGpuHot" min="65" max="105" step="1" data-unit=" °C"></label>
+      <label class="row">Laufwerk-Warnung unter <input type="range" id="setWarnDisk" min="0" max="200" step="1" data-unit=" GB frei"></label>
+      <div class="set-note">0 = keine Laufwerk-Warnung. Kritisch wird es bei einem Drittel des Werts.</div>
+      <label class="row">RAM-Warnung ab <input type="range" id="setWarnRam" min="70" max="100" step="1" data-unit=" %"></label>
+      <label class="row">CPU-Dauerlast-Warnung ab <input type="range" id="setWarnCpu" min="70" max="100" step="1" data-unit=" %"></label>
+      <div class="set-note">100 % = aus. Die CPU-Warnung gilt erst, wenn die Last 30 Sekunden anhält.</div>
+      <label class="row">Warnung bei fehlendem Internet <input type="checkbox" id="setWarnInet"></label>
       <h4 data-tab="System">Updates</h4>
       <div class="set-note" id="updNote">…</div>
       <label class="row" title="Stabil: nur Versionen, die freigegeben wurden. Test: jede neue Version sofort, auch unfertige.">Updates <select id="setUpdChannel"><option value="stabil">Stabil (empfohlen)</option><option value="test">Test (jede neue Version)</option></select></label>
@@ -318,6 +374,38 @@
       <label class="col">Wie Argus dich nennt <input type="text" id="setUserName" maxlength="40"></label>
       <label class="col">Ein Satz über dich (für die KI) <input type="text" id="setUserInfo" maxlength="500"></label>
       <div class="set-actions"><button class="btn" type="button" id="setRerun">Einrichtung erneut starten</button></div>
+      <h4 data-tab="System">Sprache und Unterstützung</h4>
+      <label class="row">Sprache / Language <select id="setLang"><option value="de">Deutsch</option><option value="en">English</option></select></label>
+      <label class="row">Spendenlink (https) <input type="text" id="setDonate" placeholder="https://…" spellcheck="false"></label>
+      <button class="btn" type="button" id="setDonateBtn">Argus unterstützen (Spenden)</button>
+      <div class="set-note">Der Spendenlink ist leer, bis du einen einträgst. Argus öffnet nur https-Adressen.</div>
+      <h4 data-tab="Trading">Trading-Seite</h4>
+      <label class="row" data-tab="Trading">Trading-Seite anzeigen <input type="checkbox" id="setTradeOn"></label>
+      <label class="row" data-tab="Trading">Währung der Kurse <select id="setTradeCur"><option value="usd">US-Dollar</option><option value="eur">Euro (nur Krypto)</option></select></label>
+      <label class="row" data-tab="Trading">Aktualisierung <select id="setTradeEvery"><option value="30">alle 30 s</option><option value="60">jede Minute</option><option value="300">alle 5 Minuten</option></select></label>
+      <h4 data-tab="Trading">Datenquellen</h4>
+      <label class="row" data-tab="Trading">Aktien-Quelle <select id="setTradeStock"><option value="yahoo">Yahoo Finance (ohne Schlüssel)</option><option value="finnhub">Finnhub (eigener Schlüssel)</option></select></label>
+      <label class="row" data-tab="Trading">Finnhub-Schlüssel <input type="password" id="setFinnhub" placeholder="optional" autocomplete="off" spellcheck="false"></label>
+      <div class="set-note" data-tab="Trading">Krypto-Kurse kommen von CoinGecko, Angst-und-Gier-Index von alternative.me, die Halving-Rechnung aus der Blockhöhe von mempool.space. Alles nur lesend, ohne Konto. Der Schlüssel wird verschlüsselt gespeichert und nirgends angezeigt.</div>
+      <h4 data-tab="Trading">Markt-Kennzahlen</h4>
+      <label class="row" data-tab="Trading">Angst-und-Gier-Index <input type="checkbox" id="setTradeFng"></label>
+      <label class="row" data-tab="Trading">Bitcoin-Dominanz und Marktkapitalisierung <input type="checkbox" id="setTradeDom"></label>
+      <label class="row" data-tab="Trading">Halving-Countdown <input type="checkbox" id="setTradeHalv"></label>
+      <h4 data-tab="Trading">Watchlist und Portfolio</h4>
+      <div class="set-note" data-tab="Trading">Eine Zeile pro Eintrag. Watchlist: „BTC krypto“ oder „AAPL aktie“. Portfolio: „BTC krypto 0,5 42000“ (Menge, Einstandskurs je Stück). Hinzufügen geht auch per Rechtsklick auf der Trading-Seite.</div>
+      <textarea id="setTradeWatch" rows="5" spellcheck="false" placeholder="BTC krypto&#10;AAPL aktie"></textarea>
+      <textarea id="setTradePort" rows="4" spellcheck="false" placeholder="BTC krypto 0,5 42000"></textarea>
+      <button class="btn" type="button" id="setTradeSave">Listen speichern</button>
+      <h4 data-tab="Trading">Trading-Bots</h4>
+      <div class="set-note" data-tab="Trading">Argus handelt nie selbst, es gibt keine Order-Funktion und keine Börsen-Zugangsdaten. Trading-Bots von GitHub laufen mit deinem Geld und fremdem Code, Argus bindet deshalb keine ein. Wer Strategien prüfen will, startet mit Papiertrading (Simulation) beim Broker.</div>
+      <button class="btn" type="button" id="setTradeBots">Trading-Projekte auf GitHub ansehen</button>
+      <h4 data-tab="Design-Test">Ruhiges Design (Test)</h4>
+      <p class="set-note" data-tab="Design-Test">Ruhige Oberfläche nach neuen Design-Regeln: Die Kugel ist die einzige Lichtquelle, alles andere flach und klar. Nur zum Ausprobieren: wirkt sofort, „Klassisch“ stellt alles wie bisher zurück.</p>
+      <label class="row" data-tab="Design-Test">Design <select id="setDesign"><option value="klassisch">Klassisch (wie bisher)</option><option value="ruhig">Ruhig (Test)</option></select></label>
+      <label class="row" data-tab="Design-Test">Einstellungen ruhig (Text-Reiter, Satz-Schreibung) <input type="checkbox" id="setDSet"></label>
+      <label class="row" data-tab="Design-Test">Fenster flach (kein Rahmen, Glow, Verlauf) <input type="checkbox" id="setDBlk"></label>
+      <label class="row" data-tab="Design-Test">Beschriftungen in Normalschrift statt Code-Versalien <input type="checkbox" id="setDType"></label>
+      <label class="row" data-tab="Design-Test">Button-Material „Ruhig (flach)“ <select id="setDBtn"><option value="">Wie unter Aussehen gewählt</option><option value="ruhig">Ruhig (flach) verwenden</option></select></label>
       <h4 data-tab="Fehlerberichte">Fehlerberichte</h4>
       <label class="row" title="Schickt nichts von selbst. Nach einem Absturz fragt Argus, ob du einen Bericht senden willst, und zeigt ihn dir vorher.">Nach Abstürzen einen Fehlerbericht anbieten <input type="checkbox" id="setCrash"></label>
       <div class="set-actions"><button class="btn primary" type="button" id="setCrashNow" title="Bericht mit den letzten Fehlermeldungen erstellen, zum Beispiel wenn etwas nicht klappt">Problem melden …</button></div>
@@ -440,6 +528,10 @@
         <label class="row">Bitcoin-Kurs und News &amp; Uhren mit Nachrichten <input type="checkbox" id="suBtc"></label>
         <label class="row">Mit Windows starten <input type="checkbox" id="suAuto" checked></label>
         <label class="row" title="Schickt nichts von selbst. Nach einem Absturz fragt Argus, ob du einen Bericht senden willst, und zeigt ihn dir vorher.">Nach Abstürzen einen Fehlerbericht anbieten <input type="checkbox" id="suCrash" checked></label>
+        <h4 class="win-only">Stimme</h4>
+        <div class="set-note win-only">Wähle eine Stimme, hör die Probe an und lade sie herunter. Später änderst du das in den Einstellungen unter Stimme.</div>
+        <div id="suVoiceBox" data-voicebox class="win-only"></div>
+        <label class="row">Roboter-Klang (Filter) <input type="checkbox" id="suVoiceRobot"></label>
         <label class="col">Aktivierungswörter für die Sprache (mit Komma getrennt) <input type="text" id="suWake" value="hallo argus"></label>
       </div>
       <div class="su-step" data-step="5">
@@ -515,6 +607,38 @@
       <div class="sys-head"><span id="gameTitle">Gaming</span><b id="gameState" data-health="ok"></b></div>
       <div class="game-body" id="gameBody"></div>
     </section>
+    <section class="sys portal" id="portal" aria-label="Portal-Miner" hidden>
+      <div class="sys-head"><span>Hosting-Portal</span><b id="portalState" data-health="ok"></b></div>
+      <div class="t-kpis" id="portalBody"></div>
+    </section>
+    <section class="sys iob" id="iob" aria-label="Smart Home" hidden>
+      <div class="sys-head"><span>Smart Home</span><span class="t-acts"><button type="button" id="iobAdd" title="Datenpunkt aus ioBroker hinzufügen">+ Datenpunkt</button></span><b id="iobState" data-health="ok"></b></div>
+      <div class="t-kpis" id="iobBody"></div>
+      <div class="iob-all" id="iobAllBox" hidden><input id="iobAllQ" type="search" placeholder="Alle Datenpunkte durchsuchen …" spellcheck="false" autocomplete="off"><div id="iobAllBody"></div></div>
+    </section>
+    <section class="sys trade" id="tMkt" aria-label="Markt" hidden>
+      <div class="sys-head"><span>Markt</span><b id="tMktState" data-health="ok"></b></div>
+      <div class="t-kpis" id="tMktBody"></div>
+    </section>
+    <section class="sys trade" id="tWatch" aria-label="Watchlist" hidden>
+      <div class="sys-head"><span>Watchlist</span><span class="t-acts"><button type="button" id="tWatchAddC" title="Kryptowährung hinzufügen">+ Krypto</button><button type="button" id="tWatchAddS" title="Aktie, ETF oder Index hinzufügen">+ Aktie</button></span></div>
+      <div class="t-list" id="tWatchBody"></div>
+    </section>
+    <section class="sys trade" id="tPort" aria-label="Portfolio" hidden>
+      <div class="sys-head"><span>Portfolio</span><span class="t-acts"><button type="button" id="tPortAdd" title="Position hinzufügen">+ Position</button></span></div>
+      <div class="t-list" id="tPortBody"></div>
+    </section>
+    <div class="t-add" id="tAdd" hidden>
+      <form id="tAddForm">
+        <div class="t-add-head"><b id="tAddTitle">Hinzufügen</b><button type="button" id="tAddX" class="t-x2" title="Schließen (Esc)" aria-label="Schließen">×</button></div>
+        <label>Art <select id="tAddType"><option value="c">Krypto</option><option value="s">Aktie / ETF / Index</option></select></label>
+        <label>Kürzel <input id="tAddSym" type="text" maxlength="20" placeholder="z. B. BTC, AAPL, ^GDAXI" spellcheck="false" autocomplete="off"></label>
+        <label class="t-pos">Menge <input id="tAddQty" type="number" step="any" min="0" placeholder="0,5"></label>
+        <label class="t-pos">Einstandskurs <input id="tAddCost" type="number" step="any" min="0" placeholder="je Stück"></label>
+        <div class="t-add-btns"><button type="button" id="tAddCancel" class="btn">Abbrechen</button><button type="button" id="tAddDel" class="btn" hidden>Löschen</button><button type="submit" id="tAddOk" class="btn primary">Hinzufügen</button></div>
+        <small id="tAddErr"></small>
+      </form>
+    </div>
     <section class="sys mirror" id="mirror" aria-label="Fenster-Spiegel" hidden>
       <div class="sys-head"><span>Fenster-Spiegel</span><select id="mirrorSel" title="Welches Fenster gespiegelt wird"></select><b id="mirrorState" data-health="ok"></b></div>
       <video id="mirrorVid" autoplay muted playsinline></video>
@@ -534,6 +658,7 @@
       <button class="btn icon" type="button" id="ttsBtn" aria-pressed="true" aria-label="Vorlesen an oder aus" title="Vorlesen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></svg>
       </button>
+      <button class="btn" type="button" id="briefBtn" title="Tagesbriefing">Briefing</button>
       <button class="btn primary" type="submit">Senden</button>
     </form>
   </div>
@@ -560,6 +685,21 @@
 <script src="js/12-ki-frage-sprache-systemwache.js"></script>
 <script src="js/13-optik-interaktion.js"></script>
 <script src="js/13b-einstellungen-hilfe.js"></script>
+<script src="js/14b-trading.js"></script>
+<script src="js/14c-seiten.js"></script>
+<script src="js/14d-portal.js"></script>
+<script src="js/14e-rueckgaengig.js"></script>
+<script src="js/14f-briefing.js"></script>
+<script src="js/14l-foremandash.js"></script>
+<script src="js/14m-formwechsel.js"></script>
+<script src="js/14n-iobroker.js"></script>
+<script src="js/14h-dcnachricht.js"></script>
+<script src="js/14k-uhren.js"></script>
+<script src="js/14i-designs.js"></script>
+<script src="js/14j-fensterstil.js"></script>
+<script src="js/14g-stimmen.js"></script>
 <script src="js/14-start.js"></script>
+<script src="js/16-i18n-en.js"></script>
+<script src="js/17-sprache.js"></script>
 </body>
 </html>

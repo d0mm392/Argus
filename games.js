@@ -27,6 +27,27 @@ function steamApp(exePath, folder) {
   return manifestCache.get(dir).get(folder.toLowerCase()) || null;
 }
 
+
+// Installierte Spiele aus den Launcher-Verzeichnissen (Epic-Manifeste, GOG-Registry): erkennt Spiele auch in eigenen Ordnern wie D:\\Spiele
+let LIBS = [];
+function refreshLibs() {
+  if (process.platform !== "win32") return;
+  const out = [];
+  try {
+    const dir = path.join(process.env.ProgramData || "C:\\ProgramData", "Epic", "EpicGamesLauncher", "Data", "Manifests");
+    for (const f of fs.readdirSync(dir)) { if (!f.endsWith(".item")) continue; try { const j = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")); if (j.InstallLocation && j.DisplayName) out.push({ dir: String(j.InstallLocation).toLowerCase().replace(/[\\/]+$/, ""), name: String(j.DisplayName), launcher: "Epic" }); } catch {} }
+  } catch {}
+  try {
+    require("child_process").execFile("reg", ["query", "HKLM\\SOFTWARE\\WOW6432Node\\GOG.com\\Games", "/s"], { windowsHide: true, timeout: 8000 }, (err, txt) => {
+      if (err) { LIBS = out; return; }
+      for (const blk of String(txt).split(/\r?\n\r?\n/)) { const n = blk.match(/gameName\s+REG_SZ\s+(.+)/i), p = blk.match(/\n\s+path\s+REG_SZ\s+(.+)/i); if (n && p) out.push({ dir: p[1].trim().toLowerCase().replace(/[\\/]+$/, ""), name: n[1].trim(), launcher: "GOG" }); }
+      LIBS = out;
+    });
+  } catch { LIBS = out; }
+  LIBS = out;
+}
+refreshLibs(); setInterval(refreshLibs, 10 * 60e3).unref?.();
+
 // list: Prozesse aus systeminformation ({ name, path, cpu })
 function detect(list) {
   let best = null;
@@ -38,6 +59,9 @@ function detect(list) {
       if (!best || (p.cpu || 0) > (best.cpu || 0)) best = { cpu: p.cpu || 0, folder, launcher, exe: p.name || base(pth), pth };
       break;
     }
+  }
+  if (!best) {
+    for (const p of list || []) { const pth = String(p.path || p.command || "").toLowerCase(); if (!pth || SKIP_EXE.test(String(p.name || ""))) continue; const L = LIBS.find((l) => pth.startsWith(l.dir + "\\")); if (L && (!best || (p.cpu || 0) > (best.cpu || 0))) best = { cpu: p.cpu || 0, folder: L.name, launcher: L.launcher, exe: p.name || base(pth), pth }; }
   }
   if (!best) return byName(list);
   const app = best.launcher === "Steam" ? steamApp(best.pth, best.folder) : null;
@@ -100,7 +124,52 @@ const TIPS = [
   ["valorant", ["Fadenkreuz nicht zu hoch und nicht zu tief, Kopfhöhe halten.", "Fähigkeiten mit dem Team abstimmen statt einzeln einzusetzen."]],
   ["minecraft", ["Früh ein Bett setzen und Fackeln mitnehmen.", "Zum Diamantensuchen etwa Höhe -58 bis -59 abbauen."]],
 ];
+// Weitere Spiele (kurz, allgemein, ohne Gewähr)
+TIPS.push(
+  ["fortnite", ["Früh Höhe und Deckung sichern, Bauen erst nach Sicherheit der Position üben.", "Materialien beim Looten immer mitnehmen, Wände und Rampen entscheiden Kämpfe.", "Zone im Blick behalten und rechtzeitig rotieren."]],
+  ["apex", ["Mit dem Team landen und zusammen looten, Einzelgänger sterben früh.", "Bewegung (Rutschen, Springen) ist wichtiger als Zielen allein.", "Vor jedem Kampf Schild laden, nicht währenddessen."]],
+  ["league of legends", ["Minions zuletzt treffen (Last Hit) bringt mehr Gold als Kämpfe in der Lane.", "Karte im Blick: ein Blick pro zwei Sekunden verhindert Ganks.", "Wards setzen und Ziele (Drache, Herold) mit dem Team abstimmen."]],
+  ["dota", ["Creeps am Ende treffen (Last Hit) und Gegner abwehren (Deny).", "Runen alle zwei Minuten kontrollieren.", "Gegenstände nach der Spielsituation kaufen, nicht nach festem Plan."]],
+  ["rocket league", ["Boost nicht verschwenden, kleine Boost-Pads reichen oft.", "Rotation: nach dem Schuss zurück ins Tor-Dreieck, nicht stehen bleiben.", "Erst Ballkontrolle, dann Tempo."]],
+  ["overwatch", ["Im Team spielen: Heiler schützen, Tank nicht allein lassen.", "Ultimates mit dem Team abstimmen.", "Held wechseln, wenn der Gegner dich kontert."]],
+  ["rust", ["Erste Nacht: Wolle sammeln, Schlafsack, Basis klein und versteckt halten.", "Nie alles Wertvolle in einer Kiste lagern."]],
+  ["grand theft auto", ["Online: Versicherung und Garage nutzen, Fahrzeuge vor Missionen sichern.", "Passiv-Modus schützt vor Spielern, kostet aber Verdienstmöglichkeiten."]],
+  ["red dead", ["Pferd regelmäßig pflegen und füttern, das Bindung erhöht.", "Jagen und Verkaufen bringt früh das meiste Geld."]],
+  ["the witcher", ["Vor schweren Kämpfen Tränke, Öle und Bomben vorbereiten und Monster-Schwächen im Bestiarium lesen."]],
+  ["diablo", ["Beim Leveln auf Ausrüstung mit passenden Werten achten, Legendarys nicht voreilig zerlegen.", "Aspekte und Skillpunkte lieber um einen Hauptangriff bauen."]],
+  ["path of exile", ["Vor dem Start einen Build-Guide wählen und beim Skillbaum bleiben.", "Gegenstände nicht beim Händler verramschen, erst Preise im Handel prüfen."]],
+  ["hearts of iron", ["Produktion priorisieren, Divisionsvorlagen früh bauen und Versorgungslinien prüfen."]],
+  ["civilization", ["Früh expandieren, Wissenschaft und Produktion in Balance halten.", "Nachbarn nicht alle gleichzeitig verärgern."]],
+  ["stardew", ["Jeden Tag Energie aufbrauchen, aber Schlaf vor 2 Uhr nicht verpassen.", "Geschenke an Dorfbewohner zum Geburtstag sparen."]],
+  ["terraria", ["Früh Haus mit Wänden und Fackeln bauen, damit NPCs einziehen.", "Vor Bossen Arena und Heiltränke vorbereiten."]],
+  ["hades", ["Eine Waffe und ein Aspekt lange spielen, bis die Muster sitzen.", "Ausweichen (Dash) ist wichtiger als Schaden."]],
+);
 function tipsFor(name) { const n = String(name || "").toLowerCase(); const hit = TIPS.find(([k]) => n.includes(k)); return hit ? hit[1] : []; }
+
+// Ohne eigenen Tipp-Eintrag: allgemeine Hinweise und typische Tastenbelegung nach Genre (Steam liefert die Genres)
+const GENERIC = [
+  [/shooter|ego|taktik/i, { tips: ["Empfindlichkeit der Maus einmal sauber einstellen und danach nicht mehr ändern.", "Fadenkreuz auf Kopfhöhe, vor Ecken vorzielen.", "Nachladen nur in Deckung, Geräusche (Schritte) mit Kopfhörer nutzen."], keys: [["WASD", "Bewegen"], ["Maus", "Zielen"], ["Linke Maustaste", "Schießen"], ["Rechte Maustaste", "Zielen/Visier"], ["R", "Nachladen"], ["Shift", "Sprinten"], ["Strg / C", "Ducken"], ["Leertaste", "Springen"], ["E / F", "Benutzen"], ["Tab", "Spielstand/Inventar"]] }],
+  [/rollenspiel|rpg/i, { tips: ["Quests im Tagebuch sortieren und Nebenaufträge für Ausrüstung mitnehmen.", "Vor Bosskämpfen speichern, Tränke und Reparatur dabeihaben.", "Auf einen Hauptwert skillen statt breit zu streuen."], keys: [["WASD", "Bewegen"], ["Maus", "Kamera"], ["Linke Maustaste", "Angriff"], ["Q / E / R", "Fähigkeiten"], ["I", "Inventar"], ["J / L", "Tagebuch/Quests"], ["M", "Karte"], ["F5 / F9", "Schnellspeichern/-laden"]] }],
+  [/strategie|aufbau/i, { tips: ["Früh Wirtschaft aufbauen, erst dann Armee.", "Kontrollgruppen (Strg+Zahl) für Einheiten und Gebäude anlegen.", "Karte und Minimap regelmäßig prüfen."], keys: [["Maus links", "Auswählen"], ["Maus rechts", "Befehl"], ["Strg+1…9", "Gruppe anlegen"], ["1…9", "Gruppe wählen"], ["Leertaste", "Zu letztem Ereignis"], ["Pause", "Spiel anhalten"], ["WASD / Pfeile", "Karte bewegen"]] }],
+  [/renn|racing/i, { tips: ["Bremspunkte lernen: früh bremsen, spät beschleunigen.", "Mit Fahrhilfen starten und schrittweise abschalten.", "Lenkrad-/Controller-Totzone einstellen."], keys: [["W / Pfeil auf", "Gas"], ["S / Pfeil ab", "Bremse"], ["A D", "Lenken"], ["Leertaste", "Handbremse"], ["C", "Kamera wechseln"], ["Q E", "Schalten"]] }],
+  [/sport|fußball|football/i, { tips: ["Training und Tutorials erst durchspielen, Steuerung sitzt dann schneller.", "Taktik und Aufstellung vor jedem Spiel prüfen."], keys: [["WASD / Stick", "Bewegen"], ["Leertaste", "Sprint/Aktion"], ["A / S / D", "Pass / Schuss / Flanke"]] }],
+  [/simulation|survival|überleben|aufbau/i, { tips: ["Ressourcen früh sichern, dann Basis ausbauen.", "Regelmäßig speichern und Lagerkisten beschriften.", "Mods und Guides der Community nutzen."], keys: [["WASD", "Bewegen"], ["E", "Benutzen"], ["Tab / I", "Inventar"], ["B / Q", "Bauen"], ["Linke Maustaste", "Aktion"]] }],
+  [/abenteuer|adventure|action/i, { tips: ["Umgebung genau absuchen, versteckte Gegenstände gibt es fast immer.", "Ausweichen und Blocken lernen, bevor Schaden erhöht wird.", "Schwierigkeitsgrad ruhig anpassen."], keys: [["WASD / Stick", "Bewegen"], ["Leertaste", "Springen/Ausweichen"], ["Linke Maustaste", "Angriff"], ["Rechte Maustaste", "Blocken/Zielen"], ["E", "Interagieren"], ["Esc", "Menü/Pause"]] }],
+];
+const UNIVERSAL = { tips: ["Grafiktreiber aktuell halten, bei Rucklern erst Schatten und Sichtweite senken.", "Hintergrundprogramme (Browser, Launcher) schließen, das spart RAM und CPU.", "Temperaturen im Blick behalten: ab 85 °C GPU lieber Lüfterkurve oder Bildrate begrenzen.", "Pausen: alle 60 bis 90 Minuten kurz aufstehen."], keys: [["Esc", "Menü/Pause"], ["Alt+Tab", "Zum Desktop (Fenstermodus: stabiler)"], ["F11 / Alt+Enter", "Vollbild umschalten"], ["Win+Shift+S", "Screenshot"]] };
+// Typische Controller-Belegung nach Genre (Xbox-Namen, Argus übersetzt sie für PlayStation); je Spiel verschieden
+const PADS = [
+  [/renn|racing/i, [["RT / LT", "Gas / Bremse"], ["Linker Stick", "Lenken"], ["A", "Handbremse"], ["Y", "Kamera"], ["RB / LB", "Schalten"]]],
+  [/sport|fußball|football/i, [["Linker Stick", "Bewegen"], ["A", "Pass"], ["B", "Schuss"], ["X", "Flanke"], ["RT", "Sprint"]]],
+  [/strategie|aufbau/i, [["Linker Stick", "Zeiger"], ["A", "Auswählen"], ["B", "Abbrechen"], ["X / Y", "Menü / Befehl"], ["LB / RB", "Gruppen"]]],
+  [/shooter|ego|taktik/i, [["Linker / Rechter Stick", "Bewegen / Zielen"], ["RT / LT", "Schießen / Zielen"], ["A", "Springen"], ["X", "Nachladen"], ["RB", "Granate"]]],
+];
+const PAD_DEFAULT = [["Linker Stick", "Bewegen"], ["Rechter Stick", "Kamera"], ["A", "Bestätigen / Springen"], ["B", "Zurück / Ausweichen"], ["X / Y", "Aktion / Benutzen"], ["Start", "Menü"]];
+function padsFor(genres) { const g = (genres || []).join(" "); return (PADS.find(([re]) => re.test(g)) || [0, PAD_DEFAULT])[1]; }
+function fallback(genres) {
+  const g = (genres || []).join(" "); const hit = GENERIC.find(([re]) => re.test(g));
+  return { tips: [...(hit ? hit[1].tips : []), ...UNIVERSAL.tips].slice(0, 6), keys: [...(hit ? hit[1].keys : []), ...UNIVERSAL.keys].slice(0, 10) };
+}
 
 const infoCache = new Map();
 async function info(name, appid) {
@@ -121,6 +190,10 @@ async function info(name, appid) {
       if (nw.status === "fulfilled") out.news = (nw.value?.appnews?.newsitems || []).slice(0, 3).map((n) => ({ title: strip(n.title).slice(0, 120), url: /^https:/.test(n.url || "") ? n.url : null, date: n.date ? n.date * 1000 : null }));
     }
   } catch (e) { out.error = "Steam-Daten nicht erreichbar"; }
+  const fb = fallback(out.genres);
+  out.pads = padsFor(out.genres);
+  out.keys = fb.keys; // typische Tastenbelegung nach Genre (je Spiel verschieden)
+  if (!out.tips.length) { out.tips = fb.tips; out.tipsGeneric = true; }
   infoCache.set(key, { t: Date.now(), v: out });
   return out;
 }

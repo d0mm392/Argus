@@ -1,6 +1,6 @@
 {
   "name": "argus-desktop",
-  "version": "0.53.3",
+  "version": "0.58.19",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {
@@ -16,6 +16,7 @@
     "@ghostery/adblocker-electron": "^2.9.0",
     "adm-zip": "0.5.16",
     "electron-updater": "^6.8.9",
+    "socket.io-client": "2.5.0",
     "systeminformation": "^5.23.5",
     "tar": "6.2.1",
     "vosk-browser": "0.0.8",
@@ -30,6 +31,10 @@
     "productName": "Argus",
     "files": [
       "foreman.js",
+      "portal.js",
+      "foremandash.js",
+      "iobroker.js",
+      "briefing.js",
       "preload-yt.js",
       "argus-mcp.js",
       "memory.js",
@@ -41,6 +46,7 @@
       "steamdl.js",
       "mining.js",
       "games.js",
+      "trade.js",
       "weather.js",
       "strata.js",
       "report.js",

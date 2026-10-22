@@ -6,19 +6,7 @@
   function buildFriends() {
     if (!friendsEl) {
       friendsEl = document.createElement("div"); friendsEl.className = "friends off"; lblLayer.append(friendsEl);
-      // Größe an jeder Kante ändern, nicht nur an den kleinen Ecken: 9 px am Rand ziehen = Größe, innen ziehen = verschieben
-      const edgeAt = (e) => {
-        const b = friendsEl.getBoundingClientRect(), m = 9, x = e.clientX - b.left, y = e.clientY - b.top;
-        const c = (y < m ? "t" : y > b.height - m ? "b" : "") + (x < m ? "l" : x > b.width - m - (friendsEl.scrollHeight > friendsEl.clientHeight ? 6 : 0) ? "r" : "");
-        return c;
-      };
-      const CUR = { t: "ns-resize", b: "ns-resize", l: "ew-resize", r: "ew-resize", tl: "nwse-resize", br: "nwse-resize", tr: "nesw-resize", bl: "nesw-resize" };
-      friendsEl.addEventListener("pointermove", (e) => { if (!fgRes && !drag) friendsEl.style.cursor = CUR[edgeAt(e)] || ""; });
-      friendsEl.addEventListener("pointerdown", (e) => {
-        const c = edgeAt(e); if (e.button !== 0 || !c || !fgPos) return;
-        e.stopPropagation(); e.preventDefault(); placeGrips(fgPos, friendsEl.offsetWidth, friendsEl.offsetHeight);
-        fgRes = { c, sx: e.clientX, sy: e.clientY, w0: friendsEl.offsetWidth, h0: friendsEl.offsetHeight, x0: fgPos.x, y0: fgPos.y, pos: { ...fgPos } };
-      }, true);
+      edgeResize(friendsEl, "f1", () => fgPos, () => placeGrips(fgPos, friendsEl.offsetWidth, friendsEl.offsetHeight));
       makeDraggable(friendsEl, () => "friends");
       // Strg + Mausrad oder gedrückt halten + Mausrad: Schrift größer/kleiner; sonst normal scrollen
       friendsEl.addEventListener("wheel", (e) => {
@@ -45,6 +33,7 @@
           if (f2Res) { const c2 = cOf("friends2"), x2 = f2Res.x + friendsBox.w2 / 2 - c2.x, y2 = f2Res.y + friendsBox.h2 / 2 - c2.y; pins.friends2 = { a: Math.atan2(y2, x2), r: Math.max(0.2, Math.hypot(x2, y2) / SB) }; savePins(); f2Res = null; }
           applyFriendsBox(); saveFriendsBox(); }, 400);
       }).observe(friendsEl2);
+      edgeResize(friendsEl2, "f2", () => f2Pos, () => placeGrips2(f2Pos, friendsEl2.offsetWidth, friendsEl2.offsetHeight));
       makeDraggable(friendsEl2, () => "friends2");
       friendsEl2.addEventListener("wheel", (e) => {
         e.stopPropagation();
@@ -57,12 +46,12 @@
     }
     const st = market?.steam, servers = (market?.discord?.servers || []).filter((x) => !x.error);
     // Wer spricht, ändert sich ständig: nur die Markierung umschalten, die Liste nicht neu bauen (sonst gehen Klicks verloren)
-    // Discord meldet Sprecher nur für den Kanal, in dem Domi selbst sitzt; in anderen Kanälen bliebe das Leuchten hängen
+    // Discord meldet Sprecher nur für den Kanal, in dem der Nutzer selbst sitzt; in anderen Kanälen bliebe das Leuchten hängen
     const mine = Object.values(live.ch || {}).filter((l) => myDc && l.some((m) => normDc(m.name) === myDc));
     const talking = new Set(mine.flat().filter((m) => m.speaking).map((m) => m.name));
     const markTalk = () => { for (const el of [friendsEl, friendsEl2]) for (const d of el.querySelectorAll(".f[data-live]")) d.classList.toggle("speaking", talking.has(d.dataset.live)); };
     const liveSig = { auth: live.auth, ch: Object.fromEntries(Object.entries(live.ch || {}).map(([k, v]) => [k, v.map((m) => [m.name, m.avatar])])) };
-    const sig = JSON.stringify([friendsSplit, myDc, extraVoice, dcIcons, bot.guilds, dcVoiceOnly, st?.online, servers.map((x) => [x.server, x.online]), liveSig]);
+    const sig = JSON.stringify([friendsSplit, myDc, extraVoice, dcIcons, bot.guilds, dcVoiceOnly, dcAlsoOnline, dcOnlyMarked, dcMarked, st?.online, servers.map((x) => [x.server, x.online]), liveSig]);
     if (sig === friendsSig) { markTalk(); return; } friendsSig = sig;
     const parts = [];
     const row = (p, sub, url) => {
@@ -70,9 +59,10 @@
       let av; if (p.avatar && /^https:/.test(p.avatar)) { av = document.createElement("img"); av.src = p.avatar; av.referrerPolicy = "no-referrer"; av.alt = ""; av.onerror = () => av.replaceWith(document.createElement("i")); } else av = document.createElement("i");
       const b = document.createElement("b"); b.textContent = p.name; const sm = document.createElement("small"); sm.textContent = sub;
       d.append(av, b, sm); d.title = p.name + " · " + sub;
+      if (!p.sid) d.dataset.dcn = normDc(p.name || "");
       if (p.sid) { d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openSteam(p.sid); notice(`Steam-Chat mit ${p.name} wird geöffnet …`); }); d.querySelector("small").textContent += " · Klick: Chat"; }
       else if (url) d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openUrl(url); });
-      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.jarvis.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
+      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[dcMarked.includes(normDc(p.name)) ? `„${p.name}“: Freund-Markierung entfernen` : `„${p.name}“ als Freund markieren`, () => { const k = normDc(p.name); dcMarked = dcMarked.includes(k) ? dcMarked.filter((x) => x !== k) : [...dcMarked, k]; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcMarked }); }], [`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.jarvis.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
       return d;
     };
     // Überschrift je Bereich (Steam, Discord-Server): Klick klappt den Bereich zu oder auf, wird gemerkt
@@ -129,14 +119,14 @@
         const bp = (botPeople.get(vid) || []).find((p) => p.name === m.name || p.user === m.name);
         const me = isMe(m.name) || (bp && isMe(bp.name, bp.user));
         const u = dm(m.avatar, bp?.id);
-        const d = row({ name: m.name, avatar: m.avatar, voice: ch }, me ? "Du" : u ? "Klick: Chat in Discord" : "🔊 " + ch, null); d.dataset.live = m.name; flagIcons(d, vid, m, ms);
-        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } : noId);
+        const d = row({ name: m.name, avatar: m.avatar, voice: ch }, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : "🔊 " + ch, null); d.dataset.live = m.name; flagIcons(d, vid, m, ms);
+        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
         parts.push(d);
       } else for (const m of ms) {
         const me = isMe(m.name, m.user);
         const u = dm(m.avatar, m.id);
-        const d = row(m, me ? "Du" : u ? "Klick: Chat in Discord" : m.game ? "spielt " + m.game : "🔊 " + ch, null); flagIcons(d, vid, m, ms);
-        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } : noId);
+        const d = row(m, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : m.game ? "spielt " + m.game : "🔊 " + ch, null); flagIcons(d, vid, m, ms);
+        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
         parts.push(d);
       }
     }
@@ -146,11 +136,16 @@
       for (const f of st.online.slice(0, 15)) parts.push(row(f, f.game ? "spielt " + f.game : f.state, f.url));
     }
     const steamEnd = parts.length;
+    const onlineRest = (x) => {
+      if (!dcAlsoOnline) return;
+      const rest = x.online.filter((m) => !m.voice);
+      if (rest.length) { parts.push(head("NUR ONLINE", String(rest.length))); for (const m of rest.slice(0, 15)) parts.push(row(m, m.game ? "spielt " + m.game : m.state, x.url)); }
+    };
     for (const x of servers) {
       if (dcVoiceOnly) {
         // Nur wer im Sprachkanal sitzt, nach Kanal gruppiert
         const bg = bot.guilds.find((g) => g.id === x.id);
-        if (bg) { botGuild(parts, bg, x.server); continue; }
+        if (bg) { botGuild(parts, bg, x.server); onlineRest(x); continue; }
         const inVoice = x.online.filter((m) => m.voice);
         parts.push(head(x.server.toUpperCase(), "🔊 " + inVoice.length));
         if (!inVoice.length) parts.push(Object.assign(document.createElement("div"), { className: "none", textContent: "Niemand im Sprachkanal" }));
@@ -158,13 +153,14 @@
           const ms = inVoice.filter((m) => m.voice === ch);
           voiceBlock(parts, ch, x.id, ms[0]?.voiceId, ms); seenCh.add(ms[0]?.voiceId);
         }
+        onlineRest(x);
       } else {
         parts.push(head(x.server.toUpperCase(), x.count + " online"));
         for (const m of x.online.slice(0, 15)) parts.push(row(m, m.voice ? "im Sprachkanal " + m.voice : m.game ? "spielt " + m.game : m.state, x.url));
       }
     }
     // Server, auf denen nur der Bot sitzt (kein Widget eingetragen)
-    for (const g of bot.guilds) if (!servers.some((x) => x.id === g.id) && g.ch.length) botGuild(parts, g, g.name);
+    for (const g of bot.guilds) if (!servers.some((x) => x.id === g.id)) botGuild(parts, g, g.name);
     // Private Sprachkanäle (per Link hinzugefügt): das Widget kennt sie nicht, StreamKit schon
     const extra = extraVoice.filter((v) => live.ch[v.c]?.length && !seenCh.has(v.c));
     if (extra.length) {
@@ -175,6 +171,7 @@
       const a = Object.assign(document.createElement("div"), { className: "skauth", textContent: "▶ Echte Namen und Sprecher anzeigen: hier klicken und in Discord einmal erlauben" });
       a.addEventListener("click", (e) => { e.stopPropagation(); if (!noClick) window.jarvis.streamkitAuth(); }); parts.push(a);
     }
+    if (dcOnlyMarked) for (let i = parts.length - 1; i >= 0; i--) { const el = parts[i]; if (el.classList?.contains("f") && el.dataset.dcn !== undefined && el.dataset.dcn !== myDc && !dcMarked.includes(el.dataset.dcn)) parts.splice(i, 1); }
     const fold = (list) => { let skip = false; return list.filter((el) => { if (el.tagName === "H5") { skip = !!friendsFold[el.dataset.sec]; return true; } return el.classList.contains("skauth") || !skip; }); };
     if (friendsSplit) { // Steam und Discord je ein eigenes Fenster
       const a = parts.slice(0, steamEnd), b = parts.slice(steamEnd);
@@ -213,65 +210,93 @@
   function placeFriends2() {
     if (!friendsEl2) return;
     const show = friendsSplit && expanded && widgets.friends?.on !== false && !friendsEl2.dataset.empty && !(onMining() && !pageFriends);
-    friendsEl2.classList.toggle("off", !show); if (!show) return;
+    friendsEl2.classList.toggle("off", !show); if (!show) { placeG2?.({ x: 0, y: 0 }, 0, 0, true); return; }
     const w = friendsEl2.offsetWidth, h = friendsEl2.offsetHeight, fc = cOf("friends2");
     const firstLeft = !friendsEl.classList.contains("off") && fgPos ? fgPos.x + friendsEl.offsetWidth / 2 < fc.x : false;
     const defA = firstLeft ? 0 : Math.PI, defR = Math.min(SB * 1.15 + w / 2 + 4, (firstLeft ? W - fc.x : fc.x) - w / 2 - 6) / SB;
     let pos = anchor("friends2", defA, defR, 3.1, w, h, friendsStill ? 0 : 0.25);
     // Größe an der Ecke ziehen: linke obere Ecke bleibt stehen, nur rechts und unten ändert sich etwas
     if ((friendsEl2.style.width || friendsEl2.style.height) && f2Pos) { f2Res ??= { x: f2Pos.x, y: f2Pos.y }; pos = { x: f2Res.x, y: f2Res.y }; }
+    if (gripSt.f2) pos = gripSt.f2.pos;
     f2Pos = pos;
     // Standardplatz einmal festhalten: das Discord-Fenster hängt danach nicht mehr von der Lage des Steam-Fensters ab
     if (!pins.friends2 && !drag && friendsEl2.offsetWidth) { const c2 = cOf("friends2"), x2 = pos.x + w / 2 - c2.x, y2 = pos.y + h / 2 - c2.y; pins.friends2 = { a: Math.atan2(y2, x2), r: Math.max(0.2, Math.hypot(x2, y2) / SB) }; savePins(); }
     friendsEl2.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`;
+    placeGrips2(pos, w, h);
   }
   function placeFriends() { placeFriends1(); placeFriends2(); }
   function placeFriends1() {
     if (!friendsEl) return;
     const show = expanded && widgets.friends?.on !== false && !friendsEl.dataset.empty && !(onMining() && !pageFriends);
     friendsEl.classList.toggle("off", !show);
-    if (!show) { fgrips?.forEach((g) => g.classList.add("off")); return; }
+    if (!show) { placeG1?.({ x: 0, y: 0 }, 0, 0, true); return; }
     const w = friendsEl.offsetWidth, h = friendsEl.offsetHeight;
     // Standard: links neben der Kugel, rechts, wenn links kein Platz ist
     // Ist auf keiner Seite genug Platz (schmales Fenster), an den Rand der breiteren Seite
     const fc = cOf("friends"), roomL = fc.x - SB * 1.15, roomR = W - fc.x - SB * 1.15, left = roomL >= w + 8 || (roomR < w + 8 && roomL > roomR);
     const defA = left ? Math.PI : 0, defR = Math.min(SB * 1.15 + w / 2 + 4, (left ? fc.x : W - fc.x) - w / 2 - 6) / SB;
-    const pos = fgRes ? fgRes.pos : anchor("friends", defA, defR, 2.2, w, h, friendsStill ? 0 : 0.25);
+    const pos = gripSt.f1 ? gripSt.f1.pos : anchor("friends", defA, defR, 2.2, w, h, friendsStill ? 0 : 0.25);
     friendsEl.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`;
     fgPos = pos; placeGrips(pos, w, h);
   }
-  // Größe an jeder Ecke ziehen; die gegenüberliegende Ecke bleibt stehen
-  let fgrips = null, fgRes = null, fgPos = null;
-  function placeGrips(pos, w, h) {
-    if (!fgrips) {
-      fgrips = ["tl", "tr", "bl", "br"].map((c) => {
-        const g = document.createElement("div"); g.className = "fgrip " + c; g.title = "Ziehen: Größe ändern"; lblLayer.append(g);
-        g.addEventListener("pointerdown", (e) => {
-          if (e.button !== 0 || !fgPos) return;
-          e.stopPropagation(); e.preventDefault();
-          fgRes = { c, sx: e.clientX, sy: e.clientY, w0: friendsEl.offsetWidth, h0: friendsEl.offsetHeight, x0: fgPos.x, y0: fgPos.y, pos: { ...fgPos } };
-          g.classList.add("on");
-        });
-        return g;
-      });
-      window.addEventListener("pointermove", (e) => {
-        if (!fgRes) return;
-        const r = fgRes, dx = e.clientX - r.sx, dy = e.clientY - r.sy, L = r.c.includes("l"), T = r.c.includes("t");
-        const sw = L || r.c.includes("r"), sh = T || r.c.includes("b"); // an einer Kante nur eine Richtung
-        const w = sw ? Math.max(130, Math.min(W - 8, r.w0 + (L ? -dx : dx))) : r.w0, h = sh ? Math.max(60, Math.min(innerHeight - 70, r.h0 + (T ? -dy : dy))) : r.h0;
-        r.pos = { x: L ? r.x0 + (r.w0 - w) : r.x0, y: T ? r.y0 + (r.h0 - h) : r.y0 };
-        friendsBox.w = Math.round(w); friendsBox.h = Math.round(h); applyFriendsBox();
-        const fc = cOf("friends"), cx = r.pos.x + w / 2 - fc.x, cy = r.pos.y + h / 2 - fc.y;
-        pins.friends = { a: Math.atan2(cy, cx), r: Math.max(0.2, Math.hypot(cx, cy) / SB) };
-      }, true);
-      const end = () => { if (!fgRes) return; fgRes = null; fgrips.forEach((g) => g.classList.remove("on")); saveFriendsBox(); savePins(); noClick = friendsEl; setTimeout(() => { if (noClick === friendsEl) noClick = null; }, 50); };
-      window.addEventListener("pointerup", end, true); window.addEventListener("pointercancel", end, true);
-    }
-    const off = friendsEl.classList.contains("off");
-    for (const g of fgrips) {
-      g.classList.toggle("off", off); if (off) continue;
-      const c = g.classList;
-      g.style.transform = `translate(${Math.round((pos.x + (c.contains("tr") || c.contains("br") ? w - 14 : 0)))}px, ${Math.round((pos.y + (c.contains("bl") || c.contains("br") ? h - 14 : 0)))}px)`;
-    }
+  // Größe an jeder Ecke und jeder Kante ziehen; die gegenüberliegende Seite bleibt stehen. Gilt für beide Listen (Steam und Discord).
+  const gripSt = { f1: null, f2: null };
+  // Größe an jeder Kante ändern: 9 px am Rand ziehen = Größe, innen ziehen = verschieben
+  function edgeResize(el, id, getPos, prep) {
+    const edgeAt = (e) => {
+      const b = el.getBoundingClientRect(), m = 9, x = e.clientX - b.left, y = e.clientY - b.top;
+      return (y < m ? "t" : y > b.height - m ? "b" : "") + (x < m ? "l" : x > b.width - m - (el.scrollHeight > el.clientHeight ? 6 : 0) ? "r" : "");
+    };
+    const CUR = { t: "ns-resize", b: "ns-resize", l: "ew-resize", r: "ew-resize", tl: "nwse-resize", br: "nwse-resize", tr: "nesw-resize", bl: "nesw-resize" };
+    el.addEventListener("pointermove", (e) => { if (!gripSt[id] && !drag) el.style.cursor = CUR[edgeAt(e)] || ""; });
+    el.addEventListener("pointerdown", (e) => {
+      const c = edgeAt(e), p = getPos(); if (e.button !== 0 || !c || !p) return;
+      e.stopPropagation(); e.preventDefault(); prep();
+      gripSt[id] = { c, sx: e.clientX, sy: e.clientY, w0: el.offsetWidth, h0: el.offsetHeight, x0: p.x, y0: p.y, pos: { ...p } };
+    }, true);
   }
-
+  let fgPos = null, fgrips = null, f2grips = null;
+  function makeGrips(id, getEl, getPos, wK, hK, pinKey, cls) {
+    const list = ["tl", "tr", "bl", "br"].map((c) => {
+      const g = document.createElement("div"); g.className = "fgrip " + c + (c.length === 1 ? " edge" : "") + " " + cls; g.title = "Ziehen: Größe ändern"; lblLayer.append(g);
+      g.addEventListener("pointerdown", (e) => {
+        const el = getEl(), p = getPos(); if (e.button !== 0 || !p) return;
+        e.stopPropagation(); e.preventDefault();
+        gripSt[id] = { c, sx: e.clientX, sy: e.clientY, w0: el.offsetWidth, h0: el.offsetHeight, x0: p.x, y0: p.y, pos: { ...p } }; g.classList.add("on");
+      });
+      return g;
+    });
+    window.addEventListener("pointermove", (e) => {
+      const r = gripSt[id]; if (!r) return;
+      const dx = e.clientX - r.sx, dy = e.clientY - r.sy, L = r.c.includes("l"), T = r.c.includes("t"), sw = L || r.c.includes("r"), sh = T || r.c.includes("b");
+      const w = sw ? Math.max(130, Math.min(W - 8, r.w0 + (L ? -dx : dx))) : r.w0, h = sh ? Math.max(60, Math.min(innerHeight - 70, r.h0 + (T ? -dy : dy))) : r.h0;
+      r.pos = { x: L ? r.x0 + (r.w0 - w) : r.x0, y: T ? r.y0 + (r.h0 - h) : r.y0 };
+      if (sw) friendsBox[wK] = Math.round(w); if (sh || friendsBox[hK] > 0) friendsBox[hK] = Math.round(h); applyFriendsBox();
+      const fc = cOf(pinKey), cx = r.pos.x + w / 2 - fc.x, cy = r.pos.y + h / 2 - fc.y;
+      pins[pinKey] = { a: Math.atan2(cy, cx), r: Math.max(0.2, Math.hypot(cx, cy) / SB) };
+    }, true);
+    const end = () => { if (!gripSt[id]) return; gripSt[id] = null; list.forEach((g) => g.classList.remove("on")); saveFriendsBox(); savePins(); noClick = getEl(); const el = noClick; setTimeout(() => { if (noClick === el) noClick = null; }, 50); };
+    window.addEventListener("pointerup", end, true); window.addEventListener("pointercancel", end, true);
+    return (pos, w, h, off) => {
+      for (const g of list) {
+        g.classList.toggle("off", off); if (off) continue;
+        const c = g.classList, edge = c.contains("edge");
+        let x = pos.x, y = pos.y, gw = 14, gh = 14;
+        if (edge) {
+          if (c.contains("l") || c.contains("r")) { gw = 8; gh = Math.max(0, h - 28); y = pos.y + 14; x = pos.x + (c.contains("r") ? w - 5 : -3); }
+          else { gh = 8; gw = Math.max(0, w - 28); x = pos.x + 14; y = pos.y + (c.contains("b") ? h - 5 : -3); }
+          g.style.width = gw + "px"; g.style.height = gh + "px";
+        } else { x = pos.x + (c.contains("tr") || c.contains("br") ? w - 14 : 0); y = pos.y + (c.contains("bl") || c.contains("br") ? h - 14 : 0); }
+        g.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+      }
+    };
+  }
+  let placeG1 = null, placeG2 = null;
+  function placeGrips(pos, w, h) {
+    placeG1 ||= makeGrips("f1", () => friendsEl, () => fgPos, "w", "h", "friends", "");
+    placeG1(pos, w, h, friendsEl.classList.contains("off"));
+  }
+  function placeGrips2(pos, w, h) {
+    placeG2 ||= makeGrips("f2", () => friendsEl2, () => f2Pos, "w2", "h2", "friends2", "f2g");
+    placeG2(pos, w, h, friendsEl2.classList.contains("off"));
+  }

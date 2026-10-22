@@ -23,6 +23,16 @@ function flat(o, pre = "", out = {}) {
 // Ein Miner: Name, online, Hashrate (H/s), höchste Temperatur, schnellster Lüfter
 // Grenzwerte (alerting.*.warnAt/failAt), Pool-Zähler und Kennungen sind keine Messwerte und fliegen raus
 const NOT_MEASURED = /(^|\.)(alerting|pools|firmware|network|type|tags)\.|warnat|failat|enabled|limit|threshold|target|ideal|expected|nominal/;
+// Leistung in Watt: Feld „power/watt/consumption“ (Grenzwerte, Ziele und Wirkungsgrad sind schon raus); kW-Felder werden umgerechnet
+function wattOf(keys, f) {
+  const BAD = /eff|cost|price|limit|rate|per|mode|type|profile|state|status|target|max|min|ideal|factor|unit|supply|name|id$|tariff|budget|threshold|^alert/;
+  const cands = keys.filter((k2) => { const last = k2.toLowerCase().split(".").pop(); return /power|watt|consum/.test(k2.toLowerCase()) && !BAD.test(last) && num(f[k2]) != null && num(f[k2]) >= 0; });
+  // genau passende Namen zuerst, danach alles andere mit power/watt/consum im letzten Teil
+  const exact = cands.find((k2) => /(^|\.)(power|powerw|power_w|watts?|wattage|consumption|power_?draw|power_?usage)(_w|_kw|kw)?$/i.test(k2));
+  const k = exact || cands.find((k2) => /current|actual|real|now|consum/.test(k2.toLowerCase())) || cands[0];
+  if (!k) return null; let v = num(f[k]); if (/kw$|_kw|\.kw|kilowatt/i.test(k)) v *= 1000;
+  return v >= 0 && v < 20000 ? Math.round(v) : null;
+}
 function miner(x) {
   const f0 = flat(x), f = {}; for (const [k, v] of Object.entries(f0)) if (!NOT_MEASURED.test(k.toLowerCase())) f[k] = v;
   const keys = Object.keys(f), low = (k) => k.toLowerCase();
@@ -40,7 +50,7 @@ function miner(x) {
   if (on == null && st != null) on = /online|running|mining|ok|active|up/i.test(String(st)) ? true : /offline|down|dead|error|stopped/i.test(String(st)) ? false : null;
   if (on == null && hr != null) on = hr > 0;
   const err = pick(/error|alert|problem/);
-  return { id: x.id ?? null, name: name.slice(0, 40), on, hr, temp: temps.length ? Math.max(...temps) : null, fan: fans.length ? Math.max(...fans) : null, err: err && typeof err !== "number" && !/^(none|ok|false|0|)$/i.test(String(err)) ? String(err).slice(0, 80) : "" };
+  return { id: x.id ?? null, name: name.slice(0, 40), on, hr, temp: temps.length ? Math.max(...temps) : null, fan: fans.length ? Math.max(...fans) : null, watt: wattOf(keys, f), err: err && typeof err !== "number" && !/^(none|ok|false|0|)$/i.test(String(err)) ? String(err).slice(0, 80) : "" };
 }
 // Messwerte (Temperatur, Lüfter, Hashrate) stehen nicht in der Miner-Liste, nur im Status je Miner.
 // Erst die Sammelabfrage versuchen, sonst den Status einzeln holen (höchstens 4 gleichzeitig, bis 150 Miner).
@@ -57,7 +67,7 @@ function nominal(t) {
   const hit = NOMINAL_T.find(([k]) => n === k || n.startsWith(k + " "));
   return hit ? hit[1] * 1e12 : null;
 }
-// Messwerte: /miners/summary liefert die Hashrate je Miner in H/s (bestätigt mit Domis Daten).
+// Messwerte: /miners/summary liefert die Hashrate je Miner in H/s (bestätigt mit des Nutzers Daten).
 // Temperatur und Lüfter stehen dort nicht; die Detailabfrage je Miner wird vorsichtig probiert (wenige je Minute, Ergebnis zwischengespeichert).
 const detailCache = new Map(); let detailOff = false, detailSample = null, detailErr = null;
 async function details(clientId, key, ids) {
@@ -131,9 +141,11 @@ async function farm(clientId, key, fresh = false) {
     const sm = sum.get(String(x.id)), dc = detailCache.get(String(x.id))?.d, type = x.type?.name || sm?.type?.name || "";
     const m = miner(dc && typeof dc === "object" ? { ...dc, ...x, stats: dc } : x);
     const hrS = num(sm?.hashrate ?? sm?.hashRate);
+    if (m.watt == null && sm) { const w2 = miner(sm).watt; if (w2 != null) m.watt = w2; } // Leistung steht evtl. nur in der Summary
     if (hrS != null) m.hr = hrS; else if (sum.size) m.hr = null; // Summary ist maßgeblich (H/s)
     // online wie bei Foreman: liefert Hashrate; ohne Summary zählen seen/active/status
     if (sum.size) m.on = hrS > 0; else if (x.seen === false) m.on = false;
+    if (m.on === false && m.watt != null) m.watt = 0; // offline zählt wie bei Foreman als 0 W
     m.px = x.pickaxe != null ? String(x.pickaxe) : "";
     m.type = type.slice(0, 60); m.algo = isScrypt(type) ? "scrypt" : "sha256"; m.nom = nominal(type);
     return m;

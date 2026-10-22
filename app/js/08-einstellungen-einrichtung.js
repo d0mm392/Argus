@@ -3,7 +3,7 @@
   async function openSettingsPanel() {
     const c = await window.jarvis.getConfig();
     $("setHue").value = theme.hue; $("setRegions").value = theme.regions;
-    $("setTts").checked = tts.on; $("setVoice").value = c.voiceEngine || "jarvis";
+    $("setTts").checked = tts.on; $("setVoice").value = c.voiceEngine || "jarvis"; $("setVoiceFb").value = c.voiceFallback || "retry"; $("setDonate").value = c.donateUrl || "";
     $("setMic").checked = !!c.micOnStart; $("setWake").value = (c.wakeWords || []).join(", ");
     $("setBallLabels").value = c.ballLabels || "aktiv"; $("setBgShoot").value = String(c.bgShoot ?? 1); $("setFriendsSplit").checked = !!c.friendsSplit; $("setDcJoin").checked = c.dcJoinBot !== false; $("setFriendsHold").value = String(c.friendsHold ?? 3);
     $("setScaleAi").value = scales.ai || 1; $("setScaleStrata").value = scales.strata || 1; fillDevices();
@@ -12,7 +12,7 @@
     $("setCcModel").value = c.claudeCodeModel || "sonnet"; $("setGpu").value = c.gpuUse || "voll";
     $("ccNote").textContent = c.claudeCode ? "Claude Code gefunden: Antworten laufen über dein Abo." : "Claude Code nicht gefunden. Installieren und einmal anmelden, dann antwortet Claude über dein Abo (siehe Anleitung).";
     $("setKey").value = ""; $("setKey").placeholder = c.hasApiKey ? "gespeichert (leer lassen = unverändert)" : "sk-ant-…";
-    $("setNews").checked = c.newsOn !== false; $("setNewsTop").checked = c.newsOnTop !== false; $("setDockFx").checked = c.dockFx !== false; $("setCur").value = c.btcCur || "USD"; btcCur = c.btcCur || "USD";
+    $("setNews").checked = c.newsOn !== false; $("setNewsTop").checked = c.newsOnTop === true; $("setDockFx").checked = c.dockFx !== false; $("setCur").value = c.btcCur || "USD"; btcCur = c.btcCur || "USD";
     newsCats = { ...(c.newsCats || {}) }; for (const cb of document.querySelectorAll("[data-cat]")) cb.checked = newsCats[cb.dataset.cat] !== false;
     if (c.market) market = c.market;
     for (const cb of document.querySelectorAll("[data-viz]")) cb.checked = viz[cb.dataset.viz] !== false;
@@ -22,7 +22,7 @@
     $("setMicFloat").checked = c.micFloat !== false; $("setShape").value = shape; markShape(); $("setShapeRim").checked = shapeRim; $("setGlow").value = glowK; $("setSway").value = c.sway || "schweben";
     $("setTaskbarShow").value = c.taskbarShow || "nie"; $("setAfterHide").value = c.afterHide || "mini"; $("setTaskbarFront").checked = c.taskbarFront === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
     $("setSteamOn").checked = c.steamOn !== false; $("setDiscordOn").checked = c.discordOn !== false;
-    $("setDcVoice").checked = c.discordVoiceOnly !== false; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "panel"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
+    $("setDcVoice").checked = c.discordVoiceOnly !== false; $("setDcOnline").checked = !!c.discordAlsoOnline; $("setDcMarked").checked = !!c.dcOnlyMarked; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "panel"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
     $("setYtTop").checked = !!c.ytOnTop; winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
     const fi = c.fileIndex || {};
     $("indexNote").textContent = fi.ok ? `Dateiverzeichnis aller Laufwerke: Stand ${new Date(fi.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}, ${fi.mb} MB.` : "Dateiverzeichnis aller Laufwerke: wird noch aufgebaut (beim ersten Start einige Minuten). Bis dahin sucht Argus nur im Benutzerordner.";
@@ -56,6 +56,7 @@
   new MutationObserver(() => { if ($("holeBox").hidden) window.jarvis.setConfig({ holeEdit: !$("settings").hidden }); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
   $("setClose").addEventListener("click", () => { $("settings").hidden = true; });
   $("setTts").addEventListener("change", (e) => { setTts(e.target.checked); window.jarvis.setConfig({ voiceOutput: e.target.checked }); });
+  $("setVoiceFb").addEventListener("change", (e) => window.jarvis.setConfig({ voiceFallback: e.target.value }));
   $("setVoice").addEventListener("change", (e) => window.jarvis.setConfig({ voiceEngine: e.target.value }));
   $("setVoiceTest").addEventListener("click", () => speak("Hallo" + (userName ? " " + userName : "") + ". So klinge ich jetzt. Alle Systeme laufen.", () => {}));
   $("setMic").addEventListener("change", (e) => window.jarvis.setConfig({ micOnStart: e.target.checked }));
@@ -99,16 +100,16 @@
     $("rpTitle").textContent = "Miner-Report · " + dd;
     const bad = r.farms.filter((f) => f.median != null && f.median < f.total);
     $("rpSub").textContent = bad.length ? `${bad.length} von ${r.farms.length} Anlagen liefen nicht voll. „Typisch“ ist der Median über den Tag, kurze Aussetzer zählen als Schwankung.` : "Alle Anlagen liefen über den Tag voll.";
-    const tb = document.createElement("table"); tb.innerHTML = "<thead><tr><th>Anlage</th><th>Bestand</th><th>Typisch online</th><th>Spanne</th><th>Offline</th></tr></thead>";
+    const tb = document.createElement("table"); tb.innerHTML = "<thead><tr><th>Anlage</th><th>Bestand</th><th>Typisch online</th><th>Spanne</th><th>Offline</th><th>Uptime</th><th>Verbrauch</th></tr></thead>";
     const body = document.createElement("tbody"); const lines = [`Miner-Report ${dd}`];
     for (const f of r.farms) {
       const tr = document.createElement("tr"), na = f.median == null;
       tr.className = na ? "na" : f.median < f.total ? "bad" : "ok";
       const offTxt = na ? (f.pxShare > 0.5 ? "Pickaxe offline" : "keine Daten") : [f.down.length ? `${f.down.length} dauerhaft` : "", f.partly.length ? `${f.partly.length} zeitweise` : "", f.blips ? `${f.blips} kurz weg` : ""].filter(Boolean).join(" · ") || "–";
       const names = [f.down.length ? "Dauerhaft: " + f.down.slice(0, 12).join(", ") + (f.down.length > 12 ? " …" : "") : "", f.partly.length ? "Zeitweise: " + f.partly.slice(0, 8).map(([m, p]) => `${m} (${p} %)`).join(", ") : ""].filter(Boolean).join("\n");
-      const cells = [f.name, String(f.total), na ? "–" : `${f.median} / ${f.total}`, na ? "–" : f.min === f.max ? String(f.min) : `${f.min}–${f.max}`, offTxt];
+      const cells = [f.name, String(f.total), na ? "–" : `${f.median} / ${f.total}`, na ? "–" : f.min === f.max ? String(f.min) : `${f.min}–${f.max}`, offTxt, f.uptime != null ? (f.uptime * 100).toFixed(1).replace(".", ",") + " %" + (f.hours < 20 ? ` (${f.hours} h gemessen)` : "") : "–", f.kwh != null ? fmtEnergy(f.kwh) : "–"];
       cells.forEach((c, i) => { const td = document.createElement("td"); td.textContent = c; if (i === 4 && names) { const d = document.createElement("div"); d.className = "rp-names"; d.textContent = names; d.style.whiteSpace = "pre-line"; td.append(d); } tr.append(td); });
-      body.append(tr); lines.push(`${f.name}: ${na ? offTxt : `typisch ${f.median}/${f.total} online (Spanne ${cells[3]})`}${names ? "\n  " + names.replace(/\n/g, "\n  ") : ""}`);
+      body.append(tr); lines.push(`${f.name}: ${na ? offTxt : `typisch ${f.median}/${f.total} online (Spanne ${cells[3]})`}, Uptime ${cells[5]}, Verbrauch ${cells[6]}${names ? "\n  " + names.replace(/\n/g, "\n  ") : ""}`);
     }
     tb.append(body); $("rpBody").replaceChildren(tb); rpText = lines.join("\n");
     window.jarvis.reportDays?.().then((ds) => { $("rpDay").replaceChildren(...ds.slice().reverse().map((k) => new Option(k.split("-").reverse().join("."), k))); $("rpDay").value = r.day; });
@@ -208,22 +209,30 @@
   $("setSensSetup").addEventListener("click", () => window.jarvis.sensorSetup());
   $("setSensors").addEventListener("change", (e) => window.jarvis.setConfig({ sensors: e.target.checked }));
   let updPoll = null;
+  // Der Knopf zeigt, was wirklich passiert: „Suche …“ nur beim Suchen, „Lädt … 42 %“ sobald ein Download läuft
+  function syncUpdBtn(u) {
+    const b = $("setUpdCheck"), t = u?.text || "", dl = /^Lade/.test(t), se = /^Suche/.test(t), pc = t.match(/(\d+) %/);
+    b.classList.toggle("busy", dl || se); b.textContent = dl ? "Lädt …" + (pc ? " " + pc[1] + " %" : "") : se ? "Suche …" : "Nach Updates suchen";
+    return dl || se;
+  }
+  function watchUpd(limit) {
+    clearInterval(updPoll); const t0 = Date.now();
+    updPoll = setInterval(async () => {
+      const v = await refreshUpd(false), busy = syncUpdBtn(v), dl = /^Lade/.test(v.text || "");
+      if (!busy || Date.now() - t0 > (dl ? 30 * 60e3 : limit)) { clearInterval(updPoll); updPoll = null; syncUpdBtn({ text: "" }); }
+    }, 700);
+  }
   async function refreshUpd(check) {
     const u = await (check ? window.jarvis.updateCheck() : window.jarvis.updateStatus());
     $("updNote").textContent = "Version " + u.version + (u.text ? ". " + u.text.replace(/\.$/, "") + "." : ".");
     $("setUpdInstall").hidden = !u.ready;
-    if (!check) return u;
-    // Suche sichtbar machen: Knopf dreht sich, bis ein Ergebnis da ist (höchstens 60 s)
-    const b = $("setUpdCheck"); b.classList.add("busy"); b.textContent = "Suche …";
-    clearInterval(updPoll); const t0 = Date.now();
-    updPoll = setInterval(async () => {
-      const v = await refreshUpd(false), busy = /^(Suche|Lade)/.test(v.text || "");
-      if (!busy || Date.now() - t0 > 60000) { clearInterval(updPoll); b.classList.remove("busy"); b.textContent = "Nach Updates suchen"; }
-    }, 700);
+    if (!check) { if (syncUpdBtn(u) && !updPoll) watchUpd(60000); return u; }
+    syncUpdBtn({ text: "Suche" }); watchUpd(60000);
   }
   $("setUpdChannel").addEventListener("change", (e) => { window.jarvis.setConfig({ updateChannel: e.target.value }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
   $("setUpdUrl").addEventListener("change", (e) => { window.jarvis.setConfig({ updateUrl: e.target.value.trim() }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
   $("setUpdCheck").addEventListener("click", () => refreshUpd(true));
+  new MutationObserver(() => { if (!$("settings").hidden) refreshUpd(false); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
   $("setUpdInstall").addEventListener("click", () => window.jarvis.updateInstall());
   $("setPinsReset").addEventListener("click", () => { pins = {}; scales = {}; window.jarvis.setConfig({ pins, scales }); });
   $("setTaskbarFront").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarFront: e.target.checked }));
@@ -234,6 +243,8 @@
   $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.jarvis.setConfig({ autoOpen }); });
   $("setSteamOn").addEventListener("change", (e) => window.jarvis.setConfig({ steamOn: e.target.checked }));
   $("setDiscordOn").addEventListener("change", (e) => window.jarvis.setConfig({ discordOn: e.target.checked }));
+  $("setDcMarked").addEventListener("change", (e) => { dcOnlyMarked = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcOnlyMarked }); });
+  $("setDcOnline").addEventListener("change", (e) => { dcAlsoOnline = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordAlsoOnline: dcAlsoOnline }); });
   $("setDcVoice").addEventListener("change", (e) => { dcVoiceOnly = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordVoiceOnly: dcVoiceOnly }); });
   $("setDcName").addEventListener("change", (e) => { myDc = normDc(e.target.value); friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordName: e.target.value.trim(), discordAuto: false }); });
   window.jarvis.onDiscordSelf?.((me) => { myDc = normDc(me.name); $("setDcName").value = me.name; friendsSig = ""; buildFriends(); });
@@ -345,7 +356,7 @@
     if (["auto", "ollama"].includes(ai)) items.push("Lokale KI: " + (l === "kompakt" ? "Kompakt (Ollama)" + (suDlStarted ? ", lädt bereits" : ", lädt nach dem Fertigstellen") : l === "strata" ? "Strata" + (suStrataDir ? "" : " (Ordner noch nicht gewählt)") : "keine"));
     const acc = [$("suMineAddr").value.trim() && "OCEAN", $("suFmClient").value.trim() && "Foreman", ($("suSteamId").value.trim() || $("suSteamKey").value.trim()) && "Steam", $("suDcBot").value.trim() && "Discord"].filter(Boolean);
     items.push("Konten: " + (acc.join(", ") || "keine (später unter Einstellungen)"));
-    items.push("Anzeige: " + [$("suSensors").checked && "Temperaturen", $("suWx").checked && "Wetter", $("suBtc").checked && "Bitcoin und Lagebild"].filter(Boolean).join(", ") + ($("suAuto").checked ? " · startet mit Windows" : ""));
+    items.push("Anzeige: " + [$("suSensors").checked && "Temperaturen", $("suWx").checked && "Wetter", $("suBtc").checked && "Bitcoin und News"].filter(Boolean).join(", ") + ($("suAuto").checked ? " · startet mit Windows" : ""));
     $("suSum").replaceChildren(...items.map((t) => { const li = document.createElement("li"); li.textContent = t; return li; }));
     $("suEndNote").textContent = l === "kompakt" ? "Die lokale KI lädt im Hintergrund weiter, bis dahin antwortet " + (ai === "auto" && suCfg.claudeCode ? "Claude." : "Argus im Demo-Modus.") : "Mit Fertigstellen lädt Argus neu und ist bereit.";
   }
@@ -417,7 +428,7 @@
     ocean: { t: "OCEAN-Pool verbinden", sub: "Kein Konto und kein Passwort nötig, die Pool-Statistik ist öffentlich.", steps: [
       ["Deine Adresse ist die Bitcoin-Adresse, die in deinen Minern als Pool-Benutzername steht (bei „adresse.worker“ der Teil vor dem Punkt)."],
       ["Prüfen: auf ocean.xyz die Adresse ins Suchfeld einfügen. Siehst du deine Worker, stimmt sie.", "https://ocean.xyz/"],
-      ["In Argus eine Adresse pro Zeile eintragen, gern mit Namen davor: `Finnland = bc1q…`"]] },
+      ["In Argus eine Adresse pro Zeile eintragen, gern mit Namen davor: `Farm A = bc1q…`"]] },
     foreman: { t: "Foreman verbinden", sub: "Für die Farm-Überwachung (Miner online, Hashrate, Heatmap, Tagesreport).", steps: [
       ["Bei Foreman anmelden.", "https://dashboard.foreman.mn/"],
       ["Oben rechts auf dein Profil, dann „API Information“ (dieselben Daten wie für Pickaxe)."],
@@ -506,3 +517,24 @@
     if (!c.setupDone) setTimeout(() => showSetup(c), 800);
   });
 
+
+// ---------- Design-Test: Ruhiges Design als Option ----------
+(() => {
+  const body = document.body;
+  const apply = (c) => {
+    body.dataset.design = c.design === "ruhig" ? "ruhig" : "klassisch";
+    body.dataset.dset = c.designSet !== false ? "1" : "0"; body.dataset.dblk = c.designBlk !== false ? "1" : "0"; body.dataset.dtype = c.designType !== false ? "1" : "0";
+    body.dataset.dbtn = c.design === "ruhig" && c.designBtn === "ruhig" ? "ruhig" : "";
+  };
+  const fill = (c) => { $("setDesign").value = c.design === "ruhig" ? "ruhig" : "klassisch"; $("setDSet").checked = c.designSet !== false; $("setDBlk").checked = c.designBlk !== false; $("setDType").checked = c.designType !== false; $("setDBtn").value = c.designBtn === "ruhig" ? "ruhig" : ""; };
+  const save = (patch) => { window.jarvis.setConfig(patch); window.jarvis.getConfig().then(apply); };
+  window.jarvis.getConfig().then((c) => { apply(c); fill(c); });
+  $("setDesign").addEventListener("change", (e) => save({ design: e.target.value }));
+  $("setDSet").addEventListener("change", (e) => save({ designSet: e.target.checked }));
+  $("setDBlk").addEventListener("change", (e) => save({ designBlk: e.target.checked }));
+  $("setDType").addEventListener("change", (e) => save({ designType: e.target.checked }));
+  $("setDBtn").addEventListener("change", (e) => save({ designBtn: e.target.value }));
+})();
+
+$("setDonate").addEventListener("change", (e) => { const v = e.target.value.trim(); window.jarvis.setConfig({ donateUrl: /^https:\/\/\S+$/i.test(v) ? v : "" }); if (v && !/^https:\/\//i.test(v)) { e.target.value = ""; try { notice("Nur https-Adressen sind erlaubt."); } catch {} } });
+$("setDonateBtn").addEventListener("click", () => window.jarvis.openDonate?.());

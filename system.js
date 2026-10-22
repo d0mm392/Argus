@@ -209,21 +209,25 @@ class SystemWatch {
     const d = this.data, checks = [];
     const add = (key, label, status, text) => checks.push({ key, label, status, text });
     const avgCpu = d.cpuHistory.length ? d.cpuHistory.reduce((a, b) => a + b, 0) / d.cpuHistory.length : null;
-    if (d.cpu != null) add("cpu", "CPU", avgCpu > 90 && d.cpuHistory.length >= 10 ? "warn" : "ok",
-      avgCpu > 90 && d.cpuHistory.length >= 10 ? `CPU seit 30 s bei ${Math.round(avgCpu)} %` : `CPU ${d.cpu} %`);
-    if (d.ram) add("ram", "Arbeitsspeicher", d.ram.pct > 97 ? "crit" : d.ram.pct > 90 ? "warn" : "ok",
+    // alle Schwellen stellt der Nutzer selbst ein (0 bzw. 100 = Warnung aus)
+    const L = this.limits || {}, wCpu = L.cpuPct ?? 90, wRam = L.ramPct ?? 92, wDisk = L.diskGB ?? 10;
+    const cpuHigh = wCpu < 100 && avgCpu > wCpu && d.cpuHistory.length >= 10;
+    if (d.cpu != null) add("cpu", "CPU", cpuHigh ? "warn" : "ok", cpuHigh ? `CPU seit 30 s bei ${Math.round(avgCpu)} %` : `CPU ${d.cpu} %`);
+    if (d.ram) add("ram", "Arbeitsspeicher", wRam >= 100 ? "ok" : d.ram.pct > Math.min(99, wRam + 5) ? "crit" : d.ram.pct > wRam ? "warn" : "ok",
       `RAM ${d.ram.pct} % (${d.ram.usedGB} von ${d.ram.totalGB} GB)`);
-    for (const disk of d.disks) add("disk:" + disk.mount, "Laufwerk " + disk.mount, disk.pct > 97 ? "crit" : disk.pct > 90 ? "warn" : "ok",
+    for (const disk of d.disks) add("disk:" + disk.mount, "Laufwerk " + disk.mount, wDisk <= 0 ? "ok" : disk.freeGB < wDisk / 3 ? "crit" : disk.freeGB < wDisk ? "warn" : "ok",
       `Laufwerk ${disk.mount} ${disk.freeGB} GB frei (${disk.pct} % belegt)`);
     if (d.net) add("net", "Netzwerk", d.net.up === false ? "crit" : "ok",
       d.net.up === false ? `Netzwerk ${d.net.iface} getrennt` : `Netz ↓ ${fmtRate(d.net.rxKBs)} ↑ ${fmtRate(d.net.txKBs)}`);
-    if (d.internet !== null) add("inet", "Internet", d.internet === false ? "warn" : "ok",
+    if (d.internet !== null) add("inet", "Internet", d.internet === false && this.limits?.inet !== false ? "warn" : "ok",
       d.internet === false ? "Internet nicht erreichbar" : `Internet ok, Ping ${d.internet} ms`);
-    // Warnschwellen einstellbar (Domi: Laptop-CPUs laufen normal bei 85–95 °C, Warnung erst ab 100 °C)
+    // Warnschwellen einstellbar (Nutzerwunsch: Laptop-CPUs laufen normal bei 85–95 °C, Warnung erst ab 100 °C)
     const lc = this.limits?.cpu || 100, lg = this.limits?.gpu || 88;
     if (d.temp != null) add("temp", "Temperatur", d.temp >= lc + 5 ? "crit" : d.temp >= lc ? "warn" : "ok", `CPU-Temperatur ${d.temp} °C`);
     if (d.gpuTemp != null) add("gputemp", "GPU-Temperatur", d.gpuTemp >= lg + 5 ? "crit" : d.gpuTemp >= lg ? "warn" : "ok", `GPU-Temperatur ${d.gpuTemp} °C`);
-    for (const [name, n] of this.hog) if (n >= 3) add("hog:" + name, "Prozess", "warn", `${name} zieht dauerhaft viel CPU`);
+    // Läuft ein Spiel, ist hohe CPU-Last des Spiels normal und keine Warnung
+    const gameExe = String(d.game?.exe || d.game?.name || "").toLowerCase();
+    for (const [name, n] of this.hog) if (n >= 3 && !(gameExe && gameExe.includes(String(name).toLowerCase().replace(/\.exe$/, "")))) add("hog:" + name, "Prozess", "warn", `${name} zieht dauerhaft viel CPU`);
     if (d.top[0]) add("proc", "Prozesse", "ok", `${d.procCount || "?"} Prozesse, oben: ${d.top[0].name} ${d.top[0].cpu} %`);
     d.checks = checks;
     d.health = checks.some((c) => c.status === "crit") ? "crit" : checks.some((c) => c.status === "warn") ? "warn" : "ok";

@@ -86,7 +86,7 @@
   $("minBtn").addEventListener("click", () => { autoExpanded = false; window.jarvis.setExpanded(false, false); });
   $("maxBtn").addEventListener("click", () => window.jarvis.winMode("max"));
   $("fullBtn").addEventListener("click", () => window.jarvis.winMode("full"));
-  window.jarvis.onLayout((l) => document.body.classList.toggle("maxed", !!l.mode && l.mode !== "normal"));
+  window.jarvis.onLayout((l) => { const mx = !!l.mode && l.mode !== "normal"; document.body.classList.toggle("maxed", mx); const b = $("maxBtn"); b.title = mx ? "Wiederherstellen (vorherige Größe)" : "Maximieren"; b.setAttribute("aria-label", mx ? "Wiederherstellen" : "Maximieren"); });
 
   // ---------- Farben ----------
   const BASE_HUES = REGIONS.map((r) => r.hue);
@@ -161,8 +161,8 @@
   $("setRingSize").addEventListener("input", (e) => { scales.rings = +e.target.value; if (Math.abs(scales.rings - 1) < 0.03) delete scales.rings; });
   $("setMedia").addEventListener("change", (e) => { mediaOn = e.target.checked; renderMedia(); window.jarvis.setConfig({ mediaOn }); });
   $("setRingSize").addEventListener("change", () => window.jarvis.setConfig({ scales }));
-  $("setZoom").addEventListener("input", (e) => document.documentElement.style.setProperty("--set-zoom", e.target.value));
-  $("setZoom").addEventListener("change", (e) => window.jarvis.setConfig({ setZoom: +e.target.value }));
+  // Erst beim Loslassen anwenden: sonst wächst das Fenster unter dem Regler mit und der Regler springt (Flackern)
+  $("setZoom").addEventListener("change", (e) => { document.documentElement.style.setProperty("--set-zoom", e.target.value); window.jarvis.setConfig({ setZoom: +e.target.value }); });
   // Skins: fertige Kombinationen aus Form, Grundfarbe, Fensterfarbe, Glühen und Drehtempo
   const SKINS = [
     ["Bitcoin", "muenze", 38, ["Braun", 28, 35, 8], 1.5, 0.8], ["Atom", "atom", 188, ["Petrol", 190, 50, 7], 1.3, 1.6], ["Sternenstaub", "stern", 275, ["Lila", 270, 45, 8], 1.4, 0.7],
@@ -208,14 +208,17 @@
     b.style.setProperty("--ry", (x * 6 * look3dK / 0.35 * 0.35).toFixed(2) + "deg"); b.style.setProperty("--rx", (-y * 6 * look3dK / 0.35 * 0.35).toFixed(2) + "deg");
   }, { passive: true });
   // ---- Anzeige: Kugel, Status, Mini-Widget, Schrift, Struktur, Tiefe
-  let uiFont = "", uiScale = 100;
+  let uiFont = "", uiScale = 100, autoFit = true;
+  const fitK = () => autoFit ? Math.max(0.75, Math.min(1.4, Math.sqrt((innerWidth * innerHeight) / (1920 * 1030)))) : 1; // Inhalt wächst und schrumpft mit dem Fenster
   const applyUi = () => { const b = document.body.classList; b.toggle("noball", !ballOn); b.toggle("nostatus", !statusOn); b.toggle("mini-more", miniMore); };
-  const applyFont = () => { const st = document.documentElement.style; if (uiFont) { const f = `"${uiFont}", system-ui, sans-serif`; st.setProperty("--f-body", f); st.setProperty("--f-display", f); } else { st.removeProperty("--f-body"); st.removeProperty("--f-display"); } st.fontSize = uiScale === 100 ? "" : uiScale + "%"; };
+  const applyFont = () => { const st = document.documentElement.style; if (uiFont) { const f = `"${uiFont}", system-ui, sans-serif`; st.setProperty("--f-body", f); st.setProperty("--f-display", f); } else { st.removeProperty("--f-body"); st.removeProperty("--f-display"); } const k = fitK(), pc = Math.round(uiScale * k * 10) / 10; st.fontSize = pc === 100 ? "" : pc + "%"; };
+  { let ft = 0; window.addEventListener("resize", () => { if (!autoFit || ft) return; ft = requestAnimationFrame(() => { ft = 0; applyFont(); try { fitPanel?.(); } catch {} }); }); }
   const sv = (patch) => window.jarvis.setConfig(patch);
   const bind = (id, key, get, set) => $(id).addEventListener(get === "check" ? "change" : "input", (e) => { const v = get === "check" ? e.target.checked : +e.target.value; set(v); sv({ [key]: key === "look3dK" ? Math.round(v * 100) : key === "structK" || key === "nodeK" ? Math.round(v * 100) : v }); });
   $("setBallOn").addEventListener("change", (e) => { ballOn = e.target.checked; applyUi(); sv({ ballOn }); });
   $("setStatusOn").addEventListener("change", (e) => { statusOn = e.target.checked; applyUi(); sv({ statusOn }); });
   $("setMiniMore").addEventListener("change", (e) => { miniMore = e.target.checked; applyUi(); sv({ miniMore }); });
+  $("setAutoFit").addEventListener("change", (e) => { autoFit = e.target.checked; applyFont(); sv({ autoFit }); try { fitPanel?.(); } catch {} });
   $("setUiFont").addEventListener("change", (e) => { uiFont = e.target.value; applyFont(); sv({ uiFont }); });
   $("setUiScale").addEventListener("input", (e) => { uiScale = +e.target.value; applyFont(); clearTimeout(applyFont.t); applyFont.t = setTimeout(() => { sv({ uiScale }); fitPanel?.(); }, 300); });
   let menuAlpha = 96;
@@ -225,7 +228,7 @@
   $("setEdgeK").addEventListener("input", (e) => { edgeK = +e.target.value; shapeBuilt = ""; clearTimeout(bind.t3); bind.t3 = setTimeout(() => sv({ edgeK }), 300); });
   $("setLook3dK").addEventListener("input", (e) => { look3dK = +e.target.value / 100; clearTimeout(bind.t4); bind.t4 = setTimeout(() => sv({ look3dK: +e.target.value }), 300); });
   window.jarvis.getConfig?.().then((c) => {
-    ballOn = c.ballOn !== false; statusOn = c.statusOn !== false; miniMore = !!c.miniMore; uiFont = c.uiFont || ""; uiScale = c.uiScale || 100;
+    ballOn = c.ballOn !== false; statusOn = c.statusOn !== false; miniMore = !!c.miniMore; uiFont = c.uiFont || ""; uiScale = c.uiScale || 100; autoFit = c.autoFit !== false; if ($("setAutoFit")) $("setAutoFit").checked = autoFit; applyFont();
     structK = (c.structK ?? 100) / 100; nodeK = (c.nodeK ?? 100) / 100; edgeK = c.edgeK || 3; look3dK = (c.look3dK ?? 35) / 100; shapeBuilt = "";
     $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; $("setMiniMore").checked = miniMore; $("setUiFont").value = uiFont; $("setUiScale").value = uiScale;
     menuAlpha = c.menuAlpha || 96; $("setMenuAlpha").value = menuAlpha; $("setMenuAlpha").dispatchEvent(new Event("input"));
@@ -237,8 +240,12 @@
   window.jarvis.getConfig?.().then((c) => { look3d = !!c.look3d; $("setLook3d").checked = look3d; applyLook3d(); });
   $("setMediaBrowser").addEventListener("change", (e) => window.jarvis.setConfig({ mediaBrowser: e.target.checked }));
   $("setCpuHot").addEventListener("change", (e) => window.jarvis.setConfig({ cpuHotC: +e.target.value }));
+  $("setWarnDisk").addEventListener("change", (e) => window.jarvis.setConfig({ warnDiskGB: +e.target.value }));
+  $("setWarnRam").addEventListener("change", (e) => window.jarvis.setConfig({ warnRamPct: +e.target.value }));
+  $("setWarnCpu").addEventListener("change", (e) => window.jarvis.setConfig({ warnCpuPct: +e.target.value }));
+  $("setWarnInet").addEventListener("change", (e) => window.jarvis.setConfig({ warnInet: e.target.checked }));
   $("setGpuHot").addEventListener("change", (e) => window.jarvis.setConfig({ gpuHotC: +e.target.value }));
-  window.jarvis.getConfig?.().then((c) => { $("setMediaBrowser").checked = !!c.mediaBrowser; $("setCpuHot").value = c.cpuHotC || 100; $("setGpuHot").value = c.gpuHotC || 88; showRangeValues(); });
+  window.jarvis.getConfig?.().then((c) => { $("setMediaBrowser").checked = !!c.mediaBrowser; $("setCpuHot").value = c.cpuHotC || 100; $("setGpuHot").value = c.gpuHotC || 88; $("setWarnDisk").value = c.warnDiskGB ?? 10; $("setWarnRam").value = c.warnRamPct ?? 92; $("setWarnCpu").value = c.warnCpuPct ?? 90; $("setWarnInet").checked = c.warnInet !== false; showRangeValues(); });
   // Regler zeigen ihren Wert (Prozent, Grad), damit man die richtige Stelle wiederfindet
   function rangeText(r) { const v = +r.value, mx = +r.max; return r.dataset.unit ? Math.round(v) + r.dataset.unit : /Hue|WinH/.test(r.id) ? Math.round(v) + "°" : mx <= 5 ? Math.round(v * 100) + " %" : Math.round(v) + " %"; }
   function showRangeValues() {
