@@ -1611,6 +1611,7 @@ ipcMain.handle("set-config", (_e, patch) => {
   if ("overlayCorner" in patch) placeOverlay();
   if ("overlayMode" in patch) updateOverlay();
   if ("coins" in patch) pollPrice().then(pollHist);
+  if ("widgets" in patch && config.widgets?.btc?.on !== false && !market.btc) pollPrice().then(pollHist); // Bitcoin-Anzeige eingeschaltet: Kurs sofort holen
   if (("themeHue" in patch || "winColor" in patch) && newsAlive()) pushMarket(); // Lagebild färbt sich mit
   if ("ytVideoOnly" in patch) { if (ytView) ytTrackNow(ytView.webContents); if (ytAlive()) ytTrackNow(ytWin.webContents); }
   if ("ytNoAds" in patch) { const u = ytView?.webContents.getURL(); if (ytView) { ytEmbedClose(); ytEmbedShow("").then(() => { if (u) ytView?.webContents.loadURL(u); }); } if (ytAlive()) ytWin.close(); }

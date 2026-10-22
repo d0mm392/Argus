@@ -450,7 +450,10 @@
   });
   // Gibt es für diese Anzeige gerade Messwerte? Argus erkennt das selbst aus den Live-Daten (Sensor fehlt = nicht anbieten)
   function btnAvail(k) {
-    if (k === "fans") return (sys.fans || []).length > 0;
+    const on = widgets[k]?.on !== false; // was gerade an ist, bleibt immer wählbar (zum Ausschalten)
+    if (k === "fans") return on || (sys.fans || []).length > 0;
+    // nur Messwerte der Hardware werden nach vorhandenen Daten beurteilt; Bitcoin, Wetter, Steam, Discord, Mining liefern erst Daten, wenn sie an sind (sonst nie einschaltbar)
+    if (on || !["cpuTemp", "gpuTemp", "cpuClock", "gpuClock"].includes(k)) return true;
     const ts = temps.filter((t) => t.w === k);
     if (!ts.length) return true;
     return ts.some((t) => { try { const v = t.get(); return v != null && !Number.isNaN(v); } catch { return false; } });
