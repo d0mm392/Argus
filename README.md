@@ -2,9 +2,9 @@
 
 Desktop-Assistent: eine animierte Neuronen-Kugel (Kugel, Hexagon, Würfel, Gehirn und mehr) als Statusanzeige und Zugang zu einer KI, dazu Systemwache, Mining-Überblick und Gaming-Seite. Läuft als schlankes Widget in einer Bildschirmecke oder als frei anordenbares Panel.
 
-Aktuelle Version: **0.58.16** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source`](https://github.com/d0mm392/Argus/tree/source)
+Aktuelle Version: **0.58.17** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source`](https://github.com/d0mm392/Argus/tree/source)
 
-**Download (Windows):** [Argus-Setup-0.58.16.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.58.16.exe) direkt herunterladen. Das Setup liegt im Zweig `updates`; „Code → Download ZIP“ auf dieser Seite enthält nur die Dokumentation, kein Setup.
+**Download (Windows):** [Argus-Setup-0.58.17.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.58.17.exe) direkt herunterladen. Das Setup liegt im Zweig `updates`; „Code → Download ZIP“ auf dieser Seite enthält nur die Dokumentation, kein Setup.
 
 ## Was Argus kann
 
