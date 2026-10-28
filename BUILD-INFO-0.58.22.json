@@ -1,0 +1,58 @@
+{
+  "version": "0.58.22",
+  "channel": "updates",
+  "sourceCommit": "0bc4c07c93dac3576af5248545a33fc6eadba8ea",
+  "installer": {
+    "file": "Argus-Setup-0.58.22.exe",
+    "bytes": 90300744,
+    "sha256": "6118a6c134226448da7c129146bdfc550c33a60150e10271f4da9aa2b0dd7135"
+  },
+  "manifest": {
+    "file": "manifest-0.58.22.json",
+    "files": 4803,
+    "sha256": "0b2c31d6a6d069d089e2aafdfdf4bef4ee32d76402c46483959e68cb31566ce1"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.22.zip",
+    "sha256": "62278a424c4ff24caa0424384d12c6ffd559b38c470bb3b0609a701a9443096b"
+  },
+  "sourceProductFilesVerified": 76,
+  "tests": {
+    "portalElectron": {
+      "passed": 19,
+      "packagedModule": true,
+      "noFilesSaved": true
+    },
+    "hotfix": {
+      "node20": {
+        "passed": 17
+      },
+      "node24": {
+        "passed": 17
+      }
+    },
+    "pathguard": {
+      "node20": {
+        "passed": 22,
+        "skipped": 2
+      },
+      "node24": {
+        "passed": 22,
+        "skipped": 2
+      }
+    },
+    "portalUnit": {
+      "node20": {
+        "passed": 2
+      },
+      "node24": {
+        "passed": 2
+      }
+    }
+  },
+  "limitations": [
+    "The external site returned normal HTML in an isolated anonymous probe; the original authenticated/session-dependent response was not copied or reproduced.",
+    "General menu UI and VM symlink proof gaps documented for 0.58.21 remain open.",
+    "This is a focused portal regression check, not a new full VM installation/update series."
+  ]
+}

@@ -1,44 +1,31 @@
-version: 0.58.21
+version: 0.58.22
 files:
-  - url: Argus-Setup-0.58.21.exe
-    sha512: Ja+JQFNpkhZrT/Ill/QDY2EdxlkFcRfE0z8aKgg6UoBh92prr2qdcFaOZhLMM5NjQ58fPk9v2aBrpsj+cEV/vA==
-    size: 90300305
-path: Argus-Setup-0.58.21.exe
-sha512: Ja+JQFNpkhZrT/Ill/QDY2EdxlkFcRfE0z8aKgg6UoBh92prr2qdcFaOZhLMM5NjQ58fPk9v2aBrpsj+cEV/vA==
-releaseDate: '2026-10-28T19:14:26.497Z'
-releaseName: "Argus 0.58.21 (Testkanal)"
+  - url: Argus-Setup-0.58.22.exe
+    sha512: M9cL9QHULugmp2flDi84Eay7t0iBzL216MFNeN7NqdXQ1mHwjPCgEscYb+fXTKHQAs0m0pkiHRnTexBUh/ZYPg==
+    size: 90300744
+path: Argus-Setup-0.58.22.exe
+sha512: M9cL9QHULugmp2flDi84Eay7t0iBzL216MFNeN7NqdXQ1mHwjPCgEscYb+fXTKHQAs0m0pkiHRnTexBUh/ZYPg==
+releaseDate: '2026-10-28T21:09:06.901Z'
+releaseName: "Argus 0.58.22 (Portal-Startfix)"
 releaseNotes: |
-  # Argus 0.58.21 – Sicherheits-Hotfix im Testkanal
-  
+  # Argus 0.58.22 – Portal-Start ohne unerwünschten Speicherdialog
+
   Diese Version erscheint im Testkanal `updates`. Der stabile Kanal bleibt unverändert.
-  
-  ## Änderungen
-  
-  - Datei- und Programmzugriffe prüfen neben dem angegebenen Pfad das tatsächliche Ziel. Geschützte Argus-Profile, Zugangsdaten und Daten der abgeschalteten Selbstverbesserung werden auch über alternative Pfade abgewehrt. Nicht eindeutig zuordenbare Ziele und Dateien mit mehreren Hardlinks werden abgelehnt.
-  - Verknüpfungen werden vor dem Lesen geprüft. Programme aus `.lnk`-Dateien starten nur über ihr geprüftes EXE-Ziel, ohne Verknüpfungsargumente und mit erlaubtem Arbeitsordner. Das kann bisher verwendete Verknüpfungen mit Argumenten ausschließen.
-  - Paket-App-IDs werden nur nach Paketzuordnung und vollständiger Shortcut-Kollisionsprüfung freigegeben. Ist die Prüfung wegen Lesefehlern, verknüpfter Ordner oder der Tiefengrenze unvollständig, bleibt dieser Startweg gesperrt. Normale geprüfte EXE-/Shortcut-Starts bleiben getrennt nutzbar.
-  - Ausgeschlossene oder unauflösbare Suchtreffer werden vor dem Begrenzen der Kandidaten entfernt. Die Windows-Inhaltssuche erhält Suchbegriffe als Daten statt als ausführbaren PowerShell-Code.
-  - Die Selbstverbesserung bleibt abgeschaltet.
-  
-  ## Prüfstand und bekannte Einschränkungen
-  
-  - Unter Node 20 und 24 bestehen jeweils 17 Hotfix-Tests und 23 Pfadtests; ein VM-Fall ist übersprungen. Die gezielten Electron-Prüfungen bestehen: 19 UI-Prüfungen sowie drei Startläufe mit je 6 Prüfungen. Normale Programmstarts, echte Windows-Verknüpfungen und das Öffnen einer künstlichen Textdatei wurden zusätzlich am gebauten Paket geprüft.
-  - **Offene Menü-Testlücke:** In der allgemeinen UI-Suite funktionieren Startseiten-Menü, Messwerte-Untermenü und die erste Checkbox-Gegenprobe. Nach dem Schließen und einem synthetischen Wechsel auf Mining findet der Test kein Menü und bricht später beim Zugriff auf ein fehlendes Fenster ab. 10 der 13 erreichten Ergebnisse bestehen; 54 weitere Prüfstellen wurden nicht erreicht. Die Menüimplementierung ist gegenüber 0.58.20 unverändert. Ein Laufzeitvergleich mit 0.58.20 scheiterte am Start der Test-VM. Ein Fokus-/Timingproblem des Tests ist plausibel, aber nicht bewiesen; eine Störung beim erneuten Öffnen des Menüs nach Seitenwechsel ist nicht ausgeschlossen. Im Testkanal bitte insbesondere Start → Rechtsklick/Messwerte → regulär schließen → Mining → Rechtsklick/Messwerte und erneutes Umschalten der Freundesliste prüfen.
-  - **Fehlender VM-Nachweis für symbolische Links (P5):** Das nicht erhöhte VM-Konto darf Datei-/Ordner-Symlinks nicht anlegen (EPERM); diese Gegenproben einschließlich relativem Ordnerlink bleiben dort übersprungen. Auf dem Windows-Host bestehen sie unter Node 20 und 24. Das ist ein echter Windows-Nachweis, aber kein Nachweis unter genau der VM-Konfiguration. Vorhandene, von anderen Prozessen angelegte Links bleiben deshalb ein wichtiger Testfall. Junctions, Hardlinks, echte 8.3-Kurznamen und `subst` wurden in der VM geprüft.
-  - Der allgemeine Windows-Steam-Test scheitert bereits in 0.58.20 am Testaufbau: Er setzt einen künstlichen Pfad, den der Windows-Code zugunsten der Registry-Abfrage ignoriert. Mit kontrollierter Registry-Antwort und künstlichen Logdateien bestehen beide Versionen: ein laufendes Spiel ergibt keinen Download, ein laufendes Update einen aktiven Download. Dies ist kein Integrationstest einer echten Steam-Installation.
-  - Echte Paket-App-Abfrage/-Aktivierung und Windows-Suchindex-COM sind nicht vollständig integriert geprüft. Mit diesem Installer wurde keine neue VM-Installations-/Update-Szenarienreihe durchgeführt.
-  - Prüfung und Zugriff sind nicht atomar; ein gleichzeitiger Pfadwechsel durch einen anderen Prozess bleibt eine bekannte Grenze. Geöffnete Programme und Standardprogramme laufen weiterhin mit den Rechten des Nutzers.
-  
-  ## Download und Integrität
-  
-  Windows x64: `Argus-Setup-0.58.21.exe`, **90.300.305 Bytes**, nicht signiert.
-  
-  SHA-256:
-  
-  ```text
-  6788a264a6a6309ff71536aa6ead9dd6b0c0978238479f313cb2b9417e50265a
-  ```
-  
-  Im Zweig `updates` stehen außerdem Blockmap, Dateimanifest, Quellarchiv, Build-Zuordnung und `SHA256SUMS.txt`. Alle 4.803 extrahierten Installerdateien wurden mit dem Manifest abgeglichen; die 76 ausdrücklich paketierten Quelldateien stimmen mit dem geprüften Windows-Export überein. Diese Angaben beruhen auf Selbstprüfung, nicht auf einem unabhängigen Review.
-  
-  Installierte Testkanal-Nutzer können über den normalen Argus-Updater aktualisieren. Diese Veröffentlichung ändert weder den stabilen Kanal noch eine lokale Installation automatisch durch ein Entwicklungswerkzeug.
+
+  ## Korrektur
+
+  Beim Start kann Argus die Portal-Anmeldeseite in einem unsichtbaren Fenster laden, um die bestehende Portal-Verbindung wieder aufzunehmen. Bisher konnten Download-Ereignisse aus diesem Hintergrundfenster den nativen „Speichern unter“-Dialog öffnen. Das entspricht dem gemeldeten Dialog zur Portal-Adresse mit dem Dateinamen „download“.
+
+  Die Portal-Sitzung fängt Downloads aus unsichtbaren oder nicht mehr zuordenbaren Portal-Fenstern jetzt vor dem Dialog ab. Andere Browser-/Widget-Sitzungen werden nicht pauschal gesperrt. Ein vom Nutzer angeklickter Download im ausdrücklich geöffneten, sichtbaren Portal bleibt möglich; Argus legt keinen automatischen Speicherpfad fest und öffnet keine heruntergeladenen Dateien.
+
+  Eine abgebrochene Startnavigation wird beim ausdrücklichen Öffnen des Portals erneut versucht. Bereits geladene Seiten behalten nach einem abgefangenen Hintergrunddownload ihren Zustand. Portal-Datenabfrage und Widget bleiben erhalten; die bestehende Sitzungsaufteilung wird nicht geändert.
+
+  ## Nachweis und Grenzen
+
+  - Installierte und laufende Ausgangsversion wurde vor der Änderung als 0.58.21 festgestellt; die installierte Portal-Datei entsprach deren geprüftem Manifest. Die lokale Installation wurde nicht verändert.
+  - Mit einem vollständig frischen, anonymen Profil wurde die öffentliche Portal-Seite untersucht. Dabei folgten auf die nicht angemeldete API-Abfrage ein unsichtbares Fenster und eine normale HTML-Anmeldeseite; aktuell trat dort kein Download auf. Eine bestimmte fehlerhafte Antwort des Anbieters oder ein konkreter Zustand einer angemeldeten Sitzung ist deshalb **nicht** als Ursache behauptet. Original-Cookies oder Zugangsdaten wurden nicht übernommen.
+  - Die fehlende Absicherung wurde mit kontrollierten Antworten unter Electron 33.2.1 reproduziert: direkter Download, Weiterleitung auf einen Download und skriptgesteuerter Download aus einer bereits geladenen Hintergrundseite. Der unveränderte Code scheitert an der Regression; mit dem Fix bestehen 19 gezielte Prüfungen einschließlich Portal-Seite, Widget-Daten, Zustandserhalt und tatsächlichem Nutzer-Klick. Die Sicherheitsbeobachtung des Tests bricht auch erlaubte Testdownloads vor Dialog und Speicherung ab.
+  - Es werden durch den Fix keine Zugangsdaten, Cookies, vollständigen URLs mit Sitzungsparametern oder Sitzungsinhalte protokolliert. Die untersuchten Ereignisse stammen aus getrennten Testprofilen beziehungsweise künstlichen Antworten.
+  - Die bereits dokumentierten allgemeinen Menü-UI- und VM-Symlink-Testlücken aus 0.58.21 bleiben bestehen. Dieser gezielte Portal-Fix ist keine uneingeschränkte Freigabe aller UI-Funktionen und kein Test mit einer echten angemeldeten Portal-Sitzung.
+
+  Der Windows-x64-Installer und seine Prüfsummen stehen im Zweig `updates`. Bestehende Testkanal-Installationen können über den normalen Argus-Updater aktualisieren. Der Installer ist nicht signiert; die Veröffentlichung beruht auf Selbstprüfung, nicht auf einem unabhängigen Review.
