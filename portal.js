@@ -10,6 +10,34 @@ const HOST = () => { const f = FULL(); return f ? new URL(f).origin : ""; };
 const PART = "persist:portal";
 let hadToken = false, electron = null, token = "", lang = "ru", win = null, hooked = false, timer = null, busy = false;
 let snap = { on: false, state: "off", ts: 0, err: "" };
+const downloadSessions = new WeakSet();
+let retryNavigation = false, navigationId = 0;
+
+// A hidden login page must not open a native Save As dialog during startup.
+// Keep ordinary downloads in the explicitly opened portal window unchanged.
+function guardDownloads(s) {
+  if (downloadSessions.has(s)) return;
+  downloadSessions.add(s);
+  s.on("will-download", (event, _item, contents) => {
+    const ownWindow = win && !win.isDestroyed() && contents === win.webContents;
+    if (ownWindow && win.isVisible()) return;
+    event.preventDefault();
+    if (ownWindow) {
+      snap.err = "Automatischer Portal-Download im Hintergrund blockiert. Portal bei Bedarf öffnen.";
+    }
+  });
+}
+
+function loadPortal(w) {
+  const id = ++navigationId; retryNavigation = false;
+  w.loadURL(FULL() || HOST() + "/").catch(() => {
+    if (win === w && id === navigationId) {
+      retryNavigation = true;
+      // Do not expose navigation URLs (which may contain session parameters).
+      snap.err = "Portal-Seite lässt sich nicht öffnen. Bitte erneut versuchen.";
+    }
+  });
+}
 
 let apiBase = "", apiQuery = "", seenMiners = false;
 // Nur für die Fehlersuche: welche Pfade die Portal-Seite abfragt (Rechnername und Pfad, ohne Parameter, ohne Schlüssel), in userData/portal-anfragen.txt
@@ -23,6 +51,7 @@ function noteReq(u, hasAuth) {
 // Alle Anfragen im Portal-Fenster beobachten (eigene Sitzung, nur dieses Fenster): Die Seite kann ihre Daten von einer anderen Adresse laden.
 // Den Pfad der Miner-Abfrage merken wir uns; der Schlüssel (falls die Seite einen schickt) bleibt nur im Arbeitsspeicher.
 function hook(ses) {
+  guardDownloads(ses);
   const h = HOST(); if (!h || hookedFor === h) return; hookedFor = h; hooked = true;
   ses.webRequest.onBeforeSendHeaders({ urls: ["https://*/*"] }, (d, cb) => {
     try {
@@ -37,12 +66,19 @@ function hook(ses) {
 }
 const ses = () => electron.session.fromPartition(PART);
 function openWin(show) {
-  if (win && !win.isDestroyed()) { if (show) { win.show(); win.focus(); } return win; }
+  if (win && !win.isDestroyed()) {
+    if (show) {
+      win.show(); win.focus();
+      if (!win.webContents.isLoading() && (retryNavigation || !win.webContents.getURL() || win.webContents.getURL() === "about:blank")) loadPortal(win);
+    }
+    return win;
+  }
   const { BrowserWindow } = electron;
   win = new BrowserWindow({ width: 1100, height: 800, show: !!show, title: "Portal anmelden", autoHideMenuBar: true, webPreferences: { partition: PART, contextIsolation: true, sandbox: true, nodeIntegration: false } });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  win.loadURL(FULL() || HOST() + "/").catch((e) => { snap.err = "Seite lässt sich nicht öffnen: " + String(e.message || e).slice(0, 60); });
-  win.on("closed", () => { win = null; });
+  loadPortal(win);
+  const opened = win;
+  win.on("closed", () => { if (win === opened) { win = null; retryNavigation = false; navigationId++; } });
   return win;
 }
 async function get(path) {

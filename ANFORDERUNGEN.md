@@ -1,11 +1,12 @@
 # Anforderungen Argus
 
-Dokumentversion: 1.1 · gilt ab Argus 0.58.21
+Dokumentversion: 1.2 · gilt ab Argus 0.58.22
 
 | Dok.-Version | Argus | Änderung |
 |---|---|---|
 | 1.0 | 0.58.20 | Erste Fassung: Sicherheits-Hotfix Selbstverbesserung |
 | 1.1 | 0.58.21 | Schutzprüfung nach tatsächlichem Ziel: R-FILE-1 erweitert, R-FILE-2, R-FILE-3 und R-FILE-5 neu, Grenzen in R-FILE-4 |
+| 1.2 | 0.58.22 | R-PORTAL-DL-1: Hintergrund-Downloads des automatisch geladenen Portals ohne Speicherdialog abbrechen |
 
 | ID | Anforderung | Tests | seit | Status |
 |---|---|---|---|---|
@@ -18,6 +19,12 @@ Dokumentversion: 1.1 · gilt ab Argus 0.58.21
 | R-FILE-3 | Programmstart durch Sprachbefehle (`launchApp`) für Programme aus Startmenü und Desktop: `.exe` mit erlaubtem tatsächlichem Ziel; `.lnk` nur, wenn das Ziel eine vorhandene, erlaubte `.exe` ist, die Verknüpfung **keine Argumente** hat und der Arbeitsordner erlaubt ist; gestartet wird das geprüfte Ziel selbst, nicht die Verknüpfung. Keine Ketten, kein Start ohne feststellbares Ziel, keine harten Verknüpfungen. `.url` nur mit `http`/`https` oder `steam:`, `com.epicgames.launcher:`, `battlenet:`. Aus der Startmenü-Liste von Windows (`Get-StartApps`) werden nur App-IDs übernommen, die zu einer Anwendung im Manifest eines installierten Pakets gehören (`Get-AppxPackage`) und die keine Verknüpfung in Startmenü oder Desktop trägt; Bei unvollstaendiger Kollisionssuche (ausgelassene/verknuepfte Ordner, Tiefengrenze, Lese- oder Prueffehler) werden keine Paket-App-IDs freigegeben; gestartet werden nur App-IDs aus dieser geprüften Menge; eingebaute Programme (Explorer, Rechner, Editor, Task-Manager) werden über ihren geprüften absoluten Pfad im Windows-Ordner gestartet. Nicht prüfbare Kandidaten überspringt die Programmsuche. | P6, P11b, P15, T14 (die PowerShell-Abfrage der installierten Pakete selbst nur als Attrappe, siehe R-FILE-4) | 0.58.21 | aktiv |
 | R-FILE-5 | Dateiverzeichnis, Schnellsuche, Dateisuche und Programmsuche (`files.js` build/quickSearch, `actions.js` findFile/scanApps) und die Spieleerkennung (Steam-Bibliotheken, Epic-Manifeste) prüfen jeden Ordner direkt vor dem Lesen (`enterDir`: keine Verknüpfung laut `lstat`, kein geschützter Name oder Ordner, keine Zugangsdaten-Ordner); gelesene Manifeste laufen durch `checkPath(…, { read: true })` und Startordner über ihr tatsächliches Ziel (`walkRoot`); nicht auflösbare und `subst`-Laufwerke werden übersprungen. Suchtreffer werden gegen ihr tatsächliches Ziel geprüft, Dateien mit mehreren harten Verknüpfungen entfallen; geschützte Pfade werden schon vor dem Kürzen der Kandidaten verworfen, die Inhaltssuche fragt mehr Treffer ab und kürzt erst nach dem Filtern. Der Suchbegriff der Windows-Inhaltssuche wird nur als Daten an PowerShell übergeben, nie als Code. | P9, P10, P11b, P11c, P14, P16, P17, T11, T12 | 0.58.21 | aktiv |
 | R-FILE-4 | Dokumentierte Grenzen der Schutzprüfung (Tabelle unten). Grenzen, die eine Schutzanforderung nicht erfüllen, sind als **offen** markiert. | – | 0.58.21 | bekannt |
+
+## Portal-Downloads
+
+| ID | Anforderung | Tests | seit |
+|---|---|---|---|
+| R-PORTAL-DL-1 | Downloads aus dem automatisch geladenen, unsichtbaren Portal-Fenster werden vor einem nativen Speicherdialog abgebrochen. Der Schutz gilt nur für die Portal-Sitzung. Downloads aus dem ausdrücklich geöffneten, sichtbaren Portal-Fenster bleiben möglich; Argus setzt keinen Speicherpfad und öffnet keine heruntergeladenen Dateien. Nach abgebrochener Startnavigation kann der Nutzer die Seite erneut öffnen; eine bereits geladene Seite behält ihren Zustand. Datenabfrage und Widget bleiben nutzbar. | `tests/portal-download.test.js`: echte Electron-Download-/Weiterleitungsereignisse mit In-Memory-Fixture, Seiten-/Widget-Gegenprobe und tatsächlichem Link-Klick; keine Original-Sitzung | 0.58.22 |
 
 ## R-FILE-4: Grenzen der Schutzprüfung (0.58.21)
 
