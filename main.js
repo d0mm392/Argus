@@ -12,6 +12,7 @@ const { SystemWatch, setSensorFile } = require("./system");
 const actions = require("./actions");
 const selfimprove = require("./selfimprove");
 process.env.JARVIS_INDEX = process.env.JARVIS_INDEX || path.join(app.getPath("userData"), "dateiindex.txt"); // vor files.js setzen
+process.env.ARGUS_USERDATA = app.getPath("userData"); // für die Schutzprüfung in files.js (0.58.21), auch im MCP-Server
 // Umzug des Gedächtnisordners (Benutzerordner\Jarvis-Gedaechtnis → Argus-Gedaechtnis). Geht das nicht (Datei offen), bleibt der alte in Gebrauch
 try { const o = path.join(os.homedir(), "Jarvis-Gedaechtnis"), n = path.join(os.homedir(), "Argus-Gedaechtnis"); if (!process.env.JARVIS_MEMORY && fs.existsSync(o) && !fs.existsSync(n)) fs.renameSync(o, n); } catch {}
 const memory = require("./memory");
@@ -304,7 +305,7 @@ function handleTool(req, res, name) {
 function mcpConfigFile(dir) {
   const f = path.join(dir, "argus-mcp.json");
   fs.writeFileSync(f, JSON.stringify({ mcpServers: { argus: { command: process.execPath, args: [path.join(__dirname, "argus-mcp.js")],
-    env: { ELECTRON_RUN_AS_NODE: "1", JARVIS_PORT: String(serverPort), JARVIS_TOKEN: TOOL_TOKEN, JARVIS_INDEX: process.env.JARVIS_INDEX, JARVIS_MEMORY: memory.DIR() } } } }));
+    env: { ELECTRON_RUN_AS_NODE: "1", JARVIS_PORT: String(serverPort), JARVIS_TOKEN: TOOL_TOKEN, JARVIS_INDEX: process.env.JARVIS_INDEX, JARVIS_MEMORY: memory.DIR(), ARGUS_USERDATA: process.env.ARGUS_USERDATA } } } }));
   return f;
 }
 const JARVIS_TOOLS = ["lokale_ki", "strata_fragen", "systemstatus", "oeffnen", "gedaechtnis_suchen", "gedaechtnis_verlauf", "gedaechtnis_merken", "dateien_suchen", "datei_lesen"].map((t) => "mcp__argus__" + t).join(",");
@@ -900,7 +901,7 @@ const STRATA_TOOLS = {
     run: async (a) => { const r = a.inhalt ? await files.searchContent(String(a.suchbegriff || ""), 15) : await files.search(String(a.suchbegriff || ""), 15); return r.length ? r.join("\n") : "Nichts gefunden."; } },
   datei_lesen: { d: "Textdatei lesen oder Ordner auflisten. args: {pfad}", run: async (a) => String(files.read(String(a.pfad || ""))).slice(0, 12000) },
   oeffnen: { d: "Programm, Webseite, Ordner oder Datei öffnen. args: {befehl} wie der Nutzer es sagen würde, z. B. \"Öffne Discord\", \"Öffne C:\\\\Pfad\\\\Datei.zip\"",
-    run: async (a) => { const p = String(a.befehl || ""); if (/^[a-z]:[\\/]/i.test(p) && fs.existsSync(p)) { await shell.openPath(p); return "Geöffnet: " + p; } return (await actions.run(p)) || "Nicht erkannt."; } },
+    run: async (a) => { const p = String(a.befehl || ""); if (/^[a-z]:[\\/]/i.test(p) && fs.existsSync(p)) return (await actions.openGuarded(p)) || "Geöffnet: " + p; return (await actions.run(p)) || "Nicht erkannt."; } },
   systemstatus: { d: "Aktuelle Messwerte des PCs (CPU, GPU, RAM, Temperaturen, Programme). args: {}", run: async () => (watch ? watch.summary() : "Systemwache aus") },
   gedaechtnis_suchen: { d: "Frühere Gespräche und Notizen durchsuchen. args: {suchbegriff}", run: async (a) => { const r = memory.search(String(a.suchbegriff || ""), 8); return r.length ? r.join("\n\n") : "Nichts im Gedächtnis."; } },
   gedaechtnis_merken: { d: "Etwas dauerhaft merken (nur wenn der Nutzer es will). args: {notiz}", run: async (a) => (memory.remember(String(a.notiz || "")) ? "Gemerkt." : "Ging nicht.") },
@@ -3060,7 +3061,7 @@ function claudeDesktopConfigs() {
 }
 function linkClaudeDesktop() {
   const entry = { command: process.execPath, args: [path.join(__dirname, "argus-mcp.js")],
-    env: { ELECTRON_RUN_AS_NODE: "1", JARVIS_MEMORY: memory.DIR(), JARVIS_INDEX: process.env.JARVIS_INDEX } };
+    env: { ELECTRON_RUN_AS_NODE: "1", JARVIS_MEMORY: memory.DIR(), JARVIS_INDEX: process.env.JARVIS_INDEX, ARGUS_USERDATA: process.env.ARGUS_USERDATA } };
   for (const f of claudeDesktopConfigs()) {
     try {
       let cfg = {}; const raw = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";

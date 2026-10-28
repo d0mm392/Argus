@@ -35,14 +35,16 @@ for (const name of W) {
     return orig.apply(this, a);
   };
 }
+const guardRead = (name, orig) => function (...a) {
+  const p = typeof a[0] === "string" ? a[0] : String(a[0]);
+  if (!inside(p, T) && !inside(p, REPO)) { violations.push(`${name} ausserhalb Testordner/Repo: ${p}`); throw new Error("GUARD: Lesen ausserhalb des Testordners: " + p); }
+  access.push({ op: name, p, phase });
+  return orig.apply(this, a);
+};
 for (const name of R) {
   const orig = fs[name]; if (typeof orig !== "function") continue;
-  fs[name] = function (...a) {
-    const p = typeof a[0] === "string" ? a[0] : String(a[0]);
-    if (!inside(p, T) && !inside(p, REPO)) { violations.push(`${name} ausserhalb Testordner/Repo: ${p}`); throw new Error("GUARD: Lesen ausserhalb des Testordners: " + p); }
-    access.push({ op: name, p, phase });
-    return orig.apply(this, a);
-  };
+  fs[name] = guardRead(name, orig);
+  if (typeof orig.native === "function") fs[name].native = guardRead(name + ".native", orig.native); // realpathSync.native (0.58.21) nicht verlieren
 }
 { const orig = fs.promises.opendir; fs.promises.opendir = function (p, ...r) { if (!inside(p, T)) { violations.push(`opendir ausserhalb: ${p}`); return Promise.reject(new Error("GUARD: opendir ausserhalb: " + p)); } access.push({ op: "opendir", p: String(p), phase }); return orig.call(this, p, ...r); }; }
 const cp = require("child_process");
@@ -383,20 +385,24 @@ test("T11 Dateiverzeichnis und Suche ohne Index schließen SV-Daten aus (inkl. R
 
 test("T12 Treffer aus vorhandenem altem Index und aus der Windows-Suche werden gefiltert", async () => {
   filesFixture(); const F = fresh("files.js");
-  const P = "C:\\Users\\X\\AppData\\Roaming";
-  put(process.env.JARVIS_INDEX, [`${P}\\argus-desktop\\selfimprove-pending.json`, `${P}\\argus-desktop\\selfimprove-verworfen-1\\geheim.js`, `${P}\\argus-desktop\\selfimprove-stage\\geheim.js`,
-    `${P}\\argus-desktop\\backups\\1\\geheim.js`, `${P}\\jarvis-desktop\\backups\\geheim.js`, `${P}\\Jarvis\\Backups\\geheim.js`, "D:\\Daten\\backups\\geheim-eigen.txt", "C:\\Users\\X\\Documents\\geheim.txt"].join("\n") + "\n");
+  // 0.58.21: Treffer werden gegen ihr tatsächliches Ziel geprüft, daher liegen alle Testpfade wirklich im Testordner (künstliche Dateien)
+  const P = APPDATA, eigen = path.join(HOME, "Daten", "backups", "geheim-eigen.txt"), docG = path.join(HOME, "Documents", "geheim.txt");
+  const idxLines = [`${P}\\argus-desktop\\selfimprove-pending.json`, `${P}\\argus-desktop\\selfimprove-verworfen-1\\geheim.js`, `${P}\\argus-desktop\\selfimprove-stage\\geheim.js`,
+    `${P}\\argus-desktop\\backups\\1\\geheim.js`, `${P}\\jarvis-desktop\\backups\\geheim.js`, `${P}\\Jarvis\\Backups\\geheim.js`, `${P}\\argus-desktop\\geheim-profil.txt`, eigen, docG];
+  for (const l of idxLines) put(l, "G");
+  put(process.env.JARVIS_INDEX, idxLines.join("\n") + "\n" + path.join(HOME, "Documents", "geheim-geloescht.txt") + "\n");
   const r = await withPhase("HOT", () => F.search("geheim", 50));
-  assert.deepEqual(r.sort(), ["C:\\Users\\X\\Documents\\geheim.txt", "D:\\Daten\\backups\\geheim-eigen.txt"].sort());
+  assert.deepEqual(r.sort(), [docG, eigen].sort(), "nur normale, vorhandene Dateien; Profil, SV-Daten und gelöschte Einträge nicht");
   assert.deepEqual(await F.search("selfimprove-pending"), []);
-  // Windows-Suche: nicht leere Treffer mit SV-Pfaden und normalen Pfaden
-  const lines = [`${P}\\argus-desktop\\selfimprove-verworfen-1\\a.js`, `${P}\\argus-desktop\\backups\\1\\b.js`, `${P}\\argus-desktop\\selfimprove-stage\\c.js`, `${P}\\argus-desktop\\selfimprove-pending.json`, "D:\\Daten\\backups\\eigene.txt", "C:\\Docs\\normal.txt"];
+  // Windows-Suche: nicht leere Treffer mit SV-Pfaden, Profilpfad und normalen Pfaden
+  const eigene = path.join(HOME, "Daten", "backups", "eigene.txt"), normal = path.join(HOME, "Docs", "normal.txt"); put(eigene); put(normal);
+  const lines = [`${P}\\argus-desktop\\selfimprove-verworfen-1\\a.js`, `${P}\\argus-desktop\\backups\\1\\b.js`, `${P}\\argus-desktop\\selfimprove-stage\\c.js`, `${P}\\argus-desktop\\selfimprove-pending.json`, `${P}\\argus-desktop\\geheim-profil.txt`, eigene, normal];
   let called = 0; execFileHandler = (cmd, args, opts, cb) => { called++; assert.equal(cmd, "powershell.exe"); setImmediate(() => cb(null, lines.join("\r\n") + "\r\n")); return {}; };
-  try { const s = await F.searchContent("geheim", 15); assert.equal(called, 1); assert.deepEqual(s, ["D:\\Daten\\backups\\eigene.txt", "C:\\Docs\\normal.txt"]); }
+  try { const s = await F.searchContent("geheim", 15); assert.equal(called, 1); assert.deepEqual(s, [eigene, normal]); }
   finally { execFileHandler = null; }
 });
 
-test("T13 Begrenzte Sperre für direkte Zugriffe (R-FILE-1) und bekannte Grenze", () => {
+test("T13 Sperre für direkte Zugriffe (R-FILE-1), seit 0.58.21 auch über Junction-Alias", () => {
   filesFixture(); const F = fresh("files.js");
   put(path.join(PROF, "notiz.txt"), "PROFIL"); put(path.join(APPDATA, "jarvis-desktop", "x.txt"), "J");
   put(path.join(APPDATA, "Jarvis", "y.txt"), "JA"); phase = "HOT";
@@ -408,11 +414,10 @@ test("T13 Begrenzte Sperre für direkte Zugriffe (R-FILE-1) und bekannte Grenze"
   assert.match(F.list(PROF), /ist gesperrt/); assert.match(F.list(APPDATA + "\\.\\Jarvis"), /ist gesperrt/);
   put(path.join(HOME, "Documents", "Jarvis", "projekt.txt"), "P"); assert.equal(F.read(path.join(HOME, "Documents", "Jarvis", "projekt.txt")), "P", "Ordner Jarvis ausserhalb von AppData bleibt lesbar");
   assert.equal(F.read(path.join(HOME, "Documents", "nutz-test.txt")), "NUTZ", "normale Datei bleibt lesbar");
-  // Bekannte Grenze (dokumentiert, kein Schutz behauptet): eine Junction mit anderem Namen umgeht die Pfadprüfung
+  // 0.58.20 hielt hier die Grenze fest (Junction-Alias wurde NICHT erkannt). Seit 0.58.21 zählt das tatsächliche Ziel: gesperrt.
   const alias = path.join(HOME, "Documents", "alias"); fs.symlinkSync(PROF, alias, "junction");
-  const viaAlias = F.read(path.join(alias, "notiz.txt"));
-  assert.equal(viaAlias, "PROFIL", "Grenze bestätigt: Junction-Alias wird nicht erkannt");
-  process.stdout.write("# T13 bekannte Grenze: Lesen über eine Junction mit anderem Namen ist NICHT gesperrt\n"); phase = "FIX";
+  assert.match(F.read(path.join(alias, "notiz.txt")), /ist gesperrt/, "Junction-Alias wird erkannt"); assert.match(F.list(alias), /ist gesperrt/);
+  phase = "FIX";
 });
 
 // ===================== T14 Such- und Öffnungswege über actions.js =====================
@@ -448,9 +453,12 @@ test("T14 actions.run(): Suchtreffer aus SV-Daten werden weder gefunden noch ge�
     try { const a = await withPhase(ph, () => mod.run("Starte Svwerkzeug")); const opened1 = shellCalls.map((x) => x[1]); shellCalls.length = 0; const b = await withPhase(ph, () => mod.run("Starte Normalwerkzeug")); return { a, b, opened1, opened2: shellCalls.map((x) => x[1]) }; } finally { execFileHandler = null; } };
   prepApps(); delete require.cache[require.resolve(path.join(REPO, "tests", "fixtures", "files-0.58.19.js"))]; const refApps = await runApps(fresh("tests/fixtures/actions-0.58.19.js"), "REF");
   assert.ok(refApps.opened1.some((p) => /selfimprove-verworfen-9/i.test(p)), "Referenz startet Programm aus Archivordner: " + JSON.stringify(refApps.opened1));
-  prepApps(); fresh("files.js"); const hotApps = await runApps(fresh("actions.js"), "HOT");
+  // Seit 0.58.21 startet launchApp eine geprüfte .exe direkt (spawn) statt über shell.openPath: Attrappe nur für diesen Lauf
+  const spawned = [], guardSpawn = cp.spawn; cp.spawn = (cmd) => { spawned.push(String(cmd)); return { unref() {} }; };
+  let hotApps; try { prepApps(); fresh("files.js"); hotApps = await runApps(fresh("actions.js"), "HOT"); } finally { cp.spawn = guardSpawn; }
   assert.deepEqual(hotApps.opened1.filter((p) => /selfimprove-verworfen/i.test(p)), [], "kein Start aus Archivordner");
-  assert.deepEqual(hotApps.opened2, [path.join(desk, "Normalwerkzeug.exe")], "Gegenprobe: normales Programm wird gestartet");
+  assert.deepEqual(spawned.filter((p) => /selfimprove-verworfen/i.test(p)), [], "kein Start aus Archivordner (spawn)");
+  assert.deepEqual(hotApps.opened2, [], "nichts über shell.openPath"); assert.deepEqual(spawned, [path.join(desk, "Normalwerkzeug.exe")], "Gegenprobe: normales Programm wird gestartet");
 });
 
 // ===================== T9 Quelltext, Systemtext, IPC-Pfade (Node-Ersatz für Electron) =====================

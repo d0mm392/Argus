@@ -29,18 +29,20 @@ let apps = null, appsAt = 0;
 // Weitere Quellen, die nicht im Startmenü als Verknüpfung liegen: Store-Apps (Get-StartApps), Steam-, Epic- und Battle.net-Spiele
 let extraApps = [], extraAt = 0;
 const BNET = { "diablo iv": "Fen", "diablo 4": "Fen", "diablo iii": "D3", "diablo 3": "D3", "overwatch": "Pro", "overwatch 2": "Pro", "world of warcraft": "WoW", "hearthstone": "WTCG", "starcraft ii": "S2", "call of duty": "auks", "diablo ii resurrected": "OSI" };
-function readJSON(p) { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return null; } }
+// Spieleerkennung liest nur Dateien und Ordner, die die gemeinsame Schutzprüfung zulässt (0.58.21)
+function readChecked(p) { const c = files.checkPath(p, { read: true }); if (!c.ok || c.st.isDirectory()) return null; try { return fs.readFileSync(c.real, "utf8"); } catch { return null; } }
+function readJSON(p) { const s = readChecked(p); if (s === null) return null; try { return JSON.parse(s); } catch { return null; } }
+function listChecked(dir, rx) { const r = files.walkRoot(dir); if (!r || !files.enterDir(r)) return []; try { return fs.readdirSync(r).filter((f) => rx.test(f)).map((f) => path.join(r, f)); } catch { return []; } }
 function steamGames() {
   const out = [], roots = new Set();
   for (const base of [path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Steam"), path.join(process.env.ProgramFiles || "C:\\Program Files", "Steam")]) {
-    let vdf = ""; try { vdf = fs.readFileSync(path.join(base, "steamapps", "libraryfolders.vdf"), "utf8"); } catch { continue; }
+    const vdf = readChecked(path.join(base, "steamapps", "libraryfolders.vdf")); if (vdf === null) continue;
     roots.add(path.join(base, "steamapps"));
     for (const m of vdf.matchAll(/"path"\s+"([^"]+)"/g)) roots.add(path.join(m[1].replace(/\\\\/g, "\\"), "steamapps"));
   }
   for (const r of roots) {
-    let list = []; try { list = fs.readdirSync(r).filter((f) => /^appmanifest_\d+\.acf$/.test(f)); } catch {}
-    for (const f of list) {
-      let t = ""; try { t = fs.readFileSync(path.join(r, f), "utf8"); } catch { continue; }
+    for (const file of listChecked(r, /^appmanifest_\d+\.acf$/)) {
+      const t = readChecked(file); if (t === null) continue;
       const id = (/"appid"\s+"(\d+)"/.exec(t) || [])[1], name = (/"name"\s+"([^"]+)"/.exec(t) || [])[1];
       if (id && name && !/redistributable|steamworks|proton|runtime/i.test(name)) out.push({ name, uri: "steam://rungameid/" + id, kind: "Steam-Spiel" });
     }
@@ -49,20 +51,66 @@ function steamGames() {
 }
 function epicGames() {
   const dir = path.join(process.env.ProgramData || "C:\\ProgramData", "Epic", "EpicGamesLauncher", "Data", "Manifests"), out = [];
-  let list = []; try { list = fs.readdirSync(dir).filter((f) => f.endsWith(".item")); } catch {}
-  for (const f of list) { const j = readJSON(path.join(dir, f)); if (j?.DisplayName && j.AppName) out.push({ name: j.DisplayName, uri: `com.epicgames.launcher://apps/${encodeURIComponent(j.AppName)}?action=launch&silent=true`, kind: "Epic-Spiel" }); }
+  for (const file of listChecked(dir, /\.item$/)) { const j = readJSON(file); if (j?.DisplayName && j.AppName) out.push({ name: j.DisplayName, uri: `com.epicgames.launcher://apps/${encodeURIComponent(j.AppName)}?action=launch&silent=true`, kind: "Epic-Spiel" }); }
   return out;
 }
+const isPackagedAppId = (id) => /^[A-Za-z0-9.-]+_[a-z0-9]{13}![A-Za-z0-9.-]+$/.test(String(id || ""));
+// App-IDs aus der Startmenü-Liste nur, wenn sie zu einer Anwendung im Manifest eines installierten Pakets gehören (Get-AppxPackage)
+// und keine Verknüpfung im Startmenü oder auf dem Desktop dieselbe ID trägt: auch eine Verknüpfung kann eine paketartige ID tragen.
+// Gestartet werden nur App-IDs aus dieser geprüften Menge (0.58.21).
+const verifiedAppIds = new Set();
+const STORE_PS = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;$ok=@{};" +
+  "foreach($p in Get-AppxPackage){try{$m=$p|Get-AppxPackageManifest;foreach($a in @($m.Package.Applications.Application)){if($a.Id){$ok[$p.PackageFamilyName+'!'+$a.Id]=1}}}catch{}};" +
+  "@(Get-StartApps|Where-Object{$ok.ContainsKey([string]$_.AppID)})|ConvertTo-Json -Compress";
 function storeApps() {
   return new Promise((resolve) => {
     if (process.platform !== "win32") return resolve([]);
-    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | ConvertTo-Json -Compress"],
-      { windowsHide: true, timeout: 15000, maxBuffer: 8 << 20 }, (err, out) => {
-        if (err) return resolve([]);
-        let l; try { l = JSON.parse(out || "[]"); } catch { return resolve([]); }
-        resolve((Array.isArray(l) ? l : [l]).filter((x) => x?.Name && x.AppID && !/uninstall|deinstall|readme/i.test(x.Name)).map((x) => ({ name: x.Name, appId: x.AppID })));
-      });
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", STORE_PS], { windowsHide: true, timeout: 60000, maxBuffer: 8 << 20 }, (err, out) => {
+      verifiedAppIds.clear();
+      if (err) return resolve([]);
+      let l; try { l = JSON.parse(out || "[]"); } catch { return resolve([]); }
+      const { claimed, complete } = shortcutAppIds();
+      if (!complete) return resolve([]);
+      const list = (Array.isArray(l) ? l : [l]).filter((x) => x?.Name && isPackagedAppId(x.AppID) && !claimed.has(String(x.AppID).toLowerCase()) && !/uninstall|deinstall|readme/i.test(x.Name));
+      verifiedAppIds.clear(); for (const x of list) verifiedAppIds.add(String(x.AppID).toLowerCase());
+      resolve(list.map((x) => ({ name: x.Name, appId: x.AppID })));
+    });
   });
+}
+// App-IDs, die Verknüpfungen in Startmenü und Desktop tragen (shell.readShortcutLink: appUserModelId)
+function shortcutAppIds() {
+  const claimed = new Set();
+  let complete = true;
+  const walked = walkMenus((p) => {
+    if (!/\.lnk$/i.test(p)) return;
+    const c = files.checkPath(p, { read: true });
+    if (!c.ok || c.st.isDirectory()) { complete = false; return; }
+    try { const id = shell.readShortcutLink(c.real).appUserModelId; if (id) claimed.add(String(id).toLowerCase()); }
+    catch { complete = false; }
+  });
+  return { claimed, complete: complete && walked };
+}
+// Begrenzte Suche: jede ausgelassene Stelle macht die App-ID-Kollisionspruefung unvollstaendig.
+function walkMenus(fn) {
+  let complete = true;
+  const walk = (dir, depth) => {
+    if (!files.enterDir(dir)) { complete = false; return; }
+    let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { complete = false; return; }
+    for (const e of entries) {
+      const p = path.join(dir, e.name);
+      if (files.isSvPath(p)) { complete = false; continue; }
+      if (e.isDirectory()) {
+        if (depth < 3) walk(p, depth + 1); else complete = false;
+      } else if (e.isSymbolicLink()) { complete = false; }
+      else fn(p, e);
+    }
+  };
+  START_MENUS.forEach((d) => {
+    // Nicht vorhandene Standardordner enthalten keine Kollision; andere Fehler bleiben unklar.
+    try { fs.lstatSync(d); } catch (e) { if (e.code !== 'ENOENT') complete = false; return; }
+    const r = files.walkRoot(d); if (r) walk(r, 0); else complete = false;
+  });
+  return complete;
 }
 async function refreshExtra() {
   if (Date.now() - extraAt < 10 * 60 * 1000 && extraApps.length) return;
@@ -74,21 +122,14 @@ if (process.platform === "win32") setTimeout(() => refreshExtra().catch(() => {}
 function scanApps() {
   if (apps && Date.now() - appsAt < 10 * 60 * 1000) return apps;
   const found = new Map();
-  const walk = (dir, depth) => {
-    let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-    for (const e of entries) {
-      const p = path.join(dir, e.name);
-      if (files.isSvPath(p)) continue; // Daten der abgeschalteten Selbstverbesserung nicht als Programm starten (0.58.20)
-      if (e.isDirectory() && depth < 3) walk(p, depth + 1);
-      else if (/\.(lnk|url|exe)$/i.test(e.name) && !/uninstall|deinstall|readme|hilfe|help/i.test(e.name)) {
-        const name = e.name.replace(/\.(lnk|url|exe)$/i, "");
-        if (!found.has(norm(name))) found.set(norm(name), { name, path: p });
-      }
-    }
-  };
-  START_MENUS.forEach((d) => walk(d, 0));
+  walkMenus((p, e) => {
+    if (!/\.(lnk|url|exe)$/i.test(e.name) || /uninstall|deinstall|readme|hilfe|help/i.test(e.name)) return;
+    const name = e.name.replace(/\.(lnk|url|exe)$/i, "");
+    if (!found.has(norm(name))) found.set(norm(name), { name, path: p });
+  });
   // Eingebaute Windows-Programme, die nicht als Verknüpfung auftauchen
-  for (const [name, cmd] of [["Datei-Explorer", "explorer.exe"], ["Rechner", "calc.exe"], ["Editor", "notepad.exe"], ["Task-Manager", "taskmgr.exe"], ["Einstellungen", "ms-settings:"]])
+  const win = process.env.SystemRoot || process.env.windir || "C:\\Windows";
+  for (const [name, cmd] of [["Datei-Explorer", path.join(win, "explorer.exe")], ["Rechner", path.join(win, "System32", "calc.exe")], ["Editor", path.join(win, "System32", "notepad.exe")], ["Task-Manager", path.join(win, "System32", "Taskmgr.exe")], ["Einstellungen", "ms-settings:"]])
     if (!found.has(norm(name))) found.set(norm(name), { name, cmd });
   apps = [...found.values()]; appsAt = Date.now();
   refreshExtra().catch(() => {});
@@ -112,18 +153,26 @@ function findApp(spoken) {
     let score = n === q ? 100 : first === q ? 90 : n.startsWith(q) ? 80 : n.split(" ").includes(q) ? 70 : n.includes(q) && q.length >= 4 ? 50 : 0;
     if (!score && q.length >= 4) { const dist = Math.min(lev(q, first), lev(q, n)); if (dist <= (q.length > 6 ? 2 : 1)) score = 40 - dist * 10; }
     score -= n.length / 100; // kürzere Namen bevorzugen ("Brave" vor "Brave Beta Updater")
-    if (score > bestScore) { bestScore = score; best = a; }
+    if (score > bestScore && (!a.path || launchCheck(a.path).ok)) { bestScore = score; best = a; } // nicht prüfbare Verknüpfungen überspringen (0.58.21)
   }
   return bestScore > 15 ? best : null;
 }
+// Startet ein Programm. Gibt null zurück, wenn gestartet wurde, sonst den Ablehnungssatz. Programme aus Pfaden (Startmenü, Desktop)
+// laufen durch launchCheck; gestartet wird das geprüfte Ziel selbst, nicht die Verknüpfung (0.58.21).
 function launchApp(a, arg) {
-  if (a.uri) return shell.openExternal(a.uri);
-  if (a.appId) return spawn("explorer.exe", ["shell:AppsFolder\\" + a.appId], { detached: true, stdio: "ignore" }).unref();
-  if (a.cmd) { if (a.cmd.endsWith(":")) return shell.openExternal(a.cmd); return spawn(a.cmd, arg ? [arg] : [], { detached: true, stdio: "ignore" }).unref(); }
-  if (arg && /\.lnk$/i.test(a.path)) {
-    try { const t = shell.readShortcutLink(a.path); return spawn(t.target, [...(t.args ? t.args.split(" ") : []), arg], { detached: true, stdio: "ignore", cwd: t.cwd || undefined }).unref(); } catch {}
+  if (a.uri) { shell.openExternal(a.uri); return null; } // von Argus selbst erzeugte Spiele-Adressen (Steam, Epic, Battle.net)
+  if (a.appId) { if (!isPackagedAppId(a.appId) || !verifiedAppIds.has(String(a.appId).toLowerCase())) return DENIED(a.name || "Programm", "unklar"); spawn(path.join(process.env.SystemRoot || process.env.windir || "C:\\Windows", "explorer.exe"), ["shell:AppsFolder\\" + a.appId], { detached: true, stdio: "ignore" }).unref(); return null; }
+  if (a.cmd) {
+    if (a.cmd === "ms-settings:") { shell.openExternal(a.cmd); return null; }
+    const c = files.checkPath(a.cmd, { read: true }); // eingebaute Programme: absoluter Pfad im Windows-Ordner, geprüft
+    if (!c.ok || !/\.exe$/i.test(c.real)) return DENIED(a.cmd, c.ok ? "unklar" : c.why);
+    spawn(c.real, arg ? [arg] : [], { detached: true, stdio: "ignore" }).unref(); return null;
   }
-  return shell.openPath(a.path);
+  const ck = launchCheck(a.path);
+  if (!ck.ok) return DENIED(a.path, ck.why);
+  if (ck.url) { shell.openExternal(ck.url); return null; }
+  spawn(ck.exe, [...ck.args, ...(arg ? [arg] : [])], { detached: true, stdio: "ignore", cwd: ck.cwd }).unref();
+  return null;
 }
 
 // ---------- Dokumente suchen (Dokumente, Desktop, Downloads, max. 3 Ebenen tief) ----------
@@ -132,6 +181,7 @@ function findFile(spoken) {
   if (q.length < 3) return null;
   let best = null, bestScore = 0, seen = 0;
   const walk = (dir, depth) => {
+    if (!files.enterDir(dir)) return; // jeder Ordner direkt vor dem Lesen geprüft (0.58.21)
     let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       if (++seen > 20000) return;
@@ -144,17 +194,69 @@ function findFile(spoken) {
       if (e.isDirectory() && depth < 3) walk(p, depth + 1);
     }
   };
-  for (const d of [FOLDERS.dokumente, FOLDERS.desktop, FOLDERS.downloads]) walk(d, 0);
+  for (const d of [FOLDERS.dokumente, FOLDERS.desktop, FOLDERS.downloads]) { const r = files.walkRoot(d); if (r) walk(r, 0); }
   return best;
+}
+
+// ---------- Öffnen und Starten nur nach der gemeinsamen Schutzprüfung (0.58.21) ----------
+// Strikte Positivregeln statt Ausnahmen. Geprüft wird immer das tatsächliche Ziel (files.checkPath mit read: Dateien mit mehreren
+// harten Verknüpfungen werden abgelehnt), ausgeführt wird nur das geprüfte Ziel selbst, nie eine Datei, die Windows weiter auflöst.
+// Öffnen (Dateien und Ordner aus Suche, Sprachbefehlen, KI-Werkzeugen): Ordner und nur Dateitypen aus OPENABLE (Dokumente, Bilder,
+//   Audio, Video, Archive). Programme, Skripte, Verknüpfungsdateien und unbekannte Typen nicht, weil ihr Standardprogramm sie weiter
+//   auflösen oder ausführen könnte. .url nur mit http/https, dann wird die Adresse geöffnet, nicht die Datei.
+// Programmstart (Startmenü, Desktop): .exe direkt; .lnk nur auf eine vorhandene .exe und ohne Argumente, Arbeitsordner geprüft; .url nur mit http/https oder einem Spiele-Launcher-Schema.
+const RUNNABLE = /\.(exe|com|bat|cmd|ps1|psm1|psd1|vbs|vbe|js|jse|wsf|wsh|ws|hta|msi|msp|mst|scr|cpl|jar|reg|inf|sct|msc|rdp|application|appref-ms|xbap|gadget|lnk|pif|scf|url|website|library-ms|search-ms|searchconnector-ms|settingcontent-ms|desklink)$/i;
+const OPENABLE = /\.(txt|md|csv|tsv|log|json|pdf|rtf|odt|ods|odp|doc|docx|xls|xlsx|ppt|pptx|png|jpe?g|gif|bmp|webp|tiff?|heic|ico|mp3|wav|flac|ogg|m4a|aac|wma|mp4|mkv|avi|mov|wmv|webm|m4v|zip|7z|rar|tar|gz|epub|srt)$/i;
+const WEB = /^https?:\/\/[^\s]+$/i, GAME = /^(steam|com\.epicgames\.launcher|battlenet):\/\/[^\s"]+$/i;
+
+const expandEnv = (s) => String(s || "").replace(/%([^%]+)%/g, (m, n) => process.env[n] ?? m);
+const DENY = (why) => ({ ok: false, why });
+function urlOf(file) { try { return ((/^\s*URL\s*=\s*(\S+?)\s*$/im.exec(fs.readFileSync(file, "utf8")) || [])[1]) || ""; } catch { return ""; } }
+// Was öffnen? Ergebnis { ok, real, st, url? } oder { ok: false, why }
+function openCheck(p, how = "open") {
+  const c = files.checkPath(String(p || "").replace(/[\\/]$/, ""), { read: true });
+  if (!c.ok || c.st.isDirectory() || how === "show") return c; // markiert anzeigen führt nichts aus
+  if (/\.url$/i.test(c.real)) { const u = urlOf(c.real); return WEB.test(u) ? { ...c, url: u } : DENY("unklar"); }
+  if (RUNNABLE.test(c.real) || !OPENABLE.test(c.real)) return DENY("programm");
+  return c;
+}
+// Wie starten? Ergebnis { ok, exe, args, cwd } bzw. { ok, url } oder { ok: false, why }
+function launchCheck(p) {
+  const c = files.checkPath(p, { read: true });
+  if (!c.ok) return c;
+  if (c.st.isDirectory()) return DENY("unklar");
+  if (/\.exe$/i.test(c.real)) return { ok: true, exe: c.real, args: [], cwd: path.dirname(c.real) };
+  if (/\.url$/i.test(c.real)) { const u = urlOf(c.real); return WEB.test(u) || GAME.test(u) ? { ok: true, url: u } : DENY("unklar"); }
+  if (!/\.lnk$/i.test(c.real)) return DENY("unklar");
+  let t; try { t = shell.readShortcutLink(c.real); } catch { return DENY("unklar"); }
+  if (!t || !t.target) return DENY("unklar"); // Ziel nicht feststellbar (z. B. Installer-Verknüpfungen): nicht über diesen Weg
+  const tc = files.checkPath(expandEnv(t.target), { read: true });
+  if (!tc.ok) return tc;
+  if (tc.st.isDirectory() || !/\.exe$/i.test(tc.real)) return DENY("unklar");
+  // Argumente werden nicht übernommen: ihre Bedeutung hängt vom Programm ab und kann ungeprüfte Dateien auswählen (0.58.21)
+  if (String(t.args || "").trim()) return DENY("unklar");
+  let cwd = path.dirname(tc.real);
+  if (t.cwd) { const cc = files.checkPath(expandEnv(t.cwd)); if (!cc.ok || !cc.st.isDirectory()) return DENY("unklar"); cwd = cc.real; }
+  return { ok: true, exe: tc.real, args: [], cwd };
+}
+const DENIED = (p, why) => `${path.basename(String(p).replace(/[\\/]$/, "")) || p} öffne ich nicht: ` +
+  (why === "gesperrt" ? "Das gehört zu Argus' eigenen Daten." : why === "fehlt" ? "Das gibt es nicht." :
+    why === "programm" ? "Programme, Verknüpfungen und unbekannte Dateitypen öffne ich nicht direkt (Programme starte ich über ihren Namen)." : "Der Pfad lässt sich nicht sicher zuordnen.");
+// how: "open" öffnet, "show" zeigt eine Datei markiert im Ordner. Gibt null zurück, wenn geöffnet wurde, sonst den Ablehnungssatz.
+async function openGuarded(p, how = "open") {
+  const c = openCheck(p, how);
+  if (!c.ok) return DENIED(p, c.why);
+  if (c.url) await shell.openExternal(c.url);
+  else if (how === "show" && !c.st.isDirectory()) shell.showItemInFolder(c.real);
+  else await shell.openPath(c.real);
+  return null;
 }
 
 // ---------- Gefundenes merken und öffnen ----------
 let lastHits = [], lastQuery = "";
 // Ordner direkt öffnen, bei Dateien den Ordner mit markierter Datei
 async function openHit(p) {
-  const clean = p.replace(/[\\/]$/, "");
-  if (/[\\/]$/.test(p)) return shell.openPath(clean);
-  shell.showItemInFolder(clean);
+  return openGuarded(p, /[\\/]$/.test(p) ? "open" : "show");
 }
 // Gleichbedeutende Suchwörter: Lebenslauf heißt oft CV oder Resume
 const SYN = [["cv", "lebenslauf", "resume"], ["rechnung", "invoice"], ["bilder", "fotos", "pictures"], ["vertrag", "contract"]];
@@ -238,13 +340,13 @@ async function run(text) {
   if (c.kind === "url") {
     const host = c.url.replace(/^https?:\/\//, "").split("/")[0];
     const b = c.via && findApp(c.via);
-    if (b) { launchApp(b, c.url); return `Öffne ${host} in ${b.name}.`; }
+    if (b) return launchApp(b, c.url) || `Öffne ${host} in ${b.name}.`;
     await shell.openExternal(c.url); return `Öffne ${host}.`;
   }
-  if (c.kind === "path") { await shell.openPath(c.path); return `Öffne ${c.label}.`; }
+  if (c.kind === "path") { return (await openGuarded(c.path)) || `Öffne ${c.label}.`; }
   if (c.kind === "openLast") {
     if (!lastHits.length) return null;
-    await openHit(lastHits[0]); return `Öffne ${path.basename(lastHits[0].replace(/[\\/]$/, ""))}.`;
+    return (await openHit(lastHits[0])) || `Öffne ${path.basename(lastHits[0].replace(/[\\/]$/, ""))}.`;
   }
   if (c.kind === "locate") {
     if (!c.q && lastQuery) c.q = lastQuery; // "Such einfach in C" sucht das Letzte noch einmal, nur dort
@@ -259,24 +361,24 @@ async function run(text) {
       return `Ich habe${where} nichts zu „${c.q}“ gefunden.` + (files.ready() ? " Sag „Such im Internet nach …“, wenn ich online suchen soll." : " Das Dateiverzeichnis aller Laufwerke wird gerade noch aufgebaut, bisher habe ich nur deinen Benutzerordner durchsucht. Frag in ein paar Minuten nochmal.");
     }
     lastHits = hits;
-    await openHit(hits[0]);
+    const denied = await openHit(hits[0]); if (denied) return denied;
     const best = hits[0].replace(/[\\/]$/, ""), isDir = /[\\/]$/.test(hits[0]);
     return `Gefunden${where}: ${best}. ` + (isDir ? "Ich habe den Ordner geöffnet." : "Ich habe den Ordner mit der Datei geöffnet.") +
       (hits.length > 1 ? ` Außerdem gefunden: ${hits.slice(1, 4).map((h) => path.basename(h.replace(/[\\/]$/, ""))).join(", ")}.` : "");
   }
-  if (c.kind === "file") { const f = (await files.search(c.q, 1))[0]?.replace(/[\\/]$/, "") || findFile(c.q); if (!f) return `Ich finde keine Datei namens ${c.q}.`; await shell.openPath(f); return `Öffne ${path.basename(f)}.`; }
+  if (c.kind === "file") { const f = (await files.search(c.q, 1))[0]?.replace(/[\\/]$/, "") || findFile(c.q); if (!f) return `Ich finde keine Datei namens ${c.q}.`; return (await openGuarded(f)) || `Öffne ${path.basename(f)}.`; }
   if (!extraApps.length) await refreshExtra().catch(() => {});
   const a = findApp(c.q);
-  if (a) { launchApp(a); return `Starte ${a.name}` + (a.kind ? ` (${a.kind})` : "") + "."; }
+  if (a) return launchApp(a) || `Starte ${a.name}` + (a.kind ? ` (${a.kind})` : "") + ".";
   // Kein Programm: im Dateiverzeichnis aller Laufwerke nach Ordner oder Datei mit dem Namen schauen
   const hit = (await files.search(c.q, 1))[0];
-  if (hit) { lastHits = [hit]; await shell.openPath(hit.replace(/[\\/]$/, "")); return `Öffne ${hit.replace(/[\\/]$/, "")}.`; }
+  if (hit) { lastHits = [hit]; return (await openGuarded(hit)) || `Öffne ${hit.replace(/[\\/]$/, "")}.`; }
   const f = findFile(c.q);
-  if (f) { await shell.openPath(f); return `Öffne ${path.basename(f)}.`; }
+  if (f) return (await openGuarded(f)) || `Öffne ${path.basename(f)}.`;
   const ws = (await files.searchContent(c.q, 1))[0];
-  if (ws) { lastHits = [ws]; await shell.openPath(ws); return `Öffne ${path.basename(ws)} (über die Windows-Suche gefunden).`; }
+  if (ws) { lastHits = [ws]; return (await openGuarded(ws)) || `Öffne ${path.basename(ws)} (über die Windows-Suche gefunden).`; }
   return `Ich finde weder ein Programm noch einen Ordner oder eine Datei namens „${c.q}“.` + (files.ready() ? "" : " Das Dateiverzeichnis wird gerade noch aufgebaut, frag in ein paar Minuten nochmal.");
 }
 
 const hooks = {};
-module.exports = { run, parse, findApp, scanApps, hooks };
+module.exports = { run, parse, findApp, scanApps, hooks, openGuarded, _launchApp: launchApp, _steamGames: steamGames, _epicGames: epicGames, _isPackagedAppId: isPackagedAppId, _storeApps: storeApps }; // _…: nur für Tests
