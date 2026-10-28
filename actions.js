@@ -78,6 +78,7 @@ function scanApps() {
     let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       const p = path.join(dir, e.name);
+      if (files.isSvPath(p)) continue; // Daten der abgeschalteten Selbstverbesserung nicht als Programm starten (0.58.20)
       if (e.isDirectory() && depth < 3) walk(p, depth + 1);
       else if (/\.(lnk|url|exe)$/i.test(e.name) && !/uninstall|deinstall|readme|hilfe|help/i.test(e.name)) {
         const name = e.name.replace(/\.(lnk|url|exe)$/i, "");
@@ -135,7 +136,9 @@ function findFile(spoken) {
     for (const e of entries) {
       if (++seen > 20000) return;
       if (e.name.startsWith(".") || e.name === "node_modules") continue;
-      const p = path.join(dir, e.name), n = norm(e.name.replace(/\.[^.]+$/, ""));
+      const p = path.join(dir, e.name);
+      if (files.isSvPath(p)) continue; // Daten der abgeschalteten Selbstverbesserung weder finden noch öffnen (0.58.20)
+      const n = norm(e.name.replace(/\.[^.]+$/, ""));
       const score = n === q ? 100 : n.startsWith(q) ? 80 : n.includes(q) ? 60 : 0;
       if (score > bestScore) { bestScore = score; best = p; }
       if (e.isDirectory() && depth < 3) walk(p, depth + 1);

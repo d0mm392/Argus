@@ -6,7 +6,7 @@ Zweck: Wer am Code arbeitet (ich oder jemand anderes), findet hier schnell, wo w
 - **Hauptprozess** (`main.js`): Fenster, Einstellungen (`DEFAULTS`, `SETTABLE`, `get-config`), Rechtsklick-Menü (zwei Fenster: `menu.html`), Tray, Updates, KI-Aufrufe, IPC.
 - **Oberfläche** (`app/index.html` + `app/style.css` + `app/js/*.js`): Kugel, Panel, Einstellungen. Läuft über den lokalen Server aus `main.js` (`startServer`).
 - **Brücke**: `preload.js` (window.jarvis), `preload-menu.js`. Die Oberfläche hat keinen direkten Node-Zugriff.
-- **Module im Hauptprozess**: `system.js` (Messwerte, dauerhafter PowerShell-Monitor `sysmon/`), `games.js` (Spielerkennung), `crash.js` (Fehlerberichte, 14 Tage), `mining.js`, `foreman.js`, `weather.js`, `news.js`, `social.js`, `dcbot.js`, `strata.js`, `report.js`, `memory.js`, `selfimprove.js`, `boot.js` (Datenordner, Rollback).
+- **Module im Hauptprozess**: `system.js` (Messwerte, dauerhafter PowerShell-Monitor `sysmon/`), `games.js` (Spielerkennung), `crash.js` (Fehlerberichte, 14 Tage), `mining.js`, `foreman.js`, `weather.js`, `news.js`, `social.js`, `dcbot.js`, `strata.js`, `report.js`, `memory.js`, `selfimprove.js`, `boot.js` (Datenordner; Rollback seit 0.58.20 abgeschaltet).
 
 ## Oberfläche: Dateien (Ladereihenfolge)
 Alle `app/js/*.js` sind normale Skripte mit **gemeinsamem Namensraum**: Variablen und Funktionen einer Datei sind in allen anderen sichtbar. Reihenfolge = Reihenfolge in `index.html`.

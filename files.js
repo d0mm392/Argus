@@ -12,6 +12,15 @@ const INDEX = () => process.env.JARVIS_INDEX || path.join(os.homedir(), "Argus-G
 const SKIP = new Set(["windows", "$recycle.bin", "system volume information", "$windows.~bt", "$windows.~ws", "$winreagent", "recovery", "config.msi",
   "node_modules", ".git", "__pycache__", "winsxs", "temp", "tmp", "inetcache", "cache", "caches", "code cache", "gpucache", "shadercache", ".cache",
   "packages", "crashdumps", "windowsapps", "msocache", "perflogs", ".ollama", "selfimprove-stage", "backups"]);
+// Daten der abgeschalteten Selbstverbesserung (seit 0.58.20): archivierte Arbeitsordner und der alte Marker kommen weder in
+// das Verzeichnis noch in Suchtreffer. Arbeitsordner und Sicherungen schließt SKIP oben schon aus.
+const PROFILES = new Set(["argus-desktop", "jarvis-desktop", "jarvis"]);
+const isSvName = (n) => { const l = String(n).toLowerCase(); return l.startsWith("selfimprove-verworfen-") || l === "selfimprove-pending.json"; };
+// Pfad liegt in Daten der Selbstverbesserung: Archiv oder Marker irgendwo, Arbeitsordner oder Sicherungen direkt in einem Profilordner
+function isSvPath(p) {
+  const parts = String(p || "").split(/[\\/]+/).filter(Boolean).map((x) => x.toLowerCase());
+  return parts.some((x, i) => isSvName(x) || x === "selfimprove-stage" || (x === "backups" && i > 0 && PROFILES.has(parts[i - 1])));
+}
 const norm = (s) => String(s || "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
 
 function roots() {
@@ -37,6 +46,7 @@ function build({ force = false, maxAgeH = 12, onDone } = {}) {
       try {
         for await (const e of d) {
           if (count > 3e6) break;
+          if (isSvName(e.name)) continue; // vor Typauswertung, Aufnahme und Abstieg
           const p = path.join(dir, e.name);
           if (e.isDirectory()) { const low = e.name.toLowerCase(); if ((!SKIP.has(low) || (low === "windows" && depth > 0)) && !e.name.startsWith("$")) { chunk.push(p + path.sep); count++; subs.push(p); } }
           else if (e.isFile()) { chunk.push(p); count++; }
@@ -65,6 +75,7 @@ async function search(query, n = 15) {
   for await (const line of rl) {
     const low = norm(line);
     if (!q.every((w) => low.includes(w))) continue;
+    if (isSvPath(line)) continue; // ein älteres Verzeichnis kann noch Einträge aus der Selbstverbesserung enthalten
     const isDir = line.endsWith(path.sep), base = norm(path.basename(line)), stem = base.replace(/\.[^.]+$/, "");
     let s = q.filter((w) => base.includes(w)).length * 20;
     if (!s) continue;
@@ -87,7 +98,7 @@ function quickSearch(q, n) {
   const walk = (dir, depth) => {
     let es; try { es = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of es) {
-      if (++seen > 40000 || SKIP.has(e.name.toLowerCase()) || e.name.startsWith(".")) continue;
+      if (++seen > 40000 || SKIP.has(e.name.toLowerCase()) || isSvName(e.name) || e.name.startsWith(".")) continue;
       const p = path.join(dir, e.name);
       if (q.every((w) => norm(e.name).includes(w))) hits.push(e.isDirectory() ? p + path.sep : p);
       if (e.isDirectory() && depth < 6) walk(p, depth + 1);
@@ -107,15 +118,25 @@ function searchContent(query, n = 15) {
       `$r.Open("SELECT TOP ${n} System.ItemPathDisplay FROM SYSTEMINDEX WHERE FREETEXT('${term}') ORDER BY System.DateModified DESC",$c);` +
       `while(-not $r.EOF){$r.Fields.Item('System.ItemPathDisplay').Value;$r.MoveNext()}`;
     execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" + ps],
-      { windowsHide: true, timeout: 20000, maxBuffer: 1 << 20 }, (err, stdout) => resolve(err ? [] : stdout.split(/\r?\n/).filter(Boolean)));
+      { windowsHide: true, timeout: 20000, maxBuffer: 1 << 20 }, (err, stdout) => resolve(err ? [] : stdout.split(/\r?\n/).filter(Boolean).filter((p) => !isSvPath(p))));
   });
 }
 
 const TEXT = /\.(txt|md|csv|tsv|log|json|jsonl|xml|html?|css|js|ts|py|ps1|bat|cmd|ini|cfg|conf|yaml|yml|toml|sql|sh|c|cpp|h|cs|java|go|rs|php|rb|srt)$/i;
 // Zugangsdaten, Schlüssel und Browser-/Programmprofile bleiben auch für die KI unlesbar (eingeschleuste Anweisungen aus fremden Texten könnten sie sonst herausgeben)
 const SECRET = /(^|[\\/])(\.ssh|\.aws|\.gnupg|\.azure|\.kube|\.docker)([\\/]|$)|[\\/]\.env(\.[^\\/]*)?$|\.(pem|key|ppk|kdbx|p12|pfx|ovpn)$|[\\/](id_rsa|id_ed25519|id_ecdsa|wallet\.dat|login data|cookies|local state|argus-config\.json|jarvis-config\.json)$|[\\/]appdata[\\/](roaming|local)[\\/](google[\\/]chrome|microsoft[\\/]edge|mozilla|bravesoftware|opera software|discord|telegram desktop|argus|jarvis)([\\/]|$)/i;
+// Begrenzte Sperre (0.58.20): Argus-Profilordner (argus-desktop, jarvis-desktop, AppData\…\Jarvis) und Daten der Selbstverbesserung
+// werden über den angegebenen, mit path.resolve normalisierten Pfad erkannt.
+// Kein vollständiger Schutz: Junctions, symbolische Verknüpfungen, 8.3-Kurznamen und andere Windows-Pfadformen (z. B. \\?\, UNC)
+// können auf dieselben Dateien zeigen, ohne dass ihr Pfad einen dieser Namen enthält. Robuste Pfadauflösung folgt in einem eigenen Hotfix.
+function profileBlocked(p) {
+  const parts = path.resolve(String(p || "")).split(/[\\/]+/).filter(Boolean).map((x) => x.toLowerCase());
+  return parts.some((x, i) => x === "argus-desktop" || x === "jarvis-desktop" || (x === "jarvis" && i > 0 && (parts[i - 1] === "roaming" || parts[i - 1] === "local"))) || isSvPath(parts.join("/"));
+}
+const BLOCKED = (p) => `${p} ist gesperrt (Argus-Profil oder Daten der Selbstverbesserung). Das lese ich nicht.`;
 function read(p, max = 60000) {
   if (SECRET.test(String(p))) return `${p} ist gesperrt (Zugangsdaten oder Profildaten). Das lese ich nicht.`;
+  if (profileBlocked(p)) return BLOCKED(p);
   const st = fs.statSync(p);
   if (st.isDirectory()) return list(p);
   if (!TEXT.test(p)) {
@@ -127,6 +148,7 @@ function read(p, max = 60000) {
   return buf.toString("utf8") + (st.size > max ? `\n… (gekürzt, Datei hat ${Math.round(st.size / 1024)} KB)` : "");
 }
 function list(dir, n = 200) {
+  if (SECRET.test(String(dir)) || profileBlocked(dir)) return BLOCKED(dir);
   const es = fs.readdirSync(dir, { withFileTypes: true }).slice(0, n);
   return es.map((e) => {
     if (e.isDirectory()) return e.name + path.sep;
@@ -135,4 +157,4 @@ function list(dir, n = 200) {
   }).join("\n") || "(leer)";
 }
 
-module.exports = { roots, build, ready, search, searchContent, read, list, INDEX };
+module.exports = { roots, build, ready, search, searchContent, read, list, INDEX, isSvPath };

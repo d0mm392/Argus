@@ -230,12 +230,11 @@ const rules = (name) => {
   "Antworte auf Deutsch in der du-Form, direkt und ehrlich, in höchstens vier kurzen Sätzen, weil die Antwort vorgelesen wird. " +
   "Kein Markdown, keine Listen, keine Emojis. Die Antwort ist zeitkritisch: beginne sofort mit der sichtbaren Antwort. " +
   "Wenn du etwas nicht sicher weißt, sag das, statt zu raten. " +
-  `Argus kann sich selbst verbessern: Sagt ${u} "Verbessere dich: <Wunsch>" oder "Prüf dich auf Fehler", ändert Claude Code eine Kopie des Argus-Codes und ${u} gibt die Änderung frei. ` +
+  "Die Selbstverbesserung von Argus ist in dieser Version aus Sicherheitsgründen abgeschaltet. Biete sie nicht an, erkläre ihre Befehle nicht und behaupte nie, Code geändert zu haben. " +
   "Argus hat ein Gedächtnis: Alle Gespräche werden gespeichert, und \"Merk dir: …\" speichert eine Notiz. Steht unten ein Abschnitt Gedächtnis, ist das echt gespeichert und du darfst dich darauf beziehen. Erfinde nie frühere Gespräche. " +
-  `Fragt ${u} danach, erkläre genau diese Befehle, statt zu sagen, dass das nicht geht. Argus kann außerdem Programme, Webseiten und Ordner öffnen ("Öffne Brave"). ` +
+  `Fragt ${u} nach dem Gedächtnis, erkläre den Befehl "Merk dir: …", statt zu sagen, dass das nicht geht. Argus kann außerdem Programme, Webseiten und Ordner öffnen ("Öffne Brave"). ` +
   "Du selbst kannst nichts starten, ausführen oder an Claude Code weitergeben. Behaupte nie, dass du etwas startest, versuchst oder durchführst. " +
-  "Dateien und Ordner auf dem PC sucht Argus selbst, nicht du: Sagt der Nutzer etwas wie \"Such den Ordner Diablo\" oder \"Öffne ihn\", passiert das ohne dich. Landet so etwas trotzdem bei dir, hat Argus nichts gefunden oder den Satz nicht verstanden: Sag das ehrlich und schlag vor: \"Such Diablo\" oder \"Such Diablo in D\". Sag nie \"Bitte einen Moment\" und kündige nie eine Suche an, die du nicht selbst ausführst. " +
-  `Will ${u} eine Änderung an Argus, sag, dass der Satz mit "Verbessere dich:" beginnen soll, gefolgt vom Wunsch.`;
+  "Dateien und Ordner auf dem PC sucht Argus selbst, nicht du: Sagt der Nutzer etwas wie \"Such den Ordner Diablo\" oder \"Öffne ihn\", passiert das ohne dich. Landet so etwas trotzdem bei dir, hat Argus nichts gefunden oder den Satz nicht verstanden: Sag das ehrlich und schlag vor: \"Such Diablo\" oder \"Such Diablo in D\". Sag nie \"Bitte einen Moment\" und kündige nie eine Suche an, die du nicht selbst ausführst.";
 };
 
 // Systemprompt plus aktueller Zustand des PCs, damit Fragen wie "Läuft alles?" beantwortbar sind
@@ -1305,17 +1304,6 @@ async function createWindow(port) {
     crash.add("Oberfläche abgestürzt", `${d?.reason} (Code ${d?.exitCode})`);
     setTimeout(() => { if (alive()) win.webContents.reload(); }, 1500);
   });
-  // Erster Start nach einer Selbstverbesserung: 15 Sekunden auf Fehler achten, sonst gilt die Änderung als gut
-  if (selfimprove.pending()) {
-    let bad = null;
-    win.webContents.on("console-message", (_e, level, msg) => { if (level >= 3 && !bad) bad = msg; });
-    win.webContents.on("render-process-gone", () => { bad = bad || "Oberfläche abgestürzt"; });
-    setTimeout(() => {
-      if (!bad) return selfimprove.confirmHealthy();
-      logError(new Error("Selbstverbesserung zurückgenommen: " + bad));
-      if (selfimprove.rollbackPending()) { crash.clean(); app.relaunch(); app.exit(0); }
-    }, 15000);
-  }
   await win.loadURL(`http://127.0.0.1:${port}/`).catch((e) => console.warn("UI laden fehlgeschlagen:", e.message));
   sendUI("voice-status", voiceState);
   sendUI("layout", { corner: config.corner, size: config.size, expanded });
@@ -1798,28 +1786,20 @@ ipcMain.handle("set-config", (_e, patch) => {
   return true;
 });
 // Befehle wie "öffne Brave" oder "öffne gamestar.de" direkt ausführen
-// ---------- Selbstverbesserung: Claude ändert eine Kopie, der Nutzer gibt frei, dann Neustart ----------
+// ---------- Selbstverbesserung: seit 0.58.20 abgeschaltet (selfimprove.js), Befehle werden abgelehnt ----------
 function restartSoon(ms = 6000) { setTimeout(() => { crash.clean(); app.relaunch(); app.exit(0); }, ms); }
 function selfResult(r) { sendUI("self-improve", r); if (r.restart) restartSoon(); return r.text; }
 function handleSelf(cmd) {
-  if (cmd.kind === "undo") return selfResult(selfimprove.undo());
-  if (cmd.kind === "apply") return selfResult(selfimprove.apply());
-  if (cmd.kind === "discard") return selfResult(selfimprove.discard());
-  if (!cmd.wish.trim()) return findClaudeCode()
-    ? "Ja, das kann ich. Sag mir, was ich ändern soll, zum Beispiel: Verbessere dich, zeig die Uhrzeit über der Kugel. Oder: Prüf dich auf Fehler. Claude baut das in eine Kopie von mir, und du entscheidest, ob es übernommen wird."
-    : "Dafür brauche ich Claude Code mit deinem Abo. Sobald es installiert und angemeldet ist, sag zum Beispiel: Verbessere dich, zeig die Uhrzeit über der Kugel.";
-  const work = path.join(app.getPath("userData"), "claude-work"); fs.mkdirSync(work, { recursive: true });
-  selfimprove.improve(cmd.wish, { exe: findClaudeCode(), model: config.claudeCodeModel, mcpConfig: mcpConfigFile(work), onStep: (t) => sendUI("self-step", t) })
-    .then((r) => sendUI("self-improve", r));
-  return `Alles klar, ich arbeite an mir: ${cmd.wish}. Das dauert ein paar Minuten. Bevor etwas übernommen wird, zeige ich dir die Änderung.`;
+  const r = selfimprove.respond(cmd);
+  return ["improve", "check", "explain"].includes(cmd.kind) ? r.text : selfResult(r);
 }
-ipcMain.handle("self-apply", () => selfResult(selfimprove.apply()));
-ipcMain.handle("self-discard", () => selfResult(selfimprove.discard()));
-ipcMain.handle("self-offer", () => selfimprove.currentOffer());
+ipcMain.handle("self-apply", () => selfResult(selfimprove.respond({ kind: "apply" })));
+ipcMain.handle("self-discard", () => { const { ok, text } = selfimprove.discard(); return selfResult({ ok, text }); });
+ipcMain.handle("self-offer", () => null);
 ipcMain.on("open-changelog", () => {
   // Gibt es noch keine Verbesserung, die Datei mit kurzer Erklärung anlegen, damit sich trotzdem etwas öffnet
   const f = selfimprove.CHANGELOG();
-  if (!fs.existsSync(f)) fs.writeFileSync(f, "# Selbst-Verbesserungen von Argus\n\nNoch keine. Sag zum Beispiel: \"Verbessere dich: zeig die Uhrzeit über der Kugel\".\n");
+  if (!fs.existsSync(f)) fs.writeFileSync(f, "# Selbst-Verbesserungen von Argus\n\nDie Selbstverbesserung ist in dieser Version aus Sicherheitsgründen abgeschaltet.\n");
   shell.openPath(f);
 });
 let prevAction = "";
@@ -1831,7 +1811,7 @@ ipcMain.handle("focus-app", (_e, key) => new Promise((resolve) => {
     "if (-not $p) { 'none'; exit }; $h = $p.MainWindowHandle; if ([AW]::IsIconic($h)) { [AW]::ShowWindow($h, 9) | Out-Null }; [AW]::SetForegroundWindow($h) | Out-Null; 'ok'";
   execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { timeout: 8000, windowsHide: true }, (err, out) => resolve(!err && /ok/.test(String(out))));
 }));
-ipcMain.handle("action", async (_e, text) => { try { const prev = prevAction; prevAction = text; const self = selfimprove.parse(text, prev); if (self) return handleSelf(self);
+ipcMain.handle("action", async (_e, text) => { try { const prev = prevAction; prevAction = text; const self = selfimprove.classify(text, prev, { stage: selfimprove.stageState() }); if (self) return handleSelf(self);
   const mem = memory.parse(text); if (mem) { const r = memory.run(mem); remember(text, r, "Argus"); return r; }
   const did = await actions.run(text); if (did) remember(text, did, "Argus"); return did; } catch (e) { return "Das hat nicht geklappt: " + (e.message || e); } });
 // Argus-Stimme (Piper): bei Fehler einmal erneut versuchen und den Grund ins Fehlerprotokoll schreiben, statt still auf die Windows-Stimme zu fallen
