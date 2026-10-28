@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld("jarvis", {
   ytEmbed: (a) => ipcRenderer.send("yt-embed", a),
   ytRect: (r) => ipcRenderer.send("yt-rect", r),
   onYtEmbed: (cb) => ipcRenderer.on("yt-embed", (_e, d) => cb(d)),
+  onYtFilter: (fn) => ipcRenderer.on("yt-filter", (_e, state) => fn(state)),
   onYtTitle: (cb) => ipcRenderer.on("yt-title", (_e, t) => cb(t)),
   twEmbed: (a) => ipcRenderer.send("tw-embed", a),
   twRect: (r) => ipcRenderer.send("tw-rect", r),

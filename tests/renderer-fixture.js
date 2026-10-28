@@ -22,8 +22,10 @@ async function setup() {
   const config = vm.runInNewContext("(" + literal + ")", { process: { env: {} } }, { timeout: 1000 });
   Object.assign(config, { setupDone: true, micOnStart: false, voiceOutput: false,
     backend: "none", strataOn: false, notesOn: true, notesText: "Synthetic Start note",
-    weatherOn: false, miningOn: true, mineOn: true, pagesOn: true, version: "TEST", dcBot: { guilds: [] },
+    weatherOn: false, miningOn: true, mineOn: true, pagesOn: true, version: "TEST", dcBot: { status: "aus", guilds: [] },
     voice: { ready: false, text: "Test microphone off" }, system: null });
+  Object.assign(config, require(path.join(ROOT, "app/youtube-settings")).migrate(config));
+  Object.assign(config, require(path.join(ROOT, "app/appearance")).migrate(config));
   Object.assign(config, require(path.join(ROOT, "app/notes-store")).migrate(config, () => "fixture"));
   const channels = [...fs.readFileSync(path.join(ROOT, "preload.js"), "utf8").matchAll(/ipcRenderer.invoke\("([^"]+)"/g)].map(m => m[1]);
   for (const channel of channels) ipcMain.handle(channel, (_event, patch) => {
@@ -59,7 +61,7 @@ async function setup() {
   const menuUrl = require("url").pathToFileURL(path.join(appRoot, "menu.html")).href;
   session.defaultSession.webRequest.onBeforeRequest((details, done) => done({ cancel: details.url !== menuUrl && !details.url.startsWith(base + "/") && !/^(data:|blob:)/.test(details.url) }));
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, done) => done(false));
-  const window = new BrowserWindow({ width: 1280, height: 900, show: false, webPreferences: {
+  const window = new BrowserWindow({ width: 1280, height: 900, frame: false, show: false, webPreferences: {
     preload: path.join(ROOT, "preload.js"), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false
   } });
   ipcMain.on("notes-flush", (event, snapshot) => {

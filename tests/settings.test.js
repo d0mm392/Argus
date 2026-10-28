@@ -27,7 +27,7 @@ async function run() {
   await screenshot("settings-search");
   await evaluate(`document.querySelector('#setTabs button').focus();document.getElementById('setTabs').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));true`);
   assert.equal(await evaluate('document.activeElement.dataset.tab'), "Aussehen");
-  await evaluate(`const heading=[...document.querySelectorAll('.set-body h4')].find(h=>h.textContent==='Oberfläche und Skins');heading.focus();if(heading.getAttribute('aria-expanded')!=='true')heading.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));true`);
+  await evaluate(`const heading=[...document.querySelectorAll('.set-body h4')].find(h=>h.textContent==='Leistung');heading.focus();if(heading.getAttribute('aria-expanded')!=='true')heading.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));true`);
   assert.equal(await evaluate(`document.activeElement.getAttribute('aria-expanded')`), "true");
   await screenshot("settings-keyboard");
   window.setSize(800, 700); await wait(80); await screenshot("settings-800");

@@ -139,13 +139,13 @@ const DEFAULTS = {
   winStyle: {},       // Stil je Fenster: { id: { a: Deckkraft %, wt: weiße Schrift, font, dots, bars } }
   looks: {},          // Design je Fenster: { clocks, wx, notes, sys } → Variante (leer = Standard)
   ytZoom: 0,          // Seitenzoom im YouTube-Fenster (Strg + Mausrad), Zoomstufe wie im Browser
-  ytNoAds: true,      // Werbung im YouTube-Player herausfiltern wie Brave (preload-yt.js)
+  ytNoAds: true, // legacy filter intent; migrated to the integrated network filter
   sensors: true,     // eigene Temperaturmessung (LibreHardwareMonitorLib + PawnIO-Treiber)
   sensorsAsked: false,
   updateUrl: "",     // Adresse, unter der neue Versionen liegen (latest.yml)
   updateChannel: "stabil", // stabil: nur freigegebene Versionen (Zweig „stable“), test: jeder neue Bau (Zweig „updates“)
   sway: "schweben",                                  // Anzeigen: schweben, leicht, fest
-  notesOn: false, notesText: "", venomRoam: false, spin: 1, density: 1, skin: "", ytBox: null, ytLast: null, ytOpen: "", ytVideoOnly: true, ytVo2: false, ytOnTop: false, ytMode: "brave", ytEmbedSize: "m", // YouTube im Panel eingebettet oder als eigenes Fenster                       // YouTube-Fenster
+  notesOn: false, notesText: "", venomRoam: false, spin: 1, density: 1, skin: "", ytBox: null, ytLast: null, ytOpen: "", ytVideoOnly: true, ytVo2: false, ytOnTop: false, ytMode: "panel", ytEmbedSize: "m", // YouTube im Panel eingebettet oder als eigenes Fenster                       // YouTube-Fenster
 };
 let config = { ...DEFAULTS };
 function loadConfig() {
@@ -196,7 +196,8 @@ function loadConfig() {
     } catch {}
   }
   Object.assign(config, require("./app/notes-store").migrate(config, () => require("crypto").randomUUID()));
-  Object.assign(config, require("./app/youtube-brave").migrate(config));
+  Object.assign(config, require("./app/youtube-settings").migrate(config));
+  Object.assign(config, require("./app/appearance").migrate(config));
   memory.setUser?.(config.userName);
   saveConfig();
 }
@@ -877,7 +878,7 @@ ipcMain.handle("sensor-status", () => sensorState);
 ipcMain.on("sensor-setup", () => { config.sensors = true; saveConfig(); setupSensors(); });
 
 ipcMain.handle("game-info", (_e, name, appid) => require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })));
-ipcMain.handle("get-config", () => ({ pageLooks: config.pageLooks && typeof config.pageLooks === "object" ? config.pageLooks : {}, nodeStyle: ["punkt", "ring", "leucht", "stern"].includes(config.nodeStyle) ? config.nodeStyle : "punkt", aura: ["aus", "weich", "stark"].includes(config.aura) ? config.aura : "aus", breath: !!config.breath, pulseStyle: ["punkte", "funken", "komet", "blitz", "welle", "licht"].includes(config.pulseStyle) ? config.pulseStyle : "punkte", iobOn: !!config.iobOn, iobUrl: config.iobUrl || "", iobUser: config.iobUser || "", hasIobPass: !!config.iobPass, iobPick: Array.isArray(config.iobPick) ? config.iobPick : [], iobWrite: !!config.iobWrite, iobAll: config.iobAll !== false, shapeRand: +config.shapeRand || 0, fmDashOn: !!config.fmDashOn, aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarShow !== "nie", taskbarShow: config.taskbarShow, hiddenFans: config.hiddenFans, afterHide: config.afterHide, taskbarFront: config.taskbarFront, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnTiltK: config.btnTiltK, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, flashT: config.flashT, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeRadii: config.holeRadii, friendsStill: config.friendsStill, braveAvailable: !!require("./app/youtube-brave").findExecutable(), uiSkin: config.uiSkin || "classic", reduceAnimations: !!config.reduceAnimations, backgroundPresentation: config.backgroundPresentation === "eco" ? "eco" : "fluid", notesScopeVersion: config.notesScopeVersion, pageIds: config.pageIds, notesByPage: config.notesByPage, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, warnDiskGB: config.warnDiskGB, warnRamPct: config.warnRamPct, warnCpuPct: config.warnCpuPct, warnInet: config.warnInet, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shape2d: config.shape2d, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordAlsoOnline: config.discordAlsoOnline, dcOnlyMarked: config.dcOnlyMarked, dcMarked: config.dcMarked, looks: config.looks, winStyle: config.winStyle, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine, voiceFallback: config.voiceFallback, donateUrl: config.donateUrl, lang: config.lang, portalOn: config.portalOn, portalUrl: config.portalUrl, briefOn: config.briefOn, briefTime: config.briefTime, briefLen: config.briefLen, briefParts: config.briefParts, customPages: config.customPages, autoFit: config.autoFit, tradeOn: config.tradeOn, tradeCur: config.tradeCur, tradeEvery: config.tradeEvery, tradeStock: config.tradeStock, tradeFng: config.tradeFng, tradeDom: config.tradeDom, tradeHalv: config.tradeHalv, tradeWatch: config.tradeWatch, tradePort: config.tradePort, hasFinnhubKey: !!config.finnhubKey, design: config.design, designSet: config.designSet, designBlk: config.designBlk, designType: config.designType, designBtn: config.designBtn,
+ipcMain.handle("get-config", () => ({ pageLooks: config.pageLooks && typeof config.pageLooks === "object" ? config.pageLooks : {}, nodeStyle: ["punkt", "ring", "leucht", "stern"].includes(config.nodeStyle) ? config.nodeStyle : "punkt", aura: ["aus", "weich", "stark"].includes(config.aura) ? config.aura : "aus", breath: !!config.breath, pulseStyle: ["punkte", "funken", "komet", "blitz", "welle", "licht"].includes(config.pulseStyle) ? config.pulseStyle : "punkte", iobOn: !!config.iobOn, iobUrl: config.iobUrl || "", iobUser: config.iobUser || "", hasIobPass: !!config.iobPass, iobPick: Array.isArray(config.iobPick) ? config.iobPick : [], iobWrite: !!config.iobWrite, iobAll: config.iobAll !== false, shapeRand: +config.shapeRand || 0, fmDashOn: !!config.fmDashOn, aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarShow !== "nie", taskbarShow: config.taskbarShow, hiddenFans: config.hiddenFans, afterHide: config.afterHide, taskbarFront: config.taskbarFront, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnTiltK: config.btnTiltK, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, flashT: config.flashT, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeRadii: config.holeRadii, friendsStill: config.friendsStill, ytFilterState, ytBackgroundAlpha: config.ytBackgroundAlpha ?? 100, ytFrame: config.ytFrame !== false, ytShadow: !!config.ytShadow, ytFilterOn: config.ytFilterOn !== false, uiSkin: "classic", reduceAnimations: !!config.reduceAnimations, backgroundPresentation: config.backgroundPresentation === "eco" ? "eco" : "fluid", notesScopeVersion: config.notesScopeVersion, pageIds: config.pageIds, notesByPage: config.notesByPage, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, warnDiskGB: config.warnDiskGB, warnRamPct: config.warnRamPct, warnCpuPct: config.warnCpuPct, warnInet: config.warnInet, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shape2d: config.shape2d, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordAlsoOnline: config.discordAlsoOnline, dcOnlyMarked: config.dcOnlyMarked, dcMarked: config.dcMarked, looks: config.looks, winStyle: config.winStyle, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine, voiceFallback: config.voiceFallback, donateUrl: config.donateUrl, lang: config.lang, portalOn: config.portalOn, portalUrl: config.portalUrl, briefOn: config.briefOn, briefTime: config.briefTime, briefLen: config.briefLen, briefParts: config.briefParts, customPages: config.customPages, autoFit: config.autoFit, tradeOn: config.tradeOn, tradeCur: config.tradeCur, tradeEvery: config.tradeEvery, tradeStock: config.tradeStock, tradeFng: config.tradeFng, tradeDom: config.tradeDom, tradeHalv: config.tradeHalv, tradeWatch: config.tradeWatch, tradePort: config.tradePort, hasFinnhubKey: !!config.finnhubKey, design: config.design, designSet: config.designSet, designBlk: config.designBlk, designType: config.designType, designBtn: config.designBtn,
   autostart: config.autostart, backend: config.backend, ollamaModel: config.ollamaModel || localModel(), hasApiKey: !!config.anthropicApiKey,
   ballScale: config.ballScale, labelScale: config.labelScale, tempScale: config.tempScale, appScale: config.appScale, wakeWords: config.wakeWords, voiceOutput: config.voiceOutput, voiceId: config.voiceId, voiceRobot: config.voiceRobot, micOnStart: config.micOnStart, systemAlertsVoice: config.systemAlertsVoice, voice: voiceState, system: watch?.data.ts ? withIcons(watch.data) : null }));
 // Kurz-Lagebild für die KI, nur echte abgerufene Werte
@@ -1656,7 +1657,7 @@ ipcMain.on("ctx-menu", (e, s = {}) => {
   const hid = Array.isArray(s.hidden) ? s.hidden.filter((h) => Array.isArray(h) && typeof h[0] === "string" && typeof h[1] === "string").slice(0, 20) : [];
   t.push({ label: "Fenster", submenu: [
     { label: "Notizblock", type: "checkbox", checked: !!config.notesOn, click: act("notes", null, true) },
-    { label: "YouTube", type: "checkbox", checked: !!(ytAlive() || ytView), click: act("yt", null, true) },
+    { label: "YouTube", type: "checkbox", checked: !!ytView, click: act("yt", null, true) },
     { label: "Twitch", type: "checkbox", checked: !!(twAlive() || twView), click: act("tw", null, true) },
     ...(s.media ? [{ label: "Musik-Player einblenden", click: act("media") }] : []),
     ...(expanded && hid.length ? [{ type: "separator" }, ...hid.map(([id, n]) => ({ label: "Einblenden: " + n, click: act("unhide", id) })), ...(hid.length > 1 ? [{ label: "Alle einblenden", click: act("unhide", "*") }] : [])] : []),
@@ -1742,8 +1743,8 @@ ipcMain.on("win-mode", (_e, mode) => {
 });
 ipcMain.on("quit", () => app.quit());
 // Einstellungen aus der Oberfläche speichern (nur bekannte Schlüssel)
-const SETTABLE = { pageLooks: "object", nodeStyle: "string", aura: "string", breath: "boolean", pulseStyle: "string", iobOn: "boolean", iobUrl: "string", iobUser: "string", iobPass: "string", iobPick: "object", iobWrite: "boolean", iobAll: "boolean", shapeRand: "number", fmDashOn: "boolean", aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", taskbarShow: "string", hiddenFans: "object", afterHide: "string", miniPos: "object", taskbarFront: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", btnTiltK: "number", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", flashT: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceFallback: "string", donateUrl: "string", lang: "string", portalOn: "boolean", voiceRobot: "boolean", portalUrl: "string", voiceServer: "string", voiceServerModel: "string", voiceServerVoice: "string", briefOn: "boolean", briefTime: "string", briefLen: "string", briefParts: "object", customPages: "object", autoFit: "boolean", tradeOn: "boolean", tradeCur: "string", tradeEvery: "number", tradeStock: "string", tradeFng: "boolean", tradeDom: "boolean", tradeHalv: "boolean", tradeWatch: "object", tradePort: "object", finnhubKey: "string", design: "string", designSet: "boolean", designBlk: "boolean", designType: "boolean", designBtn: "string", voiceOutput: "boolean", micOnStart: "boolean",
-  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeRadii: "object", friendsStill: "boolean", uiSkin: "string", reduceAnimations: "boolean", backgroundPresentation: "string", pageIds: "object", notesByPage: "object", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", warnDiskGB: "number", warnRamPct: "number", warnCpuPct: "number", warnInet: "boolean", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", shape2d: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytZoom: "number", looks: "object", winStyle: "object", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordAlsoOnline: "boolean", dcOnlyMarked: "boolean", dcMarked: "object", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
+const SETTABLE = { pageLooks: "object", nodeStyle: "string", aura: "string", breath: "boolean", pulseStyle: "string", iobOn: "boolean", iobUrl: "string", iobUser: "string", iobPass: "string", iobPick: "object", iobWrite: "boolean", iobAll: "boolean", shapeRand: "number", fmDashOn: "boolean", aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", taskbarShow: "string", hiddenFans: "object", afterHide: "string", miniPos: "object", taskbarFront: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", btnTiltK: "number", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytBackgroundAlpha: "number", ytFrame: "boolean", ytShadow: "boolean", ytFilterOn: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", flashT: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceFallback: "string", donateUrl: "string", lang: "string", portalOn: "boolean", voiceRobot: "boolean", portalUrl: "string", voiceServer: "string", voiceServerModel: "string", voiceServerVoice: "string", briefOn: "boolean", briefTime: "string", briefLen: "string", briefParts: "object", customPages: "object", autoFit: "boolean", tradeOn: "boolean", tradeCur: "string", tradeEvery: "number", tradeStock: "string", tradeFng: "boolean", tradeDom: "boolean", tradeHalv: "boolean", tradeWatch: "object", tradePort: "object", finnhubKey: "string", design: "string", designSet: "boolean", designBlk: "boolean", designType: "boolean", designBtn: "string", voiceOutput: "boolean", micOnStart: "boolean",
+  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeRadii: "object", friendsStill: "boolean", reduceAnimations: "boolean", backgroundPresentation: "string", pageIds: "object", notesByPage: "object", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", warnDiskGB: "number", warnRamPct: "number", warnCpuPct: "number", warnInet: "boolean", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", shape2d: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytZoom: "number", looks: "object", winStyle: "object", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordAlsoOnline: "boolean", dcOnlyMarked: "boolean", dcMarked: "object", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 function writeNotesBackup() {
   const f = path.join(path.dirname(CONFIG_PATH), "notizen-seiten-backup.json");
   fs.mkdirSync(path.dirname(f), { recursive: true });
@@ -1788,18 +1789,15 @@ ipcMain.handle("set-config", (_e, patch) => {
   if ("coins" in patch) pollPrice().then(pollHist);
   if ("widgets" in patch && config.widgets?.btc?.on !== false && !market.btc) pollPrice().then(pollHist); // Bitcoin-Anzeige eingeschaltet: Kurs sofort holen
   if (("themeHue" in patch || "winColor" in patch) && newsAlive()) pushMarket(); // Lagebild färbt sich mit
-  if ("ytVideoOnly" in patch) { if (ytView) ytTrackNow(ytView.webContents); if (ytAlive()) ytTrackNow(ytWin.webContents); }
-  if ("ytMode" in patch && config.ytMode === "brave") { ytEmbedClose(); if (ytAlive()) ytWin.close(); config.ytOpen = ""; saveConfig(); }
-  if ("ytNoAds" in patch && config.ytMode !== "brave") { const u = ytView?.webContents.getURL(); if (ytView) { ytEmbedClose(); ytEmbedShow("").then(() => { if (u) ytView?.webContents.loadURL(u); }); } if (ytAlive()) ytWin.close(); }
+  if ("ytVideoOnly" in patch && ytView) ytTrackNow(ytView.webContents);
+  if ("ytFilterOn" in patch) { if (config.ytFilterOn) ytAdblock(); else { if (ytBlocker) { ytBlocker.disableBlockingInSession(session.fromPartition("persist:youtube")); ytBlocker = null; } ytFilterStatus("off"); } }
   if (["holeOn", "holeW", "holeH", "holeRound", "holeRadii", "holeCorner", "holeX", "holeY", "holeEdit"].some((k) => k in patch)) { lastShape = "x"; applyShape(); }
-  if ("ytAdblock" in patch && config.ytMode !== "brave") { if (config.ytAdblock) ytAdblock(); else if (ytBlocker) { try { ytBlocker.disableBlockingInSession(session.fromPartition("persist:youtube")); } catch {} ytBlocker = null; } }
   if ("sensors" in patch) { if (patch.sensors) startSensors(); else { sensorState = "aus"; sensorPush(); execFile("schtasks", ["/End", "/TN", "Jarvis Sensoren"], { windowsHide: true }, () => {}); } }
   if ("updateUrl" in patch || "updateChannel" in patch) checkUpdates();
-  if ("ytAlpha" in patch || "ytFeather" in patch || "ytRound" in patch || "winColor" in patch || "themeHue" in patch) ytAlphaAll();
+  if ("ytBackgroundAlpha" in patch || "ytFrame" in patch || "ytShadow" in patch || "ytRound" in patch || "winColor" in patch || "themeHue" in patch) ytAlphaAll();
   if ("twAlpha" in patch || "twFeather" in patch || "twRound" in patch || "winColor" in patch || "themeHue" in patch) twAlphaAll();
   if ("twVideoOnly" in patch) { if (twView) twTrackNow(twView.webContents); if (twAlive()) twTrackNow(twWin.webContents); }
   if ("twOnTop" in patch && twAlive()) twWin.setAlwaysOnTop(!!config.twOnTop, "floating");
-  if ("ytOnTop" in patch && ytAlive()) ytWin.setAlwaysOnTop(!!config.ytOnTop, "floating");
   if ("newsCats" in patch || "btcCur" in patch || "themeHue" in patch) pushMarket();
   if ("autostart" in patch) applyAutostart();
   if ("userName" in patch) { config.userName = String(config.userName).trim().slice(0, 40); memory.setUser?.(config.userName); }
@@ -1997,7 +1995,7 @@ app.whenReady().then(async () => {
   if (config.setupDone) startSensors();
   win?.on("session-end", () => { quitting = true; }); // Windows fährt herunter: zählt wie Beenden
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
-  setTimeout(() => { try { if (config.ytMode !== "brave") { if (config.ytOpen === "panel") ytEmbedShow(""); else if (config.ytOpen === "win") openYoutube(""); } if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
+  setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
   strata.init(() => config, (s) => {
     if (s.state === "an" && strataPrev !== "an") { strataUsed = Date.now(); unloadOllama(); } // Strata übernimmt: kleines Modell aus dem Grafikspeicher werfen
     strataPrev = s.state; sendUI("strata", s); pushAiStatus();
@@ -2580,33 +2578,17 @@ function updateOverlay() {
 }
 
 // ---------- YouTube-Fenster ----------
-// Eigenes kleines Fenster nur für YouTube, Anmeldung bleibt gespeichert (eigene Sitzung), andere Links gehen in den normalen Browser.
-let ytWin = null;
-// Werbefilter (preload-yt.js) und ausgeblendete Werbeflächen, für das eingebettete und das eigene YouTube-Fenster
-const ytPrefs = () => ({ backgroundThrottling: false, partition: "persist:youtube", contextIsolation: true, nodeIntegration: false, sandbox: true, ...(config.ytNoAds !== false ? { preload: path.join(__dirname, "preload-yt.js") } : {}) });
+// YouTube remains in the Argus-owned WebContentsView with its existing session.
+
+// Integrated Electron playback with a regular filter; no warning-hiding preload.
+const ytPrefs = () => ({ backgroundThrottling: false, partition: "persist:youtube", contextIsolation: true, nodeIntegration: false, sandbox: true });
 const YT_CSS = "ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer, ytd-display-ad-renderer, ytd-companion-slot-renderer, ytd-action-companion-ad-renderer, ytd-banner-promo-renderer, ytd-statement-banner-renderer, ytd-promoted-video-renderer, #masthead-ad, #player-ads, .ytp-ad-overlay-container, .ytp-ad-image-overlay, ytd-rich-item-renderer:has(ytd-ad-slot-renderer), ytd-rich-section-renderer:has(ytd-statement-banner-renderer), ytd-reel-video-renderer:has(.ytd-ad-slot-renderer) { display: none !important; }";
-// Transparenz (Einstellung ytAlpha, 30–100 %): eigenes Fenster per Fensterdeckkraft, eingebettete Ansicht per durchsichtigem Hintergrund plus Deckkraft der Seite
-const ytAlphaKeys = new WeakMap();
-async function ytAlphaApply(wc) {
-  if (!wc || wc.isDestroyed()) return;
-  const a = Math.max(30, Math.min(100, Number(config.ytAlpha) || 100)), f = Math.max(0, Math.min(80, Number(config.ytFeather) || 0)), rd = Math.max(0, Math.min(40, Number(config.ytRound ?? 14))), old = ytAlphaKeys.get(wc);
-  if (old) { try { await wc.removeInsertedCSS(old); } catch {} ytAlphaKeys.delete(wc); }
-  const view = ytView && wc === ytView.webContents;
-  // Mit weichen Rändern oder runden Ecken färbt sich auch die schwarze Videofläche (Balken oben/unten) in die Fensterfarbe, sonst bleibt ein harter schwarzer Kasten
-  const blend = f > 0 || rd > 0, wcl = config.winColor || {}, wh = Math.round(wcl.follow ? (config.themeHue ?? 205) : (wcl.h ?? 219)), ws = (wcl.s ?? 54) / 100, wl = (wcl.l ?? 5) / 100;
-  const hx = (n) => { const k = (n + wh / 30) % 12, aa = ws * Math.min(wl, 1 - wl), v = wl - aa * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1))); return Math.round(v * 255).toString(16).padStart(2, "0"); };
-  const winHex = "#" + hx(0) + hx(8) + hx(4);
-  if (view) { try { ytView.setBackgroundColor(a < 100 ? "#00000000" : blend ? winHex : "#000000"); ytView.setBorderRadius(rd); } catch {} } // runde Ecken: Fläche wirklich rund beschnitten, nicht aufgemalt
-  if (!view) return; // eigenes Fenster: Transparenz über die Fensterdeckkraft (ytAlphaAll); weiche Ränder nur in der eingebetteten Ansicht
-  let css = a < 100 ? `html { opacity: ${a / 100} !important; }\n` : "";
-  if (blend) css += `html.jv-vo, html.jv-vo body, html.jv-vo ytd-app, html.jv-vo #content, html.jv-vo ytd-page-manager, html.jv-vo ytd-watch-flexy, html.jv-vo #columns, html.jv-vo #primary, html.jv-vo #player, html.jv-vo #full-bleed-container, html.jv-vo #player-full-bleed-container, html.jv-vo #movie_player, html.jv-vo #movie_player .html5-video-container, html.jv-vo #movie_player video { background: ${winHex} !important; }\n`;
-  if (f > 0) {
-    // Weiche Ränder: ein Farbrand in der Fensterfarbe liegt über den Kanten der Seite und blendet sie ins Panel aus (kein Maskieren, das Video bleibt unberührt)
-    const wc2 = config.winColor || {}, h = Math.round(wc2.follow ? (config.themeHue ?? 205) : (wc2.h ?? 219)), c = (al) => `hsl(${h} ${wc2.s ?? 54}% ${wc2.l ?? 5}% / ${al})`;
-    const edge = (dir) => `linear-gradient(${dir}, ${c(1)} 0, ${c(0.72)} ${Math.round(f * 0.3)}px, ${c(0.25)} ${Math.round(f * 0.65)}px, ${c(0)} ${f}px, ${c(0)} calc(100% - ${f}px), ${c(0.25)} calc(100% - ${Math.round(f * 0.65)}px), ${c(0.72)} calc(100% - ${Math.round(f * 0.3)}px), ${c(1)} 100%)`;
-    css += `html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; background: ${edge("to right")}, ${edge("to bottom")}; }\n`;
-  }
-  if (css) { try { ytAlphaKeys.set(wc, await wc.insertCSS(css)); } catch {} }
+// Radius clips the native view; background opacity belongs only to the Argus frame.
+function ytAlphaApply(wc) {
+  if (!ytView || wc !== ytView.webContents || wc.isDestroyed()) return;
+  const appearance = require("./app/youtube-settings").preferences(config);
+  ytView.setBorderRadius(appearance.radius);
+  ytView.setBackgroundColor("#000000"); // Actual video/webpage stays opaque; only the Argus frame background changes.
 }
 // Strg + Mausrad: Seitenzoom wie im Browser (Stufen von 0,5× bis 3×), gilt für das eigene und das eingebettete YouTube-Fenster
 function ytZoomHook(wc) {
@@ -2614,14 +2596,14 @@ function ytZoomHook(wc) {
   wc.on("dom-ready", apply);
   wc.on("zoom-changed", (_e, dir) => {
     const z = Math.max(-3.8, Math.min(3, Math.round(((Number(config.ytZoom) || 0) + (dir === "in" ? 0.5 : -0.5)) * 2) / 2));
-    config.ytZoom = z; saveConfig(); apply(); if (ytAlive()) { try { ytWin.webContents.setZoomLevel(z); } catch {} } if (ytView) { try { ytView.webContents.setZoomLevel(z); } catch {} }
+    config.ytZoom = z; saveConfig(); apply(); if (ytView) { try { ytView.webContents.setZoomLevel(z); } catch {} }
   });
 }
-function ytAlphaAll() { if (ytView) ytAlphaApply(ytView.webContents); if (ytAlive()) { try { ytWin.setOpacity(Math.max(0.3, Math.min(1, (Number(config.ytAlpha) || 100) / 100))); } catch {} } }
-function ytNoAdsCss(wc) { wc.on("dom-ready", () => { if (config.ytNoAds !== false) wc.insertCSS(YT_CSS).catch(() => {}); wc.insertCSS(YT_VO_CSS).catch(() => {}); ytAlphaApply(wc); ytTrackNow(wc); }); ytTrack(wc); }
+function ytAlphaAll() { if (ytView) ytAlphaApply(ytView.webContents); }
+function ytNoAdsCss(wc) { wc.on("dom-ready", () => { if (config.ytFilterOn !== false) wc.insertCSS(YT_CSS).catch(() => {}); wc.insertCSS(YT_VO_CSS).catch(() => {}); ytAlphaApply(wc); ytTrackNow(wc); }); ytTrack(wc); }
 // „Nur Video“: auf Wiedergabeseiten alles außer dem Player ausblenden, Hintergrund durchsichtig (Klasse jv-vo am <html>)
 const YT_VO_CSS = `html.jv-vo, html.jv-vo body, html.jv-vo ytd-app, html.jv-vo #content, html.jv-vo ytd-page-manager, html.jv-vo ytd-watch-flexy, html.jv-vo #columns, html.jv-vo #primary, html.jv-vo #player, html.jv-vo #full-bleed-container, html.jv-vo #player-full-bleed-container { background: #000 !important; }
-html.jv-vo #masthead-container, html.jv-vo #secondary, html.jv-vo #below, html.jv-vo #chat-container, html.jv-vo tp-yt-app-drawer, html.jv-vo ytd-mini-guide-renderer, html.jv-vo #guide, html.jv-vo ytd-popup-container, #cinematics, #cinematic-container, #cinematics-container, html.jv-vo .ytp-gradient-top, html.jv-vo .ytp-gradient-bottom { display: none !important; }
+html.jv-vo #masthead-container, html.jv-vo #secondary, html.jv-vo #below, html.jv-vo #chat-container, html.jv-vo tp-yt-app-drawer, html.jv-vo ytd-mini-guide-renderer, html.jv-vo #guide, #cinematics, #cinematic-container, #cinematics-container, html.jv-vo .ytp-gradient-top, html.jv-vo .ytp-gradient-bottom { display: none !important; }
 html.jv-vo body { overflow: hidden !important; }
 html.jv-vo #movie_player { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; margin: 0 !important; z-index: 3000 !important; background: #000 !important; border-radius: 0 !important; }
 html.jv-vo #movie_player .html5-video-container, html.jv-vo #movie_player video { position: absolute !important; left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; object-fit: contain !important; background: #000 !important; }`;
@@ -2644,35 +2626,7 @@ function ytTrack(wc) {
   wc.on("destroyed", () => clearInterval(iv));
 }
 const ytResumeUrl = () => { const l = config.ytLast; if (!l?.url) return "https://www.youtube.com/"; try { const u = new URL(l.url); if (l.t > 5) u.searchParams.set("t", l.t + "s"); return u.toString(); } catch { return "https://www.youtube.com/"; } };
-const ytAlive = () => ytWin && !ytWin.isDestroyed();
 const YT_HOST = /(^|\.)(youtube\.com|youtu\.be|google\.com|googlevideo\.com|ytimg\.com|accounts\.google\.[a-z.]+|gstatic\.com)$/i;
-function openYoutube(query) {
-  ytAdblock();
-  const url = query ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(query) : ytResumeUrl();
-  if (ytAlive()) { if (query) ytWin.loadURL(url); ytWin.show(); ytWin.focus(); return; }
-  const wa = screen.getPrimaryDisplay().workArea;
-  const b = config.ytBox && screen.getAllDisplays().some((d) => d.workArea.x <= config.ytBox.x + 40 && config.ytBox.x + 40 <= d.workArea.x + d.workArea.width && d.workArea.y <= config.ytBox.y && config.ytBox.y <= d.workArea.y + d.workArea.height)
-    ? config.ytBox : { width: 960, height: 600, x: wa.x + Math.round((wa.width - 960) / 2), y: wa.y + Math.round((wa.height - 600) / 2) };
-  ytWin = new BrowserWindow({ ...b, minWidth: 360, minHeight: 240, title: "YouTube · Argus", backgroundColor: "#0f0f0f", autoHideMenuBar: true, show: false,
-    alwaysOnTop: !!config.ytOnTop, icon: path.join(__dirname, "assets", "icon.png"),
-    webPreferences: ytPrefs() });
-  // Ohne "Electron" in der Kennung, sonst lehnt Google die Anmeldung eher ab
-  ytNoAdsCss(ytWin.webContents); ytZoomHook(ytWin.webContents);
-  ytWin.webContents.setUserAgent(ytWin.webContents.getUserAgent().replace(/\s(Electron|Argus[^\s]*)\/\S+/g, ""));
-  if (config.ytOnTop) ytWin.setAlwaysOnTop(true, "floating");
-  const external = (u) => { try { return !YT_HOST.test(new URL(u).hostname); } catch { return true; } };
-  ytWin.webContents.setWindowOpenHandler(({ url }) => { if (external(url)) { if (/^https:/i.test(url)) shell.openExternal(url); } else ytWin.loadURL(url); return { action: "deny" }; });
-  ytWin.webContents.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
-  ytWin.webContents.on("page-title-updated", (e, t) => { e.preventDefault(); ytWin.setTitle(t.replace(/ - YouTube$/, "") + " · YouTube"); });
-  const save = () => { if (ytAlive() && !ytWin.isMaximized() && !ytWin.isFullScreen()) { config.ytBox = ytWin.getBounds(); saveConfig(); } };
-  ytWin.on("moved", save); ytWin.on("resized", save);
-  ytWin.once("ready-to-show", () => { ytAlphaAll(); ytWin.show(); });
-  const vidSig = () => sendUI("video-win", ytAlive() || (typeof twAlive === "function" && twAlive()));
-  ytWin.once("ready-to-show", vidSig);
-  ytWin.on("closed", () => { ytWin = null; vidSig(); if (!quitting && config.ytOpen === "win") { config.ytOpen = ""; saveConfig(); } });
-  if (config.ytOpen !== "win") { config.ytOpen = "win"; saveConfig(); } // beim nächsten Start wieder öffnen
-  ytWin.loadURL(url).catch((e) => logError(e));
-}
 // YouTube im Panel: eigene Ansicht über der Fläche, die die Oberfläche dafür freihält (unten links über der Statuszeile)
 let ytView = null, ytRect = null, ytShown = null;
 function ytViewMake() {
@@ -2681,20 +2635,19 @@ function ytViewMake() {
   try { ytView.setBackgroundColor("#000000"); } catch {} // deckend: durchsichtige Videoflächen im transparenten Fenster färben das Bild unter Windows ein (lila/grüner Schleier, Streifen)
   const wc = ytView.webContents; ytNoAdsCss(wc); ytZoomHook(wc);
   wc.setUserAgent(wc.getUserAgent().replace(/\s(Electron|Argus[^\s]*)\/\S+/g, ""));
-  const external = (u) => { try { return !YT_HOST.test(new URL(u).hostname); } catch { return true; } };
-  wc.setWindowOpenHandler(({ url }) => { if (external(url)) { if (/^https:/i.test(url)) shell.openExternal(url); } else wc.loadURL(url); return { action: "deny" }; });
-  wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
+  const external = (u) => { try { const url = new URL(u); return url.protocol !== "https:" || !YT_HOST.test(url.hostname); } catch { return true; } };
+  wc.setWindowOpenHandler(({ url }) => { if (!external(url)) wc.loadURL(url).catch(() => {}); return { action: "deny" }; });
+  wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); sendUI("notice", "Dieser externe Link wird nicht als YouTube-Popup geoeffnet."); } });
   wc.on("page-title-updated", (_e, t) => sendUI("yt-title", t.replace(/ - YouTube$/, "")));
   win.contentView.addChildView(ytView);
   return ytView;
 }
 async function ytEmbedShow(query) {
   if (!alive()) return;
-  if (config.gfxSafe) return openYoutube(query); // Kompatibilitätsmodus: keine eingebetteten Fenster (Flackern), YouTube im eigenen Fenster
   await Promise.race([ytAdblock(), new Promise((r) => setTimeout(r, 8000))]); // höchstens 8 s auf die Listen warten
   if (!expanded) setExpanded(true);
   const v = ytViewMake();
-  if (query || !v.webContents.getURL()) v.webContents.loadURL(query ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(query) : ytResumeUrl()).catch((e) => logError(e));
+  if (query || !v.webContents.getURL()) v.webContents.loadURL(require("./app/youtube-settings").target(query, ytResumeUrl())).catch((e) => { if (e.errno !== -3) sendUI("notice", "YouTube konnte nicht geladen werden (" + (e.code || "Netzwerk") + ")."); });
   sendUI("yt-embed", { on: true });
   if (config.ytOpen !== "panel") { config.ytOpen = "panel"; saveConfig(); }
 }
@@ -2708,7 +2661,7 @@ function ytEmbedClose() {
 }
 // Die Oberfläche meldet, wo die Fläche liegt; zugeklappt bleibt das Video unsichtbar weiterlaufen (Musik hört man weiter)
 ipcMain.on("yt-rect", (_e, r) => {
-  if (!ytView) return;
+  if (!ytView || _e.sender !== win.webContents) return;
   ytRect = r && [r.x, r.y, r.width, r.height].every(Number.isFinite) && r.width > 40 && r.height > 30 ? r : null;
   // Nur bei echter Änderung anfassen: jedes setBounds/setVisible lässt das Video kurz aufblitzen
   if (ytRect && expanded) {
@@ -2717,40 +2670,35 @@ ipcMain.on("yt-rect", (_e, r) => {
     if (!ytShown) { ytView.setVisible(true); ytShown = true; }
   } else if (ytShown !== false) { ytView.setVisible(false); ytShown = false; }
 });
-ipcMain.on("yt-embed", (_e, a) => {
-  if (config.ytMode === "brave" && a !== "close") return openBraveYoutube("");
-  if (a === "close") { const wc = ytView?.webContents; (wc ? ytTrackNow(wc) : Promise.resolve()).then(ytEmbedClose); }
-  else if (a === "popout") { (async () => { if (ytView) await ytTrackNow(ytView.webContents); ytEmbedClose(); openYoutube(""); })(); }
-  else ytEmbedShow("");
+ipcMain.on("yt-embed", (_e, action) => {
+  if (action === "close") { const wc = ytView?.webContents; (wc ? ytTrackNow(wc) : Promise.resolve()).then(ytEmbedClose); }
+  else ytEmbedShow(""); // Includes legacy popout requests: never launch another window.
 });
 // Werbeblocker für YouTube in Argus (uBlock-/EasyList-Listen über @ghostery/adblocker), Listen alle 3 Tage neu
-let ytBlocker = null, ytBlockerP = null;
+let ytBlocker = null, ytBlockerP = null, ytFilterState = "off";
+function ytFilterStatus(state) { ytFilterState = state; sendUI("yt-filter", state); }
 function ytAdblock() {
-  if (config.ytAdblock === false) return Promise.resolve();
+  if (config.ytFilterOn === false) { ytFilterStatus("off"); return Promise.resolve(); }
   if (ytBlocker) return Promise.resolve();
   if (ytBlockerP) return ytBlockerP;
+  ytFilterStatus("loading");
   ytBlockerP = (async () => {
     try {
-      const { ElectronBlocker } = require("@ghostery/adblocker-electron");
-      const cache = path.join(app.getPath("userData"), "werbeblocker.bin");
+      const { ElectronBlocker, adsAndTrackingLists } = require("@ghostery/adblocker-electron");
+      const cache = path.join(app.getPath("userData"), "youtube-network-filter.bin");
       try { if (Date.now() - fs.statSync(cache).mtimeMs > 3 * 864e5) fs.unlinkSync(cache); } catch {}
-      const b = await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
+      // Network filtering only: no page scriptlets or cosmetic suppression of playback warnings.
+      const b = await ElectronBlocker.fromLists(fetch, adsAndTrackingLists, { loadCosmeticFilters: false }, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
+      if (config.ytFilterOn === false) { ytFilterStatus("off"); return; }
       b.enableBlockingInSession(session.fromPartition("persist:youtube"));
-      ytBlocker = b;
-    } catch (e) { logError(e); }
+      ytBlocker = b; ytFilterStatus("on");
+    } catch (e) { ytFilterStatus("error"); console.warn("YouTube filter unavailable:", e.code || e.name || "filter"); }
     ytBlockerP = null;
   })();
   return ytBlockerP;
 }
-// Echtes Brave im separaten App-Fenster mit regulaeren Shields; keine dauerhafte Werbefreiheitsgarantie.
-function openBraveYoutube(q) {
-  return require("./app/youtube-brave").launch({ query: q, resume: ytResumeUrl() }).then(result => {
-    sendUI("notice", result.ok ? "YouTube läuft im separaten Brave-App-Fenster mit den regulären Brave-Schutzfunktionen. Bedienung und Schließen erfolgen dort." : result.error === "missing" ? "Brave wurde nicht gefunden. Bitte Brave installieren oder in den Einstellungen bewusst einen experimentellen Electron-Modus wählen. Es wird kein anderer Browser als Brave ausgegeben." : "Brave konnte nicht gestartet werden. Bitte die Brave-Installation prüfen.");
-    return result;
-  });
-}
-
-actions.hooks.youtube = (q) => (config.ytMode === "brave" ? openBraveYoutube(q) : config.ytMode === "fenster" || config.gfxSafe ? openYoutube(q) : ytEmbedShow(q));
+// YouTube always stays inside Argus; Brave is a separate browser engine, not an embeddable WebContents.
+actions.hooks.youtube = query => ytEmbedShow(query);
 ipcMain.on("open-youtube", (_e, q) => actions.hooks.youtube(typeof q === "string" ? q.slice(0, 200) : ""));
 // ---------- Twitch-Fenster ----------
 // Wie das YouTube-Fenster: im Panel eingebettet oder als eigenes Fenster, eigene Sitzung (Anmeldung bleibt), Transparenz, runde Ecken, weiche Ränder, „Nur Video“, Größe, zuletzt gesehener Kanal.
@@ -2822,7 +2770,7 @@ function openTwitch(q) {
   twWin.on("moved", save); twWin.on("resized", save);
   twWin.once("ready-to-show", () => { twAlphaAll(); twWin.show(); });
   twWin.once("ready-to-show", () => sendUI("video-win", true));
-  twWin.on("closed", () => { twWin = null; sendUI("video-win", ytAlive()); if (!quitting && config.twOpen === "win") { config.twOpen = ""; saveConfig(); } });
+  twWin.on("closed", () => { twWin = null; sendUI("video-win", false); if (!quitting && config.twOpen === "win") { config.twOpen = ""; saveConfig(); } });
   if (config.twOpen !== "win") { config.twOpen = "win"; saveConfig(); }
   twWin.loadURL(url).catch((e) => logError(e));
 }

@@ -2,6 +2,7 @@
   // ---------- Einstellungen ----------
   async function openSettingsPanel() {
     const c = await window.jarvis.getConfig();
+    window.syncYoutubeAppearance?.(c);
     $("setHue").value = theme.hue; $("setRegions").value = theme.regions;
     $("setTts").checked = tts.on; $("setVoice").value = c.voiceEngine || "jarvis"; $("setVoiceFb").value = c.voiceFallback || "retry"; $("setDonate").value = c.donateUrl || "";
     $("setMic").checked = !!c.micOnStart; $("setWake").value = (c.wakeWords || []).join(", ");
@@ -22,8 +23,8 @@
     $("setMicFloat").checked = c.micFloat !== false; $("setShape").value = shape; markShape(); $("setShapeRim").checked = shapeRim; $("setGlow").value = glowK; $("setSway").value = c.sway || "schweben";
     $("setTaskbarShow").value = c.taskbarShow || "nie"; $("setAfterHide").value = c.afterHide || "mini"; $("setTaskbarFront").checked = c.taskbarFront === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
     $("setSteamOn").checked = c.steamOn !== false; $("setDiscordOn").checked = c.discordOn !== false;
-    $("setDcVoice").checked = true; $("setDcOnline").checked = !!c.discordAlsoOnline; $("setDcMarked").checked = !!c.dcOnlyMarked; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "brave"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
-    $("setYtTop").checked = !!c.ytOnTop; winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
+    $("setDcVoice").checked = true; $("setDcOnline").checked = !!c.discordAlsoOnline; $("setDcMarked").checked = !!c.dcOnlyMarked; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit";
+    winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
     const fi = c.fileIndex || {};
     $("indexNote").textContent = fi.ok ? `Dateiverzeichnis aller Laufwerke: Stand ${new Date(fi.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}, ${fi.mb} MB.` : "Dateiverzeichnis aller Laufwerke: wird noch aufgebaut (beim ersten Start einige Minuten). Bis dahin sucht Argus nur im Benutzerordner.";
     $("setSteamId").value = c.steamId || ""; $("setDiscord").value = c.discordServers || ""; $("setSteamKey").value = "";
@@ -267,10 +268,6 @@
   $("setOverlay").addEventListener("change", (e) => window.jarvis.setConfig({ voiceOverlay: e.target.checked }));
   $("setOvCorner").addEventListener("change", (e) => window.jarvis.setConfig({ overlayCorner: e.target.value }));
   $("setOvMode").addEventListener("change", (e) => window.jarvis.setConfig({ overlayMode: e.target.value }));
-  $("setYtMode").addEventListener("change", (e) => window.jarvis.setConfig({ ytMode: e.target.value }));
-  $("setYtNoAds").addEventListener("change", (e) => window.jarvis.setConfig({ ytNoAds: e.target.checked }));
-  $("setYtAdblock").addEventListener("change", (e) => window.jarvis.setConfig({ ytAdblock: e.target.checked }));
-  $("setYtTop").addEventListener("change", (e) => window.jarvis.setConfig({ ytOnTop: e.target.checked }));
   $("setTwMode").addEventListener("change", (e) => window.jarvis.setConfig({ twMode: e.target.value }));
   $("setTwTop").addEventListener("change", (e) => window.jarvis.setConfig({ twOnTop: e.target.checked }));
   $("setTwChan").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.jarvis.openTwitch(v.slice(0, 200)); e.target.value = ""; } });
@@ -545,11 +542,3 @@ $("setDcVoice").checked = true;
 
 $("setBackgroundPresentation").addEventListener("change", e => window.jarvis.setConfig({ backgroundPresentation: e.target.value }));
 window.jarvis.getConfig().then(c => { $("setBackgroundPresentation").value = c.backgroundPresentation || "fluid"; });
-
-function refreshYoutubeMode() {
-  const brave = $("setYtMode").value === "brave";
-  for (const id of ["setYtNoAds", "setYtAdblock", "setYtTop", "setYtAlpha", "setYtRound", "setYtFeather"]) $(id).disabled = brave;
-  $("ytPlaybackHint").textContent = brave ? "Echtes Brave in einem separaten App-Fenster. Brave Shields und dessen Profil bleiben beim Browser; Argus greift nicht auf Browser-Cookies zu. Werbung oder Sperren können sich ändern. Die Electron-Optionen darunter gelten hier nicht." : "Experimentelle Electron-Wiedergabe, kein Brave. Die eigenen Werbefilter können von YouTube erkannt werden. Bei einer Sperre echtes Brave wählen.";
-}
-$("setYtMode").addEventListener("change", refreshYoutubeMode);
-window.jarvis.getConfig().then(c => { refreshYoutubeMode(); if (c.braveAvailable === false) $("ytPlaybackHint").textContent += " Brave ist auf diesem PC nicht verfügbar. Kein automatischer Ersatzbrowser."; });

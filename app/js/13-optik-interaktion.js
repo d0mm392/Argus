@@ -79,7 +79,7 @@
   $("setBtnTiltFollow").addEventListener("change", (e) => { tiltFollow = e.target.checked; tiltSave(); });
   const applyShimmer = (on) => { document.body.classList.toggle("no-shimmer", on === false); $("setShimmer").checked = on !== false; };
   $("setShimmer").addEventListener("change", (e) => { applyShimmer(e.target.checked); window.jarvis.setConfig({ loadShimmer: e.target.checked }); });
-  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; tiltK = c.btnTiltK || 24; $("setBtnTiltK").value = tiltK; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); $("setYtAlpha").value = c.ytAlpha ?? 100; $("setYtAlpha").dispatchEvent(new Event("input")); $("setYtRound").value = c.ytRound ?? 14; $("setYtRound").dispatchEvent(new Event("input")); $("setYtFeather").value = c.ytFeather ?? 0; $("setYtFeather").dispatchEvent(new Event("input")); markPalette(c.palette || ""); syncCustomColors(); });
+  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; tiltK = c.btnTiltK || 24; $("setBtnTiltK").value = tiltK; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); markPalette(c.palette || ""); syncCustomColors(); });
 
   // ---------- Messwerte anklicken: Verlauf der letzten 30 Minuten ----------
   const SPARK_N = 360;
@@ -137,9 +137,6 @@
   foldApply(); document.addEventListener("click", (e) => { if (e.target.closest?.("#pageTabs")) setTimeout(foldApply, 60); });
 
   // ---------- YouTube-Transparenz ----------
-  $("setYtAlpha").addEventListener("change", (e) => window.jarvis.setConfig({ ytAlpha: +e.target.value }));
-  $("setYtRound").addEventListener("change", (e) => window.jarvis.setConfig({ ytRound: +e.target.value }));
-  $("setYtFeather").addEventListener("change", (e) => window.jarvis.setConfig({ ytFeather: +e.target.value }));
   $("setTwAlpha").addEventListener("change", (e) => window.jarvis.setConfig({ twAlpha: +e.target.value }));
   $("setTwRound").addEventListener("change", (e) => window.jarvis.setConfig({ twRound: +e.target.value }));
   $("setTwFeather").addEventListener("change", (e) => window.jarvis.setConfig({ twFeather: +e.target.value }));

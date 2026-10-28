@@ -552,7 +552,7 @@
     else if (e.target.closest?.(".friends")) { const f2 = !!e.target.closest(".friends.f2"); target = { kind: "blk", id: f2 ? "friends2" : "friends", name: f2 ? "Discord-Liste" : "Freundesliste" }; }
     else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt, #transcript, #askForm, #log") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
     const cs = getComputedStyle(document.body), vars = {};
-    for (const k of ["--menu-bg", "--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
+    for (const k of ["--menu-bg", "--menu-shadow", "--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");

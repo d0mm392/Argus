@@ -5,7 +5,7 @@
   html, body { margin: 0; background: transparent; overflow: hidden; user-select: none; }
   body { font-family: var(--f-body, "Segoe UI", system-ui, sans-serif); color: var(--ink, #dbe7f3); font-size: 13px; }
   #m { box-sizing: border-box; margin: 6px; padding: 6px; border-radius: 12px; border: 1px solid var(--line, rgba(140,180,220,.25));
-    background: var(--menu-bg, hsl(var(--win-h, 219) var(--win-s, 54%) 8% / var(--menu-a, 0.96))); box-shadow: 0 10px 34px rgba(0,0,0,.25);
+    background: var(--menu-bg, hsl(var(--win-h, 219) var(--win-s, 54%) 8% / var(--menu-a, 0.96))); box-shadow: var(--menu-shadow, 0 10px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06));
     max-height: calc(100vh - 12px); overflow-y: auto; }
   #m::-webkit-scrollbar { width: 6px; } #m::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 3px; }
   .t { padding: 4px 8px 6px; color: var(--ink-dim, #a0b2c7); font: 11px var(--f-mono, Consolas, monospace); letter-spacing: .06em; text-transform: uppercase; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

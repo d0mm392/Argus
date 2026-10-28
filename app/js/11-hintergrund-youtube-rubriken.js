@@ -142,7 +142,19 @@
   // ---------- YouTube im Panel ----------
   let ytOn = false, ytSize = "m", ytLast = "", ytOffN = 0;
   const YT_W = { s: 0.5, m: 0.75, l: 1 };
+  function ytSendPosition(element, visualSize = false) {
+    const bounds=element.getBoundingClientRect(),width=visualSize?bounds.width:element.offsetWidth,height=visualSize?bounds.height:element.offsetHeight;
+    const rect={x:bounds.x+bounds.width/2-width/2,y:bounds.y+bounds.height/2-height/2,width,height};
+    const previous=ytLast&&ytLast!=="off"?ytLast.split(",").map(Number):null;
+    if(!previous||previous.length!==4||Math.abs(previous[0]-rect.x)>3||Math.abs(previous[1]-rect.y)>3||Math.abs(previous[2]-rect.width)>3||Math.abs(previous[3]-rect.height)>3){ytLast=[rect.x,rect.y,rect.width,rect.height].map(Math.round).join();window.jarvis.ytRect(rect);}
+  }
   function ytLayout() {
+    if (!$("settings").hidden) {
+      const preview=$("ytPreviewBody");
+      if(ytOn&&expanded&&preview.offsetWidth>40&&preview.offsetHeight>40){ytOffN=0;ytSendPosition(preview,true);}
+      else if(ytLast!=="off"){ytLast="off";window.jarvis.ytRect(null);}
+      return;
+    }
     // ausgeblendet oder (noch) ohne Größe: Video weg statt mit Nullmaßen irgendwo aufzuspringen
     if (!ytOn || !expanded || !$("settings").hidden || $("yt").classList.contains("gone") || $("yt").hidden || !$("yt").offsetWidth) { if (ytLast !== "off" && (!$("settings").hidden || ++ytOffN >= 3)) { ytLast = "off"; window.jarvis.ytRect(null); } return; } // Einstellungen offen: sofort weg (die Ansicht läge sonst über den Einstellungen); sonst erst nach 3 Takten // erst nach 3 Takten (~0,75 s) ausblenden: kurze Layoutsprünge sollen kein Flackern auslösen
     ytOffN = 0;
@@ -159,9 +171,7 @@
       if (availH >= 90 && bh > availH) { bh = availH; w = Math.round(bh * 16 / 9); } }
     $("ytBody").style.width = w + "px"; $("ytBody").style.height = bh + "px";
     // Gekippte Fenster (Tiefe/Neigung) verändern das gemessene Rechteck laufend: Größe aus der ungekippten Maßen, Mitte aus der Messung, und nur bei Änderung über 3 px neu melden (sonst flackert das Video)
-    const b0 = $("ytBody"), r0 = b0.getBoundingClientRect(), W0 = b0.offsetWidth, H0 = b0.offsetHeight, r = { x: r0.x + r0.width / 2 - W0 / 2, y: r0.y + r0.height / 2 - H0 / 2, width: W0, height: H0 };
-    const pl = ytLast && ytLast !== "off" ? ytLast.split(",").map(Number) : null;
-    if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { ytLast = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.ytRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
+    ytSendPosition($("ytBody"));
   }
   setInterval(ytLayout, 250); window.addEventListener("resize", ytLayout);
   window.jarvis.onYtEmbed?.((d) => { ytOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, yt: ytOn }; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
@@ -171,7 +181,6 @@
   const applyYtVo = () => { $("yt").classList.toggle("vo", ytVo); $("ytVo").setAttribute("aria-pressed", String(ytVo)); ytLast = ""; ytLayout(); };
   $("ytVo").addEventListener("click", () => { ytVo = !ytVo; applyYtVo(); window.jarvis.setConfig({ ytVideoOnly: ytVo }); });
   window.jarvis.getConfig?.().then((c) => { ytVo = !!c.ytVideoOnly; applyYtVo(); });
-  $("ytPop").addEventListener("click", () => window.jarvis.ytEmbed("popout"));
   const ytResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(ytSize) + d)); ytSize = o[i]; ytLast = ""; ytLayout(); window.jarvis.setConfig({ ytEmbedSize: ytSize }); };
   $("ytSmaller").addEventListener("click", () => ytResize(-1)); $("ytBigger").addEventListener("click", () => ytResize(1));
 

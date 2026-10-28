@@ -5,7 +5,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' blob: data:; media-src 'self' blob:; img-src 'self' data: https:">
 <title>Argus</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="skins.css">
+<link rel="stylesheet" href="accessibility.css">
+<link rel="stylesheet" href="youtube-window.css">
 </head>
 <body>
 <div class="shell"><canvas id="bgfx" aria-hidden="true"></canvas>
@@ -17,7 +18,7 @@
       </button>
       <button class="btn strata-btn" type="button" id="strataBtn" data-st="aus" title="Strata (große lokale KI) ein- oder ausschalten" aria-label="Strata ein oder aus"><i></i><span>Strata</span></button>
       <button class="btn icon" type="button" id="arrangeBtn" title="Anordnen: Teile im Fenster frei verschieben und in der Größe ändern" aria-label="Anordnen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="5" rx="1.5"></rect><rect x="13" y="10" width="8" height="11" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect></svg></button>
-      <button class="btn icon" type="button" id="ytBtn" title="YouTube mit gewählter Wiedergabe öffnen" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3.5"></rect><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"></path></svg></button>
+      <button class="btn icon" type="button" id="ytBtn" title="YouTube integriert in Argus oeffnen" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3.5"></rect><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"></path></svg></button>
       <button class="btn icon" type="button" id="twBtn" title="Twitch im Panel oder eigenen Fenster" aria-label="Twitch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v11l-4 4h-4l-3 3v-3H4z"></path><path d="M10 8v4M14 8v4"></path></svg></button>
       <button class="btn icon" type="button" id="collapseBtn" hidden title="Zur Kugel verkleinern (Esc)" aria-label="Zur Kugel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5.5"></circle></svg></button>
       <button class="btn icon" type="button" id="minBtn" title="Ausblenden (Argus-Knopf, Tray oder Strg+Umschalt+J holen es zurück, einstellbar unter System)" aria-label="Minimieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17h12"></path></svg></button>
@@ -130,14 +131,7 @@
       <h4 data-tab="Aussehen">Leistung</h4>
       <label class="row">Darstellung im Hintergrund <select id="setBackgroundPresentation"><option value="eco">Energiesparend</option><option value="fluid">Flüssig</option></select></label>
       <p class="set-note">Flüssig hält sichtbare, inaktive Fenster in Bewegung. Minimierte und ausgeblendete Fenster sparen weiterhin Ressourcen. Die vorhandenen Bildraten und der Spielmodus bleiben erhalten.</p>
-      <h4 data-tab="Aussehen">Oberfläche und Skins</h4>
-      <div class="skin-picks" role="group" aria-label="Skin mit Vorschau">
-        <label class="skin-pick"><span class="skin-preview skin-classic" aria-hidden="true"></span><input type="radio" name="uiSkin" value="classic" checked> Klassisch</label>
-        <label class="skin-pick"><span class="skin-preview skin-light" aria-hidden="true"></span><input type="radio" name="uiSkin" value="light"> Apple-inspiriert hell</label>
-        <label class="skin-pick"><span class="skin-preview skin-dark" aria-hidden="true"></span><input type="radio" name="uiSkin" value="dark"> Apple-inspiriert dunkel</label>
-      </div>
       <label class="row">Animationen reduzieren <input type="checkbox" id="setReduceAnimations"></label>
-      <div class="set-note">Alle Skins sind lokal enthalten. Klassisch stellt die bisherigen Farben und Fensterstile wieder dar. Die Windows-Einstellung für weniger Bewegung wird immer berücksichtigt.</div>
       <h4 data-tab="Aussehen">Hintergrund</h4>
       <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="funken">Funkenflug</option><option value="blasen">Blasen</option><option value="wellen">Wellen</option><option value="schnee">Schneefall</option><option value="regen">Regen</option><option value="gewitter">Gewitter</option><option value="nebel">Nebel</option><option value="wolken">Wolken</option><option value="sonne">Sonnenstaub</option><option value="wetter">Wetter am Standort (live)</option></select></label>
       <label class="row" data-bgfor="not:aus">Farbe <select id="setBgHue"><option value="auto">Automatisch (Zustandsfarbe)</option><option value="bunt">Regenbogen (wandert)</option><option value="210">Blau</option><option value="185">Cyan</option><option value="165">Türkis</option><option value="140">Grün</option><option value="68">Limette</option><option value="45">Gold</option><option value="25">Orange</option><option value="355">Rot</option><option value="320">Pink</option><option value="275">Violett</option><option value="custom">Eigener Farbton</option></select></label>
@@ -323,16 +317,17 @@
       <div class="set-note" id="memNote"></div>
       <div class="set-note" id="indexNote"></div>
       <div class="set-actions"><button class="btn" type="button" id="setMemOpen">Gedächtnis-Ordner öffnen</button></div>
-      <h4 data-tab="Panel und Medien">YouTube</h4>
-      <label class="row">YouTube öffnen <select id="setYtMode"><option value="brave">Brave: separates App-Fenster (empfohlen)</option><option value="panel">Electron: im Panel (experimentell)</option><option value="fenster">Electron: eigenes Fenster (experimentell)</option></select></label>
-      <p class="set-note" id="ytPlaybackHint"></p>
-      <label class="row">Electron: experimenteller Werbefilter (kein Brave) <input type="checkbox" id="setYtNoAds"></label>
-      <label class="row">Electron: zusätzliche Werbelisten (kann die Wiedergabe blockieren) <input type="checkbox" id="setYtAdblock"></label>
-      <label class="row">Eigenes YouTube-Fenster immer im Vordergrund <input type="checkbox" id="setYtTop"></label>
-      <label class="row" title="100 % = undurchsichtig. Darunter schimmert das Panel durch, das Video verschmilzt mit der Oberfläche. Falls unter Windows Farbschleier oder Streifen im Video auftauchen: wieder auf 100 % stellen.">YouTube-Transparenz (experimentell) <input type="range" id="setYtAlpha" min="30" max="100" step="5" data-unit=" %"></label>
-      <label class="row" title="Rundet die Ecken des eingebetteten YouTube-Fensters, passend zu den anderen Fenstern. 0 = eckig.">YouTube: runde Ecken <input type="range" id="setYtRound" min="0" max="40" step="1" data-unit=" px"></label>
-      <label class="row" title="Blendet die Kanten des eingebetteten YouTube-Fensters weich aus, damit es mit der Oberfläche verschmilzt. 0 = harte Kante. Der Rand verläuft in deiner Fensterfarbe.">YouTube: weiche Ränder (experimentell) <input type="range" id="setYtFeather" min="0" max="80" step="2" data-unit=" px"></label>
-      <div class="set-note">Öffnen mit dem Knopf oben im Panel oder per Satz: „Öffne YouTube“, „Spiel Lofi auf YouTube“. Die Anmeldung bleibt gespeichert.</div>
+      <h4 data-tab="Aussehen">Fenster: YouTube</h4>
+      <p class="set-note">In Argus integriert, mit Electron. Echtes Brave kann nicht als WebContents eingebettet werden; es wird kein externes Fenster als Ersatz geoeffnet. Dauerhafte Werbefreiheit ist nicht garantiert.</p>
+      <label class="row">Eckenradius <input type="range" id="setYtRound" min="0" max="48" step="1" data-unit=" px"></label>
+      <label class="row">Deckkraft des Fensterhintergrunds <input type="range" id="setYtAlpha" min="0" max="100" step="5" data-unit=" %"></label>
+      <label class="row">Rahmen anzeigen <input type="checkbox" id="setYtFrame"></label>
+      <label class="row">Schatten anzeigen <input type="checkbox" id="setYtShadow"></label>
+      <label class="row">Werbe- und Trackingfilter (Ghostery / EasyList) <input type="checkbox" id="setYtFilter"></label>
+      <p class="set-note" id="ytFilterState"></p>
+      <p class="set-note">Die Deckkraft betrifft nur Argus-Hintergrund und Rahmen. Video, Webseite, Text und Bedienelemente werden nicht ausgebleicht. Position und Groesse bleiben erhalten.</p>
+      <button type="button" class="btn" id="ytPreviewOpen">YouTube in der Live-Vorschau oeffnen</button>
+      <div id="ytAppearancePreview"><small>Live-Vorschau der integrierten Ansicht</small><div id="ytPreviewBody"></div></div>
       <h4 data-tab="Panel und Medien">Twitch</h4>
       <label class="row">Twitch öffnen <select id="setTwMode"><option value="panel">Im Panel</option><option value="fenster">Als eigenes Fenster</option></select></label>
       <label class="row" title="Kanalname oder Adresse, zum Beispiel shroud. Leer lassen = zuletzt gesehener Kanal.">Kanal öffnen <input type="text" id="setTwChan" placeholder="Kanalname" spellcheck="false"></label>
@@ -558,7 +553,7 @@
   </section>
   <div class="arr-bar" id="arrBar"><span>Teile ziehen, an den Ecken Größe ändern, Form ziehen verschiebt sie</span><select id="arrAdd" title="Ausgeblendete Fenster wieder einblenden"></select><select id="arrProf" title="Gespeicherte Anordnung laden"></select><button class="btn" type="button" id="arrProfSave" title="Aktuelle Anordnung als neues Profil speichern">Speichern</button><button class="btn" type="button" id="arrProfDel" title="Gewähltes Profil löschen" hidden>Löschen</button><button class="btn" type="button" id="arrHole" title="Aussparung (freie Stelle für Popups anderer Programme) verschieben und skalieren">Aussparung</button><button class="btn" type="button" id="arrTidy" title="Alle Fenster auf das 8-px-Raster setzen">Am Raster ausrichten</button><button class="btn" type="button" id="arrReset">Zurücksetzen</button><button class="btn primary" type="button" id="arrDone">Fertig</button></div>
   <div class="panel">
-    <div class="yt" id="yt"><div class="yt-head"><span id="ytTitle">YouTube</span><button type="button" id="ytVo" title="Nur Video: YouTube-Oberfläche und Rahmen ausblenden">▣</button><button type="button" id="ytSmaller" title="Kleiner">−</button><button type="button" id="ytBigger" title="Größer">+</button><button type="button" id="ytPop" title="Als eigenes Fenster">⧉</button><button type="button" id="ytClose" title="Schließen">✕</button></div><div class="yt-body" id="ytBody"></div></div>
+    <div class="yt" id="yt"><div class="yt-head"><span id="ytTitle">YouTube</span><button type="button" id="ytVo" title="Nur Video: YouTube-Oberfläche und Rahmen ausblenden">▣</button><button type="button" id="ytSmaller" title="Kleiner">−</button><button type="button" id="ytBigger" title="Größer">+</button><button type="button" id="ytClose" title="Schließen">✕</button></div><div class="yt-body" id="ytBody"></div></div>
     <div class="yt" id="tw"><div class="yt-head"><span id="twTitle">Twitch</span><button type="button" id="twVo" title="Nur Video: Twitch-Oberfläche, Chat und Rahmen ausblenden">▣</button><button type="button" id="twSmaller" title="Kleiner">−</button><button type="button" id="twBigger" title="Größer">+</button><button type="button" id="twPop" title="Als eigenes Fenster">⧉</button><button type="button" id="twClose" title="Schließen">✕</button></div><div class="yt-body" id="twBody"></div></div>
     <p class="proc" id="proc">Wartet auf Eingabe</p>
     <section class="sys" id="sys" aria-label="Systemzustand">
@@ -716,7 +711,9 @@
 <script src="js/14j-fensterstil.js"></script>
 <script src="js/14g-stimmen.js"></script>
 <script src="js/14-start.js"></script>
-<script src="js/18-oberflaeche.js"></script>
+<script src="js/18-appearance-preferences.js"></script>
+<script src="youtube-settings.js"></script>
+<script src="js/18-youtube-settings.js"></script>
 <script src="js/16-i18n-en.js"></script>
 <script src="js/17-sprache.js"></script>
 </body>

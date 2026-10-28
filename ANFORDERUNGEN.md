@@ -1,9 +1,10 @@
 # Anforderungen Argus
 
-Dokumentversion: 1.3 · gilt ab Argus 0.58.23
+Dokumentversion: 1.4 · gilt ab Argus 0.58.24
 
 | Dok.-Version | Argus | Änderung |
 |---|---|---|
+| 1.4 | 0.58.24 | Neue Skins ausschliesslich opt-in; Klassisch ohne gespeicherte Auswahl, Theme-CSS von Klassisch isoliert |
 | 1.3 | 0.58.23 | Getrennte Notizen, ehrliche Discord-Datenquelle, Einstellungen/Skins, Hintergrunddarstellung, Kontextmenüs und echtes Brave |
 | 1.0 | 0.58.20 | Erste Fassung: Sicherheits-Hotfix Selbstverbesserung |
 | 1.1 | 0.58.21 | Schutzprüfung nach tatsächlichem Ziel: R-FILE-1 erweitert, R-FILE-2, R-FILE-3 und R-FILE-5 neu, Grenzen in R-FILE-4 |
@@ -45,7 +46,9 @@ Dokumentversion: 1.3 · gilt ab Argus 0.58.23
 
 - R-NOTES-PAGE: Notizbuecher und Geometrie je stabiler Hauptseiten-ID; verlustfreie einmalige Start-Migration ohne Ueberschreiben bestehender Daten; bestaetigte letzte Speicherung und getrennte Sicherung. Tests: notes-store, notes-pages, notes-layout.
 - R-DC-VOICE: Sprachkanal-Teilnehmer unabhaengig von Freundschaft/Markierung erhalten; ID-Deduplizierung. Keine Server-Onlineliste als Freundesersatz. Ohne freigegebenen offiziellen Relationship-Zugriff bleibt der Online-Freundezusatz mit Hinweis nicht verfuegbar; alte Optionswerte bleiben gespeichert. Tests: discord-list, friends-settings.
-- R-UI-SKIN: Acht Kategorien mit Suche und Tastatur; lokal gebuendelte klassische/helle/dunkle Skins und reduzierte Bewegung ohne Datenverlust. Tests: settings, skins.
+- R-UI-SETTINGS: Acht Kategorien mit Suche und Tastatur; funktionale reduzierte Bewegung. Ab 0.58.24 ausschliesslich Klassisch. Tests: settings, classic-theme.
 - R-BG-PRESENT: Gemeinsame Einstellung eco/fluid fuer Einstellungen und Kontextmenue; neuer Standard fluid fuer sichtbare inaktive Fenster, verborgen/minimiert Drosselung erlauben. Bestehende FPS-Werte erhalten. Tests: background-presentation, menus; Messung des Produkt-Renderers getrennt dokumentieren.
 - R-MENU-ACCESS: Tastatur, Untermenue-Fokus/Zurueck, korrekte Auswahl und Position; native Textbearbeitungsrollen und kontextbezogene Widget-Menues. Tests: menus. Eine gezielte Menuepruefung ersetzt keinen Nachweis der gesamten allgemeinen UI-Suite.
-- R-YT-BRAVE: Echtes vorhandenes brave.exe als separates App-Fenster bevorzugen; einmalige Modusmigration sichern, kein stiller Engine-Ersatz. Keine fremden Profile/Cookies oder Sicherheits-Overrides. Electron-Modi ehrlich experimentell. Tests: youtube-brave, youtube-mode; oeffentliche Wiedergabe inklusive Ton mit getrenntem Profil pruefen, keine dauerhafte Werbefreiheit zusagen.
+- R-YT-INTEGRATED: Ab 0.58.24 ausschliesslich integriertes Electron-WebContentsView, kein externes Brave-Ersatzfenster. Hintergrunddeckkraft, Radius, Rahmen und Schatten live und dauerhaft speichern; Video/Bedienelemente deckend, Layout erhalten. Ein regulärer Netzwerkfilter ohne Scriptlet-/Warnungsmanipulationen; echte Bild-/Tonwiedergabe mit getrenntem Profil pruefen, keine dauerhafte Werbefreiheit zusagen. Tests: youtube-settings, youtube-mode und isolierter Live-Test.
+
+- R-UI-CLASSIC: Apple-Skins, Auswahl und Vorschauen vollstaendig entfernen. Gespeicherte Apple-Auswahl ausschliesslich auf classic migrieren; sonstige Einstellungen unveraendert. Originales style.css vor Skins unveraendert, funktionale Verbesserungen erhalten. Test: classic-theme mit Original-CSS und berechneten Styles, settings, menus.

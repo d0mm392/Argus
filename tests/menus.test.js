@@ -69,12 +69,6 @@ async function run() {
   ipcMain.emit("ctx-menu", { sender: window.webContents }, { edit: true });
   assert.deepEqual(Array.from(native[0], item => item.role).filter(Boolean), ["undo", "redo", "cut", "copy", "paste", "selectAll"]);
   assert.equal(visible("Argus Menü").length, 0);
-  await evaluate(`document.querySelector('[name="uiSkin"][value="light"]').click();true`);
-  const light = await open("Start");
-  assert.equal(await light.webContents.executeJavaScript('getComputedStyle(document.getElementById("m")).backgroundColor'), "rgb(255, 255, 255)");
-  assert.equal(await light.webContents.executeJavaScript('getComputedStyle(document.body).color'), "rgb(32, 36, 44)");
-  fs.writeFileSync(path.join(process.env.ARGUS_TEST_ARTIFACTS || fixture.profile, "menu-light.png"), (await light.capturePage()).toPNG());
-  context.closeMenus();
   assert.deepEqual(errors, []);
   console.log("PASS menus: actual main menu handlers + renderer, Start/Mining, visible windows, keyboard submenu/back, radio state, shared background preference, screen bounds, native editing roles");
   app.exit(0);

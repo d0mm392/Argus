@@ -1,0 +1,13 @@
+# Argus 0.58.24 – Klassisch und integriertes YouTube
+
+- Klassisch ist wieder die einzige Oberfläche. Apple Hell, Apple Dunkel, Auswahl und Vorschauen sind entfernt. Gespeicherte Skin-Auswahlen werden auf Klassisch zurückgeführt; andere Einstellungen bleiben erhalten.
+- Die funktionalen Verbesserungen bleiben: unabhängige Seitennotizen mit Sicherung, geordnete Einstellungen mit Suche, Discord-Sprachkanäle, Hintergrunddarstellung und zugängliche Kontextmenüs.
+- YouTube bleibt im integrierten Argus-Fenster. Die externe Brave-Ausweichlösung ist entfernt. Electron ist ausdrücklich kein eingebettetes Brave; dauerhafte Werbefreiheit ist nicht garantiert.
+- Unter Aussehen → Fenster: YouTube sind Eckenradius, Hintergrunddeckkraft, Rahmen und Schatten mit Live-Vorschau einstellbar. Video, Text und Bedienelemente bleiben deckend; Position und Größe bleiben erhalten.
+- Ein einzelner Netzwerkfilter ersetzt die bisherige Kombination mit Seiten-Manipulationen. Keine Entfernung von Wiedergabewarnungen, keine automatischen externen Popups. Die Einstellung kann ausdrücklich ausgeschaltet werden; Filterfehler werden angezeigt.
+
+Gezielte Classic-Prüfung gegen das Stylesheet vor Einführung der Skins, Migrationen, Einstellungen, Menüs einschließlich Mining, Seitennotizen und Discord-Anzeige. Zwei öffentliche Videos spielten im integrierten Fenster mit Bild und gemessenem Ton; Pause/Fortsetzen, Vollbild, Größenänderung und erneutes Öffnen wurden geprüft. In diesen Momentaufnahmen keine Werbesperre beobachtet; zeitweise waren Filterlisten beim ersten Öffnen nicht erreichbar und wurden beim erneuten Aufruf geladen. Eine bestehende persönliche YouTube-Sitzung wurde nicht ausgelesen oder nachgestellt. Die zusätzlichen persönlichen Online-Freunde bleiben mangels freigegebener offizieller Datenquelle als nicht verfügbar gekennzeichnet; Servermitglieder ersetzen keine Freunde.
+
+Bekannte Nachweisgrenzen: Die ältere allgemeine Menü-/UI-Suite wurde nicht insgesamt bestanden; gezielte Menüprüfungen ersetzen sie nicht. Der bekannte Windows-Steam-Testdatenfehler besteht bereits im Ausgangsstand. Der **VM-Nachweis für symbolische Links fehlt** weiterhin; keine neue vollständige VM-Installations-/Updater-Serie. Einzelheiten zu früheren Prüfungen stehen in den Versionshinweisen zu 0.58.21–0.58.23; Aussagen zu Apple-Skins und externem Brave aus 0.58.23 werden durch diese Version ersetzt.
+
+Empfehlung: Testkanal, keine Stable-Freigabe. Die lokale Installation wird nicht verändert.
