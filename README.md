@@ -2,10 +2,17 @@
 
 Desktop-Assistent: eine animierte Neuronen-Kugel (Kugel, Hexagon, Würfel, Gehirn und mehr) als Statusanzeige und Zugang zu einer KI, dazu Systemwache, Mining-Überblick und Gaming-Seite. Läuft als schlankes Widget in einer Bildschirmecke oder als frei anordenbares Panel.
 
-Aktuelle Version: **0.58.19** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source`](https://github.com/d0mm392/Argus/tree/source)
+Aktuelle Version: **0.58.20** · Lizenz: **GPL-3.0** · Quellcode: Zweig [`source`](https://github.com/d0mm392/Argus/tree/source)
 
-**Download (Windows):** [Argus-Setup-0.58.19.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.58.19.exe) direkt herunterladen. Das Setup liegt im Zweig `updates`; „Code → Download ZIP“ auf dieser Seite enthält nur die Dokumentation, kein Setup.
+**Download (Windows):** [Argus-Setup-0.58.20.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.58.20.exe) direkt herunterladen. Das Setup liegt im Zweig `updates`; „Code → Download ZIP“ auf dieser Seite enthält nur die Dokumentation, kein Setup.
 
+## Neu in 0.58.20 (Sicherheits-Hotfix)
+
+- **Selbstverbesserung abgeschaltet.** Argus lässt Claude Code nicht mehr am eigenen Programm arbeiten. Befehle wie „Verbessere dich“, „Prüf dich auf Fehler“, „Übernehmen“ oder „Rückgängig“ werden mit „Die Selbstverbesserung ist aus Sicherheitsgründen abgeschaltet.“ beantwortet. Beim Start werden keine Sicherungen der Selbstverbesserung mehr zurückgespielt, und es gibt keinen automatischen Neustart.
+- Vorhandene Daten der Selbstverbesserung bleiben auf der Festplatte. Argus nimmt sie aber nicht mehr in den Dateiindex auf, zeigt sie nicht in Suchergebnissen, öffnet sie nicht und kopiert sie beim Profilumzug nicht mit.
+- Startfehler werden jetzt auch beim allerersten Start in `argus-error.log` protokolliert.
+- **Bekannte Einschränkung:** Die Sperre für das Lesen und Auflisten der eigenen Programm- und Profildaten arbeitet anhand der Pfadnamen. Zugriffe über Junctions, symbolische Links oder andere Schreibweisen desselben Windows-Pfads sind **nicht** abgedeckt. Das ist keine vollständige Absicherung. Sie ist für eine Folgeversion vorgesehen.
+- Das Setup ist nicht signiert. SHA-256 von `Argus-Setup-0.58.20.exe`: `04136ec05aa315d99a062e6a35a237c8f626265b49501141fc1a65a2175ecdef`
 ## Was Argus kann
 
 - **KI:** Claude (über [Claude Code](https://claude.com/download) mit eigenem Konto oder per API-Schlüssel), ChatGPT, Gemini, Mistral, Groq, OpenRouter oder ein eigener OpenAI-kompatibler Server, außerdem lokale Modelle (Ollama, Strata). Spracheingabe mit „Hallo Claude“, Gedächtnis, einfache Aktionen (Programme öffnen, Dateien suchen).

@@ -1,8 +1,8 @@
-version: 0.58.19
+version: 0.58.20
 files:
-  - url: Argus-Setup-0.58.19.exe
-    sha512: vNT3NYGtiJBWU4U2BM+DYGcqVA4yaPJr2OAtQhVrJdz0rqhfpoHZoiwuA1TkkaoAGhqdhmN31boNNz6JjFPKlw==
-    size: 95068916
-path: Argus-Setup-0.58.19.exe
-sha512: vNT3NYGtiJBWU4U2BM+DYGcqVA4yaPJr2OAtQhVrJdz0rqhfpoHZoiwuA1TkkaoAGhqdhmN31boNNz6JjFPKlw==
-releaseDate: '2026-10-23T10:43:33.143Z'
+  - url: Argus-Setup-0.58.20.exe
+    sha512: +WPZO/7p+G0QENJdLWdIYTOewDI9ZBPyMy05505lk9jnRg193v7fiMaKNkIuQEWAHS/t5o6fqJTvEP/EGbdhRQ==
+    size: 90295190
+path: Argus-Setup-0.58.20.exe
+sha512: +WPZO/7p+G0QENJdLWdIYTOewDI9ZBPyMy05505lk9jnRg193v7fiMaKNkIuQEWAHS/t5o6fqJTvEP/EGbdhRQ==
+releaseDate: '2026-10-28T09:56:20.387Z'
