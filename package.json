@@ -1,13 +1,17 @@
 {
   "name": "argus-desktop",
-  "version": "0.58.22",
+  "version": "0.58.23",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis --x64",
     "test": "node --test tests/unit.test.js && xvfb-run -a electron --no-sandbox tests/ui.test.js",
-    "test:portal-download": "electron tests/portal-download.test.js"
+    "test:portal-download": "electron tests/portal-download.test.js",
+    "test:regression:unit": "node --test tests/notes-store.test.js tests/background-presentation.test.js tests/youtube-brave.test.js",
+    "test:skins": "electron tests/skins.test.js",
+    "test:menus": "electron tests/menus.test.js",
+    "test:notes": "electron tests/notes-layout.test.js"
   },
   "keywords": [],
   "author": "Argus",

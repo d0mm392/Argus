@@ -38,16 +38,15 @@ function pgRows() {
   const box = $("pgRows"); if (!box) return;
   const SW = { Mining: "setPagesOn", Gaming: "setGamingOn", Trading: "setTradeOn" };
   const row = (n, custom) => { const l = document.createElement("div"); l.className = "row"; const sw = !custom && SW[n] ? $(SW[n]) : null; l.append(n + (custom ? "" : sw ? (sw.checked ? " (sichtbar)" : " (ausgeblendet)") : " (immer da)"));
-    if (sw) { const t = document.createElement("button"); t.type = "button"; t.className = "btn"; t.textContent = sw.checked ? "Ausblenden" : "Einblenden"; t.addEventListener("click", () => { sw.checked = !sw.checked; sw.dispatchEvent(new Event("change")); pgRows(); }); l.append(t); }
     if (custom) { const a = document.createElement("button"), b = document.createElement("button"); a.type = b.type = "button"; a.className = b.className = "btn"; a.textContent = "Öffnen"; b.textContent = "Löschen"; a.addEventListener("click", () => switchPage(n)); b.addEventListener("click", () => { if (page !== n) switchPage(n); pgDialog("del"); }); l.append(a, b); } return l; };
   box.replaceChildren(...BUILTIN_PAGES.map((n) => row(n, false)), ...customPages.map((n) => row(n, true)));
 }
 $("pgForm").addEventListener("submit", (e) => {
   e.preventDefault(); const name = $("pgName").value.trim().replace(/\s+/g, " ");
-  if (pgMode === "del") { const old = page; switchPage("Start"); customPages = customPages.filter((x) => x !== old); delete pages[old]; delete pageLooks[old]; window.jarvis.setConfig({ pageLooks }); pgSave(); pgTabs(); pgClose(); return; }
+  if (pgMode === "del") { const old = page; switchPage("Start"); window.notesArchivePage?.(old); customPages = customPages.filter((x) => x !== old); delete pages[old]; delete pageLooks[old]; window.jarvis.setConfig({ pageLooks }); pgSave(); pgTabs(); pgClose(); return; }
   const bad = !name ? "Bitte einen Namen eingeben." : !/^[^<>"'\\]{1,16}$/.test(name) ? "Name enthält ungültige Zeichen." : BUILTIN_PAGES.concat(customPages).some((x) => x.toLowerCase() === name.toLowerCase() && !(pgMode === "rename" && x === page)) ? "Diesen Namen gibt es schon." : customPages.length >= 8 && pgMode === "new" ? "Mehr als 8 eigene Seiten gehen nicht." : "";
   if (bad) { $("pgErr").textContent = bad; return; }
-  if (pgMode === "rename") { const old = page; customPages = customPages.map((x) => x === old ? name : x); pages[name] = pages[old] || snapPage(); delete pages[old]; if (pageLooks[old]) { pageLooks[name] = pageLooks[old]; delete pageLooks[old]; window.jarvis.setConfig({ pageLooks }); } page = name; pgSave(); pgTabs(); pageClasses(); pgClose(); return; }
+  if (pgMode === "rename") { const old = page; window.notesRenamePage?.(old, name); customPages = customPages.map((x) => x === old ? name : x); pages[name] = pages[old] || snapPage(); delete pages[old]; if (pageLooks[old]) { pageLooks[name] = pageLooks[old]; delete pageLooks[old]; window.jarvis.setConfig({ pageLooks }); } page = name; pgSave(); pgTabs(); pageClasses(); pgClose(); return; }
   const copy = $("pgFrom").value === "kopie"; if (copy) { pages[name] = snapPage(); pageLooks[name] = JSON.parse(JSON.stringify({ ball: ballLook(), win: window.winStyleGet?.() || {}, looks: window.looksGet?.() || {} })); }
   customPages = [...customPages, name]; pgTabs(); pgClose(); switchPage(name); pgSave();
   try { notice("Seite angelegt. Rechtsklick → Anordnen: Fenster einblenden, verschieben, Größe ziehen."); } catch {}

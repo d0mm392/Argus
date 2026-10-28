@@ -8,7 +8,7 @@ let hostFn = () => "", hookedFor = "", langHdr = "";
 const FULL = () => { try { const u = new URL(String(hostFn() || "").trim()); return u.protocol === "https:" && /^[a-z0-9.-]+$/i.test(u.hostname) ? u.href : ""; } catch { return ""; } };
 const HOST = () => { const f = FULL(); return f ? new URL(f).origin : ""; };
 const PART = "persist:portal";
-let hadToken = false, electron = null, token = "", lang = "ru", win = null, hooked = false, timer = null, busy = false;
+let electron = null, token = "", lang = "ru", win = null, timer = null, busy = false;
 let snap = { on: false, state: "off", ts: 0, err: "" };
 const downloadSessions = new WeakSet();
 let retryNavigation = false, navigationId = 0;
@@ -52,7 +52,7 @@ function noteReq(u, hasAuth) {
 // Den Pfad der Miner-Abfrage merken wir uns; der Schlüssel (falls die Seite einen schickt) bleibt nur im Arbeitsspeicher.
 function hook(ses) {
   guardDownloads(ses);
-  const h = HOST(); if (!h || hookedFor === h) return; hookedFor = h; hooked = true;
+  const h = HOST(); if (!h || hookedFor === h) return; hookedFor = h;
   ses.webRequest.onBeforeSendHeaders({ urls: ["https://*/*"] }, (d, cb) => {
     try {
       const u = new URL(d.url), m = /^(.*)\/miners\/?$/.exec(u.pathname);
@@ -144,7 +144,7 @@ async function poll() {
     snap = { ...snap, state: "ok", ts: Date.now(), err: "", ...sm };
     if (win && !win.isDestroyed() && win.isVisible()) win.close(); // angemeldet und verbunden: Anmeldefenster schließt sich
   } catch (e) {
-    if (e.auth) { token = ""; seenMiners = false; apiBase = ""; hadToken = false; snap.state = "login"; snap.err = "Bitte neu anmelden."; } else snap.err = String(e.message || e).slice(0, 80); // Zähler vom letzten Mal bleiben stehen
+    if (e.auth) { token = ""; seenMiners = false; apiBase = ""; snap.state = "login"; snap.err = "Bitte neu anmelden."; } else snap.err = String(e.message || e).slice(0, 80); // Zähler vom letzten Mal bleiben stehen
   } finally { busy = false; }
 }
 let sampleOut = null, sampled = false;

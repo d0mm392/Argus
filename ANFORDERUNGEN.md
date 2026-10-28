@@ -1,9 +1,10 @@
 # Anforderungen Argus
 
-Dokumentversion: 1.2 · gilt ab Argus 0.58.22
+Dokumentversion: 1.3 · gilt ab Argus 0.58.23
 
 | Dok.-Version | Argus | Änderung |
 |---|---|---|
+| 1.3 | 0.58.23 | Getrennte Notizen, ehrliche Discord-Datenquelle, Einstellungen/Skins, Hintergrunddarstellung, Kontextmenüs und echtes Brave |
 | 1.0 | 0.58.20 | Erste Fassung: Sicherheits-Hotfix Selbstverbesserung |
 | 1.1 | 0.58.21 | Schutzprüfung nach tatsächlichem Ziel: R-FILE-1 erweitert, R-FILE-2, R-FILE-3 und R-FILE-5 neu, Grenzen in R-FILE-4 |
 | 1.2 | 0.58.22 | R-PORTAL-DL-1: Hintergrund-Downloads des automatisch geladenen Portals ohne Speicherdialog abbrechen |
@@ -37,5 +38,14 @@ Dokumentversion: 1.2 · gilt ab Argus 0.58.22
 | Geschützter Bereich | bekannt | Geschützt sind Profilordner, Daten der Selbstverbesserung und die Zugangsdaten-Muster. Programmordner und Gedächtnisordner sind nicht gesperrt; das Gedächtnis ist über die Gedächtniswerkzeuge ohnehin zugänglich. |
 | Windows-Inhaltssuche | bekannt | Treffer werden nachträglich gefiltert. Was die Windows-Suche selbst indiziert, steuert Argus nicht. Die echte Abfrage gegen den Suchindex ist nur mit ersetzten COM-Aufrufen getestet (P14). |
 | Claude Code | bekannt | Claude Code bekommt in Argus nur die Argus-Werkzeuge (`--allowedTools`). Eingebaute Werkzeuge von Claude Code sind über diese Freigabe ausgeschlossen, nicht über die Schutzprüfung. |
-| Windows-Testnachweise | teilweise **offen** | P3/P3b (einschließlich verkürztem geschütztem Ordnernamen) und P13 (`subst`) sind in der vorhandenen VM unter Node 20 und 24 bestanden. P5 (symbolische Links) besteht auf dem Host unter beiden Laufzeiten, bleibt im VM-Konto mangels Rechten übersprungen. Echte `.lnk`-Dateien und Programm-/Dokumentzugriffe wurden am gebauten Paket in der VM geprüft. `Get-AppxPackage`/`Get-StartApps`, Windows-Suchindex-COM und Paket-App-Aktivierung bleiben ohne echten Integrationstest; diese Prüfungen verwenden weiterhin Attrappen. Einzelheiten und verbleibende allgemeine Testfehler stehen in `RELEASE-NOTES-0.58.21.md`. |
+| Windows-Testnachweise | teilweise **offen** | P3/P3b (einschließlich verkürztem geschütztem Ordnernamen) und P13 (`subst`) sind in der vorhandenen VM unter Node 20 und 24 bestanden. P5 (symbolische Links) besteht auf dem Host unter beiden Laufzeiten, bleibt im VM-Konto mangels Rechten übersprungen. Echte `.lnk`-Dateien und Programm-/Dokumentzugriffe wurden am gebauten Paket in der VM geprüft. `Get-AppxPackage`/`Get-StartApps`, Windows-Suchindex-COM und Paket-App-Aktivierung bleiben ohne echten Integrationstest; diese Prüfungen verwenden weiterhin Attrappen. Einzelheiten und verbleibende allgemeine Testfehler stehen in `ABSCHLUSS-0.58.21.md`. |
 | Großschreibung | bekannt | Verglichen wird ohne Unterscheidung von Groß- und Kleinbuchstaben im ASCII-Sinn. Die geschützten Namen enthalten nur ASCII. |
+
+## Erweiterungen ab 0.58.23
+
+- R-NOTES-PAGE: Notizbuecher und Geometrie je stabiler Hauptseiten-ID; verlustfreie einmalige Start-Migration ohne Ueberschreiben bestehender Daten; bestaetigte letzte Speicherung und getrennte Sicherung. Tests: notes-store, notes-pages, notes-layout.
+- R-DC-VOICE: Sprachkanal-Teilnehmer unabhaengig von Freundschaft/Markierung erhalten; ID-Deduplizierung. Keine Server-Onlineliste als Freundesersatz. Ohne freigegebenen offiziellen Relationship-Zugriff bleibt der Online-Freundezusatz mit Hinweis nicht verfuegbar; alte Optionswerte bleiben gespeichert. Tests: discord-list, friends-settings.
+- R-UI-SKIN: Acht Kategorien mit Suche und Tastatur; lokal gebuendelte klassische/helle/dunkle Skins und reduzierte Bewegung ohne Datenverlust. Tests: settings, skins.
+- R-BG-PRESENT: Gemeinsame Einstellung eco/fluid fuer Einstellungen und Kontextmenue; neuer Standard fluid fuer sichtbare inaktive Fenster, verborgen/minimiert Drosselung erlauben. Bestehende FPS-Werte erhalten. Tests: background-presentation, menus; Messung des Produkt-Renderers getrennt dokumentieren.
+- R-MENU-ACCESS: Tastatur, Untermenue-Fokus/Zurueck, korrekte Auswahl und Position; native Textbearbeitungsrollen und kontextbezogene Widget-Menues. Tests: menus. Eine gezielte Menuepruefung ersetzt keinen Nachweis der gesamten allgemeinen UI-Suite.
+- R-YT-BRAVE: Echtes vorhandenes brave.exe als separates App-Fenster bevorzugen; einmalige Modusmigration sichern, kein stiller Engine-Ersatz. Keine fremden Profile/Cookies oder Sicherheits-Overrides. Electron-Modi ehrlich experimentell. Tests: youtube-brave, youtube-mode; oeffentliche Wiedergabe inklusive Ton mit getrenntem Profil pruefen, keine dauerhafte Werbefreiheit zusagen.

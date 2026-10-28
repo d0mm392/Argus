@@ -6,7 +6,7 @@ document.body.dataset.os = /Win/i.test(navigator.platform || navigator.userAgent
   "use strict";
   const $ = (id) => document.getElementById(id);
   const canvas = $("brain"), ctx = canvas.getContext("2d");
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let expanded = false;
 // Hintergrund-Zustand steht hier, weil frühe Konfig-Antworten ihn schon vor dem Laden von 11-hintergrund-youtube.js brauchen
   const bg = { mode: "partikel", hueMode: "auto", hueN: 210, op: 1, amt: 1, cv: $("bgfx"), parts: [], kind: "", w: 0, h: 0, last: 0, flash: 0, raf: 0 };

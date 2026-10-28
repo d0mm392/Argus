@@ -1,0 +1,37 @@
+"use strict";
+const { app, BrowserWindow } = require("electron");
+const fs = require("fs"), path = require("path"), os = require("os"), assert = require("assert/strict");
+app.setPath("userData", fs.mkdtempSync(path.join(os.tmpdir(), "argus-notes-test-")));
+app.on("window-all-closed", () => {});
+app.whenReady().then(async () => {
+  const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+  await w.loadURL("data:text/html,<textarea id='notesText'></textarea><select id='notesFolder'></select><div id='notesTabs'></div><input id='notesAsk'><input id='setNotesOn'><div id='notes'></div><button id='notesAdd'></button><span id='notesState'></span>");
+  await w.webContents.executeJavaScript(fs.readFileSync(path.join(__dirname, "../app/notes-store.js"), "utf8"));
+  const s = fs.readFileSync(path.join(__dirname, "../app/js/09-wetter-mining-farm-notizen.js"), "utf8");
+  const section = s.slice(s.indexOf("  let notesOn ="), s.indexOf("  // ---------- Schnellstart"));
+  const setup = `const $ = id => document.getElementById(id), fitPanel = () => {}, notice = () => {}; let saved = window.argusNotesStore.migrate({notesText:'legacy'},()=> 'fixture'); window.jarvis = { getConfig: async () => ({...saved, page:'Start', notesOn:true}), setConfig: async patch => {saved = {...saved, ...structuredClone(patch)};} };`;
+  await w.webContents.executeJavaScript(setup + section);
+  const result = await w.webContents.executeJavaScript(`(async () => {
+    const type = value => { $('notesText').value = value; $('notesText').dispatchEvent(new Event('input')); };
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const legacy = $('notesText').value;
+    type('Start unsaved'); window.notesSwitchPage('Gaming'); const gamingEmpty = $('notesText').value;
+    type('Game fast'); window.notesSwitchPage('Mining'); const miningEmpty = $('notesText').value;
+    type('Mine delayed'); await sleep(800); window.notesSwitchPage('Trading'); const tradingEmpty = $('notesText').value;
+    type('Trade note'); window.notesSwitchPage('Gaming'); const game = $('notesText').value;
+    window.notesSwitchPage('Start'); const start = $('notesText').value;
+    window.notesSwitchPage('Office'); type('Custom'); window.notesRenamePage('Office', 'Renamed');
+    window.notesSwitchPage('Start'); window.notesSwitchPage('Renamed'); const renamed = $('notesText').value;
+    window.dispatchEvent(new Event('beforeunload')); await sleep(30);
+    return { legacy, gamingEmpty, miningEmpty, tradingEmpty, game, start, renamed, saved };
+  })()`);
+  assert.equal(result.legacy, "legacy"); assert.equal(result.gamingEmpty, ""); assert.equal(result.miningEmpty, "");
+  assert.equal(result.start, "Start unsaved"); assert.equal(result.game, "Game fast"); assert.equal(result.renamed, "Custom");
+  assert.equal(result.tradingEmpty, ""); assert.equal(result.saved.notesByPage.trading.pages[0].text, "Trade note");
+  assert.equal(result.saved.notesByPage.mining.pages[0].text, "Mine delayed");
+  const disk = path.join(app.getPath("userData"), "synthetic-notes.json"); fs.writeFileSync(disk, JSON.stringify(result.saved));
+  const restart = require("../app/notes-store").migrate(JSON.parse(fs.readFileSync(disk)), () => { throw Error("ID changed"); });
+  assert.deepEqual(restart.notesByPage, result.saved.notesByPage);
+  console.log("PASS notes: legacy/empty other pages/fast typing + switch/delayed save/rename/unload/serialized restart"); app.exit(0);
+}).catch(e => { console.error(e.stack); app.exit(1); });
+setTimeout(() => app.exit(2), 15000).unref();

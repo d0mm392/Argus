@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' blob: data:; media-src 'self' blob:; img-src 'self' data: https:">
 <title>Argus</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="skins.css">
 </head>
 <body>
 <div class="shell"><canvas id="bgfx" aria-hidden="true"></canvas>
@@ -16,7 +17,7 @@
       </button>
       <button class="btn strata-btn" type="button" id="strataBtn" data-st="aus" title="Strata (große lokale KI) ein- oder ausschalten" aria-label="Strata ein oder aus"><i></i><span>Strata</span></button>
       <button class="btn icon" type="button" id="arrangeBtn" title="Anordnen: Teile im Fenster frei verschieben und in der Größe ändern" aria-label="Anordnen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="5" rx="1.5"></rect><rect x="13" y="10" width="8" height="11" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect></svg></button>
-      <button class="btn icon" type="button" id="ytBtn" title="YouTube im eigenen Fenster" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3.5"></rect><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"></path></svg></button>
+      <button class="btn icon" type="button" id="ytBtn" title="YouTube mit gewählter Wiedergabe öffnen" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="3.5"></rect><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"></path></svg></button>
       <button class="btn icon" type="button" id="twBtn" title="Twitch im Panel oder eigenen Fenster" aria-label="Twitch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v11l-4 4h-4l-3 3v-3H4z"></path><path d="M10 8v4M14 8v4"></path></svg></button>
       <button class="btn icon" type="button" id="collapseBtn" hidden title="Zur Kugel verkleinern (Esc)" aria-label="Zur Kugel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5.5"></circle></svg></button>
       <button class="btn icon" type="button" id="minBtn" title="Ausblenden (Argus-Knopf, Tray oder Strg+Umschalt+J holen es zurück, einstellbar unter System)" aria-label="Minimieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17h12"></path></svg></button>
@@ -126,6 +127,17 @@
       <div class="set-note">Der Spiegel zeigt ein schon geöffnetes Fenster live im Panel, nur auf diesem PC. Das Original darf nicht minimiert sein (Windows liefert dann kein Bild). Das gewählte Fenster wird gemerkt und wieder gespiegelt, sobald es erscheint.</div>
       <label class="row">KI-Verlauf im Panel (welche KI, Werkzeuge, Dauer, Tokens) <input type="checkbox" id="setAiLog"></label>
       <div class="set-note">Ein freies Textfeld im Panel, z. B. für To-dos oder Miner-Nummern. Wird beim Tippen gespeichert, bleibt nur auf diesem PC. Im Anordnen-Modus verschiebst du ihn und änderst die Größe wie die anderen Fenster.</div>
+      <h4 data-tab="Aussehen">Leistung</h4>
+      <label class="row">Darstellung im Hintergrund <select id="setBackgroundPresentation"><option value="eco">Energiesparend</option><option value="fluid">Flüssig</option></select></label>
+      <p class="set-note">Flüssig hält sichtbare, inaktive Fenster in Bewegung. Minimierte und ausgeblendete Fenster sparen weiterhin Ressourcen. Die vorhandenen Bildraten und der Spielmodus bleiben erhalten.</p>
+      <h4 data-tab="Aussehen">Oberfläche und Skins</h4>
+      <div class="skin-picks" role="group" aria-label="Skin mit Vorschau">
+        <label class="skin-pick"><span class="skin-preview skin-classic" aria-hidden="true"></span><input type="radio" name="uiSkin" value="classic" checked> Klassisch</label>
+        <label class="skin-pick"><span class="skin-preview skin-light" aria-hidden="true"></span><input type="radio" name="uiSkin" value="light"> Apple-inspiriert hell</label>
+        <label class="skin-pick"><span class="skin-preview skin-dark" aria-hidden="true"></span><input type="radio" name="uiSkin" value="dark"> Apple-inspiriert dunkel</label>
+      </div>
+      <label class="row">Animationen reduzieren <input type="checkbox" id="setReduceAnimations"></label>
+      <div class="set-note">Alle Skins sind lokal enthalten. Klassisch stellt die bisherigen Farben und Fensterstile wieder dar. Die Windows-Einstellung für weniger Bewegung wird immer berücksichtigt.</div>
       <h4 data-tab="Aussehen">Hintergrund</h4>
       <label class="row">Bewegter Hintergrund im Panel <select id="setBgFx"><option value="aus">Aus</option><option value="partikel">Schwebende Partikel</option><option value="sterne">Sternenhimmel</option><option value="nordlicht">Nordlicht</option><option value="netz">Netzwerk</option><option value="hash">Hash-Regen</option><option value="gluehw">Glühwürmchen</option><option value="funken">Funkenflug</option><option value="blasen">Blasen</option><option value="wellen">Wellen</option><option value="schnee">Schneefall</option><option value="regen">Regen</option><option value="gewitter">Gewitter</option><option value="nebel">Nebel</option><option value="wolken">Wolken</option><option value="sonne">Sonnenstaub</option><option value="wetter">Wetter am Standort (live)</option></select></label>
       <label class="row" data-bgfor="not:aus">Farbe <select id="setBgHue"><option value="auto">Automatisch (Zustandsfarbe)</option><option value="bunt">Regenbogen (wandert)</option><option value="210">Blau</option><option value="185">Cyan</option><option value="165">Türkis</option><option value="140">Grün</option><option value="68">Limette</option><option value="45">Gold</option><option value="25">Orange</option><option value="355">Rot</option><option value="320">Pink</option><option value="275">Violett</option><option value="custom">Eigener Farbton</option></select></label>
@@ -259,9 +271,10 @@
       <div class="set-note">Schlüssel kostenlos unter steamcommunity.com/dev/apikey holen (Domain: localhost). Profil und Freundesliste müssen öffentlich sein.</div><button class="help-btn" type="button" data-help="steam">So geht’s</button>
       <h4 data-tab="Freunde">Discord</h4>
       <label class="row">Discord anzeigen <input type="checkbox" id="setDiscordOn"></label>
-      <label class="row">Nur Leute im Sprachkanal zeigen <input type="checkbox" id="setDcVoice"></label>
-      <label class="row">Auch Leute zeigen, die nur online sind <input type="checkbox" id="setDcOnline"></label>
-      <label class="row" title="Discord gibt die eigene Freundesliste nicht heraus. Rechtsklick auf eine Person in der Liste: „Als Freund markieren“. Mit diesem Schalter erscheinen nur noch die markierten.">Nur markierte Discord-Freunde zeigen <input type="checkbox" id="setDcMarked"></label>
+      <label class="row">Sprachkanal-Teilnehmer anzeigen (immer) <input type="checkbox" id="setDcVoice" disabled></label>
+      <label class="row">Online-Freunde zusätzlich anzeigen <input type="checkbox" id="setDcOnline" disabled aria-describedby="dcFriendsUnavailable"></label>
+      <label class="row" title="Gilt nur für zusätzlich angezeigte persönliche Freunde. Sprachkanal-Teilnehmer bleiben sichtbar.">Nur markierte Discord-Freunde zusätzlich anzeigen <input type="checkbox" id="setDcMarked" disabled></label>
+      <p class="set-note" id="dcFriendsUnavailable"></p>
       <label class="col">Discord-Server-IDs (mehrere mit Komma) <input type="text" id="setDiscord" placeholder="z. B. 123456789012345678"></label>
       <div class="set-note">Auf dem Server muss das Widget an sein: Servereinstellungen → Beteiligung → Server-Widget aktivieren. Discord gibt den Status deiner privaten Freunde nicht heraus, nur Server.</div><button class="help-btn" type="button" data-help="discordServer">So geht’s</button>
       <label class="col">Dein Name auf den Servern (wie er im Sprachkanal steht) <input type="text" id="setDcName" placeholder="z. B. OnkelDom"></label>
@@ -311,9 +324,10 @@
       <div class="set-note" id="indexNote"></div>
       <div class="set-actions"><button class="btn" type="button" id="setMemOpen">Gedächtnis-Ordner öffnen</button></div>
       <h4 data-tab="Panel und Medien">YouTube</h4>
-      <label class="row">YouTube öffnen <select id="setYtMode"><option value="panel">Im Panel, unten links</option><option value="fenster">Als eigenes Fenster</option><option value="brave">In Brave (App-Fenster)</option></select></label>
-      <label class="row">Werbung auf YouTube herausfiltern (wie Brave) <input type="checkbox" id="setYtNoAds"></label>
-      <label class="row">Zusätzlich Werbelisten (kann schwarzes Bild verursachen) <input type="checkbox" id="setYtAdblock"></label>
+      <label class="row">YouTube öffnen <select id="setYtMode"><option value="brave">Brave: separates App-Fenster (empfohlen)</option><option value="panel">Electron: im Panel (experimentell)</option><option value="fenster">Electron: eigenes Fenster (experimentell)</option></select></label>
+      <p class="set-note" id="ytPlaybackHint"></p>
+      <label class="row">Electron: experimenteller Werbefilter (kein Brave) <input type="checkbox" id="setYtNoAds"></label>
+      <label class="row">Electron: zusätzliche Werbelisten (kann die Wiedergabe blockieren) <input type="checkbox" id="setYtAdblock"></label>
       <label class="row">Eigenes YouTube-Fenster immer im Vordergrund <input type="checkbox" id="setYtTop"></label>
       <label class="row" title="100 % = undurchsichtig. Darunter schimmert das Panel durch, das Video verschmilzt mit der Oberfläche. Falls unter Windows Farbschleier oder Streifen im Video auftauchen: wieder auf 100 % stellen.">YouTube-Transparenz (experimentell) <input type="range" id="setYtAlpha" min="30" max="100" step="5" data-unit=" %"></label>
       <label class="row" title="Rundet die Ecken des eingebetteten YouTube-Fensters, passend zu den anderen Fenstern. 0 = eckig.">YouTube: runde Ecken <input type="range" id="setYtRound" min="0" max="40" step="1" data-unit=" px"></label>
@@ -673,14 +687,17 @@
 <script src="js/01-grundlagen.js"></script>
 <script src="js/02-kugel-formen.js"></script>
 <script src="js/02b-koerper.js"></script>
+<script src="discord-list.js"></script>
 <script src="js/03-freundesliste.js"></script>
 <script src="js/04-auslastung-zustand.js"></script>
 <script src="js/05-maus-anordnung.js"></script>
 <script src="js/06-bedienung.js"></script>
 <script src="js/07-ki-fenster-farben-anzeigen.js"></script>
 <script src="js/08-einstellungen-einrichtung.js"></script>
+<script src="notes-store.js"></script>
 <script src="js/09-wetter-mining-farm-notizen.js"></script>
 <script src="js/10-anordnen-modus.js"></script>
+<script src="settings-categories.js"></script>
 <script src="js/11-hintergrund-youtube-rubriken.js"></script>
 <script src="js/12-ki-frage-sprache-systemwache.js"></script>
 <script src="js/13-optik-interaktion.js"></script>
@@ -699,6 +716,7 @@
 <script src="js/14j-fensterstil.js"></script>
 <script src="js/14g-stimmen.js"></script>
 <script src="js/14-start.js"></script>
+<script src="js/18-oberflaeche.js"></script>
 <script src="js/16-i18n-en.js"></script>
 <script src="js/17-sprache.js"></script>
 </body>

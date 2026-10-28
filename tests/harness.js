@@ -14,7 +14,7 @@ async function run(body) {
   const w = BrowserWindow.getAllWindows().find((x) => x.getTitle() === "Argus");
   if (!w) { check("START", false, "Hauptfenster fehlt"); return app.exit(1); }
   const ev = (c) => w.webContents.executeJavaScript(c);
-  const menus = () => BrowserWindow.getAllWindows().filter((x) => x.getTitle() === "Argus Menü" && x.isVisible());
+  const menus = () => BrowserWindow.getAllWindows().filter((x) => /^Argus (Menü|Untermenü)$/.test(x.getTitle()) && x.isVisible());
   try { await body({ w, ev, wait, check, menus, BrowserWindow, app, dir }); } catch (e) { check("TESTLAUF", false, String(e.stack || e)); }
   check("R-QUAL-1 keine Konsolenfehler im Renderer", errs.length === 0, errs.slice(0, 5));
   check("R-QUAL-2 keine Fehler im Hauptprozess (z. B. frische Installation ohne gespeicherte Ansicht)", mainErrs.length === 0, mainErrs.slice(0, 3));

@@ -10,7 +10,7 @@
     scales = cfg.scales || {};
     swayMul = { schweben: 1, leicht: 0.4, fest: 0 }[cfg.sway] ?? 1; ytSize = cfg.ytEmbedSize || "m"; dcVoiceOnly = cfg.discordVoiceOnly !== false; dcAlsoOnline = !!cfg.discordAlsoOnline; dcOnlyMarked = !!cfg.dcOnlyMarked; dcMarked = Array.isArray(cfg.dcMarked) ? cfg.dcMarked : [];
     winColor = { ...winColor, ...(cfg.winColor || {}) }; friendsBox = { ...friendsBox, ...(cfg.friendsBox || {}) }; friendsFold = cfg.friendsFold || {}; myDc = normDc(cfg.discordName); extraVoice = cfg.extraVoice || []; bot = cfg.dcBot || bot; dcIcons = cfg.dcIcons !== false; mediaOn = cfg.mediaOn !== false; sysBox = { ...sysBox, ...(cfg.sysBox || {}) }; applySysBox();
-    ballOff = cfg.ballOff || ballOff; freeLayout = cfg.panelLayout && Object.keys(cfg.panelLayout).length ? cfg.panelLayout : null; applyLayout();
+    ballOff = cfg.ballOff || ballOff; freeLayout = cfg.panelLayout && Object.keys(cfg.panelLayout).length ? cfg.panelLayout : null; restoreNotesGeometry(cfg.page || "Start"); applyLayout();
     if (cfg.pillOff) pillOff = { small: { x: 0, y: 0, s: 1, ...cfg.pillOff.small }, big: { x: 0, y: 0, s: 1, ...cfg.pillOff.big } }; applyPill(); applyWinColor(); applyFriendsBox();
     btcCur = cfg.btcCur || "USD"; autoOpen = cfg.autoOpen !== false; if (cfg.market) market = cfg.market;
     opacity = { ...opacity, ...(cfg.opacity || {}) }; applyOpacity();

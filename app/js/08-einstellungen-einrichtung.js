@@ -22,7 +22,7 @@
     $("setMicFloat").checked = c.micFloat !== false; $("setShape").value = shape; markShape(); $("setShapeRim").checked = shapeRim; $("setGlow").value = glowK; $("setSway").value = c.sway || "schweben";
     $("setTaskbarShow").value = c.taskbarShow || "nie"; $("setAfterHide").value = c.afterHide || "mini"; $("setTaskbarFront").checked = c.taskbarFront === true; $("setOnTop").value = c.onTop || "kugel"; $("setWakeFront").checked = c.wakeFront !== false; $("setAutoOpen").checked = c.autoOpen !== false;
     $("setSteamOn").checked = c.steamOn !== false; $("setDiscordOn").checked = c.discordOn !== false;
-    $("setDcVoice").checked = c.discordVoiceOnly !== false; $("setDcOnline").checked = !!c.discordAlsoOnline; $("setDcMarked").checked = !!c.dcOnlyMarked; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "panel"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
+    $("setDcVoice").checked = true; $("setDcOnline").checked = !!c.discordAlsoOnline; $("setDcMarked").checked = !!c.dcOnlyMarked; $("setDcName").value = c.discordName || ""; $("setDcBot").value = ""; $("setDcBot").placeholder = c.hasDcBot ? "gespeichert (leer lassen = unverändert)" : "noch keiner eingetragen"; $("setDcIcons").checked = c.dcIcons !== false; bot = c.dcBot || bot; setBotStatus(); $("setDcExtra").value = (c.extraVoice || []).map((v) => (v.name ? v.name + " " : "") + `https://discord.com/channels/${v.g}/${v.c}`).join("\n"); $("setOverlay").checked = c.voiceOverlay !== false; $("setOvCorner").value = c.overlayCorner || "oben-links"; $("setOvMode").value = c.overlayMode || "streamkit"; $("setYtMode").value = c.ytMode || "brave"; $("setYtAdblock").checked = c.ytAdblock === true; $("setYtNoAds").checked = c.ytNoAds !== false;
     $("setYtTop").checked = !!c.ytOnTop; winColor = { ...winColor, ...(c.winColor || {}) }; syncWinInputs();
     const fi = c.fileIndex || {};
     $("indexNote").textContent = fi.ok ? `Dateiverzeichnis aller Laufwerke: Stand ${new Date(fi.ts).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}, ${fi.mb} MB.` : "Dateiverzeichnis aller Laufwerke: wird noch aufgebaut (beim ersten Start einige Minuten). Bis dahin sucht Argus nur im Benutzerordner.";
@@ -538,3 +538,18 @@
 
 $("setDonate").addEventListener("change", (e) => { const v = e.target.value.trim(); window.jarvis.setConfig({ donateUrl: /^https:\/\/\S+$/i.test(v) ? v : "" }); if (v && !/^https:\/\//i.test(v)) { e.target.value = ""; try { notice("Nur https-Adressen sind erlaubt."); } catch {} } });
 $("setDonateBtn").addEventListener("click", () => window.jarvis.openDonate?.());
+
+// Saved requests remain intact; unavailable relationships access never substitutes server members.
+$("dcFriendsUnavailable").textContent = window.argusDiscordList.capability.reason;
+$("setDcVoice").checked = true;
+
+$("setBackgroundPresentation").addEventListener("change", e => window.jarvis.setConfig({ backgroundPresentation: e.target.value }));
+window.jarvis.getConfig().then(c => { $("setBackgroundPresentation").value = c.backgroundPresentation || "fluid"; });
+
+function refreshYoutubeMode() {
+  const brave = $("setYtMode").value === "brave";
+  for (const id of ["setYtNoAds", "setYtAdblock", "setYtTop", "setYtAlpha", "setYtRound", "setYtFeather"]) $(id).disabled = brave;
+  $("ytPlaybackHint").textContent = brave ? "Echtes Brave in einem separaten App-Fenster. Brave Shields und dessen Profil bleiben beim Browser; Argus greift nicht auf Browser-Cookies zu. Werbung oder Sperren können sich ändern. Die Electron-Optionen darunter gelten hier nicht." : "Experimentelle Electron-Wiedergabe, kein Brave. Die eigenen Werbefilter können von YouTube erkannt werden. Bei einer Sperre echtes Brave wählen.";
+}
+$("setYtMode").addEventListener("change", refreshYoutubeMode);
+window.jarvis.getConfig().then(c => { refreshYoutubeMode(); if (c.braveAvailable === false) $("ytPlaybackHint").textContent += " Brave ist auf diesem PC nicht verfügbar. Kein automatischer Ersatzbrowser."; });

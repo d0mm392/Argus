@@ -26,6 +26,8 @@
       box.style.top = (r.bottom + bh + 8 < innerHeight ? r.bottom + 4 : Math.max(8, r.top - bh - 4)) + "px";
     }, 300);
   });
+  body.addEventListener("focusin", e => e.target.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+  body.addEventListener("focusout", hide);
   body.addEventListener("mouseout", (e) => { if (cur && !cur.contains(e.relatedTarget)) hide(); });
   body.addEventListener("scroll", hide); body.addEventListener("pointerdown", hide);
 })();

@@ -1,0 +1,69 @@
+/* Bundled Argus skins. System fonts and existing local SVGs only. */
+:root {
+  --ui-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --ui-text: 14px; --ui-caption: 12px; --ui-title: 18px;
+  --ui-space-1: 4px; --ui-space-2: 8px; --ui-space-3: 12px; --ui-space-4: 16px;
+  --ui-radius: 12px; --ui-control-radius: 8px; --ui-control-height: 34px; --ui-icon: 20px;
+  --ui-shadow: 0 8px 28px #0000001f;
+}
+body[data-ui-skin="light"] {
+  color-scheme: light;
+  --ui-surface: #ffffff; --ui-background: #f3f4f6; --ui-field: #f0f2f5;
+  --ui-ink: #20242c; --ui-muted: #535b68; --ui-accent: #075ecb; --ui-border: #c8cdd5;
+  --ui-success: #126433; --ui-warning: #805000; --ui-danger: #a62c24; --ui-info: #61439a;
+  --win-h: 220 !important; --win-s: 12% !important; --win-l: 97% !important;
+}
+body[data-ui-skin="dark"] {
+  color-scheme: dark;
+  --ui-surface: #24282f; --ui-background: #191c21; --ui-field: #30353e;
+  --ui-ink: #f1f3f7; --ui-muted: #b4bdcc; --ui-accent: #82b8ff; --ui-border: #505966;
+  --ui-success: #80dba4; --ui-warning: #f2c47c; --ui-danger: #ffaaa1; --ui-info: #c8aeff;
+  --win-h: 220 !important; --win-s: 12% !important; --win-l: 13% !important;
+}
+body[data-ui-skin="light"], body[data-ui-skin="dark"] {
+  --ink: var(--ui-ink) !important; --ink-dim: var(--ui-muted) !important;
+  --accent: var(--ui-accent) !important; --line: var(--ui-border) !important;
+  --menu-bg: var(--ui-surface); --panel: var(--ui-surface) !important; --win-solid: var(--ui-surface) !important; --field: var(--ui-field) !important;
+  font: var(--ui-text)/1.5 var(--ui-font); color: var(--ui-ink);
+}
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]).expanded .shell { background: var(--ui-background); }
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) :is(.settings,.report-pop,.t-add form,.ctxmenu,.pg-menu,.friends,.panel > .blk:not(.yt):not(.tw)) {
+  background: var(--ui-surface); color: var(--ui-ink); border-color: var(--ui-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow); backdrop-filter: none;
+}
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) :is(button,input,select,textarea) {
+  font-family: var(--ui-font); border-radius: var(--ui-control-radius); accent-color: var(--ui-accent);
+}
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) :is(.btn,.set-tabs button,.pages button,.notes-tabs button) {
+  background: var(--ui-field); color: var(--ui-ink); border: 1px solid var(--ui-border); box-shadow: none; text-shadow: none;
+}
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) :is(input:not([type=checkbox]):not([type=range]):not([type=radio]),select,textarea) {
+  background: var(--ui-field); color: var(--ui-ink); border-color: var(--ui-border);
+}
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) .btn svg { width: var(--ui-icon); height: var(--ui-icon); }
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) :is(.set-tabs button[aria-selected=true],.pages button.on) { background: var(--ui-accent); color: var(--ui-surface); }
+/* Settings stay readable and keyboard accessible in every skin, including classic. */
+.settings .set-body { gap: var(--ui-space-1); }
+.settings .set-body .row { min-height: var(--ui-control-height); gap: var(--ui-space-3); padding-block: var(--ui-space-1); font-size: 14px; line-height: 1.4; }
+.settings .set-body :is(select,input[type=text],input[type=password],button) { min-height: 30px; font-size: 13px; }
+.settings .set-body input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); }
+.settings .set-body h4 { font: 600 var(--ui-caption)/1.5 var(--ui-font); letter-spacing: .04em; min-height: var(--ui-control-height); }
+:is(button,input,select,textarea,[tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.skin-picks { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--ui-space-2); padding-block: var(--ui-space-2); }
+.skin-pick { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2); border: 1px solid var(--line); border-radius: var(--ui-radius); cursor: pointer; }
+.skin-pick input[type=radio] { width: 18px; height: 18px; min-width: 18px; min-height: 18px; margin: 0; padding: 0; }
+.skin-pick .skin-preview { grid-column: 1 / -1; width: 100%; }
+body:is([data-ui-skin="light"], [data-ui-skin="dark"]) .bar .btn.icon { background: var(--ui-field); color: var(--ui-ink); }
+/* Existing status colors were tuned for dark backgrounds. Keep their meaning
+   while making status text readable on the light skin too. */
+body[data-ui-skin="light"] :is(.farm-ev li.ok,.report-pop tr.ok td:first-child,.sys-head b[data-health="ok"],.media .mh b,.cr-item .tag.sent,.su-card small.ok,.mine-grid span.down) { color: var(--ui-success); }
+body[data-ui-skin="light"] :is(.sys-head b[data-health="warn"],.mine-grid span.up,.su-card small) { color: var(--ui-warning); }
+body[data-ui-skin="light"] :is(.farm-ev li.bad,.report-pop tr.bad td:first-child,.sys-head b[data-health="crit"],.mine-w li.off) { color: var(--ui-danger); }
+body[data-ui-skin="light"] .ailog .farm-ev li.tool { color: var(--ui-info); }
+.skin-pick:has(input:checked) { outline: 2px solid var(--accent); }
+.skin-preview { display: block; height: 58px; margin-bottom: var(--ui-space-2); border: 1px solid #818997; border-radius: var(--ui-control-radius); padding: 10px; }
+.skin-preview::before { content: "ARGUS"; display: block; font-weight: 600; letter-spacing: .1em; }
+.skin-preview::after { content: "━━  ━━  ━━"; opacity: .7; }
+.skin-classic { color: #dbe7f3; background: #0b1423; } .skin-light { color: #20242c; background: #f3f4f6; } .skin-dark { color: #f1f3f7; background: #24282f; }
+body.reduce-animations *, body.reduce-animations *::before, body.reduce-animations *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+@media (max-width: 720px) { .settings { inset: 76px 8px 8px; } .set-head { flex-wrap: wrap; } .set-tabs { flex-wrap: wrap; } .settings .set-body .row { flex-wrap: wrap; } .skin-picks { grid-template-columns: 1fr; } }

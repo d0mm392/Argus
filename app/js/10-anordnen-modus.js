@@ -413,8 +413,17 @@
     window.jarvis.setConfig({ pageLooks });
   }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
+  window.notesGeometryRead = () => copyJ({ layout: freeLayout?.notes || null, pin: pins.notes || null, scale: scales.notes ?? null });
+  function restoreNotesGeometry(name) {
+    const geometry = window.notesPageGeometry?.(name); if (!geometry) return;
+    if (geometry.layout) { freeLayout ||= {}; freeLayout.notes = copyJ(geometry.layout); }
+    else if (freeLayout) delete freeLayout.notes;
+    if (geometry.pin) pins.notes = copyJ(geometry.pin); else delete pins.notes;
+    if (geometry.scale != null) scales.notes = geometry.scale; else delete scales.notes;
+  }
   function switchPage(n) {
     if (n === page) return;
+    window.notesSwitchPage?.(n);
     savePageLookNow(); pages[page] = snapPage(); page = n; loadPageLook(n);
     const def = PAGE_DEF[n] || (isCustom(n) ? CUSTOM_DEF : null), pf = pages[n] || (def ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !def.includes(id)), pins: {}, scales: {} } : null);
     if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming" && !isCustom(n)) hiddenSet.add("game"); if (n !== "Trading" && !isCustom(n)) for (const id of TRADE_IDS) hiddenSet.add(id); else for (const id of TRADE_IDS) if (!pages[n]) hiddenSet.delete(id); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
@@ -423,7 +432,7 @@
       widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; widgets.friends = { ...widgets.friends, on: pf.friendsOn !== false }; $("setFriendsOn").checked = widgets.friends.on; try { buildWidgetRows(); } catch {}
       friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; gripSt.f1 = null; gripSt.f2 = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
       window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
-      applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
+      restoreNotesGeometry(n); applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }
   function applyMiningOn() {
@@ -542,8 +551,8 @@
     else if (e.target.closest?.("#strataBtn")) target = { kind: "strata" };
     else if (e.target.closest?.(".friends")) { const f2 = !!e.target.closest(".friends.f2"); target = { kind: "blk", id: f2 ? "friends2" : "friends", name: f2 ? "Discord-Liste" : "Freundesliste" }; }
     else { const bk = expanded ? e.target.closest?.(".panel > .blk, .panel > .sys, .panel > .yt, #transcript, #askForm, #log") : null; if (bk && BLOCK_NAMES[bk.id]) target = { kind: "blk", id: bk.id, name: BLOCK_NAMES[bk.id] }; else { const h = hit(e, true); if (h.inside || h.rim) target = { kind: "ball" }; } }
-    const cs = getComputedStyle(document.documentElement), vars = {};
-    for (const k of ["--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
+    const cs = getComputedStyle(document.body), vars = {};
+    for (const k of ["--menu-bg", "--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
     const cfg = await window.jarvis.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");

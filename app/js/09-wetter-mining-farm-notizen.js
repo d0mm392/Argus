@@ -483,9 +483,29 @@
   function renderNotes() { $("notes").hidden = !notesOn; fitPanel?.(); }
   $("setNotesOn").addEventListener("change", (e) => { notesOn = e.target.checked; renderNotes(); window.jarvis.setConfig({ notesOn }); if (notesOn) setTimeout(() => $("notesText").focus({ preventScroll: true }), 50); });
   // Mehrere Seiten, optional in Ordnern. Rechtsklick auf einen Reiter: umbenennen, Ordner, löschen
-  let nPages = [], nCur = "", nFolder = "";
+  let nPages = [], nCur = "", nFolder = "", nOwner = "start", nByPage = {}, nIds = {}, nReady = false;
   const nPage = () => nPages.find((p) => p.id === nCur) || nPages[0];
-  const nSave = () => window.jarvis.setConfig({ notesPages: nPages, notesCur: nCur });
+  const nSave = (synchronous = false) => {
+    if (!nReady) return;
+    nByPage[nOwner] = { ...(nByPage[nOwner] || {}), pages: window.argusNotesStore.clone(nPages), current: nCur, folder: nFolder,
+      ...(window.notesGeometryRead ? { geometry: window.notesGeometryRead() } : {}) };
+    const snapshot = { notesByPage: window.argusNotesStore.clone(nByPage), pageIds: { ...nIds } };
+    return synchronous === true && window.jarvis.saveNotesNow ? window.jarvis.saveNotesNow(snapshot) : window.jarvis.setConfig(snapshot);
+  };
+  window.notesPageId = (name) => {
+    if (!Object.hasOwn(nIds, name)) Object.defineProperty(nIds, name, { value: "page-" + Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""), enumerable: true, configurable: true, writable: true });
+    return nIds[name];
+  };
+  window.notesRenamePage = (old, name) => { const id = window.notesPageId(old); Object.defineProperty(nIds, name, { value: id, enumerable: true, configurable: true, writable: true }); delete nIds[old]; nSave(); };
+  window.notesArchivePage = name => { delete nIds[name]; nSave(); };
+  window.notesPageGeometry = name => window.argusNotesStore.clone(nByPage[window.notesPageId(name)]?.geometry || null);
+  window.notesSwitchPage = (name) => {
+    if (!nReady) return;
+    nFlush(); nOwner = window.notesPageId(name);
+    const state = window.argusNotesStore.clone(nByPage[nOwner] || window.argusNotesStore.empty());
+    nPages = state.pages; nCur = state.current; nFolder = state.folder || "";
+    $("notesText").value = nPage()?.text || ""; nRender(); $("notesState").textContent = "";
+  };
   function nRender() {
     const folders = [...new Set(nPages.map((p) => p.folder).filter(Boolean))];
     if (nFolder && !folders.includes(nFolder)) nFolder = "";
@@ -514,18 +534,24 @@
     const kd = (e) => { e.stopPropagation(); if (e.key === "Enter") fin(true); else if (e.key === "Escape") fin(false); }, bl = () => fin(false);
     i.addEventListener("keydown", kd); i.addEventListener("blur", bl);
   }
-  function nCommit() { const p = nPage(); if (p) p.text = $("notesText").value.slice(0, 50000); }
+  function nCommit() { const p = nPage(); if (p) p.text = $("notesText").value; }
   $("notesAdd").addEventListener("click", () => { if (nPages.length >= 50) return notice("Mehr als 50 Seiten gehen nicht"); nCommit();
     const p = { id: "n" + Date.now().toString(36), name: "Seite " + (nPages.length + 1), folder: nFolder, text: "" }; nPages.push(p); nCur = p.id; $("notesText").value = ""; nRender(); nSave(); nAsk("Name der neuen Seite", p.name, (v) => { p.name = v; nRender(); nSave(); }); });
-  const nFlush = () => { clearTimeout(notesT); if (!nPages.length) return; nCommit(); nSave(); };
-  window.addEventListener("beforeunload", nFlush); window.addEventListener("pagehide", nFlush); document.addEventListener("visibilitychange", () => { if (document.hidden) nFlush(); });
+  const nFlush = (synchronous = false) => { clearTimeout(notesT); if (!nPages.length) return; nCommit(); nSave(synchronous === true); };
+  window.addEventListener("beforeunload", () => nFlush(true)); window.addEventListener("pagehide", () => nFlush(true)); document.addEventListener("visibilitychange", () => { if (document.hidden) nFlush(); });
   $("notesText").addEventListener("blur", nFlush);
   $("notesFolder").addEventListener("change", (e) => { nCommit(); nFolder = e.target.value; nRender(); $("notesText").value = nPage()?.text || ""; nSave(); });
   $("notesText").addEventListener("input", () => { $("notesState").textContent = "…"; clearTimeout(notesT); notesT = setTimeout(() => { nCommit(); nSave(); $("notesState").textContent = "gespeichert"; setTimeout(() => { $("notesState").textContent = ""; }, 1500); }, 600); });
   $("notesText").addEventListener("keydown", (e) => e.stopPropagation()); // Tippen löst keine Tastenkürzel aus
-  window.jarvis.getConfig?.().then((c) => { notesOn = !!c.notesOn; $("setNotesOn").checked = notesOn; nPages = Array.isArray(c.notesPages) && c.notesPages.length ? c.notesPages.filter((p) => p && p.id).map((p) => ({ id: String(p.id), name: String(p.name || "Seite").slice(0, 40), folder: String(p.folder || "").slice(0, 40), text: String(p.text || "") })) : [{ id: "n1", name: "Notizen", folder: "", text: c.notesText || "" }];
-      if (!nPages.length) nPages = [{ id: "n1", name: "Notizen", folder: "", text: "" }];
-      nCur = c.notesCur || nPages[0].id; $("notesText").value = nPage().text; nRender(); renderNotes(); });
+  window.jarvis.getConfig?.().then((c) => {
+    notesOn = !!c.notesOn; $("setNotesOn").checked = notesOn;
+    const scoped = window.argusNotesStore.migrate(c, () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""));
+    nIds = scoped.pageIds; nByPage = scoped.notesByPage;
+    nOwner = window.notesPageId(c.page || "Start"); nReady = true;
+    const state = window.argusNotesStore.clone(nByPage[nOwner] || window.argusNotesStore.empty());
+    nPages = state.pages; nCur = state.current; nFolder = state.folder || "";
+    $("notesText").value = nPage()?.text || ""; nRender(); renderNotes();
+  });
   // ---------- Schnellstart: eigene Programme per Klick starten ----------
   let quickOn = false, quickSize = 44, quickLabels = true;
   function ctxMenu(x, y, title, items) {

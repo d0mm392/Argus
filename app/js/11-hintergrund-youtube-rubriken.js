@@ -236,7 +236,7 @@
     const body = document.querySelector(".set-body"), names = [], secs = [];
     let cur = null, sec = null;
     for (const el of [...body.children]) {
-      if (el.tagName === "H4") { if (el.dataset.tab) cur = el.dataset.tab; sec = { h: el, key: el.textContent, items: [], tab: cur || "Kugel und Farbe" }; secs.push(sec); }
+      if (el.tagName === "H4") { cur = window.argusSettingsCategories.section(el.textContent, el.dataset.tab || cur); sec = { h: el, key: el.textContent, items: [], tab: cur || "Kugel und Farbe" }; secs.push(sec); }
       else if (sec) sec.items.push(el);
       el.dataset.in = cur || "Kugel und Farbe";
       if (!names.includes(el.dataset.in)) names.push(el.dataset.in);
@@ -245,22 +245,28 @@
     let open = {}; try { open = JSON.parse(localStorage.getItem("jarvisSetOpen") || "{}"); } catch {}
     const firstOf = {}; for (const x of secs) firstOf[x.tab] ??= x.key;
     const isOpen = (x) => open[x.key] ?? firstOf[x.tab] === x.key;
-    const ORDER = ["Kugel und Farbe", "Aussehen", "Panel und Medien", "Seiten", "Freunde", "Mining", "Smart Home", "Stimme und KI", "Benachrichtigungen", "System", "Design-Test", "Fehlerberichte"];
+    const ORDER = window.argusSettingsCategories.order;
     names.sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
     let sel = ORDER[0], q = ""; try { sel = localStorage.getItem("jarvisSetTab") || sel; } catch {}
     if (!names.includes(sel)) sel = names[0];
     const render = () => {
       const s2 = q.trim().toLowerCase();
       for (const x of secs) {
-        const hHit = !!s2 && x.h.textContent.toLowerCase().includes(s2), hits = x.items.map((el) => !s2 || hHit || el.textContent.toLowerCase().includes(s2));
+        const hHit = !!s2 && x.h.textContent.toLowerCase().includes(s2), hits = x.items.map((el) => !s2 || hHit || (el.textContent + " " + (el.dataset.tip || "") + " " + (el.title || "")).toLowerCase().includes(s2));
         const anyHit = hHit || hits.some(Boolean), inTab = s2 ? anyHit : x.tab === sel, op = s2 ? true : isOpen(x);
-        x.h.classList.toggle("tab-hidden", !inTab); x.h.classList.toggle("closed", !op);
+        x.h.classList.toggle("tab-hidden", !inTab); x.h.classList.toggle("closed", !op); x.h.setAttribute("aria-expanded", String(op));
         x.items.forEach((el, k) => el.classList.toggle("tab-hidden", !inTab || !op || !hits[k]));
       }
       for (const b of $("setTabs").children) b.setAttribute("aria-selected", String(!s2 && b.dataset.tab === sel));
     };
     const show = (n) => { sel = n; q = ""; $("setFind").value = ""; try { localStorage.setItem("jarvisSetTab", n); } catch {} render(); body.scrollTop = 0; };
     for (const x of secs) x.h.addEventListener("click", () => { if (q) return; open[x.key] = !isOpen(x); try { localStorage.setItem("jarvisSetOpen", JSON.stringify(open)); } catch {} render(); });
+    for (const x of secs) { x.h.tabIndex = 0; x.h.setAttribute("role", "button"); x.h.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); x.h.click(); } }); }
+    $("setTabs").addEventListener("keydown", e => {
+      const buttons = [...$("setTabs").querySelectorAll("button")], i = buttons.indexOf(document.activeElement);
+      const j = e.key === "ArrowRight" ? (i + 1) % buttons.length : e.key === "ArrowLeft" ? (i + buttons.length - 1) % buttons.length : e.key === "Home" ? 0 : e.key === "End" ? buttons.length - 1 : -1;
+      if (j >= 0) { e.preventDefault(); buttons[j].focus(); buttons[j].click(); }
+    });
     $("setFind").addEventListener("input", (e) => { q = e.target.value; render(); body.scrollTop = 0; });
     $("setTabs").replaceChildren(...names.map((n) => { const b = document.createElement("button"); b.type = "button"; b.role = "tab"; b.textContent = n; b.dataset.tab = n; b.addEventListener("click", () => show(n)); return b; }));
     // Schalter „Mining in Argus anzeigen“: alles Mining in den Einstellungen verschwindet, nur der Schalter selbst bleibt

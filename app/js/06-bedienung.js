@@ -214,7 +214,7 @@
       cycle: () => (market?.steam?.online || []).map((f) => f.name + (f.game ? " · " + f.game : "")),
       tip: () => (market?.steam?.online || []).slice(0, 12).map((f) => f.name + (f.game ? " – " + f.game : "")).join("\n") || "Kein Freund online", click: () => window.jarvis.setConfig({ newsOn: true }) },
     { key: "dc", w: "discord", name: "DISCORD", ang: 2.6, ph: 7.3,
-      cycle: () => (market?.discord?.servers || []).filter((x) => !x.error).flatMap((x) => x.online.filter((m) => !dcVoiceOnly || m.voice).map((m) => m.name + (m.voice ? " · " + m.voice : m.game ? " · " + m.game : ""))).slice(0, 40), get: () => { const sv = (market?.discord?.servers || []).filter((x) => !x.error); return sv.length ? sv.reduce((n, x) => n + (x.count || 0), 0) : null; }, txt: (v) => v + " online",
+      cycle: () => (market?.discord?.servers || []).filter((x) => !x.error).flatMap((x) => window.argusDiscordList.voiceMembers(x.online).map((m) => m.name + (m.voice ? " · " + m.voice : m.game ? " · " + m.game : ""))).slice(0, 40), get: () => { const sv = (market?.discord?.servers || []).filter((x) => !x.error); return sv.length ? sv.reduce((n, x) => n + (x.count || 0), 0) : null; }, txt: (v) => v + " online",
       tip: () => (market?.discord?.servers || []).filter((x) => !x.error).map((x) => x.server + ": " + x.online.filter((m) => m.voice).map((m) => m.name + " (" + m.voice + ")").join(", ")).join("\n") || "", click: () => window.jarvis.setConfig({ newsOn: true }) },
     ...[2.95, 0.12, 2.15, 0.98, 3.45, 6.0, 1.65, 5.5, 2.55, 0.55, 4.4, 5.1].map((ang, i) => ({ key: "fan" + i, w: "fans", name: "", ang, ph: 4 + i, get: () => fanOf(i)?.val,
       txt: (v) => (v === 0 ? "steht" : v + " " + (fanOf(i)?.unit || "rpm")), label: () => (fanOf(i)?.name || "Lüfter").replace(/#/g, "").replace(/\s+/g, " ") })),
@@ -375,6 +375,8 @@
   const wave = new Float32Array(26), waveTarget = new Float32Array(26);
   let lastT = performance.now(), time = 0, lite = false;
   let lastAct = performance.now(), fpsIdle = 30, fpsMax = 60;
+  let presentationState = { mode: "fluid", visible: true, focused: true };
+  window.jarvis.onBackgroundPresentation?.(s => { presentationState = s; const select = $("setBackgroundPresentation"); if (select) select.value = s.mode; });
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) addEventListener(ev, () => { lastAct = performance.now(); }, { passive: true, capture: true });
   // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
   let videoWin = false; window.jarvis.onVideoWin?.((v) => { videoWin = v; });
@@ -387,7 +389,7 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    const calm = !(presentationState.mode === "fluid" && presentationState.visible && !presentationState.focused) && state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
     if (!once && now - lastT < (window.videoBusy() && !drag ? Math.max(minMs, 33) : minMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)

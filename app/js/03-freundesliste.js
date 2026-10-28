@@ -60,9 +60,10 @@
       const b = document.createElement("b"); b.textContent = p.name; const sm = document.createElement("small"); sm.textContent = sub;
       d.append(av, b, sm); d.title = p.name + " · " + sub;
       if (!p.sid) d.dataset.dcn = normDc(p.name || "");
+      if (!p.sid) d.dataset.dcid = window.argusDiscordList.discordId(p);
       if (p.sid) { d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openSteam(p.sid); notice(`Steam-Chat mit ${p.name} wird geöffnet …`); }); d.querySelector("small").textContent += " · Klick: Chat"; }
       else if (url) d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openUrl(url); });
-      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[dcMarked.includes(normDc(p.name)) ? `„${p.name}“: Freund-Markierung entfernen` : `„${p.name}“ als Freund markieren`, () => { const k = normDc(p.name); dcMarked = dcMarked.includes(k) ? dcMarked.filter((x) => x !== k) : [...dcMarked, k]; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcMarked }); }], [`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.jarvis.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
+      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[(dcMarked.includes("id:" + d.dataset.dcid) || dcMarked.includes(normDc(p.name))) ? `„${p.name}“: Markierung entfernen` : `„${p.name}“ lokal markieren`, () => { const keys = [normDc(p.name), ...(d.dataset.dcid ? ["id:" + d.dataset.dcid] : [])], k = keys.at(-1); dcMarked = keys.some(key => dcMarked.includes(key)) ? dcMarked.filter(key => !keys.includes(key)) : [...dcMarked, k]; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcMarked }); }], [`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.jarvis.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
       return d;
     };
     // Überschrift je Bereich (Steam, Discord-Server): Klick klappt den Bereich zu oder auf, wird gemerkt
@@ -119,7 +120,7 @@
         const bp = (botPeople.get(vid) || []).find((p) => p.name === m.name || p.user === m.name);
         const me = isMe(m.name) || (bp && isMe(bp.name, bp.user));
         const u = dm(m.avatar, bp?.id);
-        const d = row({ name: m.name, avatar: m.avatar, voice: ch }, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : "🔊 " + ch, null); d.dataset.live = m.name; flagIcons(d, vid, m, ms);
+        const d = row({ id: m.id || bp?.id, name: m.name, avatar: m.avatar, voice: ch }, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : "🔊 " + ch, null); d.dataset.live = m.name; flagIcons(d, vid, m, ms);
         if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
         parts.push(d);
       } else for (const m of ms) {
@@ -136,27 +137,16 @@
       for (const f of st.online.slice(0, 15)) parts.push(row(f, f.game ? "spielt " + f.game : f.state, f.url));
     }
     const steamEnd = parts.length;
-    const onlineRest = (x) => {
-      if (!dcAlsoOnline) return;
-      const rest = x.online.filter((m) => !m.voice);
-      if (rest.length) { parts.push(head("NUR ONLINE", String(rest.length))); for (const m of rest.slice(0, 15)) parts.push(row(m, m.game ? "spielt " + m.game : m.state, x.url)); }
-    };
+    // Only voice data is supported. A server widget is not a friends source.
     for (const x of servers) {
-      if (dcVoiceOnly) {
-        // Nur wer im Sprachkanal sitzt, nach Kanal gruppiert
-        const bg = bot.guilds.find((g) => g.id === x.id);
-        if (bg) { botGuild(parts, bg, x.server); onlineRest(x); continue; }
-        const inVoice = x.online.filter((m) => m.voice);
-        parts.push(head(x.server.toUpperCase(), "🔊 " + inVoice.length));
-        if (!inVoice.length) parts.push(Object.assign(document.createElement("div"), { className: "none", textContent: "Niemand im Sprachkanal" }));
-        for (const ch of [...new Set(inVoice.map((m) => m.voice))]) {
-          const ms = inVoice.filter((m) => m.voice === ch);
-          voiceBlock(parts, ch, x.id, ms[0]?.voiceId, ms); seenCh.add(ms[0]?.voiceId);
-        }
-        onlineRest(x);
-      } else {
-        parts.push(head(x.server.toUpperCase(), x.count + " online"));
-        for (const m of x.online.slice(0, 15)) parts.push(row(m, m.voice ? "im Sprachkanal " + m.voice : m.game ? "spielt " + m.game : m.state, x.url));
+      const bg = bot.guilds.find((g) => g.id === x.id);
+      if (bg) { botGuild(parts, bg, x.server); continue; }
+      const inVoice = window.argusDiscordList.voiceMembers(x.online);
+      parts.push(head(x.server.toUpperCase(), "🔊 " + inVoice.length));
+      if (!inVoice.length) parts.push(Object.assign(document.createElement("div"), { className: "none", textContent: "Niemand im Sprachkanal" }));
+      for (const ch of [...new Set(inVoice.map((m) => m.voice))]) {
+        const ms = inVoice.filter((m) => m.voice === ch);
+        voiceBlock(parts, ch, x.id, ms[0]?.voiceId, ms); seenCh.add(ms[0]?.voiceId);
       }
     }
     // Server, auf denen nur der Bot sitzt (kein Widget eingetragen)
@@ -171,7 +161,12 @@
       const a = Object.assign(document.createElement("div"), { className: "skauth", textContent: "▶ Echte Namen und Sprecher anzeigen: hier klicken und in Discord einmal erlauben" });
       a.addEventListener("click", (e) => { e.stopPropagation(); if (!noClick) window.jarvis.streamkitAuth(); }); parts.push(a);
     }
-    if (dcOnlyMarked) for (let i = parts.length - 1; i >= 0; i--) { const el = parts[i]; if (el.classList?.contains("f") && el.dataset.dcn !== undefined && el.dataset.dcn !== myDc && !dcMarked.includes(el.dataset.dcn)) parts.splice(i, 1); }
+    const seenPeople = new Set();
+    for (let i = 0; i < parts.length; i++) {
+      const id = parts[i].dataset?.dcid;
+      if (!id) continue; // Unknown IDs must not merge unrelated people by name.
+      if (seenPeople.has(id)) parts.splice(i--, 1); else seenPeople.add(id);
+    }
     const fold = (list) => { let skip = false; return list.filter((el) => { if (el.tagName === "H5") { skip = !!friendsFold[el.dataset.sec]; return true; } return el.classList.contains("skauth") || !skip; }); };
     if (friendsSplit) { // Steam und Discord je ein eigenes Fenster
       const a = parts.slice(0, steamEnd), b = parts.slice(steamEnd);
