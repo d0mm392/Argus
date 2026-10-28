@@ -1,0 +1,10 @@
+# Preserve exact published bytes used by SHA256SUMS.txt
+Argus-Setup-0.58.21.exe -text
+Argus-Setup-0.58.21.exe.blockmap -text
+manifest-0.58.21.json -text
+Argus-Source-0.58.21.zip -text
+RELEASE-NOTES-0.58.21.md -text
+BUILD-INFO-0.58.21.json -text
+README.md -text
+latest.yml -text
+SHA256SUMS.txt -text

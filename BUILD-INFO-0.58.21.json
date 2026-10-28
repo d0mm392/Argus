@@ -1,0 +1,51 @@
+{
+  "version": "0.58.21",
+  "channel": "updates",
+  "sourceCommit": "21c7e4aa1b3e046784e267d635c51a780e1d8bc1",
+  "sourceParent": "62f423ddf5ad6b12d28797e8fbf24f5f2bd2f3f4",
+  "installer": {
+    "file": "Argus-Setup-0.58.21.exe",
+    "bytes": 90300305,
+    "sha256": "6788a264a6a6309ff71536aa6ead9dd6b0c0978238479f313cb2b9417e50265a"
+  },
+  "manifest": {
+    "file": "manifest-0.58.21.json",
+    "files": 4803,
+    "sha256": "4a2d7a381c8fc6b56ac923f23372b842504563074c5ec4589170605e407ee75b"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.21.zip",
+    "sha256": "7ce882dbbd4352409fbba0e58ae55d77c50f45ba9ed22b314481d19f66c7b903"
+  },
+  "sourceProductFilesVerified": 76,
+  "lockfileRootVersion": "0.57.9 (unchanged from build input)",
+  "tests": {
+    "hotfix": {
+      "node20": {
+        "passed": 17
+      },
+      "node24": {
+        "passed": 17
+      }
+    },
+    "pathguard": {
+      "node20": {
+        "passed": 23,
+        "skipped": 1
+      },
+      "node24": {
+        "passed": 23,
+        "skipped": 1
+      }
+    },
+    "electronHotfix": {
+      "passed": 37
+    },
+    "knownLimitations": [
+      "General menu UI: 10/13 reached checks passed, 54 later checks not reached; runtime baseline comparison blocked by VM boot.",
+      "VM symlink test P5 skipped due to EPERM; passed on Windows host under Node 20 and 24.",
+      "Original Windows Steam unit fixture fails in both versions; controlled fixture passes.",
+      "No fresh installer installation/update scenario series."
+    ]
+  }
+}
