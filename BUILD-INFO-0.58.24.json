@@ -1,0 +1,58 @@
+{
+  "version": "0.58.24",
+  "channel": "updates",
+  "sourceCommit": "0c544cbbe2818c61e2ca5a6486e104b1b025d621",
+  "installer": {
+    "file": "Argus-Setup-0.58.24.exe",
+    "bytes": 90307361,
+    "sha256": "c1f01e4b3aba12286a5b8f0de83edfa9ef97e19495cb57f90915e98b7365753f"
+  },
+  "manifest": {
+    "file": "manifest-0.58.24.json",
+    "files": 4813,
+    "sha256": "f363d97f333e892d3de41f205e6b175080090deb9a50caea6c0478c9938c4b28"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.24.zip",
+    "sha256": "80190cdb66636d27783e1e5bdab9ef18ad97136a35d752d3881e9c7051b29ce3"
+  },
+  "sourceProductFilesVerified": 86,
+  "tests": {
+    "node20": {
+      "targetedUnitsPassed": 10
+    },
+    "node24": {
+      "targetedUnitsPassed": 10
+    },
+    "packaged": {
+      "portalChecks": 19,
+      "focusedUISuites": 6,
+      "allPassed": true,
+      "installerNotExecuted": true
+    },
+    "youtubeIntegrated": {
+      "engine": "130.0.6723.137",
+      "publicVideos": 2,
+      "framesAndAudioDecoded": true,
+      "windowsTestProcessAudioPeakMeasured": true,
+      "pauseResumeFullscreen": true,
+      "reopen": true,
+      "adOrBlockObserved": false,
+      "permanentAdFreeGuarantee": false,
+      "filterInitialFetchFailureObserved": true
+    },
+    "retainedChecks": {
+      "priorVersion": "0.58.23",
+      "hotfixAndPathguardProductFilesUnchanged": true,
+      "previousHotfixPassesPerNode": 17,
+      "previousPathguardPassesPerNode": 22,
+      "previousPathguardSkippedPerNode": 2
+    }
+  },
+  "limitations": [
+    "Personal Discord friends require approved official access; extra-friends controls remain unavailable.",
+    "Older general menu/UI suite is not declared fully passing; known baseline Steam test fixture issue remains.",
+    "VM symlink proof missing; no new full VM installer/updater series.",
+    "Electron is not Brave. Network filter lists were temporarily unreachable on first open. No permanent ad-free guarantee or reproduction with a private YouTube profile."
+  ]
+}

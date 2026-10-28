@@ -1,13 +1,13 @@
-# Argus 0.58.23 – Testkanal
+# Argus 0.58.24 – Testkanal
 
-Unabhängige Seitennotizen, geordnete Einstellungen, lokale Skins, wählbare Hintergrunddarstellung, bessere Kontextmenüs und echtes Brave für YouTube.
+Klassisch ist die einzige Oberfläche. Integriertes YouTube mit einstellbaren Rundungen und Hintergrunddeckkraft. Seitennotizen, geordnete Einstellungen, Discord-Sprachkanäle und Hintergrunddarstellung bleiben erhalten.
 
-**Windows x64:** [Argus-Setup-0.58.23.exe](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.23.exe), 90310199 Bytes, unsigniert. Testkanal-Nutzer aktualisieren über den normalen Argus-Updater.
+[Windows-x64-Installer](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.24.exe), 90307361 Bytes, unsigniert. Aktualisierung über den normalen Argus-Updater.
 
-[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.23.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.23.json) · [Build-Zuordnung](BUILD-INFO-0.58.23.json)
+[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.24.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.24.json) · [Build-Zuordnung](BUILD-INFO-0.58.24.json)
 
-[Quellstand c610d4b081d7e4e64a994047d6ff9749e79a5f63](https://github.com/d0mm392/Argus/tree/c610d4b081d7e4e64a994047d6ff9749e79a5f63) · [Quellarchiv](Argus-Source-0.58.23.zip)
+[Quellstand](https://github.com/d0mm392/Argus/tree/0c544cbbe2818c61e2ca5a6486e104b1b025d621) · [Quellarchiv](Argus-Source-0.58.24.zip)
 
-Discord-Zusatzfreunde bleiben mangels offizieller Datenquelle nicht verfügbar. Gezielte Menütests bestehen; allgemeine UI-Suite und VM-Nachweis symbolischer Links bleiben eingeschränkt. Brave wurde mit öffentlichen Videos und getrenntem Profil geprüft, ohne dauerhafte Werbefreiheitsgarantie. Stable bleibt unverändert.
+Kein eingebettetes Brave, keine dauerhafte Werbefreiheitsgarantie. Persönliche Discord-Zusatzfreunde mangels offizieller Datenquelle nicht verfügbar. Allgemeine UI-Suite und VM-Nachweis symbolischer Links bleiben eingeschränkt. Stable unverändert.
 
-Installer SHA-256: 19260d37d368de19a5f1642ce78b97fc1e9772609617775a3c5e1da119bf560c
+Installer SHA-256: c1f01e4b3aba12286a5b8f0de83edfa9ef97e19495cb57f90915e98b7365753f

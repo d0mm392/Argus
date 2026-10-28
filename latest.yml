@@ -1,29 +1,23 @@
-version: 0.58.23
+version: 0.58.24
 files:
-  - url: Argus-Setup-0.58.23.exe
-    sha512: yknCsJ6V5aQsvC/ZQuduFDkwT6Byxr6fdPXeRuIaHAUgq8mgmlRLJGnTKZcQ5yw9S40NCxqd3v5g/LuOGOZaeQ==
-    size: 90310199
-path: Argus-Setup-0.58.23.exe
-sha512: yknCsJ6V5aQsvC/ZQuduFDkwT6Byxr6fdPXeRuIaHAUgq8mgmlRLJGnTKZcQ5yw9S40NCxqd3v5g/LuOGOZaeQ==
-releaseDate: '2026-10-28T22:39:17.077Z'
-releaseName: "Argus 0.58.23 – Notizen, Oberfläche und Brave"
+  - url: Argus-Setup-0.58.24.exe
+    sha512: AgO2+Rhwkw6gd/w45NBm9q5MeV9qau6G1kfD0GLJf9XfDvgMhYwZVojSsLKPm+H3Ra7xiv1bo0iXG4v0b87X2Q==
+    size: 90307361
+path: Argus-Setup-0.58.24.exe
+sha512: AgO2+Rhwkw6gd/w45NBm9q5MeV9qau6G1kfD0GLJf9XfDvgMhYwZVojSsLKPm+H3Ra7xiv1bo0iXG4v0b87X2Q==
+releaseDate: '2026-10-28T23:43:21.247Z'
+releaseName: "Argus 0.58.24 - Klassisch und integriertes YouTube"
 releaseNotes: |
-  # Argus 0.58.23 – Testkanal
+  # Argus 0.58.24 – Klassisch und integriertes YouTube
 
-  - **Notizen je Seite:** Start, Gaming, Mining, Trading und eigene Seiten speichern ihre Notizbücher unabhängig unter stabilen IDs, einschließlich Position und Größe. Gemeinsame Alt-Notizen werden einmalig Start zugeordnet und verlustfrei gesichert. Vorhandene Seitennotizen bleiben erhalten. Der letzte Text wird beim normalen Beenden bestätigt gespeichert; eine separate lokale Notizsicherung bleibt erhalten.
-  - **Discord:** Sprachkanal-Teilnehmer bleiben unabhängig von Freundschaft oder Markierung sichtbar. Doppelte Discord-IDs werden zusammengeführt. Beliebige Online-Servermitglieder werden nicht mehr als zusätzliche Freunde angezeigt. Die Option „Online-Freunde zusätzlich anzeigen“ und ihr Markierungsfilter sind ausdrücklich **nicht verfügbar**, weil Argus keinen freigegebenen offiziellen Zugriff auf persönliche Freundschaften besitzt. Bot, Server-Widget und StreamKit ersetzen diesen Zugriff nicht. Bestehende Optionswerte und lokale Markierungen bleiben gespeichert.
-  - **Einstellungen und Skins:** Acht Kategorien mit Suche, kompakteren Zeilen und Tastaturbedienung. Klassisch bleibt die Rückfallmöglichkeit; Apple-inspirierte helle und dunkle Skins mit Vorschau sind lokal enthalten. Keine zusätzlichen Schrift-/Icon-Dienste, Theme-Downloads oder neuen Abhängigkeiten. Animationen können reduziert werden.
-  - **Darstellung im Hintergrund:** „Flüssig“ ist der neue Standard für sichtbare, inaktive Fenster; „Energiesparend“ erlaubt Drosselung. Beide sind über Einstellungen und Kontextmenü mit demselben Wert bedienbar. Minimierte oder ausgeblendete Fenster sparen weiterhin Ressourcen. Vorhandene Bildraten bleiben gespeichert; „Flüssig“ hebt den zusätzlichen Ruhemodus für sichtbare inaktive Fenster auf und kann mehr CPU/GPU benötigen.
-  - **Rechtsklick:** Tastaturführung, Fokus, Auswahlzustände und Bildschirmposition verbessert; doppelte Notizblock-Bedienung entfernt. Textfelder erhalten das native Bearbeitungsmenü. Kontextbezogene Widget-Menüs bleiben erhalten.
-  - **YouTube:** Standard ist nun das **echte vorhandene Brave** in einem separaten App-Fenster. Die bisherige Electron-Auswahl wird einmalig mit Sicherung des alten Modus umgestellt; spätere bewusste Einstellungen bleiben erhalten. Fehlt Brave, erscheint ein Hinweis statt eines stillen Engine-Wechsels. Electron-Modi bleiben ausdrücklich experimentell. Deren Filter wirken nicht auf Brave. Browserprofile, Cookies und Anmeldungen werden nicht kopiert oder ausgelesen. Brave-Fenster werden direkt dort bedient und geschlossen und beim Argus-Start nicht automatisch wieder geöffnet.
-  - Der Portal-Startschutz aus 0.58.22 bleibt enthalten: automatische Downloads aus dem versteckten Portal werden vor dem Speicherdialog abgefangen; bewusst ausgelöste Downloads im geöffneten Portal bleiben möglich.
+  - Klassisch ist wieder die einzige Oberfläche. Apple Hell, Apple Dunkel, Auswahl und Vorschauen sind entfernt. Gespeicherte Skin-Auswahlen werden auf Klassisch zurückgeführt; andere Einstellungen bleiben erhalten.
+  - Die funktionalen Verbesserungen bleiben: unabhängige Seitennotizen mit Sicherung, geordnete Einstellungen mit Suche, Discord-Sprachkanäle, Hintergrunddarstellung und zugängliche Kontextmenüs.
+  - YouTube bleibt im integrierten Argus-Fenster. Die externe Brave-Ausweichlösung ist entfernt. Electron ist ausdrücklich kein eingebettetes Brave; dauerhafte Werbefreiheit ist nicht garantiert.
+  - Unter Aussehen → Fenster: YouTube sind Eckenradius, Hintergrunddeckkraft, Rahmen und Schatten mit Live-Vorschau einstellbar. Video, Text und Bedienelemente bleiben deckend; Position und Größe bleiben erhalten.
+  - Ein einzelner Netzwerkfilter ersetzt die bisherige Kombination mit Seiten-Manipulationen. Keine Entfernung von Wiedergabewarnungen, keine automatischen externen Popups. Die Einstellung kann ausdrücklich ausgeschaltet werden; Filterfehler werden angezeigt.
 
-  ## Prüfungen und Grenzen
+  Gezielte Classic-Prüfung gegen das Stylesheet vor Einführung der Skins, Migrationen, Einstellungen, Menüs einschließlich Mining, Seitennotizen und Discord-Anzeige. Zwei öffentliche Videos spielten im integrierten Fenster mit Bild und gemessenem Ton; Pause/Fortsetzen, Vollbild, Größenänderung und erneutes Öffnen wurden geprüft. In diesen Momentaufnahmen keine Werbesperre beobachtet; zeitweise waren Filterlisten beim ersten Öffnen nicht erreichbar und wurden beim erneuten Aufruf geladen. Eine bestehende persönliche YouTube-Sitzung wurde nicht ausgelesen oder nachgestellt. Die zusätzlichen persönlichen Online-Freunde bleiben mangels freigegebener offizieller Datenquelle als nicht verfügbar gekennzeichnet; Servermitglieder ersetzen keine Freunde.
 
-  Gezielte Prüfungen betreffen Migrationen, schnelle Notizeingaben und Seitenwechsel, bestätigtes Speichern beim Schließen, Skin-Wechsel und erneutes Laden, Suche, Tastatur, kleine Fenster, Discord-Sprachdaten und Menüs. Die bestehenden Hotfix- und Pfadschutztests laufen unter Node 20 und 24. Installer-Inhalt, Quellzuordnung, Manifest und Update-Prüfsummen werden für diesen Build separat abgeglichen.
+  Bekannte Nachweisgrenzen: Die ältere allgemeine Menü-/UI-Suite wurde nicht insgesamt bestanden; gezielte Menüprüfungen ersetzen sie nicht. Der bekannte Windows-Steam-Testdatenfehler besteht bereits im Ausgangsstand. Der **VM-Nachweis für symbolische Links fehlt** weiterhin; keine neue vollständige VM-Installations-/Updater-Serie. Einzelheiten zu früheren Prüfungen stehen in den Versionshinweisen zu 0.58.21–0.58.23; Aussagen zu Apple-Skins und externem Brave aus 0.58.23 werden durch diese Version ersetzt.
 
-  Zwei öffentliche Videos spielten in einer vorhandenen Brave-Installation mit getrenntem Testprofil: Bild, nachgewiesener Windows-Audiopegel der Testprozesse, Pause/Fortsetzen, Video-Wechsel, Vollbild sowie Schließen/Öffnen. Dabei wurde keine Werbung oder Werbeblocker-Sperre beobachtet. **Dauerhafte Werbefreiheit wird nicht garantiert.** Die private, bestehende Browser-Sitzung wurde nicht untersucht; ihre konkrete YouTube-Erkennungsursache ist nicht isoliert nachgewiesen.
-
-  Die gezielten Menüprüfungen einschließlich Mining bestehen. Die bisherige allgemeine Menü-/UI-Suite ist damit **nicht insgesamt als bestanden** ausgewiesen. Der bekannte Windows-Steam-Unit-Test aus dem Ausgangsstand und dessen Testdaten-/Registry-Problem bleiben gesondert dokumentiert. Die vorhandene VM war nicht als verlässlich laufende Testumgebung verfügbar; insbesondere bleibt der **VM-Nachweis für symbolische Links** offen. Hinzu kommen die dokumentierten umgebungsabhängigen Pfadfälle (eigener 8.3-Kurzname und subst). Eine neue vollständige VM-Installations-/Updater-Serie und alle Windows-Skalierungsstufen sind nicht nachgewiesen.
-
-  Veröffentlichung ausschließlich auf `source` und `updates`. `stable`, `main` und die lokale Installation bleiben unverändert. Empfehlung: gezielter Testkanal-Einsatz mit eigener Prüfung der gewohnten Widgets, Notizen und Brave-Wiedergabe; noch keine Stable-Freigabe.
+  Empfehlung: Testkanal, keine Stable-Freigabe. Die lokale Installation wird nicht verändert.
