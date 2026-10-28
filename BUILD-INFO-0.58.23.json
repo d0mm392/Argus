@@ -1,0 +1,72 @@
+{
+  "version": "0.58.23",
+  "channel": "updates",
+  "sourceCommit": "c610d4b081d7e4e64a994047d6ff9749e79a5f63",
+  "installer": {
+    "file": "Argus-Setup-0.58.23.exe",
+    "bytes": 90310199,
+    "sha256": "19260d37d368de19a5f1642ce78b97fc1e9772609617775a3c5e1da119bf560c"
+  },
+  "manifest": {
+    "file": "manifest-0.58.23.json",
+    "files": 4811,
+    "sha256": "58d6ffee4c483437212bd8fa5b51cd365239be4ec1ded6d98b2239b2137c1a4b"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.23.zip",
+    "sha256": "24767809ae178b49fc40537890f2db7b3338cb37294ab86e1d851b58407a35c5"
+  },
+  "sourceProductFilesVerified": 84,
+  "tests": {
+    "hotfix": {
+      "node20": {
+        "passed": 17
+      },
+      "node24": {
+        "passed": 17
+      }
+    },
+    "pathguard": {
+      "node20": {
+        "passed": 22,
+        "skipped": 2
+      },
+      "node24": {
+        "passed": 22,
+        "skipped": 2
+      }
+    },
+    "newUnits": {
+      "node20": {
+        "passed": 11
+      },
+      "node24": {
+        "passed": 11
+      }
+    },
+    "packaged": {
+      "portalChecks": 19,
+      "focusedUISuites": 6,
+      "allPassed": true,
+      "installerNotExecuted": true
+    },
+    "youtubeBrave": {
+      "executableVersion": "156.1.98.60",
+      "freshTestProfile": true,
+      "publicVideos": 2,
+      "framesAndAudioDecoded": true,
+      "windowsTestProcessAudioPeakMeasured": true,
+      "pauseResumeFullscreen": true,
+      "reopen": true,
+      "adOrBlockObserved": false,
+      "permanentAdFreeGuarantee": false
+    }
+  },
+  "limitations": [
+    "Personal Discord friends require approved official access; additional-friends controls are unavailable, never replaced by server members.",
+    "Focused menu checks including Mining pass; the older general UI suite is not declared fully passing.",
+    "Known Windows Steam unit fixture/registry issue predates this version; no new full baseline comparison is claimed.",
+    "VM symlink proof remains missing; no new full VM installer/updater series. Current host path tests skip own 8.3 short name and subst.",
+    "Public Brave playback does not prove the cause of a private YouTube session warning or permanent ad-free playback."
+  ]
+}

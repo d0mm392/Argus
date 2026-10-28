@@ -14,3 +14,9 @@ manifest-0.58.22.json -text
 Argus-Source-0.58.22.zip -text
 RELEASE-NOTES-0.58.22.md -text
 BUILD-INFO-0.58.22.json -text
+Argus-Setup-0.58.23.exe -text
+Argus-Setup-0.58.23.exe.blockmap -text
+manifest-0.58.23.json -text
+Argus-Source-0.58.23.zip -text
+RELEASE-NOTES-0.58.23.md -text
+BUILD-INFO-0.58.23.json -text

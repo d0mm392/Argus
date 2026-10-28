@@ -1,17 +1,13 @@
-# Argus 0.58.22 � Testkanal
+# Argus 0.58.23 – Testkanal
 
-Portal-Startfix: Downloads aus dem unsichtbaren Portal-Fenster werden vor dem Speicherdialog abgefangen. Nutzerdownloads im ausdruecklich geoeffneten Portal bleiben moeglich. Stable bleibt unveraendert.
+Unabhängige Seitennotizen, geordnete Einstellungen, lokale Skins, wählbare Hintergrunddarstellung, bessere Kontextmenüs und echtes Brave für YouTube.
 
-**Windows x64:** [Argus-Setup-0.58.22.exe](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.22.exe), 90300744 Bytes, unsigniert. Testkanal-Nutzer aktualisieren ueber den normalen Argus-Updater.
+**Windows x64:** [Argus-Setup-0.58.23.exe](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.23.exe), 90310199 Bytes, unsigniert. Testkanal-Nutzer aktualisieren über den normalen Argus-Updater.
 
-[Versionshinweise und Nachweisgrenzen](RELEASE-NOTES-0.58.22.md) � [Pruefsummen](SHA256SUMS.txt) � [Manifest](manifest-0.58.22.json) � [Build-Zuordnung](BUILD-INFO-0.58.22.json)
+[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.23.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.23.json) · [Build-Zuordnung](BUILD-INFO-0.58.23.json)
 
-[Quellstand 0bc4c07c93dac3576af5248545a33fc6eadba8ea](https://github.com/d0mm392/Argus/tree/0bc4c07c93dac3576af5248545a33fc6eadba8ea) � [Quellarchiv](Argus-Source-0.58.22.zip)
+[Quellstand c610d4b081d7e4e64a994047d6ff9749e79a5f63](https://github.com/d0mm392/Argus/tree/c610d4b081d7e4e64a994047d6ff9749e79a5f63) · [Quellarchiv](Argus-Source-0.58.23.zip)
 
-19 gezielte Electron-Pruefungen bestehen auch gegen die paketierte Datei. Original-Zugangsdaten und Sitzungen wurden nicht verwendet; die bereits dokumentierten Menue-/VM-Symlink-Testluecken bleiben offen. Die anonyme oeffentliche Portal-Seite zeigte aktuell keinen Download; eine konkrete fehlerhafte Anbieterantwort wird nicht behauptet.
+Discord-Zusatzfreunde bleiben mangels offizieller Datenquelle nicht verfügbar. Gezielte Menütests bestehen; allgemeine UI-Suite und VM-Nachweis symbolischer Links bleiben eingeschränkt. Brave wurde mit öffentlichen Videos und getrenntem Profil geprüft, ohne dauerhafte Werbefreiheitsgarantie. Stable bleibt unverändert.
 
-Installer SHA-256:
-
-```text
-6118a6c134226448da7c129146bdfc550c33a60150e10271f4da9aa2b0dd7135
-```
+Installer SHA-256: 19260d37d368de19a5f1642ce78b97fc1e9772609617775a3c5e1da119bf560c

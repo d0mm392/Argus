@@ -1,31 +1,29 @@
-version: 0.58.22
+version: 0.58.23
 files:
-  - url: Argus-Setup-0.58.22.exe
-    sha512: M9cL9QHULugmp2flDi84Eay7t0iBzL216MFNeN7NqdXQ1mHwjPCgEscYb+fXTKHQAs0m0pkiHRnTexBUh/ZYPg==
-    size: 90300744
-path: Argus-Setup-0.58.22.exe
-sha512: M9cL9QHULugmp2flDi84Eay7t0iBzL216MFNeN7NqdXQ1mHwjPCgEscYb+fXTKHQAs0m0pkiHRnTexBUh/ZYPg==
-releaseDate: '2026-10-28T21:09:06.901Z'
-releaseName: "Argus 0.58.22 (Portal-Startfix)"
+  - url: Argus-Setup-0.58.23.exe
+    sha512: yknCsJ6V5aQsvC/ZQuduFDkwT6Byxr6fdPXeRuIaHAUgq8mgmlRLJGnTKZcQ5yw9S40NCxqd3v5g/LuOGOZaeQ==
+    size: 90310199
+path: Argus-Setup-0.58.23.exe
+sha512: yknCsJ6V5aQsvC/ZQuduFDkwT6Byxr6fdPXeRuIaHAUgq8mgmlRLJGnTKZcQ5yw9S40NCxqd3v5g/LuOGOZaeQ==
+releaseDate: '2026-10-28T22:39:17.077Z'
+releaseName: "Argus 0.58.23 – Notizen, Oberfläche und Brave"
 releaseNotes: |
-  # Argus 0.58.22 – Portal-Start ohne unerwünschten Speicherdialog
+  # Argus 0.58.23 – Testkanal
 
-  Diese Version erscheint im Testkanal `updates`. Der stabile Kanal bleibt unverändert.
+  - **Notizen je Seite:** Start, Gaming, Mining, Trading und eigene Seiten speichern ihre Notizbücher unabhängig unter stabilen IDs, einschließlich Position und Größe. Gemeinsame Alt-Notizen werden einmalig Start zugeordnet und verlustfrei gesichert. Vorhandene Seitennotizen bleiben erhalten. Der letzte Text wird beim normalen Beenden bestätigt gespeichert; eine separate lokale Notizsicherung bleibt erhalten.
+  - **Discord:** Sprachkanal-Teilnehmer bleiben unabhängig von Freundschaft oder Markierung sichtbar. Doppelte Discord-IDs werden zusammengeführt. Beliebige Online-Servermitglieder werden nicht mehr als zusätzliche Freunde angezeigt. Die Option „Online-Freunde zusätzlich anzeigen“ und ihr Markierungsfilter sind ausdrücklich **nicht verfügbar**, weil Argus keinen freigegebenen offiziellen Zugriff auf persönliche Freundschaften besitzt. Bot, Server-Widget und StreamKit ersetzen diesen Zugriff nicht. Bestehende Optionswerte und lokale Markierungen bleiben gespeichert.
+  - **Einstellungen und Skins:** Acht Kategorien mit Suche, kompakteren Zeilen und Tastaturbedienung. Klassisch bleibt die Rückfallmöglichkeit; Apple-inspirierte helle und dunkle Skins mit Vorschau sind lokal enthalten. Keine zusätzlichen Schrift-/Icon-Dienste, Theme-Downloads oder neuen Abhängigkeiten. Animationen können reduziert werden.
+  - **Darstellung im Hintergrund:** „Flüssig“ ist der neue Standard für sichtbare, inaktive Fenster; „Energiesparend“ erlaubt Drosselung. Beide sind über Einstellungen und Kontextmenü mit demselben Wert bedienbar. Minimierte oder ausgeblendete Fenster sparen weiterhin Ressourcen. Vorhandene Bildraten bleiben gespeichert; „Flüssig“ hebt den zusätzlichen Ruhemodus für sichtbare inaktive Fenster auf und kann mehr CPU/GPU benötigen.
+  - **Rechtsklick:** Tastaturführung, Fokus, Auswahlzustände und Bildschirmposition verbessert; doppelte Notizblock-Bedienung entfernt. Textfelder erhalten das native Bearbeitungsmenü. Kontextbezogene Widget-Menüs bleiben erhalten.
+  - **YouTube:** Standard ist nun das **echte vorhandene Brave** in einem separaten App-Fenster. Die bisherige Electron-Auswahl wird einmalig mit Sicherung des alten Modus umgestellt; spätere bewusste Einstellungen bleiben erhalten. Fehlt Brave, erscheint ein Hinweis statt eines stillen Engine-Wechsels. Electron-Modi bleiben ausdrücklich experimentell. Deren Filter wirken nicht auf Brave. Browserprofile, Cookies und Anmeldungen werden nicht kopiert oder ausgelesen. Brave-Fenster werden direkt dort bedient und geschlossen und beim Argus-Start nicht automatisch wieder geöffnet.
+  - Der Portal-Startschutz aus 0.58.22 bleibt enthalten: automatische Downloads aus dem versteckten Portal werden vor dem Speicherdialog abgefangen; bewusst ausgelöste Downloads im geöffneten Portal bleiben möglich.
 
-  ## Korrektur
+  ## Prüfungen und Grenzen
 
-  Beim Start kann Argus die Portal-Anmeldeseite in einem unsichtbaren Fenster laden, um die bestehende Portal-Verbindung wieder aufzunehmen. Bisher konnten Download-Ereignisse aus diesem Hintergrundfenster den nativen „Speichern unter“-Dialog öffnen. Das entspricht dem gemeldeten Dialog zur Portal-Adresse mit dem Dateinamen „download“.
+  Gezielte Prüfungen betreffen Migrationen, schnelle Notizeingaben und Seitenwechsel, bestätigtes Speichern beim Schließen, Skin-Wechsel und erneutes Laden, Suche, Tastatur, kleine Fenster, Discord-Sprachdaten und Menüs. Die bestehenden Hotfix- und Pfadschutztests laufen unter Node 20 und 24. Installer-Inhalt, Quellzuordnung, Manifest und Update-Prüfsummen werden für diesen Build separat abgeglichen.
 
-  Die Portal-Sitzung fängt Downloads aus unsichtbaren oder nicht mehr zuordenbaren Portal-Fenstern jetzt vor dem Dialog ab. Andere Browser-/Widget-Sitzungen werden nicht pauschal gesperrt. Ein vom Nutzer angeklickter Download im ausdrücklich geöffneten, sichtbaren Portal bleibt möglich; Argus legt keinen automatischen Speicherpfad fest und öffnet keine heruntergeladenen Dateien.
+  Zwei öffentliche Videos spielten in einer vorhandenen Brave-Installation mit getrenntem Testprofil: Bild, nachgewiesener Windows-Audiopegel der Testprozesse, Pause/Fortsetzen, Video-Wechsel, Vollbild sowie Schließen/Öffnen. Dabei wurde keine Werbung oder Werbeblocker-Sperre beobachtet. **Dauerhafte Werbefreiheit wird nicht garantiert.** Die private, bestehende Browser-Sitzung wurde nicht untersucht; ihre konkrete YouTube-Erkennungsursache ist nicht isoliert nachgewiesen.
 
-  Eine abgebrochene Startnavigation wird beim ausdrücklichen Öffnen des Portals erneut versucht. Bereits geladene Seiten behalten nach einem abgefangenen Hintergrunddownload ihren Zustand. Portal-Datenabfrage und Widget bleiben erhalten; die bestehende Sitzungsaufteilung wird nicht geändert.
+  Die gezielten Menüprüfungen einschließlich Mining bestehen. Die bisherige allgemeine Menü-/UI-Suite ist damit **nicht insgesamt als bestanden** ausgewiesen. Der bekannte Windows-Steam-Unit-Test aus dem Ausgangsstand und dessen Testdaten-/Registry-Problem bleiben gesondert dokumentiert. Die vorhandene VM war nicht als verlässlich laufende Testumgebung verfügbar; insbesondere bleibt der **VM-Nachweis für symbolische Links** offen. Hinzu kommen die dokumentierten umgebungsabhängigen Pfadfälle (eigener 8.3-Kurzname und subst). Eine neue vollständige VM-Installations-/Updater-Serie und alle Windows-Skalierungsstufen sind nicht nachgewiesen.
 
-  ## Nachweis und Grenzen
-
-  - Installierte und laufende Ausgangsversion wurde vor der Änderung als 0.58.21 festgestellt; die installierte Portal-Datei entsprach deren geprüftem Manifest. Die lokale Installation wurde nicht verändert.
-  - Mit einem vollständig frischen, anonymen Profil wurde die öffentliche Portal-Seite untersucht. Dabei folgten auf die nicht angemeldete API-Abfrage ein unsichtbares Fenster und eine normale HTML-Anmeldeseite; aktuell trat dort kein Download auf. Eine bestimmte fehlerhafte Antwort des Anbieters oder ein konkreter Zustand einer angemeldeten Sitzung ist deshalb **nicht** als Ursache behauptet. Original-Cookies oder Zugangsdaten wurden nicht übernommen.
-  - Die fehlende Absicherung wurde mit kontrollierten Antworten unter Electron 33.2.1 reproduziert: direkter Download, Weiterleitung auf einen Download und skriptgesteuerter Download aus einer bereits geladenen Hintergrundseite. Der unveränderte Code scheitert an der Regression; mit dem Fix bestehen 19 gezielte Prüfungen einschließlich Portal-Seite, Widget-Daten, Zustandserhalt und tatsächlichem Nutzer-Klick. Die Sicherheitsbeobachtung des Tests bricht auch erlaubte Testdownloads vor Dialog und Speicherung ab.
-  - Es werden durch den Fix keine Zugangsdaten, Cookies, vollständigen URLs mit Sitzungsparametern oder Sitzungsinhalte protokolliert. Die untersuchten Ereignisse stammen aus getrennten Testprofilen beziehungsweise künstlichen Antworten.
-  - Die bereits dokumentierten allgemeinen Menü-UI- und VM-Symlink-Testlücken aus 0.58.21 bleiben bestehen. Dieser gezielte Portal-Fix ist keine uneingeschränkte Freigabe aller UI-Funktionen und kein Test mit einer echten angemeldeten Portal-Sitzung.
-
-  Der Windows-x64-Installer und seine Prüfsummen stehen im Zweig `updates`. Bestehende Testkanal-Installationen können über den normalen Argus-Updater aktualisieren. Der Installer ist nicht signiert; die Veröffentlichung beruht auf Selbstprüfung, nicht auf einem unabhängigen Review.
+  Veröffentlichung ausschließlich auf `source` und `updates`. `stable`, `main` und die lokale Installation bleiben unverändert. Empfehlung: gezielter Testkanal-Einsatz mit eigener Prüfung der gewohnten Widgets, Notizen und Brave-Wiedergabe; noch keine Stable-Freigabe.
