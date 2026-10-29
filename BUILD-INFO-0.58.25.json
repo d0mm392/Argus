@@ -1,0 +1,77 @@
+{
+  "version": "0.58.25",
+  "channel": "updates",
+  "sourceCommit": "c9c33e911955d6d8793fe0805dc6cd7e7c156695",
+  "installer": {
+    "file": "Argus-Setup-0.58.25.exe",
+    "bytes": 93483395,
+    "sha256": "9723a2263e7fdcae04649488f9db6a0ea8f01b12b9c82654ca7aea3e898c1955"
+  },
+  "manifest": {
+    "file": "manifest-0.58.25.json",
+    "files": 4820,
+    "sha256": "6370194dc4fb48835c2da6ec8f4ff682699f2b48a701fc2deaef05f1e6cabdbf"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.25.zip",
+    "sha256": "a683cf04d86befa13c54e6b2c0bbb50f8ecbb03293991c8d48c1d477fa874425"
+  },
+  "sourceProductFilesVerified": 88,
+  "discordSocial": {
+    "applicationId": "1561783830648594512",
+    "sdkVersion": "1.10.19337",
+    "platform": "Windows x64",
+    "scopes": [
+      "openid",
+      "sdk.social_layer_presence"
+    ],
+    "pkce": true,
+    "clientSecretBundled": false,
+    "personalCredentialsBundled": false,
+    "windowsAccountEncryption": true,
+    "friendsMemoryOnly": true,
+    "officialRuntimeSignatureVerified": true,
+    "runtimeSHA256": {
+      "argus-discord-social.exe": "eb97c3fccbd1a99263a8d254dd6a942837548a10a74f46ff69fc43ba7823596d",
+      "discord_partner_sdk.dll": "f9953495b0d6263cc0b926e70f00adc2e3dda478e216ac6c8b36ba23840ab8ee",
+      "Argus-helper-LICENSE.txt": "2a055fb089271098c8e6bcbfdb9680ac0cdf0ec44acad231644917b6d15e6d35",
+      "Discord-LICENSE-NOTICES.txt": "e8afa66340c225431e69768543cc34a7240f3494a9d759189fe118620ea8eebf",
+      "Discord-SDK-TERMS.txt": "186541602635342c9e8f1dd29396e83737e483f06b9661e80fbddc3d36aacb98"
+    }
+  },
+  "tests": {
+    "node20": {
+      "targetedDiscordChecksPassed": 17
+    },
+    "node24": {
+      "targetedDiscordChecksPassed": 17
+    },
+    "packaged": {
+      "portalChecks": 19,
+      "focusedUISuites": 7,
+      "allPassed": true,
+      "installerNotExecuted": true
+    },
+    "liveSDK": {
+      "oauth": true,
+      "encrypted": true,
+      "restore": true,
+      "disconnect": true,
+      "revoked": true,
+      "personalDataLogged": false
+    },
+    "vm": {
+      "bundledRuntimeStartsWithoutSDKInstallation": true,
+      "symlinks": {
+        "node20": 12,
+        "node24": 12
+      }
+    }
+  },
+  "limitations": [
+    "No live authorization with a second non-team Discord account; two independent synthetic users and one real OAuth account were tested.",
+    "Native component bundled for Windows x64 only; other platforms require their own tested runtime and secure storage.",
+    "Older general UI suite is not fully declared passing; known Windows Steam fixture issue predates this version.",
+    "VM symlink evidence is complete; no new full VM installer/updater series."
+  ]
+}

@@ -1,13 +1,13 @@
-# Argus 0.58.24 – Testkanal
+# Argus 0.58.25 – Testkanal
 
-Klassisch ist die einzige Oberfläche. Integriertes YouTube mit einstellbaren Rundungen und Hintergrunddeckkraft. Seitennotizen, geordnete Einstellungen, Discord-Sprachkanäle und Hintergrunddarstellung bleiben erhalten.
+Persönliches Discord-Konto per regulärem OAuth verbinden. Echte Online-Freunde zusätzlich zu Sprachkanälen, mit sicherem lokalen Kontospeicher und Trennen/Widerruf. SDK-Laufzeit im Windows-x64-Installer enthalten; Nutzer brauchen keine Developer-Einrichtung.
 
-[Windows-x64-Installer](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.24.exe), 90307361 Bytes, unsigniert. Aktualisierung über den normalen Argus-Updater.
+[Windows-x64-Installer](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.25.exe), 93483395 Bytes, unsigniert. Aktualisierung über den normalen Argus-Updater.
 
-[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.24.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.24.json) · [Build-Zuordnung](BUILD-INFO-0.58.24.json)
+[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.25.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.25.json) · [Build-Zuordnung](BUILD-INFO-0.58.25.json)
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/0c544cbbe2818c61e2ca5a6486e104b1b025d621) · [Quellarchiv](Argus-Source-0.58.24.zip)
+[Quellstand](https://github.com/d0mm392/Argus/tree/c9c33e911955d6d8793fe0805dc6cd7e7c156695) · [Quellarchiv](Argus-Source-0.58.25.zip)
 
-Kein eingebettetes Brave, keine dauerhafte Werbefreiheitsgarantie. Persönliche Discord-Zusatzfreunde mangels offizieller Datenquelle nicht verfügbar. Allgemeine UI-Suite und VM-Nachweis symbolischer Links bleiben eingeschränkt. Stable unverändert.
+Klassisch, integriertes YouTube, Seitennotizen und Hintergrunddarstellung bleiben erhalten. Echte SDK-Anmeldung/Restore/Widerruf geprüft; zweites Nicht-Team-Konto noch ohne Live-Nachweis. Allgemeine UI-Suite bleibt teilweise offen; VM-Symlinks sind inzwischen geprüft. Stable bleibt unverändert.
 
-Installer SHA-256: c1f01e4b3aba12286a5b8f0de83edfa9ef97e19495cb57f90915e98b7365753f
+Installer SHA-256: 9723a2263e7fdcae04649488f9db6a0ea8f01b12b9c82654ca7aea3e898c1955

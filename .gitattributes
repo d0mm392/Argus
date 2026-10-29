@@ -26,3 +26,9 @@ manifest-0.58.24.json -text
 Argus-Source-0.58.24.zip -text
 RELEASE-NOTES-0.58.24.md -text
 BUILD-INFO-0.58.24.json -text
+Argus-Setup-0.58.25.exe -text
+Argus-Setup-0.58.25.exe.blockmap -text
+manifest-0.58.25.json -text
+Argus-Source-0.58.25.zip -text
+RELEASE-NOTES-0.58.25.md -text
+BUILD-INFO-0.58.25.json -text

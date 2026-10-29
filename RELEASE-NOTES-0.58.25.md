@@ -1,0 +1,16 @@
+# Argus 0.58.25 – persönliches Discord-Konto
+
+Unter Einstellungen → Gaming und Discord → Discord lässt sich das eigene Konto mit „Mit Discord verbinden“ regulär per OAuth verbinden. Argus verwendet eine gemeinsame öffentliche Application-ID; Nutzer brauchen weder Developer Portal noch App-ID, SDK-Download oder Token-Eingabe. Der Windows-x64-Installer enthält den nativen Helper, die offizielle Discord-SDK-Laufzeit und ihre Lizenzhinweise. Kein Client Secret oder persönlicher Token gehört zum Paket.
+
+- Status und Name des verbundenen Kontos, aufklappbare Anleitung, Abbrechen und verständliche Fehlerhinweise.
+- „Online-Freunde zusätzlich anzeigen“ ergänzt ausschließlich echte persönliche Discord-Freunde mit Status online, abwesend oder beschäftigt. Servermitglieder und reine Game-Freunde ersetzen keine persönlichen Freunde.
+- „Nur markierte Freunde zusätzlich anzeigen“ beschränkt nur diesen Zusatz. Bisherige Sprachkanal-Teilnehmer bleiben auch ohne Kontoverbindung und unabhängig von Freundschaft oder Markierung erhalten. Deduplizierung über Discord-IDs.
+- Persönliche Anmeldung und Bot-/Server-Verbindung für Sprachkanäle sind getrennt. Normale Nutzer müssen keinen Bot einrichten, um ihre Freunde abzurufen.
+- Minimale SDK-Scopes `openid sdk.social_layer_presence`, PKCE und lokale Speicherung unter Windows-Kontoschutz, ohne Klartext-Fallback. Tokens sind von Einstellungen und Sicherungen getrennt; Freundesdaten bleiben im Speicher. Keine Token-/Sitzungsprotokolle.
+- „Discord-Konto trennen“ entfernt lokale Tokens und Freundesdaten und versucht den offiziellen Widerruf. Bei Netzfehlern wird ein fehlgeschlagener Widerruf angezeigt; Argus kann zusätzlich in Discord unter „Autorisierte Apps“ entfernt werden. Verspätete Rückmeldungen einer alten Anmeldung stellen das getrennte Konto nicht wieder her.
+
+Geprüft: Abbruch, Ablauf, Verbindungsfehler, Wiederverbinden, Trennen, Widerrufsfehler, fehlender sicherer Speicher und zwei isolierte synthetische Nutzerinstanzen. Echte OAuth-Anmeldung mit dem offiziellen SDK sowie verschlüsselte Speicherung, Wiederherstellung und erfolgreicher Widerruf im getrennten Testprofil bestanden. Ein zweites echtes Nicht-Team-Konto wurde nicht getestet; Mehrnutzerisolation und gemeinsamer App-Zugang sind getrennt von diesem einzelnen Live-Nachweis zu verstehen. Die Kontofunktion ist in dieser Version für den Windows-x64-Testkanal gebündelt; andere Plattformen brauchen eigene geprüfte native Komponenten.
+
+Die gezielten Oberflächenprüfungen einschließlich Mining-Menü bleiben grün. Die alte allgemeine Menü-/UI-Gesamtsuite ist weiterhin nicht als vollständig bestanden erklärt; überholte Erwartungen und noch ungeprüfte Bereiche sind getrennt dokumentiert. Der bekannte Windows-Steam-Fixturefehler besteht bereits im Ausgangsstand. Die frühere VM-Symlink-Lücke ist inzwischen mit echten Datei- und Ordnerlinks auf geschützte und erlaubte Ziele unter Node 20/24 geschlossen (je zwölf Prüfungen, Standardkonto). Kein neuer vollständiger VM-Installer-/Updater-Lauf.
+
+Klassisch, integriertes YouTube, Seitennotizen und Hintergrunddarstellung bleiben erhalten. Empfehlung: Testkanal, keine Stable-Freigabe. Lokale Installation, stable und main bleiben unverändert.

@@ -1,23 +1,26 @@
-version: 0.58.24
+version: 0.58.25
 files:
-  - url: Argus-Setup-0.58.24.exe
-    sha512: AgO2+Rhwkw6gd/w45NBm9q5MeV9qau6G1kfD0GLJf9XfDvgMhYwZVojSsLKPm+H3Ra7xiv1bo0iXG4v0b87X2Q==
-    size: 90307361
-path: Argus-Setup-0.58.24.exe
-sha512: AgO2+Rhwkw6gd/w45NBm9q5MeV9qau6G1kfD0GLJf9XfDvgMhYwZVojSsLKPm+H3Ra7xiv1bo0iXG4v0b87X2Q==
-releaseDate: '2026-10-28T23:43:21.247Z'
-releaseName: "Argus 0.58.24 - Klassisch und integriertes YouTube"
+  - url: Argus-Setup-0.58.25.exe
+    sha512: Bc1/2fQWwQHN/y7qRdFhCAZ48b9eNF+YAIpgm+7W7FJCg+Xdw5IVXuNcZ2Hx2UjTC/GF5Yb5Dg5oqY0oaeeF3Q==
+    size: 93483395
+path: Argus-Setup-0.58.25.exe
+sha512: Bc1/2fQWwQHN/y7qRdFhCAZ48b9eNF+YAIpgm+7W7FJCg+Xdw5IVXuNcZ2Hx2UjTC/GF5Yb5Dg5oqY0oaeeF3Q==
+releaseDate: '2026-10-29T00:55:31.954Z'
+releaseName: "Argus 0.58.25 - Discord-Konto und Online-Freunde"
 releaseNotes: |
-  # Argus 0.58.24 – Klassisch und integriertes YouTube
+  # Argus 0.58.25 – persönliches Discord-Konto
 
-  - Klassisch ist wieder die einzige Oberfläche. Apple Hell, Apple Dunkel, Auswahl und Vorschauen sind entfernt. Gespeicherte Skin-Auswahlen werden auf Klassisch zurückgeführt; andere Einstellungen bleiben erhalten.
-  - Die funktionalen Verbesserungen bleiben: unabhängige Seitennotizen mit Sicherung, geordnete Einstellungen mit Suche, Discord-Sprachkanäle, Hintergrunddarstellung und zugängliche Kontextmenüs.
-  - YouTube bleibt im integrierten Argus-Fenster. Die externe Brave-Ausweichlösung ist entfernt. Electron ist ausdrücklich kein eingebettetes Brave; dauerhafte Werbefreiheit ist nicht garantiert.
-  - Unter Aussehen → Fenster: YouTube sind Eckenradius, Hintergrunddeckkraft, Rahmen und Schatten mit Live-Vorschau einstellbar. Video, Text und Bedienelemente bleiben deckend; Position und Größe bleiben erhalten.
-  - Ein einzelner Netzwerkfilter ersetzt die bisherige Kombination mit Seiten-Manipulationen. Keine Entfernung von Wiedergabewarnungen, keine automatischen externen Popups. Die Einstellung kann ausdrücklich ausgeschaltet werden; Filterfehler werden angezeigt.
+  Unter Einstellungen → Gaming und Discord → Discord lässt sich das eigene Konto mit „Mit Discord verbinden“ regulär per OAuth verbinden. Argus verwendet eine gemeinsame öffentliche Application-ID; Nutzer brauchen weder Developer Portal noch App-ID, SDK-Download oder Token-Eingabe. Der Windows-x64-Installer enthält den nativen Helper, die offizielle Discord-SDK-Laufzeit und ihre Lizenzhinweise. Kein Client Secret oder persönlicher Token gehört zum Paket.
 
-  Gezielte Classic-Prüfung gegen das Stylesheet vor Einführung der Skins, Migrationen, Einstellungen, Menüs einschließlich Mining, Seitennotizen und Discord-Anzeige. Zwei öffentliche Videos spielten im integrierten Fenster mit Bild und gemessenem Ton; Pause/Fortsetzen, Vollbild, Größenänderung und erneutes Öffnen wurden geprüft. In diesen Momentaufnahmen keine Werbesperre beobachtet; zeitweise waren Filterlisten beim ersten Öffnen nicht erreichbar und wurden beim erneuten Aufruf geladen. Eine bestehende persönliche YouTube-Sitzung wurde nicht ausgelesen oder nachgestellt. Die zusätzlichen persönlichen Online-Freunde bleiben mangels freigegebener offizieller Datenquelle als nicht verfügbar gekennzeichnet; Servermitglieder ersetzen keine Freunde.
+  - Status und Name des verbundenen Kontos, aufklappbare Anleitung, Abbrechen und verständliche Fehlerhinweise.
+  - „Online-Freunde zusätzlich anzeigen“ ergänzt ausschließlich echte persönliche Discord-Freunde mit Status online, abwesend oder beschäftigt. Servermitglieder und reine Game-Freunde ersetzen keine persönlichen Freunde.
+  - „Nur markierte Freunde zusätzlich anzeigen“ beschränkt nur diesen Zusatz. Bisherige Sprachkanal-Teilnehmer bleiben auch ohne Kontoverbindung und unabhängig von Freundschaft oder Markierung erhalten. Deduplizierung über Discord-IDs.
+  - Persönliche Anmeldung und Bot-/Server-Verbindung für Sprachkanäle sind getrennt. Normale Nutzer müssen keinen Bot einrichten, um ihre Freunde abzurufen.
+  - Minimale SDK-Scopes `openid sdk.social_layer_presence`, PKCE und lokale Speicherung unter Windows-Kontoschutz, ohne Klartext-Fallback. Tokens sind von Einstellungen und Sicherungen getrennt; Freundesdaten bleiben im Speicher. Keine Token-/Sitzungsprotokolle.
+  - „Discord-Konto trennen“ entfernt lokale Tokens und Freundesdaten und versucht den offiziellen Widerruf. Bei Netzfehlern wird ein fehlgeschlagener Widerruf angezeigt; Argus kann zusätzlich in Discord unter „Autorisierte Apps“ entfernt werden. Verspätete Rückmeldungen einer alten Anmeldung stellen das getrennte Konto nicht wieder her.
 
-  Bekannte Nachweisgrenzen: Die ältere allgemeine Menü-/UI-Suite wurde nicht insgesamt bestanden; gezielte Menüprüfungen ersetzen sie nicht. Der bekannte Windows-Steam-Testdatenfehler besteht bereits im Ausgangsstand. Der **VM-Nachweis für symbolische Links fehlt** weiterhin; keine neue vollständige VM-Installations-/Updater-Serie. Einzelheiten zu früheren Prüfungen stehen in den Versionshinweisen zu 0.58.21–0.58.23; Aussagen zu Apple-Skins und externem Brave aus 0.58.23 werden durch diese Version ersetzt.
+  Geprüft: Abbruch, Ablauf, Verbindungsfehler, Wiederverbinden, Trennen, Widerrufsfehler, fehlender sicherer Speicher und zwei isolierte synthetische Nutzerinstanzen. Echte OAuth-Anmeldung mit dem offiziellen SDK sowie verschlüsselte Speicherung, Wiederherstellung und erfolgreicher Widerruf im getrennten Testprofil bestanden. Ein zweites echtes Nicht-Team-Konto wurde nicht getestet; Mehrnutzerisolation und gemeinsamer App-Zugang sind getrennt von diesem einzelnen Live-Nachweis zu verstehen. Die Kontofunktion ist in dieser Version für den Windows-x64-Testkanal gebündelt; andere Plattformen brauchen eigene geprüfte native Komponenten.
 
-  Empfehlung: Testkanal, keine Stable-Freigabe. Die lokale Installation wird nicht verändert.
+  Die gezielten Oberflächenprüfungen einschließlich Mining-Menü bleiben grün. Die alte allgemeine Menü-/UI-Gesamtsuite ist weiterhin nicht als vollständig bestanden erklärt; überholte Erwartungen und noch ungeprüfte Bereiche sind getrennt dokumentiert. Der bekannte Windows-Steam-Fixturefehler besteht bereits im Ausgangsstand. Die frühere VM-Symlink-Lücke ist inzwischen mit echten Datei- und Ordnerlinks auf geschützte und erlaubte Ziele unter Node 20/24 geschlossen (je zwölf Prüfungen, Standardkonto). Kein neuer vollständiger VM-Installer-/Updater-Lauf.
+
+  Klassisch, integriertes YouTube, Seitennotizen und Hintergrunddarstellung bleiben erhalten. Empfehlung: Testkanal, keine Stable-Freigabe. Lokale Installation, stable und main bleiben unverändert.
