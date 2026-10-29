@@ -1,0 +1,53 @@
+{
+  "version": "0.58.26",
+  "channel": "updates",
+  "sourceCommit": "edad541199961d6148d6a566ee8fd3d798d6c1e8",
+  "buildCommit": "8d518548b6f4de3ab106133a7f9fc11d66d4e9f8",
+  "installer": {
+    "file": "Argus-Setup-0.58.26.exe",
+    "bytes": 93496395,
+    "sha256": "85ac4278fe8ca5f26073068a8a89b8d5f47f174a1b95bdd4c79c83c03202621b"
+  },
+  "manifest": {
+    "file": "manifest-0.58.26.json",
+    "files": 4823,
+    "sha256": "8a85bca26119b908dcbdcb2d4ef61c3a109e38eef26ea692f44cdc0eb864562b"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.26.zip",
+    "sha256": "2621ca0b34f52e0f04252a0932238171355ca8f5be80118b350bd70c2a59a75b"
+  },
+  "sourceProductFilesVerified": 91,
+  "discordRuntimeUnchangedFrom": "0.58.25",
+  "tests": {
+    "uiMode": {
+      "unit": 8
+    },
+    "appleMode": {
+      "reachability": true,
+      "contrastLightDark": true,
+      "rendererStartGuard": true
+    },
+    "liveMainProcessSwitch": {
+      "classicAppleClassicRestarts": 3,
+      "crashBeforeReadyFallsBackOnce": true,
+      "isolatedProfile": true
+    },
+    "electronUISuitesBothModes": 12,
+    "classicComputedStyleDiffVs0_58_25": 0,
+    "packagedAppFiles": {
+      "suites": 7,
+      "menusRepeated": "4/4"
+    },
+    "codexReviews": {
+      "runs": 3,
+      "blockingOpen": 0
+    }
+  },
+  "limitations": [
+    "Installer not executed in a VM; switch verified with the unpackaged main process and packaged app files.",
+    "menus.test.js occasionally fails on focus timing (about 4 of 25 runs, no code cause found); baseline Windows Steam fixture failures in unit.test.js and xvfb-only ui.test.js predate this version.",
+    "Apple mode is macOS-inspired using Windows fonts and own icons; no Apple fonts or assets.",
+    "Installer unsigned."
+  ]
+}

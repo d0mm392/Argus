@@ -1,0 +1,17 @@
+# Argus 0.58.26 – optionaler Apple-Modus
+
+Unter Einstellungen → Aussehen → Oberfläche lässt sich zwischen „Klassisch“ und „Apple-Modus“ wählen. „Übernehmen und neu starten“ speichert zuerst alles und startet Argus dann kontrolliert neu. Bestehende und neue Installationen starten in Klassisch. Der Apple-Modus erscheint nur nach ausdrücklicher Wahl.
+
+- Apple-Modus: macOS-inspiriertes Panel nach den Apple Human Interface Guidelines (Quellen in DESIGN-APPLE-MODUS.md). Es hat eine Toolbar mit App-Menü „Argus“, eine Sidebar mit den Seiten, Inhaltskarten im Raster und eine Assistent-Karte mit Kugel und Chat. Dazu kommen ein Einstellungsfenster mit fester Bereichsleiste sowie deckende Dialoge, Pop-ups und Rechtsklickmenüs in macOS-artiger Form. Hell und dunkel folgen dem Windows-Farbschema.
+- Gleiche Funktionen: Beide Oberflächen nutzen dieselben Skripte, Einstellungen und Daten. Sidebar und App-Menü leiten nur an die vorhandenen Bedienelemente weiter. Die freie Anordnung (Anordnen) gibt es nur in Klassisch. Gespeicherte Anordnungen bleiben erhalten.
+- Ehrlich umgesetzt: Es gibt keine nachgeahmte native macOS-Technik und keine Apple-Schriften oder -Symbole. Verwendet werden die Windows-Systemschrift Segoe UI Variable, eigene Liniensymbole und die Fensterknöpfe rechts wie unter Windows. Lesbarkeit geht vor Glas: Die Inhalte stehen auf deckenden Flächen. „Transparenz reduzieren“ macht auch die Leisten deckend. Bewegungen sind kurz und folgen „Animationen reduzieren“ sowie der Systemvorgabe.
+- Sicherer Wechsel: Argus beendet sich regulär (wie „Beenden“: Speichern, Notizen sichern, eigene Prozesse wie Strata beenden) und startet einmal neu. Bei laufender Einrichtung der lokalen KI, Update-Download, anderem Download oder Strata-Start wird nicht neu gestartet. Stattdessen erscheint ein Hinweis. Scheitert ein Start im Apple-Modus, startet Argus beim nächsten Mal einmalig in Klassisch und zeigt einen Hinweis. Dabei gehen keine Daten verloren, und es entsteht keine Neustartschleife. Zurück zu Klassisch geht jederzeit über die Einstellungen oder das Tray-Menü („Oberfläche: Klassisch wiederherstellen“). Der Tray-Weg funktioniert auch, wenn die Oberfläche nicht lädt.
+
+Geprüft:
+- Startsicherung und Wechsellogik (ui-mode.test.js). Echter Wechsel Klassisch → Apple → Klassisch mit dem Hauptprozess und drei Neustarts in einem isolierten Profil: Notiz und Anordnung bleiben erhalten. Ein Absturz vor der Bereitschaft führt zu einem einmaligen Klassisch-Start ohne Schleife (ui-switch-live.test.js).
+- Erreichbarkeit aller sichtbaren Bedienelemente aller Seiten und aller acht Einstellungsbereiche gegenüber Klassisch, dazu WCAG-Kontraste hell/dunkel (apple-mode.test.js).
+- Alle vorhandenen Electron-Oberflächentests in beiden Modi grün: Menüs, Notizen, YouTube, Einstellungen, Discord, Freunde, Portal, Classic-Theme.
+- Klassisch unverändert: 24 486 berechnete Stilwerte gegenüber 0.58.25, keine Abweichung.
+- Die bekannten Fehler in unit.test.js (Windows-Steam-/Spiele-Fixtures) und ui.test.js (xvfb unter Windows) bestehen unverändert schon im Ausgangsstand.
+
+Nicht geprüft: Wechsel im installierten Paket (Installer/VM); geprüft wurde der unverpackte Hauptprozess. Empfehlung: Testkanal, keine Stable-Freigabe.

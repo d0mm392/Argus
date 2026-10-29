@@ -1,26 +1,27 @@
-version: 0.58.25
+version: 0.58.26
 files:
-  - url: Argus-Setup-0.58.25.exe
-    sha512: Bc1/2fQWwQHN/y7qRdFhCAZ48b9eNF+YAIpgm+7W7FJCg+Xdw5IVXuNcZ2Hx2UjTC/GF5Yb5Dg5oqY0oaeeF3Q==
-    size: 93483395
-path: Argus-Setup-0.58.25.exe
-sha512: Bc1/2fQWwQHN/y7qRdFhCAZ48b9eNF+YAIpgm+7W7FJCg+Xdw5IVXuNcZ2Hx2UjTC/GF5Yb5Dg5oqY0oaeeF3Q==
-releaseDate: '2026-10-29T00:55:31.954Z'
-releaseName: "Argus 0.58.25 - Discord-Konto und Online-Freunde"
+  - url: Argus-Setup-0.58.26.exe
+    sha512: n2gfuuIP0/lMbXMqt9+wU8qmCUX99hBrhtkRNzXqGKNvXyLh/AgVy/+Veu+3ZS4p862+BEeXE5EiLeMd09RVHA==
+    size: 93496395
+path: Argus-Setup-0.58.26.exe
+sha512: n2gfuuIP0/lMbXMqt9+wU8qmCUX99hBrhtkRNzXqGKNvXyLh/AgVy/+Veu+3ZS4p862+BEeXE5EiLeMd09RVHA==
+releaseDate: '2026-10-29T12:23:28.203Z'
+releaseName: "Argus 0.58.26 - optionaler Apple-Modus"
 releaseNotes: |
-  # Argus 0.58.25 – persönliches Discord-Konto
+  # Argus 0.58.26 – optionaler Apple-Modus
 
-  Unter Einstellungen → Gaming und Discord → Discord lässt sich das eigene Konto mit „Mit Discord verbinden“ regulär per OAuth verbinden. Argus verwendet eine gemeinsame öffentliche Application-ID; Nutzer brauchen weder Developer Portal noch App-ID, SDK-Download oder Token-Eingabe. Der Windows-x64-Installer enthält den nativen Helper, die offizielle Discord-SDK-Laufzeit und ihre Lizenzhinweise. Kein Client Secret oder persönlicher Token gehört zum Paket.
+  Unter Einstellungen → Aussehen → Oberfläche lässt sich zwischen „Klassisch“ und „Apple-Modus“ wählen. „Übernehmen und neu starten“ speichert zuerst alles und startet Argus dann kontrolliert neu. Bestehende und neue Installationen starten in Klassisch. Der Apple-Modus erscheint nur nach ausdrücklicher Wahl.
 
-  - Status und Name des verbundenen Kontos, aufklappbare Anleitung, Abbrechen und verständliche Fehlerhinweise.
-  - „Online-Freunde zusätzlich anzeigen“ ergänzt ausschließlich echte persönliche Discord-Freunde mit Status online, abwesend oder beschäftigt. Servermitglieder und reine Game-Freunde ersetzen keine persönlichen Freunde.
-  - „Nur markierte Freunde zusätzlich anzeigen“ beschränkt nur diesen Zusatz. Bisherige Sprachkanal-Teilnehmer bleiben auch ohne Kontoverbindung und unabhängig von Freundschaft oder Markierung erhalten. Deduplizierung über Discord-IDs.
-  - Persönliche Anmeldung und Bot-/Server-Verbindung für Sprachkanäle sind getrennt. Normale Nutzer müssen keinen Bot einrichten, um ihre Freunde abzurufen.
-  - Minimale SDK-Scopes `openid sdk.social_layer_presence`, PKCE und lokale Speicherung unter Windows-Kontoschutz, ohne Klartext-Fallback. Tokens sind von Einstellungen und Sicherungen getrennt; Freundesdaten bleiben im Speicher. Keine Token-/Sitzungsprotokolle.
-  - „Discord-Konto trennen“ entfernt lokale Tokens und Freundesdaten und versucht den offiziellen Widerruf. Bei Netzfehlern wird ein fehlgeschlagener Widerruf angezeigt; Argus kann zusätzlich in Discord unter „Autorisierte Apps“ entfernt werden. Verspätete Rückmeldungen einer alten Anmeldung stellen das getrennte Konto nicht wieder her.
+  - Apple-Modus: macOS-inspiriertes Panel nach den Apple Human Interface Guidelines (Quellen in DESIGN-APPLE-MODUS.md). Es hat eine Toolbar mit App-Menü „Argus“, eine Sidebar mit den Seiten, Inhaltskarten im Raster und eine Assistent-Karte mit Kugel und Chat. Dazu kommen ein Einstellungsfenster mit fester Bereichsleiste sowie deckende Dialoge, Pop-ups und Rechtsklickmenüs in macOS-artiger Form. Hell und dunkel folgen dem Windows-Farbschema.
+  - Gleiche Funktionen: Beide Oberflächen nutzen dieselben Skripte, Einstellungen und Daten. Sidebar und App-Menü leiten nur an die vorhandenen Bedienelemente weiter. Die freie Anordnung (Anordnen) gibt es nur in Klassisch. Gespeicherte Anordnungen bleiben erhalten.
+  - Ehrlich umgesetzt: Es gibt keine nachgeahmte native macOS-Technik und keine Apple-Schriften oder -Symbole. Verwendet werden die Windows-Systemschrift Segoe UI Variable, eigene Liniensymbole und die Fensterknöpfe rechts wie unter Windows. Lesbarkeit geht vor Glas: Die Inhalte stehen auf deckenden Flächen. „Transparenz reduzieren“ macht auch die Leisten deckend. Bewegungen sind kurz und folgen „Animationen reduzieren“ sowie der Systemvorgabe.
+  - Sicherer Wechsel: Argus beendet sich regulär (wie „Beenden“: Speichern, Notizen sichern, eigene Prozesse wie Strata beenden) und startet einmal neu. Bei laufender Einrichtung der lokalen KI, Update-Download, anderem Download oder Strata-Start wird nicht neu gestartet. Stattdessen erscheint ein Hinweis. Scheitert ein Start im Apple-Modus, startet Argus beim nächsten Mal einmalig in Klassisch und zeigt einen Hinweis. Dabei gehen keine Daten verloren, und es entsteht keine Neustartschleife. Zurück zu Klassisch geht jederzeit über die Einstellungen oder das Tray-Menü („Oberfläche: Klassisch wiederherstellen“). Der Tray-Weg funktioniert auch, wenn die Oberfläche nicht lädt.
 
-  Geprüft: Abbruch, Ablauf, Verbindungsfehler, Wiederverbinden, Trennen, Widerrufsfehler, fehlender sicherer Speicher und zwei isolierte synthetische Nutzerinstanzen. Echte OAuth-Anmeldung mit dem offiziellen SDK sowie verschlüsselte Speicherung, Wiederherstellung und erfolgreicher Widerruf im getrennten Testprofil bestanden. Ein zweites echtes Nicht-Team-Konto wurde nicht getestet; Mehrnutzerisolation und gemeinsamer App-Zugang sind getrennt von diesem einzelnen Live-Nachweis zu verstehen. Die Kontofunktion ist in dieser Version für den Windows-x64-Testkanal gebündelt; andere Plattformen brauchen eigene geprüfte native Komponenten.
+  Geprüft:
+  - Startsicherung und Wechsellogik (ui-mode.test.js). Echter Wechsel Klassisch → Apple → Klassisch mit dem Hauptprozess und drei Neustarts in einem isolierten Profil: Notiz und Anordnung bleiben erhalten. Ein Absturz vor der Bereitschaft führt zu einem einmaligen Klassisch-Start ohne Schleife (ui-switch-live.test.js).
+  - Erreichbarkeit aller sichtbaren Bedienelemente aller Seiten und aller acht Einstellungsbereiche gegenüber Klassisch, dazu WCAG-Kontraste hell/dunkel (apple-mode.test.js).
+  - Alle vorhandenen Electron-Oberflächentests in beiden Modi grün: Menüs, Notizen, YouTube, Einstellungen, Discord, Freunde, Portal, Classic-Theme.
+  - Klassisch unverändert: 24 486 berechnete Stilwerte gegenüber 0.58.25, keine Abweichung.
+  - Die bekannten Fehler in unit.test.js (Windows-Steam-/Spiele-Fixtures) und ui.test.js (xvfb unter Windows) bestehen unverändert schon im Ausgangsstand.
 
-  Die gezielten Oberflächenprüfungen einschließlich Mining-Menü bleiben grün. Die alte allgemeine Menü-/UI-Gesamtsuite ist weiterhin nicht als vollständig bestanden erklärt; überholte Erwartungen und noch ungeprüfte Bereiche sind getrennt dokumentiert. Der bekannte Windows-Steam-Fixturefehler besteht bereits im Ausgangsstand. Die frühere VM-Symlink-Lücke ist inzwischen mit echten Datei- und Ordnerlinks auf geschützte und erlaubte Ziele unter Node 20/24 geschlossen (je zwölf Prüfungen, Standardkonto). Kein neuer vollständiger VM-Installer-/Updater-Lauf.
-
-  Klassisch, integriertes YouTube, Seitennotizen und Hintergrunddarstellung bleiben erhalten. Empfehlung: Testkanal, keine Stable-Freigabe. Lokale Installation, stable und main bleiben unverändert.
+  Nicht geprüft: Wechsel im installierten Paket (Installer/VM); geprüft wurde der unverpackte Hauptprozess. Empfehlung: Testkanal, keine Stable-Freigabe.
