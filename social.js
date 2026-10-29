@@ -1,5 +1,5 @@
 // Wer ist online: Steam-Freunde über die offizielle Steam-Web-API (eigener kostenloser Schlüssel),
-// Discord über das öffentliche Server-Widget (nur Server mit eingeschaltetem Widget; private Freundeslisten gibt Discord nicht heraus).
+// Discord hier über das öffentliche Server-Widget (nur Sprachkanäle). Persönliche Freunde: separater Social-SDK-Kontodienst.
 const UA = { "User-Agent": "Argus-Desktop", Accept: "application/json" };
 async function get(url, ms = 12000) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);

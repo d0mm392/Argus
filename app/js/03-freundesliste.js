@@ -2,6 +2,7 @@
   // ---------- Freunde online neben der Kugel (Panel) ----------
   let ballLabels = "aktiv", bgShoot = 1, friendsSplit = false, friendsHold = 3, strataHas = false, friendsStill = true, dcJoinBot = true, micId = "", spkId = "", friendsEl2 = null, holdHinted = false;
   let friendsEl = null, friendsSig = "", live = { auth: false, ch: {} }, friendsFold = {}, myDc = "", extraVoice = [], bot = { status: "aus", guilds: [] }, dcIcons = true;
+  let dcSocial = {status:"disconnected",account:null,friends:[]};
   const normDc = (n) => String(n || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
   function buildFriends() {
     if (!friendsEl) {
@@ -51,7 +52,7 @@
     const talking = new Set(mine.flat().filter((m) => m.speaking).map((m) => m.name));
     const markTalk = () => { for (const el of [friendsEl, friendsEl2]) for (const d of el.querySelectorAll(".f[data-live]")) d.classList.toggle("speaking", talking.has(d.dataset.live)); };
     const liveSig = { auth: live.auth, ch: Object.fromEntries(Object.entries(live.ch || {}).map(([k, v]) => [k, v.map((m) => [m.name, m.avatar])])) };
-    const sig = JSON.stringify([friendsSplit, myDc, extraVoice, dcIcons, bot.guilds, dcVoiceOnly, dcAlsoOnline, dcOnlyMarked, dcMarked, st?.online, servers.map((x) => [x.server, x.online]), liveSig]);
+    const sig = JSON.stringify([friendsSplit, myDc, extraVoice, dcIcons, bot.guilds, dcVoiceOnly, dcAlsoOnline, dcOnlyMarked, dcMarked, st?.online, servers.map((x) => [x.server, x.online]), liveSig, dcSocial]);
     if (sig === friendsSig) { markTalk(); return; } friendsSig = sig;
     const parts = [];
     const row = (p, sub, url) => {
@@ -168,6 +169,8 @@
       if (seenPeople.has(id)) parts.splice(i--, 1); else seenPeople.add(id);
     }
     const fold = (list) => { let skip = false; return list.filter((el) => { if (el.tagName === "H5") { skip = !!friendsFold[el.dataset.sec]; return true; } return el.classList.contains("skauth") || !skip; }); };
+    const additional=window.argusDiscordList.additionalFriends(seenPeople,dcSocial.friends,{enabled:dcSocial.status==="connected"&&dcAlsoOnline,markedOnly:dcOnlyMarked,marked:dcMarked});
+    if(additional.length){parts.push(head("ONLINE-FREUNDE",additional.length));for(const friend of additional)parts.push(row({...friend,voice:""},({0:"Online",3:"Abwesend",4:"Beschäftigt"})[friend.status],"https://discord.com/users/"+friend.id));}
     if (friendsSplit) { // Steam und Discord je ein eigenes Fenster
       const a = parts.slice(0, steamEnd), b = parts.slice(steamEnd);
       friendsEl.replaceChildren(...fold(a), frX(0)); friendsEl.dataset.empty = a.length ? "" : "1";

@@ -264,13 +264,17 @@
       <label class="col">Dein Steam-Profil (Link, Profilname oder SteamID) <input type="text" id="setSteamId" placeholder="https://steamcommunity.com/id/…"></label>
       <div class="set-note">Schlüssel kostenlos unter steamcommunity.com/dev/apikey holen (Domain: localhost). Profil und Freundesliste müssen öffentlich sein.</div><button class="help-btn" type="button" data-help="steam">So geht’s</button>
       <h4 data-tab="Freunde">Discord</h4>
+      <p class="set-note" id="dcSocialIntro">Verbinde dein Discord-Konto, um zusätzlich zu den Teilnehmern der Sprachkanäle deine Online-Freunde anzuzeigen.</p>
+      <div class="row" style="justify-content:flex-start;gap:12px;flex-wrap:wrap"><button class="btn" type="button" id="dcSocialConnect">Mit Discord verbinden</button><button class="btn" type="button" id="dcSocialCancel" hidden>Anmeldung abbrechen</button><button class="btn" type="button" id="dcSocialDisconnect" disabled>Discord-Konto trennen</button></div>
+      <p class="set-note" id="dcSocialStatus" role="status" aria-live="polite">Nicht verbunden</p>
+      <details class="set-note" id="dcSocialHelp"><summary>Discord verbinden: Anleitung und Hilfe</summary><p>1. Klicke auf „Mit Discord verbinden“. 2. Melde dich im regulären Discord-Fenster mit deinem eigenen Konto an und bestätige die angezeigten Berechtigungen. 3. Aktiviere unten die zusätzlichen Online-Freunde.</p><p>Du brauchst keine App-ID, SDK-Dateien oder Tokens. Argus verwendet ausschließlich deine autorisierte Freundesliste. Online, abwesend und beschäftigt werden zusätzlich angezeigt; Sprachkanal-Teilnehmer bleiben unabhängig davon sichtbar.</p><p>Bei Abbruch oder abgelaufener Anmeldung erneut verbinden. Bei Netzwerkproblemen Verbindung prüfen und erneut versuchen. Ein abgebrochenes Browserfenster gegebenenfalls selbst schließen. Beim Trennen werden lokale Anmeldedaten und Freundesdaten entfernt und der Discord-Zugriff widerrufen. Schlägt der Widerruf fehl, kannst du Argus zusätzlich unter Discord → Autorisierte Apps entfernen.</p><p>Die nachfolgende Bot-/Server-Verbindung ist separat und dient den Sprachkanälen; sie meldet dein persönliches Konto nicht an.</p></details>
       <label class="row">Discord anzeigen <input type="checkbox" id="setDiscordOn"></label>
       <label class="row">Sprachkanal-Teilnehmer anzeigen (immer) <input type="checkbox" id="setDcVoice" disabled></label>
       <label class="row">Online-Freunde zusätzlich anzeigen <input type="checkbox" id="setDcOnline" disabled aria-describedby="dcFriendsUnavailable"></label>
-      <label class="row" title="Gilt nur für zusätzlich angezeigte persönliche Freunde. Sprachkanal-Teilnehmer bleiben sichtbar.">Nur markierte Discord-Freunde zusätzlich anzeigen <input type="checkbox" id="setDcMarked" disabled></label>
+      <label class="row" title="Gilt nur für zusätzlich angezeigte persönliche Freunde. Sprachkanal-Teilnehmer bleiben sichtbar.">Nur markierte Freunde zusätzlich anzeigen <input type="checkbox" id="setDcMarked" disabled></label>
       <p class="set-note" id="dcFriendsUnavailable"></p>
       <label class="col">Discord-Server-IDs (mehrere mit Komma) <input type="text" id="setDiscord" placeholder="z. B. 123456789012345678"></label>
-      <div class="set-note">Auf dem Server muss das Widget an sein: Servereinstellungen → Beteiligung → Server-Widget aktivieren. Discord gibt den Status deiner privaten Freunde nicht heraus, nur Server.</div><button class="help-btn" type="button" data-help="discordServer">So geht’s</button>
+      <div class="set-note">Sprachkanäle per Server-Widget: Servereinstellungen → Beteiligung → Server-Widget aktivieren. Diese Serverdaten sind keine persönliche Freundesliste und funktionieren unabhängig von deiner Kontoverknüpfung.</div><button class="help-btn" type="button" data-help="discordServer">So geht’s</button>
       <label class="col">Dein Name auf den Servern (wie er im Sprachkanal steht) <input type="text" id="setDcName" placeholder="z. B. OnkelDom"></label>
       <label class="col">Private Sprachkanäle (je Zeile: Name und Link) <textarea id="setDcExtra" rows="3" placeholder="Gray Zone https://discord.com/channels/…/…"></textarea></label>
       <label class="col">Eigener Discord-Bot (Token) <input type="password" id="setDcBot" placeholder="noch keiner eingetragen"></label>
@@ -714,6 +718,7 @@
 <script src="js/18-appearance-preferences.js"></script>
 <script src="youtube-settings.js"></script>
 <script src="js/18-youtube-settings.js"></script>
+<script src="js/19-discord-social.js"></script>
 <script src="js/16-i18n-en.js"></script>
 <script src="js/17-sprache.js"></script>
 </body>

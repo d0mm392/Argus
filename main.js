@@ -38,6 +38,22 @@ if (!app.requestSingleInstanceLock()) app.quit();
 // Fenster kann beim Beenden oder Neuladen schon zerstört sein, während Timer noch laufen
 const alive = () => !!win && !win.isDestroyed();
 function sendUI(ch, ...args) { if (alive() && !win.webContents.isDestroyed()) win.webContents.send(ch, ...args); }
+let discordSocial = null;
+let discordUiOrigin = "";
+function trustedDiscordFrame(contents, frame) {
+  try { const url = new URL(frame.url); return contents === win?.webContents && frame === win.webContents.mainFrame && url.origin === discordUiOrigin && url.pathname === "/"; } catch { return false; }
+}
+function startDiscordSocial() {
+  discordSocial = require("./app/discord-social").create({safeStorage,
+    authPath:path.join(app.getPath("userData"),"discord-social-auth.bin"),
+    helperPath:app.isPackaged?path.join(process.resourcesPath,"discord-social","argus-discord-social.exe"):(process.env.ARGUS_DISCORD_HELPER||path.join(__dirname,"discord-runtime","argus-discord-social.exe")),
+    onChange:state=>{if(alive()&&trustedDiscordFrame(win.webContents,win.webContents.mainFrame))sendUI("discord-social",state)}});
+  discordSocial.restore();
+}
+for(const [channel,method] of [["state","snapshot"],["connect","connect"],["cancel","cancel"],["disconnect","disconnect"]])ipcMain.handle("discord-social-"+channel,async event=>{
+  if(!trustedDiscordFrame(event.sender,event.senderFrame))return null;
+  return discordSocial?await discordSocial[method]():{available:false,status:"disconnected",account:null,friends:[],error:"runtime-unavailable"};
+});
 // Unerwartete Fehler ins Log schreiben statt den Nutzer mit einem Fehlerfenster zu stören
 function logError(e) {
   try { fs.appendFileSync(path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), `${new Date().toISOString()} ${e?.stack || e}\n`); } catch {}
@@ -1314,7 +1330,8 @@ async function createWindow(port) {
     crash.add("Oberfläche abgestürzt", `${d?.reason} (Code ${d?.exitCode})`);
     setTimeout(() => { if (alive()) win.webContents.reload(); }, 1500);
   });
-  await win.loadURL(`http://127.0.0.1:${port}/`).catch((e) => console.warn("UI laden fehlgeschlagen:", e.message));
+  discordUiOrigin = `http://127.0.0.1:${port}`;
+  await win.loadURL(discordUiOrigin + "/").catch((e) => console.warn("UI laden fehlgeschlagen:", e.message));
   sendUI("voice-status", voiceState);
   sendUI("layout", { corner: config.corner, size: config.size, expanded });
   watchCursor();
@@ -1977,6 +1994,7 @@ function withIcons(data) {
 
 app.whenReady().then(async () => {
   loadConfig(); // zuerst: ioBroker, Foreman-Dashboard und Portal lesen ihre Schalter aus der Konfiguration
+  startDiscordSocial();
   try { iob.init({ on: !!config.iobOn, url: config.iobUrl, user: config.iobUser, pass: unseal(config.iobPass) || "", write: !!config.iobWrite, all: config.iobAll !== false, pick: (Array.isArray(config.iobPick) ? config.iobPick : []).filter((p) => p && typeof p.id === "string").slice(0, 60) }, () => sendUI("iob", iob.data())); } catch {}
   try { fmdash.init(require("electron"), config.fmDashOn, (x) => { try { fs.writeFileSync(path.join(app.getPath("userData"), "foreman-dashboard-beispiel.json"), JSON.stringify(x, null, 1).slice(0, 3000)); } catch {} }); } catch {}
   try { portal.init(require("electron"), config.portalOn, (s) => { try { fs.writeFileSync(path.join(app.getPath("userData"), "portal-typen-beispiel.json"), JSON.stringify(s, null, 1).slice(0, 4000)); } catch {} }, () => config.portalUrl); } catch {}
@@ -3060,6 +3078,7 @@ app.on("second-instance", () => { win?.showInactive(); setExpanded(true); });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 let quitting = false; // beim Beenden geschlossenes YouTube nicht als „zu“ merken, damit es beim nächsten Start wiederkommt
 app.on("before-quit", () => { quitting = true; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
+  discordSocial?.close();
   if (strata.ownProcess()) strata.stop(); watch?.stop(); stopAnim(); clearInterval(moveTimer); });
 app.on("window-all-closed", () => app.quit());
 

@@ -44,6 +44,8 @@ Dokumentversion: 1.4 · gilt ab Argus 0.58.24
 
 ## Erweiterungen ab 0.58.23
 
+- R-DC-SOCIAL (0.58.25): Einmalige öffentliche Argus-App, reguläres SDK-OAuth/PKCE mit openid sdk.social_layer_presence je Nutzer; Konto verbinden/Status/Name/Abbrechen/Trennen und Hilfe ohne Developer-Einrichtung für Nutzer. Windows-x64-SDK-Laufzeit mit Signaturprüfung/Lizenzhinweisen bündeln; keine Client-Secrets/Token im Paket. Windows-Kontoschutz ohne Klartext-Fallback, separate Token-Datei, Freunde nur im Speicher; Trennen löscht lokal und versucht Widerruf, verspätete Ereignisse dürfen kein Konto wiederherstellen. Nur echte Discord-Freunde online/idle/dnd zusätzlich, ID-Deduplizierung, Markierungen nur auf Extras; Sprachkanäle erhalten. Tests: discord-social, discord-social-guard, discord-additional, discord-social-ui; echter SDK-Login/Restore/Widerruf separat mit Einwilligung.
+
 - R-NOTES-PAGE: Notizbuecher und Geometrie je stabiler Hauptseiten-ID; verlustfreie einmalige Start-Migration ohne Ueberschreiben bestehender Daten; bestaetigte letzte Speicherung und getrennte Sicherung. Tests: notes-store, notes-pages, notes-layout.
 - R-DC-VOICE: Sprachkanal-Teilnehmer unabhaengig von Freundschaft/Markierung erhalten; ID-Deduplizierung. Keine Server-Onlineliste als Freundesersatz. Ohne freigegebenen offiziellen Relationship-Zugriff bleibt der Online-Freundezusatz mit Hinweis nicht verfuegbar; alte Optionswerte bleiben gespeichert. Tests: discord-list, friends-settings.
 - R-UI-SETTINGS: Acht Kategorien mit Suche und Tastatur; funktionale reduzierte Bewegung. Ab 0.58.24 ausschliesslich Klassisch. Tests: settings, classic-theme.

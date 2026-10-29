@@ -30,6 +30,7 @@ async function setup() {
   const channels = [...fs.readFileSync(path.join(ROOT, "preload.js"), "utf8").matchAll(/ipcRenderer.invoke\("([^"]+)"/g)].map(m => m[1]);
   for (const channel of channels) ipcMain.handle(channel, (_event, patch) => {
     if (channel === "get-config") return config;
+    if (channel === "discord-social-state") return {available:false,status:"disconnected",account:null,friends:[],error:"runtime-unavailable"};
     if (channel === "set-config") { Object.assign(config, patch); return true; }
     if (channel === "sensor-status") return "aus";
     if (channel === "self-offer") return null;
