@@ -222,7 +222,7 @@
     el.addEventListener("pointerdown", (e) => {
       // Notizblock besteht fast nur aus Textfeld: dort reicht kurzes Festhalten zum Verschieben (Tippen und Markieren gehen weiter)
       const inNote = e.target.id === "notesText";
-      if (e.button !== 0 || !expanded || document.body.classList.contains("arrange") || document.documentElement.dataset.ui === "apple" || (!inNote && e.target.closest(NO_GRAB))) return; // Apple-Modus: Raster statt freier Anordnung, gespeicherte Positionen bleiben
+      if (e.button !== 0 || !expanded || document.body.classList.contains("arrange") || (!inNote && e.target.closest(NO_GRAB))) return;
       const z = inNote ? "body" : grabZone(el, e, hRes); if (!z) return;
       if (z !== "body") { e.preventDefault(); begin(e, ["br", "bl", "tr", "tl", "l", "r", "b", "t"].includes(z) ? z : ""); return; }
       const sx = e.clientX, sy = e.clientY;
@@ -232,7 +232,7 @@
       hold = setTimeout(() => { stop(); if (inNote) { e.target.blur(); getSelection()?.removeAllRanges(); } begin({ clientX: sx, clientY: sy }, ""); }, inNote ? 450 : 350);
     });
     el.addEventListener("pointermove", (e) => {
-      if (arrSt || !expanded || document.body.classList.contains("arrange") || document.documentElement.dataset.ui === "apple") return;
+      if (arrSt || !expanded || document.body.classList.contains("arrange")) return;
       const z = e.target.closest(NO_GRAB) ? null : grabZone(el, e, hRes);
       el.style.cursor = z === "br" || z === "tl" ? "nwse-resize" : z === "bl" || z === "tr" ? "nesw-resize" : z === "l" || z === "r" ? "ew-resize" : z === "b" || z === "t" ? "ns-resize" : z === "head" ? "grab" : "";
     });
@@ -241,7 +241,6 @@
   window.addEventListener("pointerup", () => { for (const g of document.querySelectorAll(".panel > .grabbed")) { g.classList.remove("grabbed"); noClick = g; setTimeout(() => { if (noClick === g) noClick = null; }, 50); } }, true);
   function setArrange(on) {
     if (on && !expanded) return;
-    if (on && document.documentElement.dataset.ui === "apple") { try { notice("Anordnen gibt es in der Oberfläche Klassisch. Im Apple-Modus ordnet das Raster die Karten; welche eine Seite zeigt, stellst du unter Einstellungen ein."); } catch {} return; }
     if (on && !freeLayout) { freeLayout = captureLayout(); applyLayout(); window.jarvis.setConfig({ panelLayout: freeLayout }); }
     document.body.classList.toggle("arrange", on); $("arrangeBtn").setAttribute("aria-pressed", String(on)); placeOverlays();
     ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.();

@@ -18,7 +18,6 @@ async function run() {
   const native = [];
   const context = { BrowserWindow, ipcMain, screen, path, __dirname: fixture.root,
     config, win: window, expanded: true, app, setTimeout, process: { platform: process.platform },
-    uiStart: { mode: process.env.ARGUS_TEST_UI === "apple" ? "apple" : "klassisch" }, // Oberfläche wie beim Programmstart (app/ui-mode.js)
     alive: () => !window.isDestroyed(), logError: e => errors.push(String(e)),
     saveConfig: () => {}, setExpanded: () => {}, rescueWindow: () => {}, toggleVisible: () => {}, checkUpdates: () => {}, openDonate: () => {},
     ytAlive: () => false, twAlive: () => false, ytView: null, twView: null,

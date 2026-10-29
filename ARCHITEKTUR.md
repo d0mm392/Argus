@@ -48,11 +48,6 @@ Pro Seite gespeichert (`snapPage` / `switchPage`): Panel-Layout, ausgeblendete B
 ## Bau und Auslieferung
 Siehe Gedächtnisordner `jarvis-release`: Version erhöhen, ANLEITUNG-Abschnitt, Windows-Bau, Zweig `updates` (nicht `stable`), README auf `main` prüfen, Zweig `source` nachziehen.
 
-## Oberflächen (ab 0.58.26)
-- `app/ui-mode.js` entscheidet beim Start über die Oberfläche (Startsicherung `ui-start.json` im Datenordner). `main.js` setzt `data-ui` am `<html>` von index.html, `uiStart.mode` gilt bis zum nächsten Neustart.
-- Apple-Modus = `app/apple.css` (wirkt nur unter `html[data-ui="apple"]`) + `app/js/20-apple-modus.js` (ordnet vorhandene Elemente um, leitet an Originalknöpfe weiter). Keine zweite Implementierung von Funktionen.
-- Menüfenster (`app/menu.html`) erhalten den Modus über `menu-show` (`ui`).
-
 ## Bekannte Grenzen
 - Gemeinsamer Namensraum statt echter Module: Dateien sind getrennt, aber nicht voneinander abgeschottet. Nächster Schritt wäre zentraler Zustand pro Seite (ein Objekt statt vieler Variablen), danach erst ein Framework.
 - Tests laufen unter Linux. Windows-Eigenheiten (Taskleiste, Schriften, Sensoren, Spiele) prüft der Nutzer von Hand.

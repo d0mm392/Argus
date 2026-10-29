@@ -38,8 +38,6 @@ contextBridge.exposeInMainWorld("jarvis", {
   focusApp: (key) => ipcRenderer.invoke("focus-app", key),
   winMode: (m) => ipcRenderer.send("win-mode", m),
   setConfig: (patch) => ipcRenderer.invoke("set-config", patch),
-  uiModeSwitch: (mode) => ipcRenderer.invoke("ui-mode-switch", mode), // Oberfläche wechseln (speichert und startet neu)
-  uiReady: () => ipcRenderer.send("ui-ready"),
   saveNotesNow: (snapshot) => ipcRenderer.sendSync("notes-flush", snapshot),
   quit: () => ipcRenderer.send("quit"),
   tts: (text, id) => ipcRenderer.invoke("tts", text, id),

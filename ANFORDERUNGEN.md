@@ -55,7 +55,7 @@ Dokumentversion: 1.4 · gilt ab Argus 0.58.24
 
 - R-UI-CLASSIC: Apple-Skins, Auswahl und Vorschauen vollstaendig entfernen. Gespeicherte Apple-Auswahl ausschliesslich auf classic migrieren; sonstige Einstellungen unveraendert. Originales style.css vor Skins unveraendert, funktionale Verbesserungen erhalten. Test: classic-theme mit Original-CSS und berechneten Styles, settings, menus.
 
-## Erweiterungen ab 0.58.26
+## Erweiterungen ab 0.58.27
 
-- R-UI-APPLE: Optionaler Apple-Modus unter Aussehen → Oberfläche (`uiMode` klassisch|apple, Standard klassisch, nur über `ui-mode-switch` änderbar). Wechsel erst nach Speichern und kontrolliertem Neustart; kein Neustart bei laufender lokaler KI-Einrichtung, Update-Download, anderem Download oder Strata-Start. Startsicherung `ui-start.json`: gescheiterter Apple-Start → einmalig Klassisch, Hinweis, keine Schleife, keine Datenänderung außer `uiMode`. Rückweg über Einstellungen und Tray. Gleiche Funktions- und Datenlogik, alle Klassisch-Elemente erreichbar (außer bewusst: Anordnen). Keine Apple-Schriften/-Assets; Transparenz und Bewegung reduzierbar. Tests: ui-mode, apple-mode, alle Electron-Oberflächentests mit ARGUS_TEST_UI=apple.
-- R-UI-CLASSIC (Ergänzung 0.58.26): Klassisch bleibt Standard und optisch unverändert (Stilvergleich gegen 0.58.25). Die in 0.58.24 entfernten Skins kehren nicht zurück; der Apple-Modus ist eine getrennte, ausdrücklich gewählte Oberfläche mit eigenem Schlüssel `uiMode`.
+- R-START-GUARD: Fehler im Startablauf werden protokolliert (argus-error.log, Fehlerverlauf); Schritte vor/nach dem Fenster einzeln abgesichert, das Fenster erscheint trotzdem; scheitert der Start, Meldung und Beenden statt unsichtbarem Prozess mit Einzelinstanz-Sperre; unhandledRejection protokolliert. Tests: startup-guard, VM-Installation/Update.
+- R-UI-APPLE (zurückgestellt 0.58.27): Apple-Modus entfernt, gesichert (archiv/apple-modus-0.58.26); gespeichertes uiMode apple → klassisch, ui-start.json (Datei) entfernt, sonst Profil unverändert. Tests: ui-apple-removed.
