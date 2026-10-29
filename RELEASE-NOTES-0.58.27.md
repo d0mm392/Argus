@@ -15,8 +15,10 @@ Dringende Korrektur für Installationen, die nach einem Update nicht mehr öffne
 Aktualisieren ohne laufendes Argus: Installer direkt herunterladen und ausführen. Der Link steht in der README des Testkanals. Er installiert über die bestehende Version, die Daten bleiben erhalten.
 
 Geprüft:
-- Testsuite wie 0.58.25.
-- Tests für Startabsicherung und Entfernung.
-- Installiertes Paket in einer Offline-VM: Neuinstallation, Update von 0.58.20 (befülltes Profil), 0.58.25 und 0.58.26 (Apple-Modus eingestellt), jeweils Start der installierten Anwendung und Vergleich mit dem Manifest.
+- Testsuite wie 0.58.25; neue Tests für Startabsicherung und Entfernung des Apple-Modus.
+- Installiertes Paket: alle Produktdateien gleich dem Quellstand, Discord-Laufzeit unverändert, Manifest und Update-Metadaten stimmig.
+- In einer Offline-VM: Update 0.58.25 → 0.58.26 und 0.58.20 → 0.58.26 jeweils mit Start der installierten Anwendung.
+
+Noch nicht geprüft (dringende Bereitstellung): die VM-Durchläufe mit 0.58.27 selbst (Neuinstallation, Update von 0.58.20 mit befülltem Profil, Update von 0.58.26 im Apple-Modus). Sie folgen direkt nach der Veröffentlichung.
 
 Stable bleibt unverändert.
