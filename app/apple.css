@@ -1,0 +1,259 @@
+/* Apple-Modus: macOS-inspirierte Oberfläche für das aufgeklappte Panel. Wirkt nur unter html[data-ui="apple"].
+   Gestaltung nach den Apple Human Interface Guidelines (siehe DESIGN-APPLE-MODUS.md), umgesetzt mit Windows-Mitteln:
+   Windows-Systemschrift (Segoe UI Variable), eigene Linien-Symbole, Windows-Fensterknöpfe rechts. Klassisch bleibt unberührt.
+   Werte liegen auf body, damit sie Vorrang vor den am Wurzelelement gesetzten klassischen Werten (Farbwelt, Schrift) haben. */
+
+html[data-ui="apple"] body {
+  /* Hell (Standard); Dunkel siehe unten. Kontraste: Text auf Fläche >= 4,5:1 (tests/apple-mode.test.js) */
+  --ap-window: #f2f2f5; --ap-content: #ffffff; --ap-card: #ffffff; --ap-field: #f2f2f5; --ap-hover: rgba(0, 0, 0, 0.05);
+  --ap-text: #1d1d1f; --ap-text2: #5c5c63; --ap-sep: rgba(0, 0, 0, 0.11); --ap-sep2: rgba(0, 0, 0, 0.07);
+  --ap-accent: #0a62d6; --ap-fill: #0a62d6; --ap-on-accent: #ffffff; /* ap-fill: Fläche gefüllter Knöpfe und Auswahl, weiße Schrift darauf */ --ap-sel: rgba(10, 98, 214, 0.13); --ap-focus: rgba(10, 98, 214, 0.55);
+  --ap-bar: rgba(246, 246, 249, 0.86); --ap-side: rgba(236, 236, 241, 0.88); --ap-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --ap-danger: #c4271d;
+  --ap-font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --ap-font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --ap-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --ap-ease: cubic-bezier(0.25, 0.1, 0.25, 1); --ap-t: 140ms;
+  /* Klassische Variablen auf die Apple-Werte legen, damit vorhandene Bausteine (Karten, Felder, Knöpfe) passend erscheinen */
+  --ink: var(--ap-text); --ink-dim: var(--ap-text2); --line: var(--ap-sep); --field: var(--ap-field); --panel: var(--ap-content);
+  --win-solid: var(--ap-content); --accent: var(--ap-accent); --f-body: var(--ap-font); --f-display: var(--ap-font-display); --f-mono: var(--ap-mono);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-ui="apple"] body {
+    --ap-window: #1c1c1e; --ap-content: #232326; --ap-card: #2b2b2f; --ap-field: #343438; --ap-hover: rgba(255, 255, 255, 0.07);
+    --ap-text: #f2f2f5; --ap-text2: #a8a8b0; --ap-sep: rgba(255, 255, 255, 0.13); --ap-sep2: rgba(255, 255, 255, 0.08);
+    --ap-accent: #3d8bff; --ap-fill: #2a6fdb; --ap-on-accent: #ffffff; --ap-sel: rgba(61, 139, 255, 0.22); --ap-focus: rgba(61, 139, 255, 0.7);
+    --ap-bar: rgba(40, 40, 44, 0.86); --ap-side: rgba(34, 34, 38, 0.9); --ap-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+    --ap-danger: #ff6159;
+    color-scheme: dark;
+  }
+}
+/* Transparenz reduzieren (Einstellung oder Systemvorgabe): Steuerebene deckend */
+html[data-ui="apple"].ap-solid body { --ap-bar: var(--ap-window); --ap-side: var(--ap-window); }
+@media (prefers-reduced-transparency: reduce) { html[data-ui="apple"] body { --ap-bar: var(--ap-window); --ap-side: var(--ap-window); } }
+
+/* ---------- Fenster ---------- */
+html[data-ui="apple"] body { font: 13px/1.38 var(--ap-font); color: var(--ap-text); letter-spacing: -0.006em; }
+html[data-ui="apple"] body.expanded .shell {
+  display: grid; grid-template-columns: var(--ap-sidew, 212px) minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr);
+  background: var(--ap-window); border: 1px solid var(--ap-sep); border-radius: 10px; overflow: hidden;
+}
+html[data-ui="apple"].ap-noside body.expanded .shell { --ap-sidew: 0px; }
+html[data-ui="apple"] body.expanded #bgfx { display: none !important; } /* keine bewegten Hintergründe hinter Inhalten */
+html[data-ui="apple"] ::-webkit-scrollbar { width: 9px; height: 9px; }
+html[data-ui="apple"] ::-webkit-scrollbar-thumb { background: var(--ap-sep); border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; box-shadow: none; }
+html[data-ui="apple"] ::-webkit-scrollbar-thumb:hover { background: var(--ap-text2); background-clip: padding-box; }
+html[data-ui="apple"] :focus-visible { outline: 3px solid var(--ap-focus); outline-offset: 1px; border-radius: 6px; }
+
+/* ---------- Toolbar (Steuerebene): App-Menü, Seitentitel, häufige Befehle, Windows-Fensterknöpfe ---------- */
+html[data-ui="apple"] body.expanded .bar {
+  grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 6px; height: 52px; margin: 0; padding: 0 8px 0 10px;
+  background: var(--ap-bar); border-bottom: 1px solid var(--ap-sep); -webkit-app-region: drag; position: relative; z-index: 40;
+}
+html[data-ui="apple"] body.expanded .bar .brand { display: flex; flex-direction: row; align-items: center; gap: 4px; flex: 1 1 auto; min-width: 0; }
+html[data-ui="apple"] body.expanded .bar .bname, html[data-ui="apple"] body.expanded #arrangeBtn, html[data-ui="apple"] body.expanded #settingsBtn { display: none !important; }
+/* Die klassischen Seiten-Reiter bleiben als Quelle der Seitenlogik im DOM, sichtbar ist die Sidebar */
+html[data-ui="apple"] #pageTabs { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html[data-ui="apple"] .ap-tb { -webkit-app-region: no-drag; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 32px; height: 30px; padding: 0 8px;
+  font: 500 13px var(--ap-font); color: var(--ap-text); background: transparent; border: 0; border-radius: 7px; cursor: default; }
+html[data-ui="apple"] .ap-tb:hover { background: var(--ap-hover); }
+html[data-ui="apple"] .ap-tb[aria-expanded="true"] { background: var(--ap-sel); }
+html[data-ui="apple"] .ap-tb svg { width: 17px; height: 17px; }
+html[data-ui="apple"] #apAppBtn b { font-weight: 650; letter-spacing: -0.01em; }
+html[data-ui="apple"] #apTitle { font: 650 15px/20px var(--ap-font-display); letter-spacing: -0.016em; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-app-region: drag; }
+html[data-ui="apple"] body.expanded .bar-btns { display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
+html[data-ui="apple"] body.expanded .bar-btns .btn {
+  height: 30px; min-width: 32px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--ap-text);
+  font: 500 12px var(--ap-font); letter-spacing: 0; box-shadow: none; transform: none !important;
+}
+html[data-ui="apple"] body.expanded .bar-btns .btn.icon { width: 32px; padding: 0; }
+html[data-ui="apple"] body.expanded .bar-btns .btn svg { width: 17px; height: 17px; }
+html[data-ui="apple"] body.expanded .bar-btns .btn:hover { background: var(--ap-hover); }
+/* Windows-Fensterknöpfe als eigene Gruppe am rechten Rand, abgesetzt durch eine Trennlinie */
+html[data-ui="apple"] body.expanded #collapseBtn:not([hidden]), html[data-ui="apple"] body.expanded #minBtn { margin-left: 10px; }
+html[data-ui="apple"] body.expanded #minBtn::before { content: ""; position: absolute; left: -7px; top: 7px; bottom: 7px; width: 1px; background: var(--ap-sep); }
+html[data-ui="apple"] body.expanded #minBtn { position: relative; }
+html[data-ui="apple"] body.expanded #closeBtn:hover { background: var(--ap-danger); color: #fff; }
+html[data-ui="apple"] body.expanded .strata-btn i { width: 7px; height: 7px; }
+
+/* App-Menü (Befehle wie im macOS-App-Menü; ruft die vorhandenen Knöpfe auf) */
+html[data-ui="apple"] #apAppMenu { position: absolute; left: 8px; top: 46px; z-index: 80; min-width: 236px; padding: 5px; background: var(--ap-content);
+  border: 1px solid var(--ap-sep); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.1); -webkit-app-region: no-drag; }
+html[data-ui="apple"] #apAppMenu[hidden] { display: none; }
+html[data-ui="apple"] #apAppMenu button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 24px; height: 26px; padding: 0 10px;
+  font: 13px var(--ap-font); color: var(--ap-text); background: transparent; border: 0; border-radius: 5px; text-align: left; cursor: default; }
+html[data-ui="apple"] #apAppMenu button:hover, html[data-ui="apple"] #apAppMenu button:focus-visible { background: var(--ap-fill); color: var(--ap-on-accent); outline: none; }
+html[data-ui="apple"] #apAppMenu kbd { font: 12px var(--ap-font); color: inherit; opacity: 0.7; }
+html[data-ui="apple"] #apAppMenu hr { border: 0; border-top: 1px solid var(--ap-sep); margin: 5px 6px; }
+
+/* ---------- Sidebar ---------- */
+html[data-ui="apple"] #apSide { display: none; }
+html[data-ui="apple"] body.expanded #apSide {
+  grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden auto; padding: 10px 8px;
+  background: var(--ap-side); border-right: 1px solid var(--ap-sep);
+}
+html[data-ui="apple"].ap-noside body.expanded #apSide { display: none; }
+html[data-ui="apple"] #apSide h2 { margin: 8px 10px 4px; font: 600 11px/14px var(--ap-font); color: var(--ap-text2); letter-spacing: 0.01em; }
+html[data-ui="apple"] #apSide h2:first-child { margin-top: 2px; }
+html[data-ui="apple"] #apSide button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 30px; padding: 0 10px; font: 13px var(--ap-font);
+  color: var(--ap-text); background: transparent; border: 0; border-radius: 7px; text-align: left; cursor: default; }
+html[data-ui="apple"] #apSide button:hover { background: var(--ap-hover); }
+html[data-ui="apple"] #apSide button[aria-current="page"] { background: var(--ap-sel); font-weight: 650; }
+html[data-ui="apple"] #apSide button svg { width: 17px; height: 17px; flex: 0 0 17px; color: var(--ap-accent); }
+html[data-ui="apple"] #apSide button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-ui="apple"] #apSide .ap-add { color: var(--ap-text2); }
+html[data-ui="apple"] #apSide .ap-add svg { color: var(--ap-text2); }
+
+/* ---------- Inhalt: Seitentitel, Assistent (Kugel und Gespräch), Karten im Raster ---------- */
+html[data-ui="apple"] #apMain { display: none; }
+html[data-ui="apple"] body.expanded #apMain {
+  grid-column: 2; grid-row: 2; display: block; min-width: 0; min-height: 0; overflow: auto; padding: 18px 22px 24px; background: var(--ap-content);
+}
+/* Seitentitel steht in der Toolbar (macOS); die Überschrift im Inhalt bleibt nur für Screenreader */
+html[data-ui="apple"] #apPageH { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
+/* Assistent-Karte: Kugel links (annähernd quadratisch wie in Klassisch, damit ihre Beschriftungen Platz haben), Gespräch rechts */
+html[data-ui="apple"] body.expanded #apAssist {
+  display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); height: 380px; margin: 0 0 12px;
+  background: var(--ap-card); border: 1px solid var(--ap-sep2); border-radius: 12px; box-shadow: var(--ap-shadow); overflow: hidden;
+}
+/* Die Kugel ist für dunklen Grund gezeichnet: als dunkle Bildkachel innerhalb der Karte, in Hell und Dunkel gleich */
+html[data-ui="apple"] body.expanded #apAssist > #stage {
+  position: relative !important; inset: auto !important; display: block; height: auto; min-height: 0; flex: none !important; margin: 0;
+  background: radial-gradient(120% 90% at 50% 40%, #13233a 0%, #0a1322 62%, #070d18 100%); overflow: hidden;
+}
+html[data-ui="apple"] body.expanded #apAssist #expandBtn { display: none; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; padding: 12px; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > * { position: relative !important; left: auto !important; top: auto !important; width: auto !important; max-width: none !important; height: auto !important; margin: 0 !important; transform: none !important; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > [hidden], html[data-ui="apple"] body.expanded #apAssist .gone { display: none !important; }
+html[data-ui="apple"] body.expanded #apAssist[hidden] { display: none !important; }
+html[data-ui="apple"] body.expanded #apAssist.ap-nochat { grid-template-columns: 1fr; height: 300px; }
+html[data-ui="apple"] body.expanded #apAssist.ap-nochat .ap-chat { display: none; }
+html[data-ui="apple"] body.expanded #apAssist.ap-noorb { grid-template-columns: 1fr; height: auto; min-height: 220px; }
+html[data-ui="apple"] body.expanded #apAssist.ap-noorb > #stage { display: none !important; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > .transcript { flex: 1 1 auto !important; min-height: 0; overflow: auto; background: var(--ap-field); border: 0; box-shadow: none; border-radius: 9px; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > #proc, html[data-ui="apple"] body.expanded #apAssist .ap-chat > .notice { font: 12px/16px var(--ap-font); color: var(--ap-text2); letter-spacing: 0; text-transform: none; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > .notice:empty { display: none; }
+html[data-ui="apple"] body.expanded #apAssist .ap-chat > .ask { box-shadow: none; }
+@media (max-width: 760px) {
+  html[data-ui="apple"] body.expanded #apAssist { grid-template-columns: 1fr; grid-template-rows: 260px auto; height: auto; }
+  html[data-ui="apple"] body.expanded #apAssist > #stage { border-right: 0; border-bottom: 1px solid var(--ap-sep2); }
+  html[data-ui="apple"] body.expanded #apAssist .ap-chat > .transcript { min-height: 140px; }
+}
+/* Statuspille und Beschriftung der Kugel: lesbar in Hell und Dunkel */
+html[data-ui="apple"] body.expanded #apAssist .pill { background: var(--ap-content); color: var(--ap-text); border: 1px solid var(--ap-sep); box-shadow: var(--ap-shadow); font: 600 11px var(--ap-font); letter-spacing: 0.02em; }
+html[data-ui="apple"] body.expanded #apAssist .cap-region:not(:empty) { background: var(--ap-content); color: var(--ap-text2); border: 1px solid var(--ap-sep2); font: 12px var(--ap-font); }
+/* Raster der Karten; freie Anordnung (Klassisch) wird hier nicht angewandt, gespeicherte Positionen bleiben unverändert */
+html[data-ui="apple"] body.expanded #apMain > .panel {
+  position: relative !important; inset: auto !important; display: grid !important; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); grid-auto-flow: row dense;
+  gap: 12px; padding: 0 !important; overflow: visible !important; pointer-events: auto !important; align-items: start;
+}
+html[data-ui="apple"] body.expanded #apMain > .panel > * {
+  position: relative !important; left: auto !important; top: auto !important; width: auto !important; max-width: none !important; height: auto !important;
+  transform: none !important; margin: 0 !important; min-width: 0;
+}
+html[data-ui="apple"] body.expanded #apMain > .panel > [hidden] { display: none !important; }
+html[data-ui="apple"] body.expanded #apMain > .panel > .fgrip, html[data-ui="apple"] body.expanded #apMain .fgrip, html[data-ui="apple"] body.expanded #chatGrip, html[data-ui="apple"] body.expanded .edge { display: none !important; }
+/* YouTube/Twitch im Panel über die volle Breite, oben; Aktivitätsprotokoll als ruhige Karte über die volle Breite unten */
+html[data-ui="apple"] body.expanded #apMain > .panel > .yt { grid-column: 1 / -1; order: -10; }
+html[data-ui="apple"] body.expanded #apMain > .panel > .log { grid-column: 1 / -1; order: 50; max-height: 160px; overflow: auto; padding: 10px 14px; background: var(--ap-card);
+  border: 1px solid var(--ap-sep2); border-radius: 12px; box-shadow: var(--ap-shadow); font: 12px/1.5 var(--ap-font); color: var(--ap-text2); }
+html[data-ui="apple"] body.expanded #apMain > .panel > .log * { font-family: var(--ap-font) !important; color: inherit; }
+html[data-ui="apple"] body.expanded #apMain > .panel > .log:empty { display: none; }
+/* Karten: deckend (Inhaltsebene), ruhige Kopfzeile */
+html[data-ui="apple"] body.expanded #apMain .sys, html[data-ui="apple"] body.expanded #apMain .transcript {
+  background: var(--ap-card); border: 1px solid var(--ap-sep2); border-radius: 12px; box-shadow: var(--ap-shadow); padding: 12px 14px; overflow: auto;
+}
+html[data-ui="apple"] body.expanded #apMain .sys-head { font: 600 13px/16px var(--ap-font); letter-spacing: 0; text-transform: none; color: var(--ap-text); }
+html[data-ui="apple"] body.expanded #apMain .sys-head b { font: 500 11px var(--ap-font); color: var(--ap-text2); }
+html[data-ui="apple"] body.expanded #apMain .sys-hint { font: 12px var(--ap-font); color: var(--ap-text2); }
+/* Kleine Beschriftungen in Karten (Uhren, Kennzahlen): Systemschrift statt Monospace-Versalien */
+html[data-ui="apple"] body.expanded #apMain .sys small, html[data-ui="apple"] body.expanded #apMain .clk-row small { font: 500 11px var(--ap-font); letter-spacing: 0.01em; text-transform: none; color: var(--ap-text2); }
+/* Notiz-Reiter als Segmente */
+html[data-ui="apple"] body.expanded #apMain .nt-tabs button { font: 12px var(--ap-font); color: var(--ap-text); background: var(--ap-field); border: 1px solid var(--ap-sep); border-radius: 6px; min-height: 22px; padding: 0 10px; }
+html[data-ui="apple"] body.expanded #apMain .nt-tabs button[aria-selected="true"], html[data-ui="apple"] body.expanded #apMain .nt-tabs button.on { background: var(--ap-sel); font-weight: 650; }
+/* Statuszeile der KI neben dem Titel */
+html[data-ui="apple"] body.expanded .bar .brand > :not(#apSideBtn):not(#apAppBtn):not(#apTitle):not(#pageTabs):not(.bname) { font: 12px var(--ap-font); color: var(--ap-text2); letter-spacing: 0; text-transform: none; -webkit-app-region: no-drag; }
+html[data-ui="apple"] body.expanded #apMain .ask { display: flex; gap: 6px; align-items: flex-end; padding: 6px; background: var(--ap-card); border: 1px solid var(--ap-sep); border-radius: 12px; box-shadow: var(--ap-shadow); }
+html[data-ui="apple"] body.expanded #apMain .ask textarea { font: 13px/1.4 var(--ap-font); color: var(--ap-text); background: transparent; border: 0; }
+/* Knöpfe in Inhalten: macOS-artige Schaltflächen */
+html[data-ui="apple"] body.expanded .btn { font: 500 13px var(--ap-font); letter-spacing: 0; text-transform: none; color: var(--ap-text); background: var(--ap-field);
+  border: 1px solid var(--ap-sep); border-radius: 7px; box-shadow: none; min-height: 28px; }
+html[data-ui="apple"] body.expanded .btn:hover { background: var(--ap-hover); }
+html[data-ui="apple"] body.expanded .btn.primary { background: var(--ap-fill); color: var(--ap-on-accent); border-color: transparent; }
+html[data-ui="apple"] body.expanded .btn.danger { color: var(--ap-danger); }
+html[data-ui="apple"] body.expanded .btn:disabled, html[data-ui="apple"] body.expanded .btn[disabled] { opacity: 0.45; filter: none; cursor: default; }
+html[data-ui="apple"] body.expanded .btn.primary:disabled { background: var(--ap-fill); color: var(--ap-on-accent); }
+
+/* ---------- Einstellungen: eigenes Fenster mit fester Bereichsleiste ---------- */
+/* über dem Inhaltsbereich, die Seitenleiste bleibt sichtbar */
+html[data-ui="apple"] body.expanded .settings {
+  inset: 62px 18px 16px calc(var(--ap-sidew, 212px) + 18px); z-index: 60; background: var(--ap-content); border: 1px solid var(--ap-sep);
+  border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+}
+html[data-ui="apple"] body.expanded .settings .set-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px 6px; }
+html[data-ui="apple"] body.expanded .settings .set-head b { font: 650 15px var(--ap-font-display); letter-spacing: -0.01em; text-transform: none; }
+html[data-ui="apple"] body.expanded .settings .set-head .btn { min-height: 28px; height: 28px; padding: 0 12px; font-size: 13px; }
+html[data-ui="apple"] body.expanded .settings .set-head input[type=search] { flex: 1 1 auto; height: 28px; padding: 0 10px; font: 13px var(--ap-font); color: var(--ap-text);
+  background: var(--ap-field); border: 1px solid var(--ap-sep); border-radius: 7px; }
+html[data-ui="apple"] body.expanded .set-tabs { gap: 2px; padding: 4px 12px 8px; justify-content: center; border-bottom: 1px solid var(--ap-sep); }
+html[data-ui="apple"] body.expanded .set-tabs button { font: 500 12px var(--ap-font); color: var(--ap-text); background: transparent; border: 0; border-radius: 7px; padding: 5px 10px; min-height: 28px; }
+html[data-ui="apple"] body.expanded .set-tabs button:hover { background: var(--ap-hover); }
+html[data-ui="apple"] body.expanded .set-tabs button[aria-selected="true"] { background: var(--ap-sel); color: var(--ap-text); font-weight: 650; border: 0; }
+html[data-ui="apple"] body.expanded .set-body { padding: 8px 20px 20px; gap: 6px; }
+html[data-ui="apple"] body.expanded .set-body h4 { margin: 14px 0 2px; font: 600 13px var(--ap-font); letter-spacing: 0; text-transform: none; color: var(--ap-text); }
+html[data-ui="apple"] body.expanded .set-body .row, html[data-ui="apple"] body.expanded .set-body .col { font: 13px var(--ap-font); color: var(--ap-text); max-width: 660px; }
+html[data-ui="apple"] body.expanded .set-body .set-note { font: 12px/1.4 var(--ap-font); color: var(--ap-text2); }
+html[data-ui="apple"] body.expanded .set-body select, html[data-ui="apple"] body.expanded .set-body input[type=text], html[data-ui="apple"] body.expanded .set-body input[type=password] {
+  font: 13px var(--ap-font); color: var(--ap-text); background: var(--ap-field); border: 1px solid var(--ap-sep); border-radius: 7px; min-height: 26px; }
+
+/* ---------- Bewegung: kurz, abschaltbar ---------- */
+html[data-ui="apple"] #apSide button, html[data-ui="apple"] .ap-tb, html[data-ui="apple"] body.expanded .bar-btns .btn { transition: background-color var(--ap-t) var(--ap-ease); }
+html[data-ui="apple"] body.reduce-animations #apSide button, html[data-ui="apple"] body.reduce-animations .ap-tb { transition: none; }
+
+/* ---------- Dialoge, Pop-ups und Menüs im Fenster: macOS-artige Blätter auf deckender Fläche ---------- */
+html[data-ui="apple"] .report-pop { background: var(--ap-content); color: var(--ap-text); border: 1px solid var(--ap-sep); border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.12); font: 13px/1.4 var(--ap-font); }
+html[data-ui="apple"] .report-pop h3 { font: 650 15px var(--ap-font-display); letter-spacing: -0.01em; text-transform: none; color: var(--ap-text); }
+html[data-ui="apple"] .report-pop .rp-sub, html[data-ui="apple"] .report-pop .rp-names, html[data-ui="apple"] .cr-state, html[data-ui="apple"] .cr-empty { color: var(--ap-text2); font-family: var(--ap-font); letter-spacing: 0; }
+html[data-ui="apple"] .report-pop table { font-family: var(--ap-font); }
+html[data-ui="apple"] .report-pop td { border-bottom-color: var(--ap-sep2); }
+html[data-ui="apple"] .report-pop tr.bad td:first-child { color: var(--ap-danger); }
+html[data-ui="apple"] .pop-head { background: transparent; border-bottom-color: var(--ap-sep); }
+html[data-ui="apple"] .pop-x { color: var(--ap-text2); border-radius: 50%; }
+html[data-ui="apple"] .pop-x:hover { background: var(--ap-hover); color: var(--ap-text); }
+html[data-ui="apple"] #crText { background: var(--ap-field); color: var(--ap-text); border-color: var(--ap-sep); border-radius: 8px; font-family: var(--ap-mono); }
+html[data-ui="apple"] #crText:focus { border-color: var(--ap-accent); box-shadow: 0 0 0 3px var(--ap-focus); }
+html[data-ui="apple"] .cr-item { background: var(--ap-card); border-color: var(--ap-sep); }
+html[data-ui="apple"] .cr-item:hover { background: var(--ap-hover); border-color: var(--ap-sep); }
+html[data-ui="apple"] .cr-item small, html[data-ui="apple"] .cr-item .tag { font-family: var(--ap-font); color: var(--ap-text2); }
+html[data-ui="apple"] .hp-steps code { background: var(--ap-field); }
+html[data-ui="apple"] .report-pop .btn { font: 500 13px var(--ap-font); letter-spacing: 0; text-transform: none; color: var(--ap-text); background: var(--ap-field);
+  border: 1px solid var(--ap-sep); border-radius: 7px; box-shadow: none; min-height: 28px; }
+html[data-ui="apple"] .report-pop .btn.primary { background: var(--ap-fill); color: var(--ap-on-accent); border-color: transparent; }
+html[data-ui="apple"] .report-pop label, html[data-ui="apple"] .report-pop select { font: 13px var(--ap-font); color: var(--ap-text); }
+/* Eingabedialoge (neue Seite, Watchlist, ioBroker) */
+html[data-ui="apple"] .t-add { background: rgba(0, 0, 0, 0.28); }
+html[data-ui="apple"] .t-add form { background: var(--ap-content); color: var(--ap-text); border: 1px solid var(--ap-sep); border-radius: 12px; padding: 16px 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28); font: 13px var(--ap-font); }
+html[data-ui="apple"] .t-add label { color: var(--ap-text2); font: 12px var(--ap-font); }
+html[data-ui="apple"] .t-add input, html[data-ui="apple"] .t-add select { font: 13px var(--ap-font); color: var(--ap-text); background: var(--ap-field); border-color: var(--ap-sep); border-radius: 7px; min-height: 26px; }
+html[data-ui="apple"] .t-add input:focus, html[data-ui="apple"] .t-add select:focus { outline: none; border-color: var(--ap-accent); box-shadow: 0 0 0 3px var(--ap-focus); }
+html[data-ui="apple"] #tAddErr { color: var(--ap-danger); }
+html[data-ui="apple"] .t-x2 { background: var(--ap-field); border-color: var(--ap-sep); color: var(--ap-text2); }
+/* Kleine Menüs im Fenster (Seiten-, Notiz-, Listenmenüs) wie die Rechtsklickmenüs */
+html[data-ui="apple"] .ctxmenu, html[data-ui="apple"] .pg-menu { padding: 5px; border-radius: 10px; border: 1px solid var(--ap-sep); background: var(--ap-content);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22), 0 0 0 0.5px rgba(0, 0, 0, 0.12); font: 13px var(--ap-font); color: var(--ap-text); }
+html[data-ui="apple"] .ctxmenu .cm-t { font: 600 11px var(--ap-font); color: var(--ap-text2); }
+html[data-ui="apple"] .ctxmenu button, html[data-ui="apple"] .pg-menu button { color: var(--ap-text); border-radius: 5px; font: 13px var(--ap-font); letter-spacing: 0; text-transform: none; }
+html[data-ui="apple"] .ctxmenu button:hover, html[data-ui="apple"] .pg-menu button:hover { background: var(--ap-fill); color: var(--ap-on-accent); }
+html[data-ui="apple"] .ctxmenu button.danger { color: var(--ap-danger); }
+html[data-ui="apple"] .ctxmenu button.danger:hover { background: var(--ap-danger); color: #fff; }
+/* Angebotshinweis */
+html[data-ui="apple"] .offer { background: var(--ap-content); color: var(--ap-text); border: 1px solid var(--ap-sep); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); font: 13px var(--ap-font); }
+html[data-ui="apple"] .offer b { font: 650 13px var(--ap-font); letter-spacing: 0; text-transform: none; color: var(--ap-text); }
+html[data-ui="apple"] .offer ul, html[data-ui="apple"] .offer small, html[data-ui="apple"] .offer .offer-wish { font-family: var(--ap-font); color: var(--ap-text2); }
+/* Freundeslisten bleiben in der dunklen Kugel-Kachel, nur Schrift wie im Rest der Oberfläche */
+html[data-ui="apple"] .friends { font-family: var(--ap-font); }
+html[data-ui="apple"] .friends h5 { font-family: var(--ap-font); letter-spacing: 0.02em; }
+html[data-ui="apple"] .friends::before { display: none; }

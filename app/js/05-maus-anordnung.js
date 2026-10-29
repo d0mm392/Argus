@@ -92,6 +92,7 @@
   function makeDraggable(el, keyOf) {
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
+      if (document.documentElement.dataset.ui === "apple" && el.classList.contains("friends")) return; // Apple-Modus: Freundeslisten stehen in einer Karte, Platz und Größe der klassischen Anordnung bleiben
       if (e.ctrlKey && !el.classList.contains("friends")) { // Strg+Klick: Teil zur Auswahl hinzufügen oder entfernen
         e.preventDefault(); e.stopPropagation(); const k = keyOf();
         if (msel.has(k)) { msel.delete(k); el.classList.remove("msel"); } else { msel.set(k, el); el.classList.add("msel"); }

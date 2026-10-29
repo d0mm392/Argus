@@ -6,6 +6,7 @@
 <title>Argus</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="accessibility.css">
+<link rel="stylesheet" href="apple.css">
 <link rel="stylesheet" href="youtube-window.css">
 </head>
 <body>
@@ -33,6 +34,11 @@
     <div class="set-head"><b>Einstellungen</b><input type="search" id="setFind" placeholder="Suchen … (Maus über eine Zeile zeigt die Erklärung)" spellcheck="false" aria-label="Einstellungen durchsuchen"><button class="btn set-close" type="button" id="setClose">Schließen</button></div>
     <div class="set-tabs" id="setTabs" role="tablist"></div>
     <div class="set-body">
+      <h4 data-tab="Aussehen">Oberfläche</h4>
+      <label class="row" title="Klassisch ist die gewohnte Argus-Oberfläche. Der Apple-Modus ist eine macOS-inspirierte Oberfläche mit Seitenleiste, Toolbar und Karten. Beide nutzen dieselben Funktionen und Daten.">Oberfläche <select id="setUiMode"><option value="klassisch">Klassisch</option><option value="apple">Apple-Modus</option></select></label>
+      <label class="row" title="Seitenleiste und Toolbar im Apple-Modus deckend statt durchscheinend. Folgt zusätzlich der Windows-Einstellung für Transparenz.">Transparenz reduzieren (Apple-Modus) <input type="checkbox" id="setUiReduceTransparency"></label>
+      <div class="set-actions"><button class="btn primary" type="button" id="setUiApply" disabled>Übernehmen und neu starten</button></div>
+      <div class="set-note" id="setUiNote"></div>
       <h4 data-tab="Aussehen">Lesbarkeit</h4>
       <label class="row">Schriftgröße der Einstellungen <input type="range" id="setZoom" min="0.9" max="1.6" step="0.05"></label>
       <label class="row">Schriftart von Argus <select id="setUiFont"><option value="">Standard</option><option value="Segoe UI">Segoe UI</option><option value="Bahnschrift">Bahnschrift</option><option value="Calibri">Calibri</option><option value="Verdana">Verdana</option><option value="Tahoma">Tahoma</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Georgia">Georgia (Serif)</option><option value="Consolas">Consolas (Mono)</option><option value="Cascadia Mono">Cascadia Mono</option><option value="Courier New">Courier New</option><option value="Arial">Arial</option></select></label>
@@ -719,6 +725,7 @@
 <script src="youtube-settings.js"></script>
 <script src="js/18-youtube-settings.js"></script>
 <script src="js/19-discord-social.js"></script>
+<script src="js/20-apple-modus.js"></script>
 <script src="js/16-i18n-en.js"></script>
 <script src="js/17-sprache.js"></script>
 </body>

@@ -18,6 +18,19 @@
   .ck { width: 14px; text-align: center; color: var(--accent, #5fd4ff); flex: none; }
   .ar { margin-left: auto; color: var(--ink-dim, #a0b2c7); font-size: 10px; transition: transform .12s; } .open > .ar { transform: rotate(90deg); }
   .sub { margin: 2px 0 4px 10px; padding-left: 6px; border-left: 2px solid var(--line, rgba(140,180,220,.25)); }
+  /* Apple-Modus: macOS-artiges Menü (Systemschrift, Auswahl in Akzentfarbe, Trennlinien); Inhalt und Reihenfolge wie in Klassisch */
+  body.ap { --ap-bg: #ffffff; --ap-text: #1d1d1f; --ap-text2: #5c5c63; --ap-sep: rgba(0,0,0,.11); --ap-acc: #0a62d6; --ap-accfill: #0a62d6; color: var(--ap-text); font: 13px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) { body.ap { --ap-bg: #2b2b2f; --ap-text: #f2f2f5; --ap-text2: #a8a8b0; --ap-sep: rgba(255,255,255,.13); --ap-acc: #3d8bff; --ap-accfill: #2a6fdb; } }
+  body.ap #m { padding: 5px; border-radius: 10px; border: 1px solid var(--ap-sep); background: var(--ap-bg); box-shadow: 0 10px 30px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.12); }
+  body.ap .t { font: 600 11px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ap-text2); }
+  body.ap .sep { background: var(--ap-sep); margin: 5px 8px; }
+  body.ap button { padding: 0 10px; min-height: 26px; border-radius: 5px; color: var(--ap-text); }
+  body.ap button:hover, body.ap button:focus-visible { background: var(--ap-accfill); color: #fff; outline: none; }
+  body.ap button:hover .ck, body.ap button:hover .ar, body.ap button:focus-visible .ck { color: #fff; }
+  body.ap .ck { color: var(--ap-acc); } body.ap .ar { color: var(--ap-text2); }
+  body.ap button.danger { color: #c4271d; } body.ap button.danger:hover { background: #c4271d; color: #fff; }
+  body.ap .sub { border-left-color: var(--ap-sep); }
+  @media (prefers-reduced-motion: reduce) { body.ap .ar { transition: none; } }
 </style></head>
 <body><div id="m" role="menu" aria-label="Argus"></div>
 <script>
@@ -50,8 +63,8 @@
     host.append(b);
   };
   const report = () => { m.style.width = "max-content"; const w = Math.ceil(m.offsetWidth) + 14; m.style.width = ""; window.menu.size(w, Math.ceil(m.scrollHeight) + 14); }; // Layout works before the window is shown; no hidden RAF dependency.
-  window.menu.onShow(({ items, vars, sub }) => {
-    isSub = !!sub;
+  window.menu.onShow(({ items, vars, sub, ui }) => {
+    isSub = !!sub; document.body.classList.toggle("ap", ui === "apple");
     document.title = isSub ? "Argus Untermenü" : "Argus Menü";
     for (const [k, v] of Object.entries(vars || {})) document.body.style.setProperty(k, v);
     m.replaceChildren(); for (const it of items) mk(it, m); report(); m.querySelector('button:not([disabled])')?.focus();

@@ -23,7 +23,8 @@ async function setup() {
   Object.assign(config, { setupDone: true, micOnStart: false, voiceOutput: false,
     backend: "none", strataOn: false, notesOn: true, notesText: "Synthetic Start note",
     weatherOn: false, miningOn: true, mineOn: true, pagesOn: true, version: "TEST", dcBot: { status: "aus", guilds: [] },
-    voice: { ready: false, text: "Test microphone off" }, system: null });
+    voice: { ready: false, text: "Test microphone off" }, system: null,
+    uiMode: process.env.ARGUS_TEST_UI === "apple" ? "apple" : "klassisch", uiConfigured: process.env.ARGUS_TEST_UI === "apple" ? "apple" : "klassisch" });
   Object.assign(config, require(path.join(ROOT, "app/youtube-settings")).migrate(config));
   Object.assign(config, require(path.join(ROOT, "app/appearance")).migrate(config));
   Object.assign(config, require(path.join(ROOT, "app/notes-store")).migrate(config, () => "fixture"));
@@ -44,6 +45,7 @@ async function setup() {
   });
   const errors = [];
   ipcMain.on("ui-error", (_event, message, stack) => errors.push({ message, stack }));
+  const uiReady = []; ipcMain.on("ui-ready", () => uiReady.push(Date.now())); // Bereitschaftsmeldungen des Apple-Modus (Startsicherung)
   const appRoot = path.join(ROOT, "app");
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, "http://localhost");
@@ -53,6 +55,13 @@ async function setup() {
     fs.readFile(file, (error, bytes) => {
       response.setHeader("Content-Type", file.endsWith(".js") ? "application/javascript" : file.endsWith(".css") ? "text/css" : "text/html");
       if (error) { response.writeHead(404); return response.end(); }
+      // Wie der Argus-Server: Oberfläche vor dem ersten Zeichnen setzen (ARGUS_TEST_UI=apple für den Apple-Modus)
+      if (process.env.ARGUS_TEST_UI && file === path.join(appRoot, "index.html")) {
+        let html = require(path.join(ROOT, "app/ui-mode")).markHtml(bytes.toString("utf8"), process.env.ARGUS_TEST_UI);
+        // ARGUS_TEST_UI_BREAK=1: Aufbau des Apple-Modus absichtlich scheitern lassen (Leiste fehlt), um die Startsicherung zu prüfen
+        if (process.env.ARGUS_TEST_UI_BREAK === "1") html = html.replace('<script src="js/20-apple-modus.js">', '<script>document.querySelector(".bar .brand")?.remove()</script><script src="js/20-apple-modus.js">');
+        return response.end(html);
+      }
       response.end(bytes);
     });
   });
@@ -79,7 +88,7 @@ async function setup() {
   await wait(1200);
   const evaluate = code => window.webContents.executeJavaScript(code);
   const evaluateWithValue = (fn, value) => evaluate(`(${fn.toString()})(${JSON.stringify(value)})`);
-  return { app, window, config, errors, wait, evaluate, evaluateWithValue, profile, root: ROOT,
+  return { app, window, config, errors, uiReady, wait, evaluate, evaluateWithValue, profile, root: ROOT,
     screenshot: async name => {
       const out = process.env.ARGUS_TEST_ARTIFACTS || profile;
       fs.mkdirSync(out, { recursive: true });

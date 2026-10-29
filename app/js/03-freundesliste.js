@@ -218,7 +218,7 @@
     if (gripSt.f2) pos = gripSt.f2.pos;
     f2Pos = pos;
     // Standardplatz einmal festhalten: das Discord-Fenster hängt danach nicht mehr von der Lage des Steam-Fensters ab
-    if (!pins.friends2 && !drag && friendsEl2.offsetWidth) { const c2 = cOf("friends2"), x2 = pos.x + w / 2 - c2.x, y2 = pos.y + h / 2 - c2.y; pins.friends2 = { a: Math.atan2(y2, x2), r: Math.max(0.2, Math.hypot(x2, y2) / SB) }; savePins(); }
+    if (!pins.friends2 && !drag && friendsEl2.offsetWidth && document.documentElement.dataset.ui !== "apple") { /* Apple-Modus: Liste steht in einer Karte, klassischen Platz nicht festlegen */ const c2 = cOf("friends2"), x2 = pos.x + w / 2 - c2.x, y2 = pos.y + h / 2 - c2.y; pins.friends2 = { a: Math.atan2(y2, x2), r: Math.max(0.2, Math.hypot(x2, y2) / SB) }; savePins(); }
     friendsEl2.style.transform = `translate(${Math.round(pos.x)}px, ${Math.round(pos.y)}px)`;
     placeGrips2(pos, w, h);
   }
@@ -248,7 +248,7 @@
     const CUR = { t: "ns-resize", b: "ns-resize", l: "ew-resize", r: "ew-resize", tl: "nwse-resize", br: "nwse-resize", tr: "nesw-resize", bl: "nesw-resize" };
     el.addEventListener("pointermove", (e) => { if (!gripSt[id] && !drag) el.style.cursor = CUR[edgeAt(e)] || ""; });
     el.addEventListener("pointerdown", (e) => {
-      const c = edgeAt(e), p = getPos(); if (e.button !== 0 || !c || !p) return;
+      const c = edgeAt(e), p = getPos(); if (e.button !== 0 || !c || !p || document.documentElement.dataset.ui === "apple") return;
       e.stopPropagation(); e.preventDefault(); prep();
       gripSt[id] = { c, sx: e.clientX, sy: e.clientY, w0: el.offsetWidth, h0: el.offsetHeight, x0: p.x, y0: p.y, pos: { ...p } };
     }, true);
