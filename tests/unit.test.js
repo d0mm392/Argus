@@ -167,7 +167,7 @@ test("R-MCP-1 MCP-Server bietet strata_fragen ohne Argus an und meldet fehlende 
 
 // R-START-1: Die Konfiguration wird geladen, bevor ioBroker, Foreman-Dashboard und Portal ihre Schalter lesen (sonst bleiben sie nach jedem Neustart aus)
 test("R-START-1 loadConfig vor den init-Aufrufen von iob, fmdash und portal", () => {
-  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "main.js"), "utf8"), at = (re) => src.search(re), lc = at(/app\.whenReady\(\)\.then\(async \(\) => \{\s*loadConfig\(\)/);
+  const src = require("fs").readFileSync(require("path").join(__dirname, "..", "main.js"), "utf8"), at = (re) => src.search(re), lc = at(/app\.whenReady\(\)\.then\(async \(\) => \{\s*(?:startStep\("[^"]+", \(\) => )?loadConfig\(\)/); // ab 0.58.27 abgesichert über startStep
   assert.ok(lc > 0, "loadConfig steht nicht am Anfang von whenReady");
   for (const re of [/iob\.init\(/, /fmdash\.init\(/, /portal\.init\(/]) assert.ok(at(re) > lc, String(re));
 });
