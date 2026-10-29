@@ -1,27 +1,34 @@
-version: 0.58.26
+version: 0.58.27
 files:
-  - url: Argus-Setup-0.58.26.exe
-    sha512: n2gfuuIP0/lMbXMqt9+wU8qmCUX99hBrhtkRNzXqGKNvXyLh/AgVy/+Veu+3ZS4p862+BEeXE5EiLeMd09RVHA==
-    size: 93496395
-path: Argus-Setup-0.58.26.exe
-sha512: n2gfuuIP0/lMbXMqt9+wU8qmCUX99hBrhtkRNzXqGKNvXyLh/AgVy/+Veu+3ZS4p862+BEeXE5EiLeMd09RVHA==
-releaseDate: '2026-10-29T12:23:28.203Z'
-releaseName: "Argus 0.58.26 - optionaler Apple-Modus"
+  - url: Argus-Setup-0.58.27.exe
+    sha512: YCnqFGwO2NPNCoEpRlEwkuqvQeHZQnCDO/DTm18Eef2KR9u6PlyXlFp5xo1GfIcUBXMdzcOx39cT0wZOCWMXcQ==
+    size: 93483996
+path: Argus-Setup-0.58.27.exe
+sha512: YCnqFGwO2NPNCoEpRlEwkuqvQeHZQnCDO/DTm18Eef2KR9u6PlyXlFp5xo1GfIcUBXMdzcOx39cT0wZOCWMXcQ==
+releaseDate: '2026-10-29T21:26:58.704Z'
+releaseName: "Argus 0.58.27 - Startabsicherung, Apple-Modus vorübergehend entfernt"
 releaseNotes: |
-  # Argus 0.58.26 – optionaler Apple-Modus
+  # Argus 0.58.27 – Startabsicherung, Apple-Modus vorübergehend entfernt
 
-  Unter Einstellungen → Aussehen → Oberfläche lässt sich zwischen „Klassisch“ und „Apple-Modus“ wählen. „Übernehmen und neu starten“ speichert zuerst alles und startet Argus dann kontrolliert neu. Bestehende und neue Installationen starten in Klassisch. Der Apple-Modus erscheint nur nach ausdrücklicher Wahl.
+  Dringende Korrektur für Installationen, die nach einem Update nicht mehr öffneten.
 
-  - Apple-Modus: macOS-inspiriertes Panel nach den Apple Human Interface Guidelines (Quellen in DESIGN-APPLE-MODUS.md). Es hat eine Toolbar mit App-Menü „Argus“, eine Sidebar mit den Seiten, Inhaltskarten im Raster und eine Assistent-Karte mit Kugel und Chat. Dazu kommen ein Einstellungsfenster mit fester Bereichsleiste sowie deckende Dialoge, Pop-ups und Rechtsklickmenüs in macOS-artiger Form. Hell und dunkel folgen dem Windows-Farbschema.
-  - Gleiche Funktionen: Beide Oberflächen nutzen dieselben Skripte, Einstellungen und Daten. Sidebar und App-Menü leiten nur an die vorhandenen Bedienelemente weiter. Die freie Anordnung (Anordnen) gibt es nur in Klassisch. Gespeicherte Anordnungen bleiben erhalten.
-  - Ehrlich umgesetzt: Es gibt keine nachgeahmte native macOS-Technik und keine Apple-Schriften oder -Symbole. Verwendet werden die Windows-Systemschrift Segoe UI Variable, eigene Liniensymbole und die Fensterknöpfe rechts wie unter Windows. Lesbarkeit geht vor Glas: Die Inhalte stehen auf deckenden Flächen. „Transparenz reduzieren“ macht auch die Leisten deckend. Bewegungen sind kurz und folgen „Animationen reduzieren“ sowie der Systemvorgabe.
-  - Sicherer Wechsel: Argus beendet sich regulär (wie „Beenden“: Speichern, Notizen sichern, eigene Prozesse wie Strata beenden) und startet einmal neu. Bei laufender Einrichtung der lokalen KI, Update-Download, anderem Download oder Strata-Start wird nicht neu gestartet. Stattdessen erscheint ein Hinweis. Scheitert ein Start im Apple-Modus, startet Argus beim nächsten Mal einmalig in Klassisch und zeigt einen Hinweis. Dabei gehen keine Daten verloren, und es entsteht keine Neustartschleife. Zurück zu Klassisch geht jederzeit über die Einstellungen oder das Tray-Menü („Oberfläche: Klassisch wiederherstellen“). Der Tray-Weg funktioniert auch, wenn die Oberfläche nicht lädt.
+  - Startabsicherung:
+    - Bisher konnte ein Fehler im Startablauf spurlos verschwinden. Dann erschien kein Fenster, und es gab keinen Eintrag in `argus-error.log` oder im Fehlerverlauf. Ein unsichtbarer Argus-Prozess hielt außerdem die Einzelinstanz-Sperre, sodass jeder weitere Start sich sofort beendete.
+    - Jetzt ist jeder Startschritt vor und nach dem Fenster einzeln abgesichert und wird bei einem Fehler protokolliert. Das Fenster erscheint trotzdem.
+    - Scheitert der Start dennoch, schreibt Argus den Fehler ins Protokoll, zeigt eine Meldung und beendet sich. Der nächste Start kann es dann erneut versuchen.
+    - Abgelehnte Promises werden ebenfalls protokolliert.
+  - Der optionale Apple-Modus aus 0.58.26 ist vorübergehend entfernt und für eine spätere Version gesichert. Klassisch ist wieder die einzige Oberfläche, wie in 0.58.25.
+    - War der Apple-Modus eingestellt, startet Argus in Klassisch.
+    - Eine liegengebliebene Startsicherung (`ui-start.json`) wird entfernt.
+  - Einstellungen, Notizen, Anordnungen und Gedächtnis bleiben unverändert. Das Profil wird nicht gelöscht.
+
+  Aktualisieren ohne laufendes Argus: Installer direkt herunterladen und ausführen. Der Link steht in der README des Testkanals. Er installiert über die bestehende Version, die Daten bleiben erhalten.
 
   Geprüft:
-  - Startsicherung und Wechsellogik (ui-mode.test.js). Echter Wechsel Klassisch → Apple → Klassisch mit dem Hauptprozess und drei Neustarts in einem isolierten Profil: Notiz und Anordnung bleiben erhalten. Ein Absturz vor der Bereitschaft führt zu einem einmaligen Klassisch-Start ohne Schleife (ui-switch-live.test.js).
-  - Erreichbarkeit aller sichtbaren Bedienelemente aller Seiten und aller acht Einstellungsbereiche gegenüber Klassisch, dazu WCAG-Kontraste hell/dunkel (apple-mode.test.js).
-  - Alle vorhandenen Electron-Oberflächentests in beiden Modi grün: Menüs, Notizen, YouTube, Einstellungen, Discord, Freunde, Portal, Classic-Theme.
-  - Klassisch unverändert: 24 486 berechnete Stilwerte gegenüber 0.58.25, keine Abweichung.
-  - Die bekannten Fehler in unit.test.js (Windows-Steam-/Spiele-Fixtures) und ui.test.js (xvfb unter Windows) bestehen unverändert schon im Ausgangsstand.
+  - Testsuite wie 0.58.25; neue Tests für Startabsicherung und Entfernung des Apple-Modus.
+  - Installiertes Paket: alle Produktdateien gleich dem Quellstand, Discord-Laufzeit unverändert, Manifest und Update-Metadaten stimmig.
+  - In einer Offline-VM: Update 0.58.25 → 0.58.26 und 0.58.20 → 0.58.26 jeweils mit Start der installierten Anwendung.
 
-  Nicht geprüft: Wechsel im installierten Paket (Installer/VM); geprüft wurde der unverpackte Hauptprozess. Empfehlung: Testkanal, keine Stable-Freigabe.
+  Noch nicht geprüft (dringende Bereitstellung): die VM-Durchläufe mit 0.58.27 selbst (Neuinstallation, Update von 0.58.20 mit befülltem Profil, Update von 0.58.26 im Apple-Modus). Sie folgen direkt nach der Veröffentlichung.
+
+  Stable bleibt unverändert.

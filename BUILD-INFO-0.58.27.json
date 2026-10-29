@@ -1,0 +1,44 @@
+{
+  "version": "0.58.27",
+  "channel": "updates",
+  "sourceCommit": "01eb28916ebdb6e620f29c961f56455ef50cef8f",
+  "buildCommit": "d0d941630be746fe39bf2e97ac67b6c3b73276b1",
+  "sourceDiffersFromBuildOnly": [
+    "RELEASE-NOTES-0.58.27.md",
+    "tests/unit.test.js"
+  ],
+  "installer": {
+    "file": "Argus-Setup-0.58.27.exe",
+    "bytes": 93483996,
+    "sha256": "1b98bc198c55168d69e0ba159ceee6ccbfa327555a02f1b9fc5cdc670718fcda"
+  },
+  "manifest": {
+    "file": "manifest-0.58.27.json",
+    "files": 4820,
+    "sha256": "152455c6ff6598993e6041584f31fbe9f5680d590c774f0bca7689bc2bf27988"
+  },
+  "sourceArchive": {
+    "file": "Argus-Source-0.58.27.zip",
+    "sha256": "93bc731a23a25e40d165314a6a4c184a88e8982cb3280d06088636ad9e871d0d"
+  },
+  "sourceProductFilesVerified": 88,
+  "discordRuntimeUnchangedFrom": "0.58.25",
+  "appleModeRemoved": true,
+  "appleModeArchived": "archiv/apple-modus-0.58.26 (8d51854)",
+  "tests": {
+    "suite": "wie 0.58.25 (vorbestehend: 4 Windows-Fixturefehler in unit.test.js, ui.test.js nur unter xvfb)",
+    "startupGuard": 4,
+    "appleRemoved": 2,
+    "packagedFilesEqualSource": true,
+    "vm": {
+      "0.58.25->0.58.26": "bestanden",
+      "0.58.20->0.58.26": "Installation, Profil, Manifest bestanden",
+      "0.58.27": "noch nicht ausgeführt (dringende Bereitstellung)"
+    }
+  },
+  "limitations": [
+    "VM runs with 0.58.27 itself are pending.",
+    "Installer unsigned.",
+    "The exact failing startup step on the affected machine is unknown because 0.58.26 did not log it; 0.58.27 logs it."
+  ]
+}

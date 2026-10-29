@@ -1,13 +1,17 @@
-# Argus 0.58.26 – Testkanal
+# Argus 0.58.27 – Testkanal
 
-Optionaler Apple-Modus: Unter Einstellungen → Aussehen → Oberfläche zwischen „Klassisch“ und „Apple-Modus“ wählen; Argus speichert und startet kontrolliert neu. Klassisch bleibt Standard und unverändert; bestehende Installationen starten weiter in Klassisch. Startsicherung mit Rückfall auf Klassisch, Rückweg jederzeit über Einstellungen oder Tray.
+Dringende Korrektur: Argus öffnete sich nach einem Update teils nicht mehr, ohne Fehlermeldung oder Protokolleintrag. 0.58.27 sichert den Start ab und protokolliert Startfehler. Der optionale Apple-Modus ist vorübergehend entfernt; Klassisch ist die einzige Oberfläche. Einstellungen, Notizen und Gedächtnis bleiben erhalten.
 
-[Windows-x64-Installer](https://raw.githubusercontent.com/d0mm392/Argus/updates/Argus-Setup-0.58.26.exe), 93496395 Bytes, unsigniert. Aktualisierung über den normalen Argus-Updater.
+## Direkt installieren (ohne laufendes Argus)
 
-[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.26.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.26.json) · [Build-Zuordnung](BUILD-INFO-0.58.26.json)
+1. Falls Argus hängt: im Task-Manager unter „Details“ alle `Argus.exe` beenden.
+2. Installer herunterladen und ausführen; er installiert über die bestehende Version:
+   **[Argus-Setup-0.58.27.exe](https://github.com/d0mm392/Argus/raw/updates/Argus-Setup-0.58.27.exe)** (93483996 Bytes, unsigniert; bei Windows SmartScreen „Weitere Informationen“ → „Trotzdem ausführen“)
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/edad541199961d6148d6a566ee8fd3d798d6c1e8) · [Quellarchiv](Argus-Source-0.58.26.zip)
+SHA-256: `1b98bc198c55168d69e0ba159ceee6ccbfa327555a02f1b9fc5cdc670718fcda`
+
+[Versionshinweise und Grenzen](RELEASE-NOTES-0.58.27.md) · [Prüfsummen](SHA256SUMS.txt) · [Manifest](manifest-0.58.27.json) · [Build-Zuordnung](BUILD-INFO-0.58.27.json)
+
+[Quellstand](https://github.com/d0mm392/Argus/tree/01eb28916ebdb6e620f29c961f56455ef50cef8f) · [Quellarchiv](Argus-Source-0.58.27.zip)
 
 Stable bleibt unverändert.
-
-Installer SHA-256: 85ac4278fe8ca5f26073068a8a89b8d5f47f174a1b95bdd4c79c83c03202621b
