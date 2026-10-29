@@ -73,7 +73,7 @@ process.on("unhandledRejection", (e) => { logError(e); try { crash.add("Fehler i
 const CONFIG_PATH = path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-config.json" : "argus-config.json"); // Umzug siehe boot.js
 // Grafik-Kompatibilität (Option): ohne Grafikkarten-Beschleunigung, gegen Durchflackern des Desktops bei manchen Treibern.
 // Muss vor dem Start feststehen, darum direkt aus der Datei gelesen
-try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")).gfxSafe === true) app.disableHardwareAcceleration(); } catch {}
+try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")).gfxSafe === true) app.disableHardwareAcceleration(); } catch {}
 const DEFAULTS = {
   gfxSafe: false,
   anthropicApiKey: "",
@@ -166,10 +166,23 @@ const DEFAULTS = {
   notesOn: false, notesText: "", venomRoam: false, spin: 1, density: 1, skin: "", ytBox: null, ytLast: null, ytOpen: "", ytVideoOnly: true, ytVo2: false, ytOnTop: false, ytMode: "panel", ytEmbedSize: "m", // YouTube im Panel eingebettet oder als eigenes Fenster                       // YouTube-Fenster
 };
 let config = { ...DEFAULTS };
+// 0.58.28: Einstellungen nie stillschweigend durch Standardwerte ersetzen. Eine BOM (z. B. vom Editor) wird toleriert; ist die Datei
+// unlesbar, bleibt sie als argus-config.unlesbar-<Zeit>.json erhalten und die letzte lesbare Sicherung (.bak) wird geladen.
+const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8").replace(/^\uFEFF/, ""));
+let configLoadedOk = false;
 function loadConfig() {
   let had = false, raw = {};
-  try { raw = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8")); config = { ...DEFAULTS, ...raw }; openSecrets(config); had = true; }
-  catch { config = { ...DEFAULTS }; }
+  try { raw = readJson(CONFIG_PATH); config = { ...DEFAULTS, ...raw }; openSecrets(config); had = true; }
+  catch (e) {
+    config = { ...DEFAULTS };
+    if (e?.code !== "ENOENT" && fs.existsSync(CONFIG_PATH)) {
+      const keep = CONFIG_PATH.replace(/\.json$/, "") + ".unlesbar-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json";
+      try { fs.copyFileSync(CONFIG_PATH, keep); } catch {}
+      logError(new Error("Einstellungen unlesbar, Original gesichert als " + path.basename(keep) + ": " + (e?.message || e)));
+      try { raw = readJson(CONFIG_PATH + ".bak"); config = { ...DEFAULTS, ...raw }; openSecrets(config); had = true; logError(new Error("Einstellungen aus argus-config.json.bak wiederhergestellt")); } catch {}
+    }
+  }
+  configLoadedOk = had || !fs.existsSync(CONFIG_PATH);
   // 0.27: Argus für mehrere Nutzer. Wer schon eine Installation von vor 0.27 hat, ist der bisherige einzige Nutzer:
   // Einrichtung gilt als erledigt, Anrede und Beschreibung bleiben wie bisher (früher fest im Code)
   if (had && config.multiUser !== 1) {
@@ -243,7 +256,12 @@ function writeConfigNow() {
   const out = { ...config };
   for (const k of SEALED) if (out[k]) out[k] = seal(out[k]);
   if (Array.isArray(out.foremanAccounts)) out.foremanAccounts = out.foremanAccounts.map((a) => (a && a.key ? { ...a, key: seal(a.key) } : a));
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(out, null, 2));
+  // Atomar schreiben: erst Temporärdatei, dann umbenennen (ein Absturz mitten im Schreiben zerstört die Einstellungen nicht).
+  // Vorher die bisherige, lesbare Fassung als .bak behalten.
+  const tmp = CONFIG_PATH + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(out, null, 2));
+  if (configLoadedOk) try { readJson(CONFIG_PATH); fs.copyFileSync(CONFIG_PATH, CONFIG_PATH + ".bak"); } catch {}
+  fs.renameSync(tmp, CONFIG_PATH);
 }
 function saveConfig() { if (cfgTimer) return; cfgTimer = setTimeout(() => { try { writeConfigNow(); } catch {} }, 300); }
 { const realExit = app.exit.bind(app); app.exit = (c) => { try { if (cfgTimer) writeConfigNow(); } catch {} realExit(c); }; }
