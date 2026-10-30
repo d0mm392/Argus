@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}svg{display:block;width:100%;height:100%}</style>
+</head><body>
+<!-- Andock-Effekt: entlang der Naht zwischen Panel und Lagebild fließen Tropfen zusammen (merge) bzw. reißen auseinander (split).
+     Durchsichtiges Fenster, nur für gut eine Sekunde da, Klicks gehen durch. -->
+<svg id="s"><defs>
+  <filter id="goo" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/>
+    <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"/>
+  </filter>
+  <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#bfe6ff"/><stop offset=".5" stop-color="#6fb8ff"/><stop offset="1" stop-color="#9b7bff"/>
+  </linearGradient>
+</defs>
+<g id="body" filter="url(#goo)" fill="url(#glass)"></g>
+<g id="shine" filter="url(#goo)" fill="#fff"></g>
+</svg>
+<script>
+const q = new URLSearchParams(location.search), mode = q.get("mode") || "merge", vert = q.get("dir") !== "h";
+let W = innerWidth, H = innerHeight, L = vert ? H : W, T = vert ? W : H; // L: Länge der Naht, T: Breite quer dazu
+const NS = "http://www.w3.org/2000/svg", body = document.getElementById("body"), shine = document.getElementById("shine");
+const mk = (g) => { const c = document.createElementNS(NS, "circle"); g.appendChild(c); return c; };
+const drops = [];
+function init() {
+W = innerWidth; H = innerHeight; L = vert ? H : W; T = vert ? W : H; mid = T / 2;
+const n = Math.max(3, Math.min(14, Math.round(L / 70)));
+for (let i = 0; i < n; i++) {
+  const at = (i + 0.5) / n * L + (Math.random() - 0.5) * (L / n) * 0.5, r = 14 + Math.random() * 12, lag = Math.random() * 0.18;
+  drops.push({ at, r, lag, a: mk(body), b: mk(body), s: mk(shine) });
+}
+}
+const neck = document.createElementNS(NS, "rect"); body.appendChild(neck);
+const ease = (x) => x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3);
+function put(c, u, v, r) { c.setAttribute(vert ? "cx" : "cy", v); c.setAttribute(vert ? "cy" : "cx", u); c.setAttribute("r", Math.max(0, r)); }
+const DUR = 1150; let t0 = 0, mid = 0;
+function frame(now) {
+  if (!drops.length) { if (!innerWidth || !innerHeight) return requestAnimationFrame(frame); init(); t0 = now; }
+  let p = (now - t0) / DUR; if (p > 1) p = 1;
+  const k = mode === "merge" ? p : 1 - p; // split läuft die Verschmelzung rückwärts ab
+  for (const d of drops) {
+    const e = ease((k - d.lag) / 0.62);
+    const gap = (1 - e) * (T * 0.32), r = d.r * (0.35 + 0.65 * Math.sin(Math.min(1, e * 1.2) * Math.PI * 0.5));
+    put(d.a, d.at, mid - gap, r); put(d.b, d.at, mid + gap, r);
+    put(d.s, d.at - r * 0.3, mid - gap * 0.6 - r * 0.25, r * 0.28 * e);
+  }
+  // Steg entlang der Naht: wächst, wenn die Tropfen sich berühren
+  const w = Math.max(0, ease((k - 0.45) / 0.4)) * 16;
+  if (vert) { neck.setAttribute("x", mid - w / 2); neck.setAttribute("y", 6); neck.setAttribute("width", w); neck.setAttribute("height", Math.max(0, L - 12)); }
+  else { neck.setAttribute("y", mid - w / 2); neck.setAttribute("x", 6); neck.setAttribute("height", w); neck.setAttribute("width", Math.max(0, L - 12)); }
+  // Glas: halb durchsichtig, am Ende ausblenden
+  const fade = mode === "merge" ? (p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3) : (p < 0.15 ? p / 0.15 : 1 - Math.max(0, p - 0.55) / 0.45);
+  body.setAttribute("opacity", 0.5 * fade); shine.setAttribute("opacity", 0.55 * fade);
+  if (p < 1) requestAnimationFrame(frame); else if (!q.has("keep")) setTimeout(() => window.close(), 30);
+}
+requestAnimationFrame(frame);
+</script>
+</body></html>

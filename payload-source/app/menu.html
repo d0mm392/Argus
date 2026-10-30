@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Argus Menü</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; user-select: none; }
+  body { font-family: var(--f-body, "Segoe UI", system-ui, sans-serif); color: var(--ink, #dbe7f3); font-size: 13px; }
+  #m { box-sizing: border-box; margin: 6px; padding: 6px; border-radius: 12px; border: 1px solid var(--line, rgba(140,180,220,.25));
+    background: var(--menu-bg, hsl(var(--win-h, 219) var(--win-s, 54%) 8% / var(--menu-a, 0.96))); box-shadow: var(--menu-shadow, 0 10px 34px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06));
+    max-height: calc(100vh - 12px); overflow-y: auto; }
+  #m::-webkit-scrollbar { width: 6px; } #m::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 3px; }
+  .t { padding: 4px 8px 6px; color: var(--ink-dim, #a0b2c7); font: 11px var(--f-mono, Consolas, monospace); letter-spacing: .06em; text-transform: uppercase; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sep { height: 1px; margin: 5px 6px; background: var(--line, rgba(140,180,220,.2)); }
+  button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+  button:hover { background: rgba(120, 190, 255, .14); }
+  button:focus-visible { outline: 2px solid var(--accent, #5fd4ff); outline-offset: -2px; background: rgba(120,190,255,.14); }
+  button[disabled] { opacity: .4; cursor: default; } button[disabled]:hover { background: none; }
+  button.danger { color: #ff8b82; } button.danger:hover { background: rgba(255, 92, 77, .18); }
+  .ck { width: 14px; text-align: center; color: var(--accent, #5fd4ff); flex: none; }
+  .ar { margin-left: auto; color: var(--ink-dim, #a0b2c7); font-size: 10px; transition: transform .12s; } .open > .ar { transform: rotate(90deg); }
+  .sub { margin: 2px 0 4px 10px; padding-left: 6px; border-left: 2px solid var(--line, rgba(140,180,220,.25)); }
+</style></head>
+<body><div id="m" role="menu" aria-label="Argus"></div>
+<script>
+  const m = document.getElementById("m"); let isSub = false;
+  const mk = (it, host) => {
+    if (it.type === "separator") { const s = document.createElement("div"); s.className = "sep"; host.append(s); return; }
+    if (it.type === "title") { const t = document.createElement("div"); t.className = "t"; t.textContent = it.label; host.append(t); return; }
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", it.keep === "radio" ? "menuitemradio" : it.keep === "checkbox" ? "menuitemcheckbox" : "menuitem"); if (it.keep) b.setAttribute("aria-checked", String(!!it.checked)); if (it.danger) b.className = "danger"; if (it.enabled === false) b.disabled = true;
+    const ck = document.createElement("span"); ck.className = "ck"; ck.textContent = it.checked ? "✓" : ""; const lb = document.createElement("span"); lb.textContent = it.label; b.append(ck, lb);
+    if (it.sid) {
+      const ar = document.createElement("span"); ar.className = "ar"; ar.textContent = "▶"; b.append(ar);
+      b.setAttribute("aria-haspopup", "menu"); b.setAttribute("aria-expanded", "false");
+      let t = 0; const open = (keyboard = false) => { clearTimeout(t); for (const x of m.querySelectorAll('[aria-expanded]')) x.setAttribute("aria-expanded", String(x === b)); window.menu.sub(it.sid, b.getBoundingClientRect().top, keyboard); };
+      b.addEventListener("pointerenter", () => { clearTimeout(t); t = setTimeout(open, 90); }); b.addEventListener("click", open);
+      b.addEventListener("keydown", e => { if (e.key === "ArrowRight" || e.key === "Enter" || e.key === " ") { e.preventDefault(); open(true); } });
+    } else {
+      b.addEventListener("pointerenter", () => { if (!isSub) window.menu.sub(0, 0); });
+      if (it.keep) b.dataset.k = it.keep;
+      b.addEventListener("click", () => {
+        if (b.disabled) return;
+        if (it.keep) { // Häkchen-Einträge: Menü bleibt offen, Häkchen springt sofort um
+          const ck = b.querySelector(".ck");
+          if (it.keep === "radio") { for (const c of host.querySelectorAll('button[data-k="radio"]')) { c.querySelector('.ck').textContent = ""; c.setAttribute('aria-checked', 'false'); } ck.textContent = "✓"; }
+          else ck.textContent = ck.textContent ? "" : "✓";
+          b.setAttribute("aria-checked", String(!!ck.textContent));
+        }
+        window.menu.pick(it.id);
+      });
+    }
+    host.append(b);
+  };
+  const report = () => { m.style.width = "max-content"; const w = Math.ceil(m.offsetWidth) + 14; m.style.width = ""; window.menu.size(w, Math.ceil(m.scrollHeight) + 14); }; // Layout works before the window is shown; no hidden RAF dependency.
+  window.menu.onShow(({ items, vars, sub }) => {
+    isSub = !!sub;
+    document.title = isSub ? "Argus Untermenü" : "Argus Menü";
+    for (const [k, v] of Object.entries(vars || {})) document.body.style.setProperty(k, v);
+    m.replaceChildren(); for (const it of items) mk(it, m); report(); m.querySelector('button:not([disabled])')?.focus();
+  });
+  window.menu.onReturn?.(() => { const parent = m.querySelector('[aria-expanded="true"]'); parent?.setAttribute('aria-expanded', 'false'); parent?.focus(); });
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" || isSub && e.key === "ArrowLeft") { e.preventDefault(); isSub ? window.menu.back() : window.menu.close(); return; }
+    const buttons = [...m.querySelectorAll('button:not([disabled])')], i = buttons.indexOf(document.activeElement);
+    const next = e.key === "ArrowDown" ? (i + 1) % buttons.length : e.key === "ArrowUp" ? (i + buttons.length - 1) % buttons.length : e.key === "Home" ? 0 : e.key === "End" ? buttons.length - 1 : -1;
+    if (next >= 0) { e.preventDefault(); buttons[next]?.focus(); }
+  });
+  addEventListener("contextmenu", (e) => { e.preventDefault(); window.menu.close(); });
+</script></body></html>

@@ -1,0 +1,3 @@
+/* Functional motion preference; independent of the original Argus design. */
+body.reduce-animations *, body.reduce-animations *::before, body.reduce-animations *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

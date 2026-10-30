@@ -1,0 +1,41 @@
+ARGUS STARTDIAGNOSE - SEPARATES DIAGNOSEPAKET
+Version 0.58.27-diagnose.2 | Windows 11 / Windows x64
+
+1. Argus-Diagnose-Setup-0.58.27-diagnose.2.exe herunterladen und installieren.
+   Keine Administratorrechte noetig. Der Installer ist unsigniert; Windows
+   kann einen Herausgeber-/SmartScreen-Hinweis anzeigen. SHA256.txt liegt bei.
+2. Die eigene Oberflaeche oeffnet sich. Spaeter ueber "Argus Startdiagnose"
+   auf dem Desktop oder im Startmenue starten.
+3. "Argus-Diagnose starten" anklicken. Bis zu einer Minute warten.
+   Im zusaetzlich gestarteten Argus-Fenster nichts einrichten oder eingeben.
+4. Ergebnis lesen und "Bericht speichern" anklicken. Im Windows-Speicherdialog
+   wird der Desktop fuer das Ergebnis-ZIP vorgeschlagen. Speichern bestaetigen.
+5. Dieses ZIP selbst an den gewuenschten Empfaenger zurueckschicken.
+   Es gibt keinen automatischen Upload.
+
+Die Oberflaeche bleibt auch dann offen, wenn Argus sofort abstuerzt.
+Ein Klick startet genau einen Versuch; gleichzeitige Versuche sind gesperrt.
+Nach der Beobachtungszeit wird ausschliesslich der eigene Testprozess beendet.
+Ein vorzeitig geschlossener/abgestuerzter Test wird als Abbruch ausgewiesen.
+
+WICHTIG: Es wird immer ein frisches, getrenntes Diagnoseprofil verwendet.
+Ein erfolgreicher Start bestaetigt NICHT, dass das vorhandene Originalprofil
+funktioniert. Gespeicherte Integrationen und Einstellungen werden nicht kopiert.
+Medienintegration und lokale KI-Einrichtung sind im Diagnoseprofil deaktiviert.
+Produktives Argus, Originalprofil, Autostart und Updatekanal bleiben unberuehrt.
+
+Bericht: ausgewaehlte, begrenzte Startmarkierungen, gefiltertes stdout/stderr,
+Electron-Logs, Exitcodes und getrennte Start-/Sammlungsfehler. Keine Nachrichten,
+Zugangsdaten, Cookies, vollstaendigen Profile oder Speicherabbilder. URLs und
+Renderer-Konsoleninhalte werden entfernt. Keine Funktion fuer Speicherabbilder;
+deren Erhebung wuerde eine separate ausdrueckliche Zustimmung erfordern.
+
+Deinstallation: Windows > Installierte Apps > Argus Startdiagnose
+(separates Diagnosepaket). Nur die Diagnoseanwendung wird entfernt.
+Gespeicherte ZIP-Berichte und eigene Arbeitsdaten unter
+%APPDATA%\argus-startdiagnose-controller bleiben lokal erhalten.
+
+Kein normales Argus-Update. Ausschliesslich als Diagnose-Prerelease verteilt.
+Keine latest.yml, kein Wechsel von updates/stable und keine Updater-Verteilung.
+Ein VM-Erfolg ersetzt keine Untersuchung der betroffenen Hardware/Treiber
+oder des Originalprofils. Der konkrete Startabbruch kann weiterhin offen sein.

@@ -1,0 +1,143 @@
+{
+  "name": "argus-startdiagnose",
+  "version": "0.58.27-diagnose.1",
+  "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
+  "main": "boot.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64",
+    "test": "node --test tests/unit.test.js && xvfb-run -a electron --no-sandbox tests/ui.test.js",
+    "test:portal-download": "electron tests/portal-download.test.js",
+    "test:regression:unit": "node --test tests/notes-store.test.js tests/background-presentation.test.js tests/youtube-settings.test.js tests/discord-social.test.js tests/discord-additional.test.js tests/discord-social-guard.test.js",
+    "test:menus": "electron tests/menus.test.js",
+    "test:notes": "electron tests/notes-layout.test.js",
+    "test:classic": "electron tests/classic-theme.test.js"
+  },
+  "keywords": [],
+  "author": "Argus",
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@ghostery/adblocker-electron": "^2.9.0",
+    "adm-zip": "0.5.16",
+    "electron-updater": "^6.8.9",
+    "socket.io-client": "2.5.0",
+    "systeminformation": "^5.23.5",
+    "tar": "6.2.1",
+    "vosk-browser": "0.0.8",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "de.jarvis.desktop",
+    "productName": "Argus",
+    "files": [
+      "foreman.js",
+      "portal.js",
+      "foremandash.js",
+      "iobroker.js",
+      "briefing.js",
+      "argus-mcp.js",
+      "memory.js",
+      "files.js",
+      "news.js",
+      "social.js",
+      "dcbot.js",
+      "discord-self.js",
+      "steamdl.js",
+      "mining.js",
+      "games.js",
+      "trade.js",
+      "weather.js",
+      "strata.js",
+      "report.js",
+      "crash.js",
+      "preload-news.js",
+      "preload-menu.js",
+      "selfimprove.js",
+      "boot.js",
+      "main.js",
+      "preload.js",
+      "system.js",
+      "actions.js",
+      "sensors/**",
+      "media/**",
+      "sysmon/**",
+      "app/**",
+      "assets/**",
+      "node_modules/**",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**"
+    ],
+    "extraResources": [
+      {
+        "from": "discord-runtime",
+        "to": "discord-social",
+        "filter": [
+          "argus-discord-social.exe",
+          "discord_partner_sdk.dll",
+          "*-LICENSE*.txt",
+          "Discord-SDK-TERMS.txt"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "Argus-${version}-portable.exe"
+    },
+    "compression": "normal",
+    "asar": false,
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Argus",
+      "artifactName": "Argus-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1031",
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "multiLanguageInstaller": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "icon": "assets/icon.png",
+      "artifactName": "Argus-${version}.AppImage",
+      "executableName": "argus-desktop",
+      "synopsis": "Argus Desktop-Widget"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon-mac.png",
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "artifactName": "Argus-${version}-mac-${arch}.zip"
+    }
+  },
+  "homepage": "https://github.com/d0mm392/Argus"
+}

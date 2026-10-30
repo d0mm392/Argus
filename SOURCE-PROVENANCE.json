@@ -1,0 +1,18 @@
+{
+  "version": "0.58.27-diagnose.2",
+  "baseArgusCommit": "d0d941630be746fe39bf2e97ac67b6c3b73276b1",
+  "originalInstrumentedFiles": {
+    "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
+    "main.js": "e7451c8088a0d6699d509546bf3951cedf11320bb7736db370c9ee1bed64b4dd",
+    "startup-diagnostic.js": "d100cb527c8c15562b6d859558f843f7da596f49f046e576d17d6fafd0772451"
+  },
+  "payloadChanges": [
+    "Separate AppUserModelId for diagnostic payload",
+    "Additional window:ready-to-show marker"
+  ],
+  "finalPayload": {
+    "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
+    "main.js": "bbd504c46e3b0471a6d5ff596aae7a401ea3ba80436c7cc49117b706de0fc9f4",
+    "startup-diagnostic.js": "d100cb527c8c15562b6d859558f843f7da596f49f046e576d17d6fafd0772451"
+  }
+}

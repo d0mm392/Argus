@@ -1,0 +1,4 @@
+LibreHardwareMonitorLib und Abhaengigkeiten: unveraendert aus dem offiziellen Release von
+https://github.com/LibreHardwareMonitor/LibreHardwareMonitor (Mozilla Public License 2.0).
+HidSharp: Apache License 2.0. System.*/Microsoft.Bcl.*: MIT (Microsoft).
+PawnIO_setup.exe: unveraendert von https://github.com/namazso/PawnIO.Setup (signierter Treiber von namazso).

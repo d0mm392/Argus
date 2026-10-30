@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; connect-src 'none'">
+<title>Argus Startdiagnose</title><link rel="stylesheet" href="style.css"></head>
+<body><main>
+  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.2</div>
+  <h1>Argus Startdiagnose</h1>
+  <p class="intro">Wir prüfen den Start in einer eigenen Testumgebung. Diese Oberfläche bleibt auch bei einem Argus-Absturz geöffnet.</p>
+  <div class="notice"><strong>Frisches Diagnoseprofil</strong><p>Deine Installation und dein Originalprofil werden nicht verändert. Ein erfolgreicher Test bestätigt nicht, dass dein bisheriges Profil funktioniert.</p></div>
+  <button id="start" type="button">Argus-Diagnose starten</button>
+  <section aria-live="polite" aria-atomic="true"><h2 id="status">Bereit für einen Test</h2><p id="detail">Ein Klick startet genau einen Versuch. Die Beobachtung dauert bis zu einer Minute.</p><p id="errors"></p></section>
+  <button id="save" class="secondary" type="button" disabled>Bericht speichern</button>
+  <p id="saved" role="status"></p>
+  <footer>Nur Startmarkierungen und gefilterte Diagnoseausgaben. Keine Nachrichten, Zugangsdaten, vollständigen Profile oder Speicherabbilder. Kein automatischer Upload.</footer>
+</main><script src="ui.js"></script></body></html>
