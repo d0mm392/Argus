@@ -23,3 +23,16 @@ test('two independent users receive only their own SDK account and cache',async 
 test('failed token deletion leaves an explicit disconnect marker that prevents automatic restore',async t=>{let failDelete=false;const io={...fs,unlinkSync:p=>{if(failDelete&&p.endsWith('auth.bin'))throw Object.assign(Error('fixture'),{code:'EPERM'});return fs.unlinkSync(p)}};const f=fixture(t,{io});f.service.connect();f.connected(f.children[0]);failDelete=true;await f.service.disconnect();assert.equal(f.service.snapshot().error,'credential-delete-failed');assert(fs.existsSync(f.authPath+'.disconnected'));const count=f.children.length;f.service.restore();assert.equal(f.children.length,count);assert.equal(f.service.snapshot().account,null)});
 test('authorization rejection is separate from user cancellation',t=>{const f=fixture(t);f.service.connect();f.children[0].event({type:'phase',value:'authorization-error'});assert.equal(f.service.snapshot().status,'error');assert.equal(f.service.snapshot().error,'authorization-error')});
 test('authorization timeout cancels the old process and leaves voice source independent',async t=>{const f=fixture(t,{authTimeout:10});f.service.connect();await new Promise(r=>setTimeout(r,30));assert.equal(f.service.snapshot().error,'authorization-timeout');assert.equal(f.children[0].killed,true);assert.deepEqual(f.service.snapshot().friends,[])});
+
+test('SDK avatars survive snapshots and avatar-only updates; missing or unsafe URLs use Discord defaults',t=>{
+ const f=fixture(t);f.service.connect();const c=f.children[0],account={id:'100000000000010',name64:b64('Account')};
+ const send=avatar64=>{c.event({type:'snapshot',account,friends:[{id:'100000000000002',name64:b64('Friend'),status:0,avatar64}]});return f.service.snapshot()};
+ const custom='https://cdn.discordapp.com/avatars/100000000000002/a_synthetic.gif?size=128';
+ assert.equal(send(b64(custom)).friends[0].avatar,custom);
+ const changed=custom.replace('a_synthetic.gif','changed.png');assert.equal(send(b64(changed)).friends[0].avatar,changed);
+ const standard='https://cdn.discordapp.com/embed/avatars/3.png';assert.equal(send(b64(standard)).friends[0].avatar,standard);
+ for(const value of [undefined,'%',b64(''),b64('javascript:alert(1)'),b64('https://cdn.discordapp.com.evil/avatars/100000000000002/a.png'),b64('https://cdn.discordapp.com/avatars/100000000000003/a.png'),b64('https://user@cdn.discordapp.com/embed/avatars/0.png')]){
+  const state=send(value);assert.equal(state.status,'connected');assert.equal(state.friends[0].avatar,`https://cdn.discordapp.com/embed/avatars/${(100000000000002n>>22n)%6n}.png`);
+  assert.match(state.account.avatar,/^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/[0-5]\.png$/);
+ }
+});

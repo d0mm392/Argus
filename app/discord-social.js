@@ -15,6 +15,15 @@ function create({safeStorage,authPath,helperPath,onChange=()=>{},spawnHelper=spa
  const arm=()=>{clearTimer();timer=setTimeout(()=>fail("authorization-timeout"),authTimeout);timer.unref?.();};
  const decode=value=>{if(typeof value!=="string"||value.length>16000||!/^[A-Za-z0-9+/]*={0,2}$/.test(value))throw Error("invalid-helper-message");return Buffer.from(value,"base64").toString("utf8");};
  const id=value=>typeof value==="string"&&/^\d{15,22}$/.test(value);
+ const avatar=person=>{
+  const fallback=`https://cdn.discordapp.com/embed/avatars/${(BigInt(person.id)>>22n)%6n}.png`;
+  try{
+   const value=decode(person.avatar64),url=new URL(value);
+   if(value.length<=2048&&url.protocol==="https:"&&url.hostname==="cdn.discordapp.com"&&!url.port&&!url.username&&!url.password&&!url.hash&&
+    (new RegExp(`^/avatars/${person.id}/[a-zA-Z0-9_]+\\.(?:png|gif|webp|jpe?g)$`).test(url.pathname)||/^\/embed\/avatars\/[0-5]\.png$/.test(url.pathname)))return url.href;
+  }catch{}
+  return fallback;
+ };
  function receive(message){
   if(state.status==="disconnecting"){
    if(message.type==="phase"&&["revoked","revoke-error"].includes(message.value))revokeDone?.(message.value==="revoked");return;
@@ -27,8 +36,8 @@ function create({safeStorage,authPath,helperPath,onChange=()=>{},spawnHelper=spa
   }else if(message.type==="snapshot"){
    if(!id(message.account?.id)||!Array.isArray(message.friends))throw Error("invalid-helper-message");
    const seen=new Set(),friends=[];
-   for(const person of message.friends.slice(0,1000)){if(!id(person?.id)||seen.has(person.id)||!Number.isInteger(person.status))continue;seen.add(person.id);friends.push({id:person.id,name:decode(person.name64).slice(0,128),status:person.status,discordFriend:true});}
-   clearTimer();publish({status:"connected",error:"",account:{id:message.account.id,name:decode(message.account.name64).slice(0,128)},friends});
+   for(const person of message.friends.slice(0,1000)){if(!id(person?.id)||seen.has(person.id)||!Number.isInteger(person.status))continue;seen.add(person.id);friends.push({id:person.id,name:decode(person.name64).slice(0,128),avatar:avatar(person),status:person.status,discordFriend:true});}
+   clearTimer();publish({status:"connected",error:"",account:{id:message.account.id,name:decode(message.account.name64).slice(0,128),avatar:avatar(message.account)},friends});
   }else if(message.type==="phase"){
    if(["authorizing","connecting"].includes(message.value))publish({status:message.value,error:""});
    else if(message.value==="connected"){/* Only a validated account snapshot marks the UI connected. */}

@@ -57,7 +57,8 @@
     const parts = [];
     const row = (p, sub, url) => {
       const d = document.createElement("div"); d.className = "f" + (p.voice ? " voice" : p.game ? " play" : "");
-      let av; if (p.avatar && /^https:/.test(p.avatar)) { av = document.createElement("img"); av.src = p.avatar; av.referrerPolicy = "no-referrer"; av.alt = ""; av.onerror = () => av.replaceWith(document.createElement("i")); } else av = document.createElement("i");
+      const fallback = () => { const icon = document.createElement("i"); icon.className = "avatar-fallback"; icon.textContent = Array.from(String(p.name || "?").trim())[0] || "?"; icon.setAttribute("aria-hidden", "true"); return icon; };
+      let av; if (p.avatar && /^https:/.test(p.avatar)) { av = document.createElement("img"); av.referrerPolicy = "no-referrer"; av.alt = ""; av.onerror = () => { av.onerror = null; av.replaceWith(fallback()); }; av.src = p.avatar; } else av = fallback();
       const b = document.createElement("b"); b.textContent = p.name; const sm = document.createElement("small"); sm.textContent = sub;
       d.append(av, b, sm); d.title = p.name + " · " + sub;
       if (!p.sid) d.dataset.dcn = normDc(p.name || "");

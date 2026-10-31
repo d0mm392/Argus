@@ -3,6 +3,7 @@ const assert=require('assert/strict'),fs=require('fs'),path=require('path'),{Eve
 const {app,ipcMain,safeStorage}=require('electron'),{setup}=require('./renderer-fixture');
 async function run(){
  const f=await setup(),{window,profile,evaluate:ev,evaluateWithValue:withValue,wait,screenshot,errors,config}=f;
+ const imageRequests=[];window.webContents.session.webRequest.onBeforeRequest({urls:['https://cdn.discordapp.com/*']},(_details,callback)=>imageRequests.push(callback));
  const authPath=path.join(profile,'synthetic-discord-auth.bin'),helperPath=path.join(profile,'synthetic-helper.exe');fs.writeFileSync(helperPath,'fixture');
  const children=[];const spawnHelper=()=>{const c=new EventEmitter();c.stdout=new EventEmitter();c.stderr=new EventEmitter();c.stdin={writable:true,write:line=>{if(line.startsWith('revoke'))queueMicrotask(()=>c.event({type:'phase',value:'revoked'}))},end:()=>{c.stdin.writable=false}};c.kill=()=>{};c.event=o=>c.stdout.emit('data',Buffer.from(JSON.stringify(o)+'\n'));children.push(c);return c};
  const service=require('../app/discord-social').create({safeStorage,authPath,helperPath,spawnHelper,platform:'win32',onChange:state=>{if(!window.isDestroyed())window.webContents.send('discord-social',state)}});
@@ -23,6 +24,15 @@ async function run(){
  assert(!fs.readFileSync(authPath).includes(Buffer.from('SYNTHETIC_ACCESS')),'real Windows safeStorage hides plaintext');
  await ev("$('setDcOnline').checked=true;$('setDcOnline').dispatchEvent(new Event('change'));true");await wait(70);
  assert.deepEqual(await names(),['Voice nonfriend','Online friend','Away friend','Busy friend']);assert.equal(config.discordAlsoOnline,true);
+ const avatar='https://cdn.discordapp.com/avatars/100000000000002/a_synthetic.gif';
+ c.event({type:'snapshot',account:{id:'100000000000010',name64:b64('Synthetic account')},friends:[{id:'100000000000002',name64:b64('Online friend'),avatar64:b64(avatar),status:0},{id:'100000000000003',name64:b64('Away friend'),status:3},{id:'100000000000004',name64:b64('Busy friend'),status:4}]});await wait(50);
+ assert.equal(await ev("friendsEl.querySelector('[data-dcid=\"100000000000002\"] img').src"),avatar);
+ assert.match(await ev("friendsEl.querySelector('[data-dcid=\"100000000000003\"] img').src"),/\/embed\/avatars\/[0-5]\.png$/);
+ await ev("friendsEl.querySelector('[data-dcid=\"100000000000002\"] img').dispatchEvent(new Event('error'));true");
+ assert.equal(await ev("friendsEl.querySelector('[data-dcid=\"100000000000002\"] .avatar-fallback').textContent"),'O');
+ assert.equal(await ev("getComputedStyle(friendsEl.querySelector('[data-dcid=\"100000000000002\"] .avatar-fallback')).display"),'grid');
+ c.event({type:'snapshot',account:{id:'100000000000010',name64:b64('Synthetic account')},friends:[{id:'100000000000002',name64:b64('Online friend'),avatar64:b64(avatar.replace('a_synthetic.gif','changed.png')),status:0},{id:'100000000000003',name64:b64('Away friend'),status:3},{id:'100000000000004',name64:b64('Busy friend'),status:4}]});await wait(50);
+ assert.equal(await ev("friendsEl.querySelector('[data-dcid=\"100000000000002\"] img').src"),avatar.replace('a_synthetic.gif','changed.png'));
  await ev("dcMarked=['id:100000000000004'];$('setDcMarked').checked=true;$('setDcMarked').dispatchEvent(new Event('change'));true");await wait(50);assert.deepEqual(await names(),['Voice nonfriend','Busy friend']);assert.equal(config.dcOnlyMarked,true);
  await ev("$('setFind').value='';$('setFind').dispatchEvent(new Event('input'));document.querySelector('#setTabs [data-tab=\"Gaming und Discord\"]').click();const discordHeading=[...document.querySelectorAll('.set-body h4')].find(h=>h.textContent==='Discord');if(discordHeading.getAttribute('aria-expanded')!=='true')discordHeading.click();discordHeading.scrollIntoView({block:'start'});true");await wait(120);
  await screenshot('discord-connected-settings');
@@ -30,6 +40,6 @@ async function run(){
  await ev("$('dcSocialDisconnect').click();true");await wait(100);assert.equal(service.snapshot().status,'disconnected');assert(!fs.existsSync(authPath));assert.deepEqual(await names(),['Voice nonfriend']);
  await ev("$('dcSocialConnect').click();true");await wait(40);children.at(-1).event({type:'phase',value:'expired'});await wait(40);assert.match(await ev("$('dcSocialStatus').textContent"),/abgelaufen/);
  await ev("$('dcSocialConnect').click();true");await wait(40);assert.equal(service.snapshot().status,'authorizing');await service.cancel();
- assert.deepEqual(errors,[]);service.close();console.log('PASS Discord Social UI: connect/cancel/reconnect, account status, real DPAPI for artificial tokens, voice unchanged, actual friends only, ID dedupe, marked extras, persisted options, expiry and disconnect cleanup/revocation');app.exit(0);
+ imageRequests.forEach(callback=>callback({cancel:true}));assert.deepEqual(errors,[]);service.close();console.log('PASS Discord Social UI: avatars, defaults, avatar-only updates, local load-error fallback; connect/cancel/reconnect, account status, real DPAPI for artificial tokens, voice unchanged, actual friends only, ID dedupe, marked extras, persisted options, expiry and disconnect cleanup/revocation');app.exit(0);
 }
 run().catch(e=>{console.error(e.stack);app.exit(1)});setTimeout(()=>app.exit(2),25000).unref();

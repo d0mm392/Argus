@@ -30,12 +30,13 @@ int main(int argc,char** argv){
  std::thread([&]{std::string line;while(std::getline(std::cin,line)){if(line.size()>16384)break;std::lock_guard<std::mutex> guard(lock);commands.push(line);}std::lock_guard<std::mutex> guard(lock);commands.push("stop");}).detach();
  auto snapshot=[&]{
   if(!connected)return;auto me=client->GetCurrentUserV2();if(!me)return;
-  std::cout<<"{\"type\":\"snapshot\",\"account\":{\"id\":\""<<me->Id()<<"\",\"name64\":\""<<b64(me->DisplayName())<<"\"},\"friends\":[";
+  using AvatarType=discordpp::UserHandle::AvatarType;
+  std::cout<<"{\"type\":\"snapshot\",\"account\":{\"id\":\""<<me->Id()<<"\",\"name64\":\""<<b64(me->DisplayName())<<"\",\"avatar64\":\""<<b64(me->AvatarUrl(AvatarType::Gif,AvatarType::Png))<<"\"},\"friends\":[";
   bool first=true;std::unordered_set<uint64_t> seen;
   for(auto& r:client->GetRelationships()){
    if(r.DiscordRelationshipType()!=discordpp::RelationshipType::Friend)continue;auto user=r.User();if(!user||!seen.insert(user->Id()).second||seen.size()>1000)continue;
    if(!first)std::cout<<",";first=false;
-   std::cout<<"{\"id\":\""<<user->Id()<<"\",\"name64\":\""<<b64(user->DisplayName())<<"\",\"status\":"<<static_cast<int>(user->Status())<<"}";
+   std::cout<<"{\"id\":\""<<user->Id()<<"\",\"name64\":\""<<b64(user->DisplayName())<<"\",\"avatar64\":\""<<b64(user->AvatarUrl(AvatarType::Gif,AvatarType::Png))<<"\",\"status\":"<<static_cast<int>(user->Status())<<"}";
   }std::cout<<"]}"<<std::endl;
  };
  auto error=[&](const char* value){connected=false;dirty=false;phase(value);};
