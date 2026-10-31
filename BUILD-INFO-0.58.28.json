@@ -1,0 +1,14 @@
+{
+  "status": "BUILD VERIFIED",
+  "version": "0.58.28",
+  "sourceCommit": "5dbf344b9e94e82987e1c2d683c5b54e6415ea9c",
+  "productFilesVerified": 88,
+  "manifestFiles": 4820,
+  "installerBytes": 93484791,
+  "installerSHA256": "78098fd66236196113266bcce864a269ab38b727d8898493db86ee96d3a53e43",
+  "nativeHelperSHA256": "291d32b4057d0291d02d7454a32e117369c64af431ff541bca040591502ce47a",
+  "cspUnchanged": true,
+  "channel": "updates",
+  "sourceArchiveSHA256": "0cdac40ea299a2f35b929cce53aab778baa7b164298455699776f8ef33e3e70f",
+  "tests": "PRUEFBERICHT-0.58.28.json"
+}

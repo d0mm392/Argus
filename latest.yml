@@ -1,34 +1,20 @@
-version: 0.58.27
+version: 0.58.28
 files:
-  - url: Argus-Setup-0.58.27.exe
-    sha512: YCnqFGwO2NPNCoEpRlEwkuqvQeHZQnCDO/DTm18Eef2KR9u6PlyXlFp5xo1GfIcUBXMdzcOx39cT0wZOCWMXcQ==
-    size: 93483996
-path: Argus-Setup-0.58.27.exe
-sha512: YCnqFGwO2NPNCoEpRlEwkuqvQeHZQnCDO/DTm18Eef2KR9u6PlyXlFp5xo1GfIcUBXMdzcOx39cT0wZOCWMXcQ==
-releaseDate: '2026-10-29T21:26:58.704Z'
-releaseName: "Argus 0.58.27 - Startabsicherung, Apple-Modus vorübergehend entfernt"
+  - url: Argus-Setup-0.58.28.exe
+    sha512: kqkp4ME7u9jOC7fI5E5mxr3QO06ktL0/C8sDmomuzeimY4QPYoghFOh41pNLbKZm2ALzUwdA1CgapuUxjUlLAg==
+    size: 93484791
+path: Argus-Setup-0.58.28.exe
+sha512: kqkp4ME7u9jOC7fI5E5mxr3QO06ktL0/C8sDmomuzeimY4QPYoghFOh41pNLbKZm2ALzUwdA1CgapuUxjUlLAg==
+releaseDate: '2026-10-31T11:34:05.424Z'
+releaseName: "Argus 0.58.28 - Discord-Avatare und einheitliche Namen"
 releaseNotes: |
-  # Argus 0.58.27 – Startabsicherung, Apple-Modus vorübergehend entfernt
-
-  Dringende Korrektur für Installationen, die nach einem Update nicht mehr öffneten.
-
-  - Startabsicherung:
-    - Bisher konnte ein Fehler im Startablauf spurlos verschwinden. Dann erschien kein Fenster, und es gab keinen Eintrag in `argus-error.log` oder im Fehlerverlauf. Ein unsichtbarer Argus-Prozess hielt außerdem die Einzelinstanz-Sperre, sodass jeder weitere Start sich sofort beendete.
-    - Jetzt ist jeder Startschritt vor und nach dem Fenster einzeln abgesichert und wird bei einem Fehler protokolliert. Das Fenster erscheint trotzdem.
-    - Scheitert der Start dennoch, schreibt Argus den Fehler ins Protokoll, zeigt eine Meldung und beendet sich. Der nächste Start kann es dann erneut versuchen.
-    - Abgelehnte Promises werden ebenfalls protokolliert.
-  - Der optionale Apple-Modus aus 0.58.26 ist vorübergehend entfernt und für eine spätere Version gesichert. Klassisch ist wieder die einzige Oberfläche, wie in 0.58.25.
-    - War der Apple-Modus eingestellt, startet Argus in Klassisch.
-    - Eine liegengebliebene Startsicherung (`ui-start.json`) wird entfernt.
-  - Einstellungen, Notizen, Anordnungen und Gedächtnis bleiben unverändert. Das Profil wird nicht gelöscht.
-
-  Aktualisieren ohne laufendes Argus: Installer direkt herunterladen und ausführen. Der Link steht in der README des Testkanals. Er installiert über die bestehende Version, die Daten bleiben erhalten.
-
-  Geprüft:
-  - Testsuite wie 0.58.25; neue Tests für Startabsicherung und Entfernung des Apple-Modus.
-  - Installiertes Paket: alle Produktdateien gleich dem Quellstand, Discord-Laufzeit unverändert, Manifest und Update-Metadaten stimmig.
-  - In einer Offline-VM: Update 0.58.25 → 0.58.26 und 0.58.20 → 0.58.26 jeweils mit Start der installierten Anwendung.
-
-  Noch nicht geprüft (dringende Bereitstellung): die VM-Durchläufe mit 0.58.27 selbst (Neuinstallation, Update von 0.58.20 mit befülltem Profil, Update von 0.58.26 im Apple-Modus). Sie folgen direkt nach der Veröffentlichung.
-
-  Stable bleibt unverändert.
+  # Argus 0.58.28 – Discord-Avatare und einheitliche Namen
+  
+  - Discord-Konto und Freunde übernehmen ihre Avatar-URLs aus dem nativen SDK. Standardavatare werden angezeigt; bei Ladefehlern erscheint lokal der erste Buchstabe des Namens. Avatar-Wechsel aktualisieren die Liste. Die CSP bleibt unverändert.
+  - Interne Oberfläche und heutige Komponenten verwenden Argus. Technische Altkennungen für Installation, Profile, Sensor-Aufgabe, Einstellungen und lokale Schnittstellen bleiben gezielt kompatibel; siehe ARGUS-NAMEN-KOMPATIBILITAET.md. Keine Projektdateien wurden gelöscht.
+  - Ein bestehendes Argus-Profil wird beim Start nicht mehr durch ein älteres Jarvis-Profil überschrieben, wenn der historische Umzugsmarker fehlt.
+  - Einstellungen werden atomar gespeichert. Unlesbare Einstellungen bleiben gesichert; eine vorhandene lesbare Sicherung wird verwendet.
+  
+  Windows x64, unsignierter Installer. Persönliche Discord-Freunde benötigen weiterhin die eigene Discord-Anmeldung. Tests verwenden synthetische Konten; eine reale Discord-Anmeldung wurde nicht automatisiert.
+  
+  Verteilung ausschließlich über source und updates. Stable und das separate Startdiagnosepaket bleiben unverändert.
