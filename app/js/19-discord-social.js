@@ -13,9 +13,9 @@
   $("dcFriendsUnavailable").textContent=connected?"Markierungen beschränken ausschließlich die zusätzlichen Freunde. Sprachkanal-Teilnehmer bleiben erhalten.":window.argusDiscordList.capability.reason;
   friendsSig="";buildFriends();
  };
- const action=method=>async()=>{try{show(await window.jarvis[method]())}catch{show({available:true,status:"error",account:null,friends:[],error:"connection-error"})}};
+ const action=method=>async()=>{try{show(await window.argus[method]())}catch{show({available:true,status:"error",account:null,friends:[],error:"connection-error"})}};
  $("dcSocialConnect").addEventListener("click",action("discordSocialConnect"));
  $("dcSocialCancel").addEventListener("click",action("discordSocialCancel"));
  $("dcSocialDisconnect").addEventListener("click",action("discordSocialDisconnect"));
- window.jarvis.onDiscordSocial?.(show);window.jarvis.discordSocialState().then(show).catch(()=>show(null));
+ window.argus.onDiscordSocial?.(show);window.argus.discordSocialState().then(show).catch(()=>show(null));
 })();

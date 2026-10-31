@@ -352,7 +352,7 @@ function mcpConfigFile(dir) {
     env: { ELECTRON_RUN_AS_NODE: "1", JARVIS_PORT: String(serverPort), JARVIS_TOKEN: TOOL_TOKEN, JARVIS_INDEX: process.env.JARVIS_INDEX, JARVIS_MEMORY: memory.DIR(), ARGUS_USERDATA: process.env.ARGUS_USERDATA } } } }));
   return f;
 }
-const JARVIS_TOOLS = ["lokale_ki", "strata_fragen", "systemstatus", "oeffnen", "gedaechtnis_suchen", "gedaechtnis_verlauf", "gedaechtnis_merken", "dateien_suchen", "datei_lesen"].map((t) => "mcp__argus__" + t).join(",");
+const ARGUS_TOOLS = ["lokale_ki", "strata_fragen", "systemstatus", "oeffnen", "gedaechtnis_suchen", "gedaechtnis_verlauf", "gedaechtnis_merken", "dateien_suchen", "datei_lesen"].map((t) => "mcp__argus__" + t).join(",");
 
 function startServer() {
   return new Promise((resolve) => {
@@ -434,7 +434,7 @@ function askClaudeCode(messages, onText) {
     const env = { ...process.env }; delete env.ANTHROPIC_API_KEY; // sonst rechnet Claude Code über den API-Key ab statt über das Abo
     const work = path.join(app.getPath("userData"), "claude-work"); fs.mkdirSync(work, { recursive: true });
     const args = ["-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--model", config.claudeCodeModel || "sonnet",
-      "--mcp-config", mcpConfigFile(work), "--allowedTools", JARVIS_TOOLS];
+      "--mcp-config", mcpConfigFile(work), "--allowedTools", ARGUS_TOOLS];
     const viaShell = /\.cmd$/i.test(exe); // npm-Installation: claude.cmd braucht die Shell, Pfad in Anführungszeichen wegen Leerzeichen
     const p = spawn(viaShell ? `"${exe}"` : exe, args, { cwd: work, env, windowsHide: true, shell: viaShell });
     const history = messages.slice(0, -1).slice(-8).map((m) => (m.role === "user" ? (userName() || "Nutzer") + ": " : "Du: ") + m.content).join("\n");
@@ -591,7 +591,7 @@ async function ensurePiper() {
 function synthesize(text, id) {
   const vf = voiceFileOf(id || config.voiceId);
   if (!fs.existsSync(piperExe()) || !fs.existsSync(vf)) return Promise.resolve(null);
-  const out = path.join(os.tmpdir(), `jarvis-tts-${process.pid}-${Date.now()}.wav`);
+  const out = path.join(os.tmpdir(), `argus-tts-${process.pid}-${Date.now()}.wav`);
   const line = JSON.stringify({ text, output_file: out }).replace(/[\u007f-\uffff]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
   return new Promise((resolve, reject) => {
     const p = spawn(piperExe(), ["--model", vf, "--json-input", "--output_file", out, "--length_scale", "1.06", "--sentence_silence", "0.22"],
@@ -2613,12 +2613,12 @@ function updateOverlay() {
   if (!v) { if (ovAlive()) ovWin.close(); return; }
   const url = overlayUrl(v), streamkit = /^https:/.test(url);
   const h = Math.min(460, (streamkit ? 16 : 44) + v.people.length * (streamkit ? 34 : 30));
-  if (ovAlive() && ovWin.jarvisUrl !== url) { ovWin.close(); ovWin = null; }
+  if (ovAlive() && ovWin.argusUrl !== url) { ovWin.close(); ovWin = null; }
   if (!ovAlive()) {
     // Nicht transparent: so rendert Windows die Schrift scharf (ClearType); transparente Fenster wirken weich
     ovWin = new BrowserWindow({ width: 240, height: h, frame: false, transparent: false, backgroundColor: "#0a1220", resizable: false, focusable: false, skipTaskbar: true, show: false, hasShadow: false,
       alwaysOnTop: true, title: "Argus Sprachkanal", webPreferences: { preload: path.join(__dirname, "preload-news.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, partition: "persist:streamkit" } });
-    ovWin.jarvisUrl = url;
+    ovWin.argusUrl = url;
     ovWin.setAlwaysOnTop(true, "screen-saver"); ovWin.setIgnoreMouseEvents(true); // liegt über Spielen im Fenstermodus, Klicks gehen durch
     ovWin.on("closed", () => { ovWin = null; });
     ovWin.webContents.on("dom-ready", () => { if (streamkit) ovWin.webContents.insertCSS(STREAMKIT_CSS).catch(() => {}); });

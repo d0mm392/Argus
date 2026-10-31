@@ -21,7 +21,7 @@
   function applyPalette([name, hue, win, regions]) {
     theme.hue = hue; theme.regions = regions; $("setHue").value = hue; if ($("setRegions")) $("setRegions").value = regions;
     winColor = { follow: false, h: win[0], s: win[1], l: win[2] }; applyWinColor(); syncWinInputs?.(); applyTheme(); syncCustomColors();
-    window.jarvis.setConfig({ themeHue: hue, themeRegions: regions, winColor, palette: name }); markPalette(name);
+    window.argus.setConfig({ themeHue: hue, themeRegions: regions, winColor, palette: name }); markPalette(name);
   }
   const markPalette = (n) => { for (const b of $("palPick").children) b.setAttribute("aria-pressed", String(b.dataset.n === n)); };
   $("palPick").replaceChildren(...PALETTES.map((p) => {
@@ -34,9 +34,9 @@
   // Eigene Farben: Grundfarbe (nur der Farbton zählt) und Fensterfarbe (wird dunkel genug gehalten, damit Text lesbar bleibt)
   function syncCustomColors() { $("setAccentHex").value = hslToHex(theme.hue, 100, 62); $("setWinHex").value = hslToHex(winColor.h, Math.max(winColor.s, 10), Math.max(winColor.l + 14, 22)); }
   $("setAccentHex").addEventListener("input", (e) => { theme.hue = hexToHsl(e.target.value)[0]; $("setHue").value = theme.hue; applyTheme(); markPalette(""); });
-  $("setAccentHex").addEventListener("change", () => window.jarvis.setConfig({ themeHue: theme.hue, palette: "" }));
+  $("setAccentHex").addEventListener("change", () => window.argus.setConfig({ themeHue: theme.hue, palette: "" }));
   $("setWinHex").addEventListener("input", (e) => { const [h, s, l] = hexToHsl(e.target.value); winColor = { follow: false, h, s, l: Math.max(2, Math.min(l - 14, 30)) }; applyWinColor(); syncWinInputs?.(); markPalette(""); });
-  $("setWinHex").addEventListener("change", () => window.jarvis.setConfig({ winColor, palette: "" }));
+  $("setWinHex").addEventListener("change", () => window.argus.setConfig({ winColor, palette: "" }));
 
   // ---------- Buttons: Form und Material, unabhängig voneinander ----------
   const B_SHAPES = [["kapsel", "Kapsel"], ["abgerundet", "Abgerundet"], ["eckig", "Eckig"], ["abgeschnitten", "Abgeschnittene Ecken"], ["hexagon", "Hexagon"], ["pfeil", "Pfeil"], ["schraeg", "Schräg"], ["ticket", "Ticket"], ["doppelt", "Doppelter Rand"], ["oktagon", "Oktagon"], ["raute", "Raute (spitz)"], ["pfeillinks", "Pfeil nach links"], ["schraeg2", "Schräg (andersrum)"], ["tab", "Reiter (oben rund)"], ["schild", "Schild (unten rund)"], ["blase", "Sprechblase"], ["blatt", "Blatt"], ["klammer", "Klammer [ ]"]];
@@ -44,8 +44,8 @@
   const fillSel = (id, list) => $(id).replaceChildren(...list.map(([v, l]) => Object.assign(document.createElement("option"), { value: v, textContent: l })));
   fillSel("setBtnShape", B_SHAPES); fillSel("setBtnLook", B_LOOKS);
   const applyBtn = (shape, look) => { document.body.dataset.bshape = shape || "kapsel"; document.body.dataset.blook = look || "standard"; $("setBtnShape").value = document.body.dataset.bshape; $("setBtnLook").value = document.body.dataset.blook; };
-  $("setBtnShape").addEventListener("change", (e) => { applyBtn(e.target.value, document.body.dataset.blook); window.jarvis.setConfig({ btnShape: e.target.value }); });
-  $("setBtnLook").addEventListener("change", (e) => { applyBtn(document.body.dataset.bshape, e.target.value); window.jarvis.setConfig({ btnLook: e.target.value }); });
+  $("setBtnShape").addEventListener("change", (e) => { applyBtn(e.target.value, document.body.dataset.blook); window.argus.setConfig({ btnShape: e.target.value }); });
+  $("setBtnLook").addEventListener("change", (e) => { applyBtn(document.body.dataset.bshape, e.target.value); window.argus.setConfig({ btnLook: e.target.value }); });
   applyBtn();
   // Buttons neigen/drehen (3D): wird an die Lage der Anzeigen, „Claude · Lokal“ und „Strata“ angehängt
   let tiltX = 0, tiltY = 0, tiltK = 24, tiltFollow = false, tiltSR = null, tiltT = -1;
@@ -69,17 +69,17 @@
     const d = Math.PI / 180;
     el.style.transform += ` scale(${Math.cos(ry * d).toFixed(3)}, ${Math.cos(rx * d).toFixed(3)}) skew(${(rx * 0.3).toFixed(1)}deg, ${(-ry * 0.3).toFixed(1)}deg)`;
   }
-  let gTiltX = 0, gTiltY = 0; const gTiltSave = () => window.jarvis.setConfig({ gaugeTiltX: gTiltX, gaugeTiltY: gTiltY });
+  let gTiltX = 0, gTiltY = 0; const gTiltSave = () => window.argus.setConfig({ gaugeTiltX: gTiltX, gaugeTiltY: gTiltY });
   $("setGaugeTiltX").addEventListener("input", (e) => { gTiltX = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
   $("setGaugeTiltY").addEventListener("input", (e) => { gTiltY = +e.target.value; clearTimeout(gTiltSave.t); gTiltSave.t = setTimeout(gTiltSave, 300); });
-  const tiltSave = () => window.jarvis.setConfig({ btnTiltX: tiltX, btnTiltY: tiltY, btnTiltFollow: tiltFollow, btnTiltK: tiltK });
+  const tiltSave = () => window.argus.setConfig({ btnTiltX: tiltX, btnTiltY: tiltY, btnTiltFollow: tiltFollow, btnTiltK: tiltK });
   $("setBtnTiltX").addEventListener("input", (e) => { tiltX = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
   $("setBtnTiltY").addEventListener("input", (e) => { tiltY = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
   $("setBtnTiltK").addEventListener("input", (e) => { tiltK = +e.target.value; clearTimeout(tiltSave.t); tiltSave.t = setTimeout(tiltSave, 300); });
   $("setBtnTiltFollow").addEventListener("change", (e) => { tiltFollow = e.target.checked; tiltSave(); });
   const applyShimmer = (on) => { document.body.classList.toggle("no-shimmer", on === false); $("setShimmer").checked = on !== false; };
-  $("setShimmer").addEventListener("change", (e) => { applyShimmer(e.target.checked); window.jarvis.setConfig({ loadShimmer: e.target.checked }); });
-  window.jarvis.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; tiltK = c.btnTiltK || 24; $("setBtnTiltK").value = tiltK; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); markPalette(c.palette || ""); syncCustomColors(); });
+  $("setShimmer").addEventListener("change", (e) => { applyShimmer(e.target.checked); window.argus.setConfig({ loadShimmer: e.target.checked }); });
+  window.argus.getConfig().then((c) => { applyBtn(c.btnShape, c.btnLook); tiltX = c.btnTiltX || 0; tiltY = c.btnTiltY || 0; tiltFollow = !!c.btnTiltFollow; tiltK = c.btnTiltK || 24; $("setBtnTiltK").value = tiltK; gTiltX = c.gaugeTiltX || 0; gTiltY = c.gaugeTiltY || 0; $("setGaugeTiltX").value = gTiltX; $("setGaugeTiltY").value = gTiltY; $("setBtnTiltX").value = tiltX; $("setBtnTiltY").value = tiltY; $("setBtnTiltFollow").checked = tiltFollow; applyShimmer(c.loadShimmer); markPalette(c.palette || ""); syncCustomColors(); });
 
   // ---------- Messwerte anklicken: Verlauf der letzten 30 Minuten ----------
   const SPARK_N = 360;
@@ -137,6 +137,6 @@
   foldApply(); document.addEventListener("click", (e) => { if (e.target.closest?.("#pageTabs")) setTimeout(foldApply, 60); });
 
   // ---------- YouTube-Transparenz ----------
-  $("setTwAlpha").addEventListener("change", (e) => window.jarvis.setConfig({ twAlpha: +e.target.value }));
-  $("setTwRound").addEventListener("change", (e) => window.jarvis.setConfig({ twRound: +e.target.value }));
-  $("setTwFeather").addEventListener("change", (e) => window.jarvis.setConfig({ twFeather: +e.target.value }));
+  $("setTwAlpha").addEventListener("change", (e) => window.argus.setConfig({ twAlpha: +e.target.value }));
+  $("setTwRound").addEventListener("change", (e) => window.argus.setConfig({ twRound: +e.target.value }));
+  $("setTwFeather").addEventListener("change", (e) => window.argus.setConfig({ twFeather: +e.target.value }));

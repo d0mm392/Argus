@@ -26,7 +26,7 @@
     turns.push({ role: "user", content: text });
     log("Anfrage: " + (text.length > 34 ? text.slice(0, 34) + "…" : text));
     // Befehle wie "öffne Brave" führt Argus direkt aus, ohne die KI zu fragen
-    const did = await window.jarvis.action?.(text).catch(() => null);
+    const did = await window.argus.action?.(text).catch(() => null);
     if (did) {
       showTurn("ai", did).dataset.done = "1"; turns.push({ role: "assistant", content: did }); log("Aktion: " + did);
       setState("speaking", "Führt aus…"); REGIONS[R.ausgabe].bump = 0.6;
@@ -37,7 +37,7 @@
     startThinking();
     let started = false, answer = "";
     try {
-      answer = await window.jarvis.ask(turns, (t) => {
+      answer = await window.argus.ask(turns, (t) => {
         if (!started) { started = true; stopThinking(); setState("speaking", "Formuliert Antwort…"); log("Sprachausgabe aktiv"); }
         REGIONS[R.ausgabe].bump = 0.3;
         showTurn("ai", t);
@@ -90,7 +90,7 @@
   // Eine Antwort mit der Argus-Stimme (Piper) sprechen; false, wenn sie nicht verfügbar ist oder scheitert
   async function speakPiper(clean, done, id) {
     let wav = null;
-    try { wav = await window.jarvis?.tts?.(clean, id); } catch (e) {}
+    try { wav = await window.argus?.tts?.(clean, id); } catch (e) {}
     if (!wav) return false;
     try {
       const c = voiceChain(); if (c.state === "suspended") await c.resume();
@@ -110,14 +110,14 @@
   async function speak(text, done) {
     const clean = text.replace(/[*#_`>]/g, "");
     stopSpeaking();
-    const vc = await window.jarvis?.getConfig?.().catch(() => ({})) || {};
+    const vc = await window.argus?.getConfig?.().catch(() => ({})) || {};
     if (vc.voiceEngine === "windows") return speakSystem(clean, done); // ausdrücklich gewählt
     if (await speakPiper(clean, done)) return;
     const fb = vc.voiceFallback || "retry";
     if (fb === "windows") return speakSystem(clean, done);
     if (fb === "retry") { await new Promise((r) => setTimeout(r, 1500)); if (await speakPiper(clean, done)) return; }
     // Argus-Stimme fehlt: nicht heimlich mit der Windows-Stimme antworten, sondern sagen, warum nichts gesprochen wird
-    let ready = true; try { const st = await window.jarvis?.ttsState?.(); ready = !st || st.ready || !st.win; } catch (e) {}
+    let ready = true; try { const st = await window.argus?.ttsState?.(); ready = !st || st.ready || !st.win; } catch (e) {}
     notice(ready ? "Argus-Stimme gerade nicht verfügbar, Antwort nicht vorgelesen (Grund im Fehlerprotokoll)." : "Argus-Stimme wird noch geladen, Antwort nicht vorgelesen. Alternativ in den Einstellungen die Windows-Stimme wählen.");
     done();
   }
@@ -252,9 +252,9 @@
     const w = Math.max(220, Math.min(r.max, r.w0 + (L ? -dx : dx))), h = Math.max(90, Math.min(innerHeight * 0.8, r.h0 + (T ? -dy : dy)));
     sysBox = { w: w >= r.max - 2 ? 0 : Math.round(w), h: Math.round(h), align: L ? "r" : "l" }; applySysBox();
   }, true);
-  const sysEnd = () => { if (!sysRes) return; sysRes.g.classList.remove("on"); sysRes = null; window.jarvis.setConfig({ sysBox }); };
+  const sysEnd = () => { if (!sysRes) return; sysRes.g.classList.remove("on"); sysRes = null; window.argus.setConfig({ sysBox }); };
   window.addEventListener("pointerup", sysEnd, true); window.addEventListener("pointercancel", sysEnd, true);
-  $("sys").querySelector(".sys-head").addEventListener("dblclick", () => { sysBox = { w: 0, h: 0, align: "l" }; applySysBox(); window.jarvis.setConfig({ sysBox }); });
+  $("sys").querySelector(".sys-head").addEventListener("dblclick", () => { sysBox = { w: 0, h: 0, align: "l" }; applySysBox(); window.argus.setConfig({ sysBox }); });
 
   // ---------- Systemwache ----------
   let sys = { health: "ok", checks: [], top: [] };
@@ -331,7 +331,7 @@
     const name = li.dataset.proc, t = document.createElement("div"), kill = document.createElement("button"), no = document.createElement("button");
     t.className = "cm-t"; t.textContent = `${name} · ${li.dataset.mem} MB`;
     kill.type = no.type = "button"; kill.className = "danger"; kill.textContent = `„${name}“ beenden`; no.textContent = "Abbrechen";
-    kill.addEventListener("click", async () => { closeProcMenu(); const r = await window.jarvis.killProcess(name).catch((err) => ({ ok: false, text: String(err.message || err) })); notice(r.text); log(r.text); });
+    kill.addEventListener("click", async () => { closeProcMenu(); const r = await window.argus.killProcess(name).catch((err) => ({ ok: false, text: String(err.message || err) })); notice(r.text); log(r.text); });
     no.addEventListener("click", closeProcMenu);
     procMenu.replaceChildren(t, kill, no); procMenu.hidden = false;
     procMenu.style.left = Math.min(e.clientX, innerWidth - procMenu.offsetWidth - 8) + "px"; procMenu.style.top = Math.min(e.clientY, innerHeight - procMenu.offsetHeight - 8) + "px";
@@ -339,8 +339,8 @@
   document.addEventListener("pointerdown", (e) => { if (!procMenu.hidden && !procMenu.contains(e.target)) closeProcMenu(); }, true);
   window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProcMenu(); });
   window.addEventListener("blur", closeProcMenu);
-  $("setProcKill").addEventListener("change", (e) => { procKill = e.target.checked; window.jarvis.setConfig({ procKill }); });
-  window.jarvis.getConfig?.().then((c) => { procKill = c.procKill !== false; $("setProcKill").checked = procKill; });
+  $("setProcKill").addEventListener("change", (e) => { procKill = e.target.checked; window.argus.setConfig({ procKill }); });
+  window.argus.getConfig?.().then((c) => { procKill = c.procKill !== false; $("setProcKill").checked = procKill; });
   function rate(kbs) { return kbs >= 1024 ? (kbs / 1024).toFixed(1) + " MB/s" : Math.round(kbs || 0) + " KB/s"; }
 
   function onSystem(d) {
@@ -365,6 +365,6 @@
     if (!e.ctrlKey) return;
     e.preventDefault();
     const t = performance.now(); if (t - wheelLock < 25) return; wheelLock = t;
-    window.jarvis.resizeBy(e.deltaY < 0 ? 1.035 : 1 / 1.035);
+    window.argus.resizeBy(e.deltaY < 0 ? 1.035 : 1 / 1.035);
   }, { passive: false });
 

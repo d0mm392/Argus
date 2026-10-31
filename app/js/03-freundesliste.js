@@ -63,16 +63,16 @@
       d.append(av, b, sm); d.title = p.name + " · " + sub;
       if (!p.sid) d.dataset.dcn = normDc(p.name || "");
       if (!p.sid) d.dataset.dcid = window.argusDiscordList.discordId(p);
-      if (p.sid) { d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openSteam(p.sid); notice(`Steam-Chat mit ${p.name} wird geöffnet …`); }); d.querySelector("small").textContent += " · Klick: Chat"; }
-      else if (url) d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.jarvis.openUrl(url); });
-      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[(dcMarked.includes("id:" + d.dataset.dcid) || dcMarked.includes(normDc(p.name))) ? `„${p.name}“: Markierung entfernen` : `„${p.name}“ lokal markieren`, () => { const keys = [normDc(p.name), ...(d.dataset.dcid ? ["id:" + d.dataset.dcid] : [])], k = keys.at(-1); dcMarked = keys.some(key => dcMarked.includes(key)) ? dcMarked.filter(key => !keys.includes(key)) : [...dcMarked, k]; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcMarked }); }], [`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.jarvis.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
+      if (p.sid) { d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.argus.openSteam(p.sid); notice(`Steam-Chat mit ${p.name} wird geöffnet …`); }); d.querySelector("small").textContent += " · Klick: Chat"; }
+      else if (url) d.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; window.argus.openUrl(url); });
+      if (p.voice !== undefined) d.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, p.name, [[(dcMarked.includes("id:" + d.dataset.dcid) || dcMarked.includes(normDc(p.name))) ? `„${p.name}“: Markierung entfernen` : `„${p.name}“ lokal markieren`, () => { const keys = [normDc(p.name), ...(d.dataset.dcid ? ["id:" + d.dataset.dcid] : [])], k = keys.at(-1); dcMarked = keys.some(key => dcMarked.includes(key)) ? dcMarked.filter(key => !keys.includes(key)) : [...dcMarked, k]; friendsSig = ""; buildFriends(); window.argus.setConfig({ dcMarked }); }], [`Das bin ich: „${p.name}“ als meinen Discord-Namen merken`, () => { window.argus.setConfig({ discordName: p.name }); myDc = normDc(p.name); friendsSig = ""; buildFriends(); notice(`Gemerkt: Du bist „${p.name}“ auf Discord. Das Overlay erscheint, wenn du im Sprachkanal sitzt.`); }], ["Abbrechen", null]]); });
       return d;
     };
     // Überschrift je Bereich (Steam, Discord-Server): Klick klappt den Bereich zu oder auf, wird gemerkt
     const head = (t, n) => {
       const h = document.createElement("h5"); h.innerHTML = "<span></span><span></span>"; h.dataset.sec = t;
       h.firstChild.textContent = (friendsFold[t] ? "▸ " : "▾ ") + t; h.lastChild.textContent = n; h.title = friendsFold[t] ? "Aufklappen" : "Einklappen";
-      h.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; friendsFold = { ...friendsFold, [t]: !friendsFold[t] }; if (!friendsFold[t]) delete friendsFold[t]; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ friendsFold }); });
+      h.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; friendsFold = { ...friendsFold, [t]: !friendsFold[t] }; if (!friendsFold[t]) delete friendsFold[t]; friendsSig = ""; buildFriends(); window.argus.setConfig({ friendsFold }); });
       return h;
     };
     const seenCh = new Set();
@@ -112,7 +112,7 @@
       const ch5 = document.createElement("div"); ch5.className = "vch" + (here ? " here" : ""); ch5.innerHTML = "<span></span><b></b>";
       ch5.firstChild.textContent = "🔊 " + ch; ch5.lastChild.textContent = here ? "Du bist hier" : "Beitreten";
       ch5.title = here ? "Du sitzt in diesem Kanal" : (dcJoinBot ? "Mit dem Bot hierher wechseln (wenn du schon in einem Sprachkanal bist), sonst Discord öffnen" : "In der Discord-App diesem Sprachkanal beitreten");
-      if (join && !here) ch5.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; if (!dcJoinBot) return window.jarvis.openDiscord(join); window.jarvis.dcJoin(gid, vid).then((r) => { if (r?.ok) notice("Du wurdest in „" + ch + "“ verschoben"); else { if (r?.reason && r.reason !== "aus") notice(r.reason === "nicht in Sprache" ? "Der Bot sieht dich in keinem Sprachkanal (Name in den Einstellungen prüfen). Discord öffnet sich." : r.reason); window.jarvis.openDiscord(join); } }); });
+      if (join && !here) ch5.addEventListener("click", (e) => { e.stopPropagation(); if (noClick) return; if (!dcJoinBot) return window.argus.openDiscord(join); window.argus.dcJoin(gid, vid).then((r) => { if (r?.ok) notice("Du wurdest in „" + ch + "“ verschoben"); else { if (r?.reason && r.reason !== "aus") notice(r.reason === "nicht in Sprache" ? "Der Bot sieht dich in keinem Sprachkanal (Name in den Einstellungen prüfen). Discord öffnet sich." : r.reason); window.argus.openDiscord(join); } }); });
       else if (!join) ch5.lastChild.remove();
       parts.push(ch5);
       // Klick auf eine Person: ihr Profil in Discord öffnen, dort direkt „Nachricht“. Mit StreamKit: echte Namen, wer spricht, leuchtet grün
@@ -123,13 +123,13 @@
         const me = isMe(m.name) || (bp && isMe(bp.name, bp.user));
         const u = dm(m.avatar, bp?.id);
         const d = row({ id: m.id || bp?.id, name: m.name, avatar: m.avatar, voice: ch }, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : "🔊 " + ch, null); d.dataset.live = m.name; flagIcons(d, vid, m, ms);
-        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
+        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.argus.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
         parts.push(d);
       } else for (const m of ms) {
         const me = isMe(m.name, m.user);
         const u = dm(m.avatar, m.id);
         const d = row(m, me ? "Du" : u ? (bot.guilds.length ? "Klick: Nachricht schreiben" : "Klick: Chat in Discord") : m.game ? "spielt " + m.game : "🔊 " + ch, null); flagIcons(d, vid, m, ms);
-        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.jarvis.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
+        if (!me) d.addEventListener("click", u ? (e) => { e.stopPropagation(); if (!noClick) { if (bot.guilds.length && window.dcWrite && /users\/(\d+)/.test(u)) window.dcWrite(m.name, /users\/(\d+)/.exec(u)[1], u); else { window.argus.openDiscord(u); notice(`Discord-Chat mit ${m.name} wird geöffnet …`); } } } : noId);
         parts.push(d);
       }
     }
@@ -161,7 +161,7 @@
     }
     if (live.auth && servers.length) {
       const a = Object.assign(document.createElement("div"), { className: "skauth", textContent: "▶ Echte Namen und Sprecher anzeigen: hier klicken und in Discord einmal erlauben" });
-      a.addEventListener("click", (e) => { e.stopPropagation(); if (!noClick) window.jarvis.streamkitAuth(); }); parts.push(a);
+      a.addEventListener("click", (e) => { e.stopPropagation(); if (!noClick) window.argus.streamkitAuth(); }); parts.push(a);
     }
     const seenPeople = new Set();
     for (let i = 0; i < parts.length; i++) {
@@ -191,9 +191,9 @@
     b.addEventListener("click", (e) => { e.stopPropagation(); setFriendsOn(false); });
     return b;
   }
-  function setFriendsOn(on) { widgets.friends = { ...widgets.friends, on }; window.jarvis.setConfig({ widgets: { friends: widgets.friends } }); $("setFriendsOn").checked = on; buildWidgetRows?.(); }
+  function setFriendsOn(on) { widgets.friends = { ...widgets.friends, on }; window.argus.setConfig({ widgets: { friends: widgets.friends } }); $("setFriendsOn").checked = on; buildWidgetRows?.(); }
   let fbSave = null;
-  const saveFriendsBox = () => { clearTimeout(fbSave); fbSave = setTimeout(() => window.jarvis.setConfig({ friendsBox }), 300); };
+  const saveFriendsBox = () => { clearTimeout(fbSave); fbSave = setTimeout(() => window.argus.setConfig({ friendsBox }), 300); };
   function applyFriendsBox() {
     if (!friendsEl) return;
     friendsEl.style.setProperty("--fw", friendsBox.w + "px");

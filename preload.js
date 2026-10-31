@@ -6,7 +6,7 @@ ipcRenderer.on("ask-delta", (_e, { id, text }) => pending.get(id)?.onText(text))
 ipcRenderer.on("ask-done", (_e, { id, text }) => { pending.get(id)?.resolve(text); pending.delete(id); });
 ipcRenderer.on("ask-error", (_e, { id, code, message }) => { pending.get(id)?.reject({ code, message }); pending.delete(id); });
 
-contextBridge.exposeInMainWorld("jarvis", {
+contextBridge.exposeInMainWorld("argus", {
   ask(messages, onText) {
     const id = nextId++;
     return new Promise((resolve, reject) => {

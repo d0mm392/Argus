@@ -9,7 +9,7 @@ app.whenReady().then(async () => {
   await w.webContents.executeJavaScript(fs.readFileSync(path.join(__dirname, "../app/notes-store.js"), "utf8"));
   const s = fs.readFileSync(path.join(__dirname, "../app/js/09-wetter-mining-farm-notizen.js"), "utf8");
   const section = s.slice(s.indexOf("  let notesOn ="), s.indexOf("  // ---------- Schnellstart"));
-  const setup = `const $ = id => document.getElementById(id), fitPanel = () => {}, notice = () => {}; let saved = window.argusNotesStore.migrate({notesText:'legacy'},()=> 'fixture'); window.jarvis = { getConfig: async () => ({...saved, page:'Start', notesOn:true}), setConfig: async patch => {saved = {...saved, ...structuredClone(patch)};} };`;
+  const setup = `const $ = id => document.getElementById(id), fitPanel = () => {}, notice = () => {}; let saved = window.argusNotesStore.migrate({notesText:'legacy'},()=> 'fixture'); window.argus = { getConfig: async () => ({...saved, page:'Start', notesOn:true}), setConfig: async patch => {saved = {...saved, ...structuredClone(patch)};} };`;
   await w.webContents.executeJavaScript(setup + section);
   const result = await w.webContents.executeJavaScript(`(async () => {
     const type = value => { $('notesText').value = value; $('notesText').dispatchEvent(new Event('input')); };

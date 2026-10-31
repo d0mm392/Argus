@@ -57,7 +57,7 @@ async function callLocal(name, a = {}) {
 // Ohne laufenden Argus (Claude Desktop) gibt es nur die Werkzeuge, die direkt auf Dateien arbeiten
 const ALL = () => (PORT ? [...TOOLS, ...LOCAL_TOOLS] : LOCAL_TOOLS);
 
-function callJarvis(tool, args) {
+function callArgus(tool, args) {
   return new Promise((resolve) => {
     const body = JSON.stringify(args || {});
     const req = http.request({ host: "127.0.0.1", port: PORT, path: "/api/tool/" + tool, method: "POST", timeout: 180000,
@@ -77,7 +77,7 @@ async function handle(m) {
     return send({ id: m.id, result: { protocolVersion: m.params?.protocolVersion || "2024-11-05", capabilities: { tools: {} }, serverInfo: { name: "argus", version: "1.0.0" } } });
   if (m.method === "tools/list") return send({ id: m.id, result: { tools: ALL() } });
   if (m.method === "tools/call") {
-    const r = (await callLocal(m.params?.name, m.params?.arguments)) || (PORT ? await callJarvis(m.params?.name, m.params?.arguments) : { ok: false, text: "Dafür muss Argus laufen." });
+    const r = (await callLocal(m.params?.name, m.params?.arguments)) || (PORT ? await callArgus(m.params?.name, m.params?.arguments) : { ok: false, text: "Dafür muss Argus laufen." });
     return send({ id: m.id, result: { content: [{ type: "text", text: r.text || "(leer)" }], isError: !r.ok } });
   }
   if (m.method === "ping") return send({ id: m.id, result: {} });

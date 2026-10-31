@@ -54,7 +54,7 @@ function connect() {
     if (p.s != null) seq = p.s;
     if (p.op === 10) { // Hello: Herzschlag starten, anmelden
       clearInterval(hb); hb = setInterval(() => send(1, seq), p.d.heartbeat_interval);
-      send(2, { token, intents: INTENTS, properties: { os: "windows", browser: "jarvis", device: "jarvis" } });
+      send(2, { token, intents: INTENTS, properties: { os: "windows", browser: "argus", device: "argus" } });
     } else if (p.op === 1) send(1, seq);
     else if (p.op === 7 || p.op === 9) ws.close(); // Discord will Neuverbindung
     else if (p.op === 0) dispatch(p.t, p.d);

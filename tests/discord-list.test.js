@@ -14,7 +14,7 @@ app.whenReady().then(async () => {
     let market = null, dcVoiceOnly = true, dcAlsoOnline = false, dcOnlyMarked = false, dcMarked = [], noClick = false;
     const lblLayer = document.body, $ = id => document.getElementById(id);
     let markActions; const ctxMenu = (_x,_y,_name,actions) => { markActions=actions; };
-    window.jarvis = {setConfig: patch => { if (patch.dcMarked) window.testMarks=patch.dcMarked; }};
+    window.argus = {setConfig: patch => { if (patch.dcMarked) window.testMarks=patch.dcMarked; }};
     ${source}
     friendsEl = $('list'); friendsEl2 = $('list2');
     (() => {

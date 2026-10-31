@@ -19,12 +19,12 @@ window.dcWrite = function (name, uid, url) {
   const go = async () => {
     const t = ta.value.trim(); if (!t || send.disabled) return;
     send.disabled = true; st.textContent = "Sende …";
-    const r = await window.jarvis.dcDm(uid, t).catch(() => ({ ok: false, reason: "Fehler" }));
+    const r = await window.argus.dcDm(uid, t).catch(() => ({ ok: false, reason: "Fehler" }));
     if (r.ok) { st.textContent = "Gesendet."; setTimeout(close, 900); } else { st.textContent = r.reason || "Fehlgeschlagen"; send.disabled = false; }
   };
-  own.onclick = () => { window.jarvis.openDiscordWeb(uid); close(); };
+  own.onclick = () => { window.argus.openDiscordWeb(uid); close(); };
   x.onclick = close; cancel.onclick = close; send.onclick = go;
-  open.onclick = () => { window.jarvis.openDiscord(url); close(); };
+  open.onclick = () => { window.argus.openDiscord(url); close(); };
   // Lage: mittig, ganz im Fenster; am Titel verschiebbar, an der Ecke unten rechts in der Größe änderbar
   const W = Math.min(420, innerWidth - 24); el.style.width = W + "px";
   el.style.left = Math.max(12, (innerWidth - W) / 2) + "px"; el.style.top = Math.max(12, innerHeight * 0.2) + "px";

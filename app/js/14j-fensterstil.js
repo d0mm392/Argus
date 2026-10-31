@@ -22,12 +22,12 @@
     if (k === "a" || k === "op") { s[k] = Math.max(0, Math.min(k === "a" ? 101 : 100, Math.round(+v))); if (k === "a" && s.a === 100) delete s.a; else if (k === "a" && s.a === 101) s.a = 100; } else if (k === "wt") s.wt = !!v; else s[k] = v ? String(v).slice(0, 40) : "";
     if (!s.font) delete s.font; if (!s.dots) delete s.dots; if (!s.bars) delete s.bars; if (!s.wt) delete s.wt; if (s.a == null) delete s.a; if (s.op == null || s.op >= 100) delete s.op;
     if (Object.keys(s).length) st = { ...st, [id]: s }; else { st = { ...st }; delete st[id]; }
-    apply(); window.jarvis.setConfig({ winStyle: st }); window.onPageStyle?.();
+    apply(); window.argus.setConfig({ winStyle: st }); window.onPageStyle?.();
   };
   // Stil gehört zur Seite (10-anordnen-modus.js, pageLooks)
   window.winStyleGet = () => st;
-  window.winStyleSet = (m) => { st = m && typeof m === "object" ? JSON.parse(JSON.stringify(m)) : {}; apply(); window.jarvis.setConfig({ winStyle: st }); };
-  window.jarvis.getConfig().then((c) => { st = c.winStyle && typeof c.winStyle === "object" ? c.winStyle : {}; apply(); }).catch(() => {});
+  window.winStyleSet = (m) => { st = m && typeof m === "object" ? JSON.parse(JSON.stringify(m)) : {}; apply(); window.argus.setConfig({ winStyle: st }); };
+  window.argus.getConfig().then((c) => { st = c.winStyle && typeof c.winStyle === "object" ? c.winStyle : {}; apply(); }).catch(() => {});
   // Freundeslisten entstehen erst bei Bedarf
   const lay = document.querySelector(".lbls"); if (lay) new MutationObserver(() => apply()).observe(lay, { childList: true });
   // Namen der Schriftarten in ihrer eigenen Schrift anzeigen (Einstellungen)

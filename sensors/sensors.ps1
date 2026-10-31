@@ -1,4 +1,4 @@
-# Jarvis Messdienst: liest CPU-, GPU- und Mainboard-Sensoren ueber LibreHardwareMonitorLib (mit PawnIO-Treiber)
+# Argus Messdienst: liest CPU-, GPU- und Mainboard-Sensoren ueber LibreHardwareMonitorLib (mit PawnIO-Treiber)
 # und schreibt sie alle 2 Sekunden im Format von LibreHardwareMonitors data.json in eine Datei.
 # Laeuft mit Admin-Rechten als geplante Aufgabe "Jarvis Sensoren" und beendet sich, wenn Argus (frueher Jarvis) nicht mehr laeuft.
 param([string]$Out)
@@ -9,7 +9,7 @@ $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 try {
   Add-Type -TypeDefinition @"
 using System; using System.IO; using System.Reflection;
-public static class JarvisResolve {
+public static class ArgusResolve {
   static string d;
   public static void Init(string dir) {
     d = dir;
@@ -17,7 +17,7 @@ public static class JarvisResolve {
   }
 }
 "@
-  [JarvisResolve]::Init($dir)
+  [ArgusResolve]::Init($dir)
   [void][Reflection.Assembly]::LoadFrom((Join-Path $dir "LibreHardwareMonitorLib.dll"))
   $c = New-Object LibreHardwareMonitor.Hardware.Computer
   $c.IsCpuEnabled = $true; $c.IsGpuEnabled = $true; $c.IsMotherboardEnabled = $true; $c.IsControllerEnabled = $true
@@ -65,7 +65,7 @@ while ($true) {
   try {
     $hws = @(); foreach ($h in $c.Hardware) { $hws += , (Node $h) }
     if ($awFans.Count) { $hws += , (AwNode) }
-    $json = ConvertTo-Json @{ Text = "Jarvis"; Children = $hws } -Depth 10 -Compress
+    $json = ConvertTo-Json @{ Text = "Argus"; Children = $hws } -Depth 10 -Compress
     [IO.File]::WriteAllText("$Out.tmp", $json, (New-Object Text.UTF8Encoding $false))
     Move-Item -Force "$Out.tmp" $Out
   } catch { [IO.File]::WriteAllText("$Out.err", $_.Exception.ToString()) }

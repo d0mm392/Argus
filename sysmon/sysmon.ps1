@@ -1,5 +1,5 @@
-# Jarvis Systemmonitor: EIN dauerhaft laufender PowerShell-Prozess statt alle paar Sekunden neue Aufrufe.
-# Jeder neue PowerShell-Start kostet spuerbar CPU und liess Jarvis ab und zu ruckeln.
+# Argus Systemmonitor: EIN dauerhaft laufender PowerShell-Prozess statt alle paar Sekunden neue Aufrufe.
+# Jeder neue PowerShell-Start kostet spuerbar CPU und liess Argus ab und zu ruckeln.
 # Schreibt alle 3 Sekunden eine JSON-Zeile: Prozesse (CPU-Sekunden, RAM), Programme mit Fenster, Netzwerk-Bytes.
 param([string]$Tray = "", [int]$Parent = 0)
 $ErrorActionPreference = "SilentlyContinue"
@@ -61,6 +61,6 @@ while ($true) {
   if ($fsOk) { $o.fs = ""; try { $fp = [JFs]::Pid(); if ($fp) { $fpr = Get-Process -Id $fp -ErrorAction SilentlyContinue; if ($fpr) { $o.fs = $fpr.ProcessName } } } catch {} }
   if ($best) { $o.net = $best } else { $o.net = @{ name = ""; up = $false; rx = 0; tx = 0 } }
   [Console]::Out.WriteLine(($o | ConvertTo-Json -Compress -Depth 4)); [Console]::Out.Flush()
-  if ($Parent -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break } # Jarvis beendet
+  if ($Parent -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { break } # Argus beendet
   Start-Sleep -Seconds 4
 }

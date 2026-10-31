@@ -9,11 +9,11 @@
   };
   window.setLook = (id, v) => {
     if (!LOOKS[id] || !LOOKS[id][1].some((o) => o[0] === v)) return;
-    looks = { ...looks, [id]: v }; apply(); sync(); window.jarvis.setConfig({ looks }); window.onPageStyle?.();
+    looks = { ...looks, [id]: v }; apply(); sync(); window.argus.setConfig({ looks }); window.onPageStyle?.();
   };
   // Designs gehören zur Seite (10-anordnen-modus.js, pageLooks)
   window.looksGet = () => looks;
-  window.looksSet = (m) => { looks = m && typeof m === "object" ? { ...m } : {}; apply(); sync(); window.jarvis.setConfig({ looks }); };
+  window.looksSet = (m) => { looks = m && typeof m === "object" ? { ...m } : {}; apply(); sync(); window.argus.setConfig({ looks }); };
   const box = document.getElementById("lookBox");
   const sync = () => { if (box) for (const s of box.querySelectorAll("select")) s.value = looks[s.dataset.id] || ""; };
   if (box) for (const [id, [name, opts]] of Object.entries(LOOKS)) {
@@ -23,5 +23,5 @@
     sel.addEventListener("change", () => window.setLook(id, sel.value));
     lab.append(sel); box.append(lab);
   }
-  window.jarvis.getConfig().then((c) => { looks = c.looks && typeof c.looks === "object" ? c.looks : {}; apply(); sync(); }).catch(() => {});
+  window.argus.getConfig().then((c) => { looks = c.looks && typeof c.looks === "object" ? c.looks : {}; apply(); sync(); }).catch(() => {});
 })();

@@ -125,19 +125,19 @@
     if (tintCache.size > 40) tintCache.clear(); tintCache.set(col, c); return c;
   }
   // Nach Absturz oder Neustart des Grafikprozesses (Treiber-Reset) sind die Zeichenflächen leer: neu aufsetzen
-  window.jarvis.onGpuReset?.(() => { try { cancelAnimationFrame(bg.raf); } catch {} bg.raf = 0; bg.ctx = bg.cv.getContext("2d"); bg.w = bg.h = 0; bg.parts = []; bgKick(); window.dispatchEvent(new Event("resize")); });
+  window.argus.onGpuReset?.(() => { try { cancelAnimationFrame(bg.raf); } catch {} bg.raf = 0; bg.ctx = bg.cv.getContext("2d"); bg.w = bg.h = 0; bg.parts = []; bgKick(); window.dispatchEvent(new Event("resize")); });
   const bgKick = () => { if (!bg.raf) { bg.last = 0; bg.raf = requestAnimationFrame(bgFrame); } };
   setInterval(bgKick, 1000); document.addEventListener("visibilitychange", bgKick);
   // Zeilen mit data-bgfor erscheinen nur beim passenden Hintergrund (Regel: Optionen eines Hintergrunds nie bei anderen zeigen)
   const bgRows = () => { for (const r of document.querySelectorAll("[data-bgfor]")) { const f = r.dataset.bgfor; r.hidden = f.startsWith("not:") ? bg.mode === f.slice(4) : f === "custom" ? bg.hueMode !== "custom" || bg.mode === "aus" : f !== bg.mode; } };
-  const bgSave = () => window.jarvis.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt, hue: bg.hueMode, hueN: bg.hueN, alpha: bg.op } });
+  const bgSave = () => window.argus.setConfig({ bgFx: { mode: bg.mode, amount: bg.amt, hue: bg.hueMode, hueN: bg.hueN, alpha: bg.op } });
   const applyBg = () => { $("setBgFx").value = bg.mode; $("setBgAmt").value = bg.amt; $("setBgHue").value = bg.hueMode; $("setBgHueN").value = bg.hueN; $("setBgOp").value = bg.op; bg.cv.style.opacity = bg.op; bgRows(); bg.w = 0; bgKick(); };
   $("setBgFx").addEventListener("change", (e) => { bg.mode = e.target.value; applyBg(); bgSave(); });
   $("setBgHue").addEventListener("change", (e) => { bg.hueMode = e.target.value; applyBg(); bgSave(); });
   $("setBgOp").addEventListener("input", (e) => { bg.op = +e.target.value; bg.cv.style.opacity = bg.op; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
   $("setBgHueN").addEventListener("input", (e) => { bg.hueN = +e.target.value; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
   $("setBgAmt").addEventListener("input", (e) => { bg.amt = +e.target.value; bg.w = 0; clearTimeout(bg.save); bg.save = setTimeout(bgSave, 400); });
-  window.jarvis.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); bg.hueMode = c.bgFx?.hue || "auto"; bg.hueN = c.bgFx?.hueN ?? 210; bg.op = Math.max(0.1, Math.min(1, c.bgFx?.alpha ?? 1)); applyBg(); });
+  window.argus.getConfig?.().then((c) => { bg.mode = c.bgFx?.mode || "partikel"; bg.amt = Math.max(0.3, Math.min(2, c.bgFx?.amount || 1)); bg.hueMode = c.bgFx?.hue || "auto"; bg.hueN = c.bgFx?.hueN ?? 210; bg.op = Math.max(0.1, Math.min(1, c.bgFx?.alpha ?? 1)); applyBg(); });
 
   // ---------- YouTube im Panel ----------
   let ytOn = false, ytSize = "m", ytLast = "", ytOffN = 0;
@@ -146,17 +146,17 @@
     const bounds=element.getBoundingClientRect(),width=visualSize?bounds.width:element.offsetWidth,height=visualSize?bounds.height:element.offsetHeight;
     const rect={x:bounds.x+bounds.width/2-width/2,y:bounds.y+bounds.height/2-height/2,width,height};
     const previous=ytLast&&ytLast!=="off"?ytLast.split(",").map(Number):null;
-    if(!previous||previous.length!==4||Math.abs(previous[0]-rect.x)>3||Math.abs(previous[1]-rect.y)>3||Math.abs(previous[2]-rect.width)>3||Math.abs(previous[3]-rect.height)>3){ytLast=[rect.x,rect.y,rect.width,rect.height].map(Math.round).join();window.jarvis.ytRect(rect);}
+    if(!previous||previous.length!==4||Math.abs(previous[0]-rect.x)>3||Math.abs(previous[1]-rect.y)>3||Math.abs(previous[2]-rect.width)>3||Math.abs(previous[3]-rect.height)>3){ytLast=[rect.x,rect.y,rect.width,rect.height].map(Math.round).join();window.argus.ytRect(rect);}
   }
   function ytLayout() {
     if (!$("settings").hidden) {
       const preview=$("ytPreviewBody");
       if(ytOn&&expanded&&preview.offsetWidth>40&&preview.offsetHeight>40){ytOffN=0;ytSendPosition(preview,true);}
-      else if(ytLast!=="off"){ytLast="off";window.jarvis.ytRect(null);}
+      else if(ytLast!=="off"){ytLast="off";window.argus.ytRect(null);}
       return;
     }
     // ausgeblendet oder (noch) ohne Größe: Video weg statt mit Nullmaßen irgendwo aufzuspringen
-    if (!ytOn || !expanded || !$("settings").hidden || $("yt").classList.contains("gone") || $("yt").hidden || !$("yt").offsetWidth) { if (ytLast !== "off" && (!$("settings").hidden || ++ytOffN >= 3)) { ytLast = "off"; window.jarvis.ytRect(null); } return; } // Einstellungen offen: sofort weg (die Ansicht läge sonst über den Einstellungen); sonst erst nach 3 Takten // erst nach 3 Takten (~0,75 s) ausblenden: kurze Layoutsprünge sollen kein Flackern auslösen
+    if (!ytOn || !expanded || !$("settings").hidden || $("yt").classList.contains("gone") || $("yt").hidden || !$("yt").offsetWidth) { if (ytLast !== "off" && (!$("settings").hidden || ++ytOffN >= 3)) { ytLast = "off"; window.argus.ytRect(null); } return; } // Einstellungen offen: sofort weg (die Ansicht läge sonst über den Einstellungen); sonst erst nach 3 Takten // erst nach 3 Takten (~0,75 s) ausblenden: kurze Layoutsprünge sollen kein Flackern auslösen
     ytOffN = 0;
     const box = $("yt"), pw = document.querySelector(".panel").clientWidth - 28;
     // Teil des Panels: Breite nach Stufe, Höhe 16:9, darüber die Kopfzeile wie bei der Systemwache
@@ -174,21 +174,21 @@
     ytSendPosition($("ytBody"));
   }
   setInterval(ytLayout, 250); window.addEventListener("resize", ytLayout);
-  window.jarvis.onYtEmbed?.((d) => { ytOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, yt: ytOn }; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
-  window.jarvis.onYtTitle?.((t) => { $("ytTitle").textContent = t || "YouTube"; });
-  $("ytClose").addEventListener("click", () => window.jarvis.ytEmbed("close"));
+  window.argus.onYtEmbed?.((d) => { ytOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, yt: ytOn }; $("yt").classList.toggle("on", ytOn); ytLast = ""; ytLayout(); });
+  window.argus.onYtTitle?.((t) => { $("ytTitle").textContent = t || "YouTube"; });
+  $("ytClose").addEventListener("click", () => window.argus.ytEmbed("close"));
   let ytVo = false;
   const applyYtVo = () => { $("yt").classList.toggle("vo", ytVo); $("ytVo").setAttribute("aria-pressed", String(ytVo)); ytLast = ""; ytLayout(); };
-  $("ytVo").addEventListener("click", () => { ytVo = !ytVo; applyYtVo(); window.jarvis.setConfig({ ytVideoOnly: ytVo }); });
-  window.jarvis.getConfig?.().then((c) => { ytVo = !!c.ytVideoOnly; applyYtVo(); });
-  const ytResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(ytSize) + d)); ytSize = o[i]; ytLast = ""; ytLayout(); window.jarvis.setConfig({ ytEmbedSize: ytSize }); };
+  $("ytVo").addEventListener("click", () => { ytVo = !ytVo; applyYtVo(); window.argus.setConfig({ ytVideoOnly: ytVo }); });
+  window.argus.getConfig?.().then((c) => { ytVo = !!c.ytVideoOnly; applyYtVo(); });
+  const ytResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(ytSize) + d)); ytSize = o[i]; ytLast = ""; ytLayout(); window.argus.setConfig({ ytEmbedSize: ytSize }); };
   $("ytSmaller").addEventListener("click", () => ytResize(-1)); $("ytBigger").addEventListener("click", () => ytResize(1));
 
   // ---------- Twitch im Panel (wie YouTube) ----------
   let twOn = false, twSize = "m", twLastKey = "", twOffN = 0;
   function twLayout() {
     const box = $("tw");
-    if (!twOn || !expanded || !$("settings").hidden || box.classList.contains("gone") || box.hidden || !box.offsetWidth) { if (twLastKey !== "off" && (!$("settings").hidden || ++twOffN >= 3)) { twLastKey = "off"; window.jarvis.twRect(null); } return; }
+    if (!twOn || !expanded || !$("settings").hidden || box.classList.contains("gone") || box.hidden || !box.offsetWidth) { if (twLastKey !== "off" && (!$("settings").hidden || ++twOffN >= 3)) { twLastKey = "off"; window.argus.twRect(null); } return; }
     twOffN = 0;
     const pw = document.querySelector(".panel").clientWidth - 28;
     const maxH = Math.max(110, Math.min(window.innerHeight * { s: 0.2, m: 0.28, l: 0.38 }[twSize], window.innerHeight - 470));
@@ -201,23 +201,23 @@
     // Gekippte Fenster (Tiefe/Neigung) verändern das gemessene Rechteck laufend: Größe aus der ungekippten Maßen, Mitte aus der Messung, und nur bei Änderung über 3 px neu melden (sonst flackert das Video)
     const b0 = $("twBody"), r0 = b0.getBoundingClientRect(), W0 = b0.offsetWidth, H0 = b0.offsetHeight, r = { x: r0.x + r0.width / 2 - W0 / 2, y: r0.y + r0.height / 2 - H0 / 2, width: W0, height: H0 };
     const pl = twLastKey && twLastKey !== "off" ? twLastKey.split(",").map(Number) : null;
-    if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { twLastKey = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.jarvis.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
+    if (!pl || pl.length !== 4 || Math.abs(pl[0] - r.x) > 3 || Math.abs(pl[1] - r.y) > 3 || Math.abs(pl[2] - r.width) > 3 || Math.abs(pl[3] - r.height) > 3) { twLastKey = [r.x, r.y, r.width, r.height].map(Math.round).join(); window.argus.twRect({ x: r.x, y: r.y, width: r.width, height: r.height }); }
   }
   setInterval(twLayout, 250); window.addEventListener("resize", twLayout);
-  window.jarvis.onTwEmbed?.((d) => { twOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, tw: twOn }; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
-  window.jarvis.onTwTitle?.((t) => { $("twTitle").textContent = t || "Twitch"; });
-  $("twClose").addEventListener("click", () => window.jarvis.twEmbed("close"));
+  window.argus.onTwEmbed?.((d) => { twOn = !!d.on; window.videoEmbed = { ...window.videoEmbed, tw: twOn }; $("tw").classList.toggle("on", twOn); twLastKey = ""; twLayout(); });
+  window.argus.onTwTitle?.((t) => { $("twTitle").textContent = t || "Twitch"; });
+  $("twClose").addEventListener("click", () => window.argus.twEmbed("close"));
   let twVo = false;
   const applyTwVo = () => { $("tw").classList.toggle("vo", twVo); $("twVo").setAttribute("aria-pressed", String(twVo)); twLastKey = ""; twLayout(); };
-  $("twVo").addEventListener("click", () => { twVo = !twVo; applyTwVo(); window.jarvis.setConfig({ twVideoOnly: twVo }); });
-  window.jarvis.getConfig?.().then((c) => { twVo = !!c.twVideoOnly; twSize = c.twEmbedSize || "m"; applyTwVo(); });
-  $("twPop").addEventListener("click", () => window.jarvis.twEmbed("popout"));
-  const twResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(twSize) + d)); twSize = o[i]; twLastKey = ""; twLayout(); window.jarvis.setConfig({ twEmbedSize: twSize }); };
+  $("twVo").addEventListener("click", () => { twVo = !twVo; applyTwVo(); window.argus.setConfig({ twVideoOnly: twVo }); });
+  window.argus.getConfig?.().then((c) => { twVo = !!c.twVideoOnly; twSize = c.twEmbedSize || "m"; applyTwVo(); });
+  $("twPop").addEventListener("click", () => window.argus.twEmbed("popout"));
+  const twResize = (d) => { const o = ["s", "m", "l"], i = Math.max(0, Math.min(2, o.indexOf(twSize) + d)); twSize = o[i]; twLastKey = ""; twLayout(); window.argus.setConfig({ twEmbedSize: twSize }); };
   $("twSmaller").addEventListener("click", () => twResize(-1)); $("twBigger").addEventListener("click", () => twResize(1));
-  $("twBtn").addEventListener("click", () => { if (twOn) window.jarvis.twEmbed("close"); else window.jarvis.openTwitch(""); });
+  $("twBtn").addEventListener("click", () => { if (twOn) window.argus.twEmbed("close"); else window.argus.openTwitch(""); });
   $("setFriendsOn").addEventListener("change", (e) => setFriendsOn(e.target.checked));
-  window.jarvis.getConfig?.().then((c) => { $("setFriendsOn").checked = c.widgets?.friends?.on !== false; });
-  $("setFriendsReset").addEventListener("click", () => { friendsBox = { w: 180, h: 0, scale: 1 }; applyFriendsBox(); window.jarvis.setConfig({ friendsBox }); });
+  window.argus.getConfig?.().then((c) => { $("setFriendsOn").checked = c.widgets?.friends?.on !== false; });
+  $("setFriendsReset").addEventListener("click", () => { friendsBox = { w: 180, h: 0, scale: 1 }; applyFriendsBox(); window.argus.setConfig({ friendsBox }); });
   // ---------- Fensterfarbe ----------
   const WIN_PRESETS = [["Nachtblau", 219, 54, 5], ["Schwarz", 0, 0, 3], ["Graphit", 220, 8, 11], ["Lila", 270, 45, 8], ["Petrol", 190, 50, 7], ["Dunkelgrün", 150, 40, 6], ["Bordeaux", 350, 45, 8], ["Braun", 28, 35, 8]];
   function applyWinColor() {
@@ -226,7 +226,7 @@
     document.querySelectorAll("#winSwatches button").forEach((b) => b.setAttribute("aria-pressed", String(!winColor.follow && +b.dataset.h === winColor.h && +b.dataset.s === winColor.s && +b.dataset.l === winColor.l)));
   }
   function syncWinInputs() { $("setWinFollow").checked = !!winColor.follow; $("setWinH").value = winColor.h; $("setWinS").value = winColor.s; $("setWinL").value = winColor.l; $("setWinH").disabled = !!winColor.follow; applyWinColor(); }
-  const saveWin = () => window.jarvis.setConfig({ winColor });
+  const saveWin = () => window.argus.setConfig({ winColor });
   $("winSwatches").replaceChildren(...WIN_PRESETS.map(([name, h, sat, l]) => {
     const b = document.createElement("button"); b.type = "button"; b.title = name; Object.assign(b.dataset, { h, s: sat, l });
     b.style.background = `hsl(${h} ${sat}% ${Math.max(l + 10, 14)}%)`; b.style.boxShadow = "none"; b.style.outline = "1px solid rgba(255,255,255,0.25)";
@@ -306,12 +306,12 @@
     }
     $("collapseBtn").title = "Klein machen (Esc)"; $("collapseBtn").setAttribute("aria-label", "Klein machen");
   }
-  $("setSteamKey").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.jarvis.setConfig({ steamKey: v }); e.target.value = ""; e.target.placeholder = "gespeichert (leer lassen = unverändert)"; } });
-  $("setSteamId").addEventListener("change", (e) => window.jarvis.setConfig({ steamId: e.target.value.trim() }));
-  $("setDiscord").addEventListener("change", (e) => window.jarvis.setConfig({ discordServers: e.target.value.trim() }));
-  $("setMemory").addEventListener("change", (e) => window.jarvis.setConfig({ memoryOn: e.target.checked }));
-  $("setDesktopLink").addEventListener("change", (e) => window.jarvis.setConfig({ claudeDesktopLink: e.target.checked }));
-  $("setMemOpen").addEventListener("click", () => window.jarvis.openMemory());
+  $("setSteamKey").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.argus.setConfig({ steamKey: v }); e.target.value = ""; e.target.placeholder = "gespeichert (leer lassen = unverändert)"; } });
+  $("setSteamId").addEventListener("change", (e) => window.argus.setConfig({ steamId: e.target.value.trim() }));
+  $("setDiscord").addEventListener("change", (e) => window.argus.setConfig({ discordServers: e.target.value.trim() }));
+  $("setMemory").addEventListener("change", (e) => window.argus.setConfig({ memoryOn: e.target.checked }));
+  $("setDesktopLink").addEventListener("change", (e) => window.argus.setConfig({ claudeDesktopLink: e.target.checked }));
+  $("setMemOpen").addEventListener("click", () => window.argus.openMemory());
 
   // ---------- Selbstverbesserung: Änderung zeigen und auf des Nutzers Okay warten ----------
   function showOffer(o) {
@@ -320,18 +320,18 @@
     $("offerSummary").textContent = o.summary;
     $("offerFiles").replaceChildren(...o.files.map((f) => { const li = document.createElement("li"); li.textContent = `${f.file}: ${f.status}, +${f.added} / −${f.removed} Zeilen`; return li; }));
     $("offer").hidden = false;
-    autoExpanded = false; window.jarvis.setExpanded(true, true);
+    autoExpanded = false; window.argus.setExpanded(true, true);
   }
   const selfSay = (text) => { showTurn("ai", text).dataset.done = "1"; log(text); if (tts.on) speak(text, () => {}); };
-  window.jarvis.onSelfStep?.((t) => { notice(t); log(t); REGIONS[R.ausgabe].bump = 0.5; });
-  window.jarvis.onSelfImprove?.((r) => { notice(""); if (r.offer) showOffer(r.offer); else showOffer(null); selfSay(r.text); });
-  $("offerApply").addEventListener("click", () => window.jarvis.selfApply());
-  $("offerDiscard").addEventListener("click", () => window.jarvis.selfDiscard());
-  window.jarvis.selfOffer?.().then((o) => o && showOffer(o));
-  $("setQuit").addEventListener("click", () => window.jarvis.quit());
+  window.argus.onSelfStep?.((t) => { notice(t); log(t); REGIONS[R.ausgabe].bump = 0.5; });
+  window.argus.onSelfImprove?.((r) => { notice(""); if (r.offer) showOffer(r.offer); else showOffer(null); selfSay(r.text); });
+  $("offerApply").addEventListener("click", () => window.argus.selfApply());
+  $("offerDiscard").addEventListener("click", () => window.argus.selfDiscard());
+  window.argus.selfOffer?.().then((o) => o && showOffer(o));
+  $("setQuit").addEventListener("click", () => window.argus.quit());
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !$("settings").hidden) { $("settings").hidden = true; return; }
-    if (e.key === "Escape" && document.body.classList.contains("maxed")) { window.jarvis.winMode("normal"); return; }
+    if (e.key === "Escape" && document.body.classList.contains("maxed")) { window.argus.winMode("normal"); return; }
     });
   // Ein Klick auf das Fenster nimmt die automatische Verkleinerung zurück
   document.addEventListener("pointerdown", () => { autoExpanded = false; clearTimeout(collapseTimer); });

@@ -22,8 +22,8 @@ app.whenReady().then(async () => {
     const w = await mainWindow(); check("START Hauptfenster", !!w); if (!w) return finish(1);
     await wait(3000);
     const ev = (js) => w.webContents.executeJavaScript(js);
-    await ev("window.__si = []; window.jarvis.onSelfImprove((r) => window.__si.push(r)); true");
-    const act = async (t) => { await ev("window.__si.length = 0; true"); const r = await ev(`window.jarvis.action(${JSON.stringify(t)})`); await wait(500); return { r, si: await ev("window.__si") }; };
+    await ev("window.__si = []; window.argus.onSelfImprove((r) => window.__si.push(r)); true");
+    const act = async (t) => { await ev("window.__si.length = 0; true"); const r = await ev(`window.argus.action(${JSON.stringify(t)})`); await wait(500); return { r, si: await ev("window.__si") }; };
     // U1
     let x = await act("Verbessere dich: zeig die Uhrzeit"); check("U1 improve abgelehnt, kein Ereignis", x.r === DISABLED && x.si.length === 0, x);
     x = await act("Prüf dich auf Fehler"); check("U1 check abgelehnt", x.r === DISABLED && x.si.length === 0, x);
@@ -31,16 +31,16 @@ app.whenReady().then(async () => {
     for (const t of ["Übernehmen", "Mach die letzte Verbesserung rückgängig"]) { x = await act(t); check("U2 " + t, x.r === DISABLED && x.si.length === 1 && x.si[0].ok === false && x.si[0].text === DISABLED, x); }
     check("U2 kein Neustart", calls.relaunch === 0, calls.relaunch);
     // U3
-    await ev("window.__si.length = 0; true"); const ra = await ev("window.jarvis.selfApply()"); await wait(500);
+    await ev("window.__si.length = 0; true"); const ra = await ev("window.argus.selfApply()"); await wait(500);
     const tr = await ev("(document.querySelector('#transcript .turn.ai:last-child')||{}).textContent || ''"), offerHidden = await ev("!!(document.getElementById('offer')||{}).hidden");
     check("U3 self-apply", ra === DISABLED && (await ev("window.__si.length")) === 1 && tr.includes(DISABLED) && offerHidden, { ra, tr, offerHidden });
     // U4
-    await ev("window.__si.length = 0; true"); const rd = await ev("window.jarvis.selfDiscard()"); await wait(500); const siD = await ev("window.__si");
+    await ev("window.__si.length = 0; true"); const rd = await ev("window.argus.selfDiscard()"); await wait(500); const siD = await ev("window.__si");
     const arch = fs.readdirSync(UD).find((n) => n.startsWith("selfimprove-verworfen-") && n !== "selfimprove-verworfen-alt");
     check("U4 self-discard archiviert", typeof rd === "string" && /^Verworfen/.test(rd) && siD.length === 1 && siD[0].ok === true && !!arch && fs.readFileSync(path.join(UD, arch, "x.txt"), "utf8") === "STAGE" && !fs.existsSync(path.join(UD, "selfimprove-stage")), { rd, siD, arch });
     x = await act("Verwerfen"); check("U4 danach normale Eingabe", x.r !== DISABLED && x.si.length === 0, x);
     // U5
-    check("U5 self-offer null", (await ev("window.jarvis.selfOffer()")) === null);
+    check("U5 self-offer null", (await ev("window.argus.selfOffer()")) === null);
     // U6
     x = await act("Merk dir: Testeintrag"); check("U6 Gedächtnis", typeof x.r === "string" && x.r !== DISABLED && fs.existsSync(process.env.JARVIS_MEMORY), x);
     x = await act("Wie spät ist es"); check("U6 normale Eingabe nicht abgefangen", x.r !== DISABLED, x);

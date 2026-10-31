@@ -8,7 +8,7 @@ function portalRender(d) {
   if (d.state === "wait" && !d.total) { const m = document.createElement("div"); m.className = "t-dim"; m.textContent = "Lade Miner …"; b.replaceChildren(m); st.textContent = "lädt"; st.dataset.health = "ok"; return; }
   if (d.state === "login" || (!d.total && d.state !== "ok")) {
     const m = document.createElement("div"); m.className = "t-dim"; m.textContent = d.state === "off" ? "Aus. Einschalten unter Einstellungen → Mining." : (d.err || "Nicht angemeldet.");
-    out.push(m); if (d.state !== "off" && d.state !== "nohost") { const a = document.createElement("button"); a.type = "button"; a.className = "btn"; a.textContent = "Anmelden"; a.addEventListener("click", () => { window.jarvis.portalLogin(); }); out.push(a); }
+    out.push(m); if (d.state !== "off" && d.state !== "nohost") { const a = document.createElement("button"); a.type = "button"; a.className = "btn"; a.textContent = "Anmelden"; a.addEventListener("click", () => { window.argus.portalLogin(); }); out.push(a); }
     st.textContent = d.state === "off" ? "" : d.state === "nohost" ? "Adresse fehlt" : "bitte anmelden"; st.dataset.health = "warn";
   } else {
     out.push(kp("Miner", String(d.total), d.locations ? d.locations + " Standorte" : ""));
@@ -21,12 +21,12 @@ function portalRender(d) {
 }
 async function portalTick() {
   if (!portalOn || Date.now() - portalAt < (portalLast ? 20000 : 4000)) return; portalAt = Date.now();
-  try { portalRender(await window.jarvis.portalData()); } catch {}
+  try { portalRender(await window.argus.portalData()); } catch {}
 }
 setInterval(portalTick, 5000);
-$("setPortalOn").addEventListener("change", (e) => { portalOn = e.target.checked; window.jarvis.setConfig({ portalOn }); portalAt = 0; setTimeout(portalTick, 800); applyPortal(); });
-const portalOpen = async () => { const r = await window.jarvis.portalLogin().catch(() => ({ ok: false, reason: "Fehler" })); const m = $("setPortalMsg"); if (m) m.textContent = r?.ok ? "Portal-Fenster geöffnet. Dort anmelden, es schließt sich danach von selbst." : (r?.reason || "Fenster lässt sich nicht öffnen."); if (r && !r.ok && /Adresse/.test(r.reason || "")) { $("setPortalUrl")?.scrollIntoView?.({ block: "center" }); $("setPortalUrl")?.focus(); } };
+$("setPortalOn").addEventListener("change", (e) => { portalOn = e.target.checked; window.argus.setConfig({ portalOn }); portalAt = 0; setTimeout(portalTick, 800); applyPortal(); });
+const portalOpen = async () => { const r = await window.argus.portalLogin().catch(() => ({ ok: false, reason: "Fehler" })); const m = $("setPortalMsg"); if (m) m.textContent = r?.ok ? "Portal-Fenster geöffnet. Dort anmelden, es schließt sich danach von selbst." : (r?.reason || "Fenster lässt sich nicht öffnen."); if (r && !r.ok && /Adresse/.test(r.reason || "")) { $("setPortalUrl")?.scrollIntoView?.({ block: "center" }); $("setPortalUrl")?.focus(); } };
 $("setPortalLogin").addEventListener("click", portalOpen);
 function applyPortal() { $("portal").hidden = !portalOn; try { applyHidden(); } catch {} }
-$("setPortalUrl").addEventListener("change", (e) => { window.jarvis.setConfig({ portalUrl: e.target.value.trim() }); portalAt = 0; setTimeout(portalTick, 1500); });
-window.jarvis.getConfig().then((c) => { $("setPortalUrl").value = c.portalUrl || ""; portalOn = !!c.portalOn; $("setPortalOn").checked = portalOn; applyPortal(); }).catch(() => {});
+$("setPortalUrl").addEventListener("change", (e) => { window.argus.setConfig({ portalUrl: e.target.value.trim() }); portalAt = 0; setTimeout(portalTick, 1500); });
+window.argus.getConfig().then((c) => { $("setPortalUrl").value = c.portalUrl || ""; portalOn = !!c.portalOn; $("setPortalOn").checked = portalOn; applyPortal(); }).catch(() => {});

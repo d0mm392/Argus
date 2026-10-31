@@ -8,7 +8,7 @@
   };
   $("setReduceAnimations").addEventListener("change", event => {
     applyMotion(event.target.checked);
-    window.jarvis.setConfig({ reduceAnimations: event.target.checked });
+    window.argus.setConfig({ reduceAnimations: event.target.checked });
   });
-  window.jarvis.getConfig().then(config => applyMotion(config.reduceAnimations));
+  window.argus.getConfig().then(config => applyMotion(config.reduceAnimations));
 })();

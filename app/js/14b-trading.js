@@ -23,13 +23,13 @@ function tradeRenderMarket() {
 }
 function tradeRow(x, extra, onClick) {
   const q = tradeData?.q?.[tKey(x)], r = tEl("div", null, "t-row"); r.title = onClick ? "Klick: Position bearbeiten" : "Klick öffnet die Kursseite";
-  r.addEventListener("click", onClick || (() => window.jarvis.openUrl(tradeUrl(x))));
+  r.addEventListener("click", onClick || (() => window.argus.openUrl(tradeUrl(x))));
   const nm = tEl("div", null, "t-name"); nm.append(tEl("b", String(x.s).toUpperCase()), tEl("small", x.t === "c" ? "Krypto" : (q?.name || "Aktie")));
   const pr = tEl("div", null, "t-price"); if (q?.err) pr.append(tEl("b", "–", "t-dim"), tEl("small", q.err)); else if (q) pr.append(tEl("b", tFmt(q.p, q.cur)), tEl("small", tPct(q.ch), tCls(q.ch))); else pr.append(tEl("b", tradeData ? "–" : "…", "t-dim"));
   r.append(nm, tSpark(q?.hist, (q?.ch ?? 0) >= 0) || tEl("span", null, "t-spark"), pr, ...(extra ? [extra] : []));
   return r;
 }
-function tradeRemove(listKey, x) { tradeCfg[listKey] = tradeCfg[listKey].filter((y) => tKey(y) !== tKey(x)); window.jarvis.setConfig(listKey === "watch" ? { tradeWatch: tradeCfg.watch } : { tradePort: tradeCfg.port }); tradeRender(); tradeTick(true); }
+function tradeRemove(listKey, x) { tradeCfg[listKey] = tradeCfg[listKey].filter((y) => tKey(y) !== tKey(x)); window.argus.setConfig(listKey === "watch" ? { tradeWatch: tradeCfg.watch } : { tradePort: tradeCfg.port }); tradeRender(); tradeTick(true); }
 function tradeRenderWatch() {
   const b = $("tWatchBody"); if (!tradeCfg.watch.length) { b.replaceChildren(tEl("div", "Noch nichts auf der Watchlist. Mit „+ Krypto“ oder „+ Aktie“ hinzufügen.", "t-dim")); return; }
   b.replaceChildren(...tradeCfg.watch.map((x) => { const rm = tEl("button", "×", "t-x"); rm.title = "Von der Watchlist entfernen"; rm.addEventListener("click", (e) => { e.stopPropagation(); tradeRemove("watch", x); }); return tradeRow(x, rm); }));
@@ -56,13 +56,13 @@ async function tradeTick(force) {
   if (tradeBusy || !(page === "Trading" || (isCustom(page) && TRADE_IDS.some((id) => !hiddenSet.has(id)))) || !tradeCfg.on) return;
   if (!force && Date.now() - tradeAt < tradeCfg.every * 1000) return;
   tradeBusy = true; tradeAt = Date.now();
-  try { tradeData = await window.jarvis.tradeData(); } catch { tradeData = { ts: Date.now(), q: {}, m: {}, err: "Kurse konnten nicht geladen werden." }; }
+  try { tradeData = await window.argus.tradeData(); } catch { tradeData = { ts: Date.now(), q: {}, m: {}, err: "Kurse konnten nicht geladen werden." }; }
   tradeBusy = false; tradeRender();
 }
 setInterval(() => tradeTick(false), 5000);
 function tradeLoadCfg(c) {
   tradeCfg = { on: c.tradeOn !== false, cur: c.tradeCur === "eur" ? "eur" : "usd", every: [30, 60, 300].includes(c.tradeEvery) ? c.tradeEvery : 60, watch: Array.isArray(c.tradeWatch) ? c.tradeWatch : TRADE_DEFAULT_WATCH.slice(), port: Array.isArray(c.tradePort) ? c.tradePort : [], stock: c.tradeStock === "finnhub" ? "finnhub" : "yahoo" };
-  if (!Array.isArray(c.tradeWatch)) window.jarvis.setConfig({ tradeWatch: tradeCfg.watch });
+  if (!Array.isArray(c.tradeWatch)) window.argus.setConfig({ tradeWatch: tradeCfg.watch });
   const set = (id, v) => { const e = $(id); if (e) { if (e.type === "checkbox") e.checked = !!v; else e.value = v; } };
   set("setTradeOn", tradeCfg.on); set("setTradeCur", tradeCfg.cur); set("setTradeEvery", String(tradeCfg.every)); set("setTradeStock", tradeCfg.stock);
   set("setTradeFng", c.tradeFng !== false); set("setTradeDom", c.tradeDom !== false); set("setTradeHalv", c.tradeHalv !== false);
@@ -86,22 +86,22 @@ function tradeAdd(mode, edit) {
 }
 $("tWatchAddC").addEventListener("click", () => tradeAdd("c")); $("tWatchAddS").addEventListener("click", () => tradeAdd("s")); $("tPortAdd").addEventListener("click", () => tradeAdd("pos"));
 $("tAddCancel").addEventListener("click", () => { $("tAdd").hidden = true; }); $("tAddX").addEventListener("click", () => { $("tAdd").hidden = true; });
-$("tAddDel").addEventListener("click", () => { if (tradeEditKey) { tradeCfg.port = tradeCfg.port.filter((x) => tKey(x) !== tradeEditKey); window.jarvis.setConfig({ tradePort: tradeCfg.port }); } $("tAdd").hidden = true; tradeRender(); tradeTick(true); });
+$("tAddDel").addEventListener("click", () => { if (tradeEditKey) { tradeCfg.port = tradeCfg.port.filter((x) => tKey(x) !== tradeEditKey); window.argus.setConfig({ tradePort: tradeCfg.port }); } $("tAdd").hidden = true; tradeRender(); tradeTick(true); });
 $("tAddForm").addEventListener("submit", (e) => {
   e.preventDefault(); const s = $("tAddSym").value.trim().toUpperCase(), t = $("tAddType").value;
   if (!/^[A-Z0-9.^=\-]{1,20}$/.test(s)) { $("tAddErr").textContent = "Kürzel ungültig (Buchstaben, Ziffern, . ^ = -)."; return; }
   if (tradeAddMode === "pos") {
     const q = parseFloat($("tAddQty").value), c = parseFloat($("tAddCost").value); if (!(q > 0)) { $("tAddErr").textContent = "Bitte eine Menge größer 0 eintragen."; return; }
-    tradeCfg.port = [...tradeCfg.port.filter((x) => tKey(x) !== t + ":" + s && tKey(x) !== tradeEditKey), { s, t, q, c: c > 0 ? c : 0 }].slice(0, 60); window.jarvis.setConfig({ tradePort: tradeCfg.port });
-  } else { if (!tradeCfg.watch.some((x) => tKey(x) === t + ":" + s)) tradeCfg.watch = [...tradeCfg.watch, { s, t }].slice(0, 60); window.jarvis.setConfig({ tradeWatch: tradeCfg.watch }); }
+    tradeCfg.port = [...tradeCfg.port.filter((x) => tKey(x) !== t + ":" + s && tKey(x) !== tradeEditKey), { s, t, q, c: c > 0 ? c : 0 }].slice(0, 60); window.argus.setConfig({ tradePort: tradeCfg.port });
+  } else { if (!tradeCfg.watch.some((x) => tKey(x) === t + ":" + s)) tradeCfg.watch = [...tradeCfg.watch, { s, t }].slice(0, 60); window.argus.setConfig({ tradeWatch: tradeCfg.watch }); }
   $("tAdd").hidden = true; tradeRender(); tradeTick(true);
 });
 $("tAdd").addEventListener("pointerdown", (e) => { if (e.target === $("tAdd")) $("tAdd").hidden = true; });
 $("tAdd").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Escape") $("tAdd").hidden = true; });
 // Einstellungen
 for (const [id, key, conv] of [["setTradeOn", "tradeOn", (e) => e.checked], ["setTradeCur", "tradeCur", (e) => e.value], ["setTradeEvery", "tradeEvery", (e) => +e.value], ["setTradeStock", "tradeStock", (e) => e.value], ["setTradeFng", "tradeFng", (e) => e.checked], ["setTradeDom", "tradeDom", (e) => e.checked], ["setTradeHalv", "tradeHalv", (e) => e.checked]])
-  $(id).addEventListener("change", (e) => { window.jarvis.setConfig({ [key]: conv(e.target) }); tradeCfg.on = $("setTradeOn").checked; tradeCfg.every = +$("setTradeEvery").value; tradeCfg.cur = $("setTradeCur").value; tradeCfg.stock = $("setTradeStock").value; if (key === "tradeOn") { try { applyMiningOn(); } catch {} } tradeAt = 0; tradeData = null; tradeRender(); tradeTick(true); });
-$("setFinnhub").addEventListener("change", (e) => { window.jarvis.setConfig({ finnhubKey: e.target.value.trim() }); e.target.value = ""; try { notice("Finnhub-Schlüssel gespeichert."); } catch {} tradeData = null; tradeTick(true); });
-$("setTradeSave").addEventListener("click", () => { tradeCfg.watch = tradeParse($("setTradeWatch").value, false); tradeCfg.port = tradeParse($("setTradePort").value, true); window.jarvis.setConfig({ tradeWatch: tradeCfg.watch, tradePort: tradeCfg.port }); tradeData = null; tradeRender(); tradeTick(true); try { notice("Listen gespeichert."); } catch {} });
-$("setTradeBots").addEventListener("click", () => window.jarvis.openUrl("https://github.com/topics/trading-bot"));
-window.jarvis.getConfig().then(tradeLoadCfg).catch(() => {});
+  $(id).addEventListener("change", (e) => { window.argus.setConfig({ [key]: conv(e.target) }); tradeCfg.on = $("setTradeOn").checked; tradeCfg.every = +$("setTradeEvery").value; tradeCfg.cur = $("setTradeCur").value; tradeCfg.stock = $("setTradeStock").value; if (key === "tradeOn") { try { applyMiningOn(); } catch {} } tradeAt = 0; tradeData = null; tradeRender(); tradeTick(true); });
+$("setFinnhub").addEventListener("change", (e) => { window.argus.setConfig({ finnhubKey: e.target.value.trim() }); e.target.value = ""; try { notice("Finnhub-Schlüssel gespeichert."); } catch {} tradeData = null; tradeTick(true); });
+$("setTradeSave").addEventListener("click", () => { tradeCfg.watch = tradeParse($("setTradeWatch").value, false); tradeCfg.port = tradeParse($("setTradePort").value, true); window.argus.setConfig({ tradeWatch: tradeCfg.watch, tradePort: tradeCfg.port }); tradeData = null; tradeRender(); tradeTick(true); try { notice("Listen gespeichert."); } catch {} });
+$("setTradeBots").addEventListener("click", () => window.argus.openUrl("https://github.com/topics/trading-bot"));
+window.argus.getConfig().then(tradeLoadCfg).catch(() => {});

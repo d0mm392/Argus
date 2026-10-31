@@ -1,7 +1,7 @@
 "use strict";
   // ---------- Start ----------
   async function init() {
-    const cfg = await window.jarvis.getConfig();
+    const cfg = await window.argus.getConfig();
     WAKE = buildWake(cfg.wakeWords);
     widgets = cfg.widgets || {};
     hiddenApps = new Set(cfg.hiddenApps || []);
@@ -14,7 +14,7 @@
     if (cfg.pillOff) pillOff = { small: { x: 0, y: 0, s: 1, ...cfg.pillOff.small }, big: { x: 0, y: 0, s: 1, ...cfg.pillOff.big } }; applyPill(); applyWinColor(); applyFriendsBox();
     btcCur = cfg.btcCur || "USD"; autoOpen = cfg.autoOpen !== false; if (cfg.market) market = cfg.market;
     opacity = { ...opacity, ...(cfg.opacity || {}) }; applyOpacity();
-    window.jarvis.onNotice?.((t) => { notice(t); log(t); refreshBackend(); });
+    window.argus.onNotice?.((t) => { notice(t); log(t); refreshBackend(); });
     theme = { hue: cfg.themeHue ?? 205, regions: cfg.themeRegions || "bunt" }; applyTheme();
     setTts(cfg.voiceOutput !== false);
     const onVoice = (s) => {
@@ -22,9 +22,9 @@
       if (!s.ready) { notice(s.text); $("capRegion").textContent = s.text; }
       else if (cfg.micOnStart && !voice.on && !voice.userOff) startVoice();
     };
-    window.jarvis.onVoiceStatus(onVoice);
+    window.argus.onVoiceStatus(onVoice);
     alertsVoice = !!cfg.systemAlertsVoice;
-    window.jarvis.onSystem(onSystem);
+    window.argus.onSystem(onSystem);
     onSystem(cfg.system);
     onVoice(cfg.voice);
     await refreshBackend();

@@ -1,7 +1,7 @@
 "use strict";
   // ---------- Einstellungen ----------
   async function openSettingsPanel() {
-    const c = await window.jarvis.getConfig();
+    const c = await window.argus.getConfig();
     window.syncYoutubeAppearance?.(c);
     $("setHue").value = theme.hue; $("setRegions").value = theme.regions;
     $("setTts").checked = tts.on; $("setVoice").value = c.voiceEngine || "jarvis"; $("setVoiceFb").value = c.voiceFallback || "retry"; $("setDonate").value = c.donateUrl || "";
@@ -39,28 +39,28 @@
   $("settingsBtn").addEventListener("click", () => { if (!$("settings").hidden) { $("settings").hidden = true; return; } openSettingsPanel(); });
   // Aussparung frei platzieren: gestrichelter Rahmen, ziehen und skalieren, „Fertig“ schneidet das Loch ins Fenster
   async function holePlace() {
-    const box = $("holeBox"), c = await window.jarvis.getConfig();
+    const box = $("holeBox"), c = await window.argus.getConfig();
     const W = innerWidth, H = innerHeight, w = Math.min(W - 40, c.holeW || 360), h = Math.min(H - 40, c.holeH || 260), cor = c.holeCorner || "br";
     let x = Number.isFinite(c.holeX) ? c.holeX : cor.endsWith("r") ? W - w : 0, y = Number.isFinite(c.holeY) ? c.holeY : cor.startsWith("b") ? H - h : 0, bw = w, bh = h;
     const put = () => { x = Math.max(0, Math.min(W - bw, x)); y = Math.max(0, Math.min(H - bh, y)); box.style.cssText = `left:${x}px;top:${y}px;width:${bw}px;height:${bh}px`; };
     put(); box.hidden = false; $("settings").hidden = true;
-    window.jarvis.setConfig({ holeOn: true, holeEdit: true });
+    window.argus.setConfig({ holeOn: true, holeEdit: true });
     let drag = null;
     const down = (e, mode) => { e.preventDefault(); e.stopPropagation(); drag = { mode, sx: e.clientX, sy: e.clientY, x, y, bw, bh }; box.setPointerCapture(e.pointerId); };
     box.onpointerdown = (e) => { if (e.target.closest("button")) return; down(e, e.target.id === "holeGrip" ? "size" : "move"); };
     box.onpointermove = (e) => { if (!drag) return; const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
       if (drag.mode === "move") { x = drag.x + dx; y = drag.y + dy; } else { bw = Math.max(120, Math.min(W - x, drag.bw + dx)); bh = Math.max(100, Math.min(H - y, drag.bh + dy)); } put(); };
     box.onpointerup = () => { drag = null; };
-    $("holeDone").onclick = () => { box.hidden = true; window.jarvis.setConfig({ holeX: Math.round(x), holeY: Math.round(y), holeW: Math.round(bw), holeH: Math.round(bh), holeEdit: false, holeOn: true }); $("setHoleOn").checked = true; };
+    $("holeDone").onclick = () => { box.hidden = true; window.argus.setConfig({ holeX: Math.round(x), holeY: Math.round(y), holeW: Math.round(bw), holeH: Math.round(bh), holeEdit: false, holeOn: true }); $("setHoleOn").checked = true; };
   }
   // Solange die Einstellungen offen sind, bleibt das Fenster ganz (sonst verdeckt die Aussparung Bedienelemente)
-  new MutationObserver(() => { if ($("holeBox").hidden) window.jarvis.setConfig({ holeEdit: !$("settings").hidden }); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
+  new MutationObserver(() => { if ($("holeBox").hidden) window.argus.setConfig({ holeEdit: !$("settings").hidden }); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
   $("setClose").addEventListener("click", () => { $("settings").hidden = true; });
-  $("setTts").addEventListener("change", (e) => { setTts(e.target.checked); window.jarvis.setConfig({ voiceOutput: e.target.checked }); });
-  $("setVoiceFb").addEventListener("change", (e) => window.jarvis.setConfig({ voiceFallback: e.target.value }));
-  $("setVoice").addEventListener("change", (e) => window.jarvis.setConfig({ voiceEngine: e.target.value }));
+  $("setTts").addEventListener("change", (e) => { setTts(e.target.checked); window.argus.setConfig({ voiceOutput: e.target.checked }); });
+  $("setVoiceFb").addEventListener("change", (e) => window.argus.setConfig({ voiceFallback: e.target.value }));
+  $("setVoice").addEventListener("change", (e) => window.argus.setConfig({ voiceEngine: e.target.value }));
   $("setVoiceTest").addEventListener("click", () => speak("Hallo" + (userName ? " " + userName : "") + ". So klinge ich jetzt. Alle Systeme laufen.", () => {}));
-  $("setMic").addEventListener("change", (e) => window.jarvis.setConfig({ micOnStart: e.target.checked }));
+  $("setMic").addEventListener("change", (e) => window.argus.setConfig({ micOnStart: e.target.checked }));
   // Mikrofon und Lautsprecher wählen (leer = Windows-Standard)
   async function fillDevices() {
     let list = []; try { list = await navigator.mediaDevices.enumerateDevices(); } catch {}
@@ -71,28 +71,28 @@
     };
     fill($("setMicDev"), "audioinput", micId, "Windows-Standard"); fill($("setSpkDev"), "audiooutput", spkId, "Windows-Standard");
   }
-  $("setMicDev").addEventListener("change", async (e) => { micId = e.target.value; await window.jarvis.setConfig({ micId }); if (voice.on) { stopVoice(); setTimeout(startVoice, 400); } });
-  $("setSpkDev").addEventListener("change", async (e) => { spkId = e.target.value; await window.jarvis.setConfig({ spkId }); applySink(); });
-  $("setBallLabels").addEventListener("change", (e) => { ballLabels = e.target.value; window.jarvis.setConfig({ ballLabels }); });
-  $("setBgShoot").addEventListener("change", (e) => { bgShoot = +e.target.value; window.jarvis.setConfig({ bgShoot }); });
-  $("setFriendsSplit").addEventListener("change", (e) => { friendsSplit = e.target.checked; friendsSig = ""; window.jarvis.setConfig({ friendsSplit }); buildFriends(); });
-  $("setFriendsStill").addEventListener("change", (e) => { friendsStill = e.target.checked; window.jarvis.setConfig({ friendsStill }); });
-  { const hs = (k, v) => window.jarvis.setConfig({ [k]: v });
+  $("setMicDev").addEventListener("change", async (e) => { micId = e.target.value; await window.argus.setConfig({ micId }); if (voice.on) { stopVoice(); setTimeout(startVoice, 400); } });
+  $("setSpkDev").addEventListener("change", async (e) => { spkId = e.target.value; await window.argus.setConfig({ spkId }); applySink(); });
+  $("setBallLabels").addEventListener("change", (e) => { ballLabels = e.target.value; window.argus.setConfig({ ballLabels }); });
+  $("setBgShoot").addEventListener("change", (e) => { bgShoot = +e.target.value; window.argus.setConfig({ bgShoot }); });
+  $("setFriendsSplit").addEventListener("change", (e) => { friendsSplit = e.target.checked; friendsSig = ""; window.argus.setConfig({ friendsSplit }); buildFriends(); });
+  $("setFriendsStill").addEventListener("change", (e) => { friendsStill = e.target.checked; window.argus.setConfig({ friendsStill }); });
+  { const hs = (k, v) => window.argus.setConfig({ [k]: v });
     $("setHoleOn").addEventListener("change", (e) => hs("holeOn", e.target.checked));
     const hIds = ["setHoleTL", "setHoleTR", "setHoleBR", "setHoleBL"], hRad = () => hIds.map((id) => +$(id).value), hBox = () => { $("holeBox").style.borderRadius = hRad().map((v) => v + "px").join(" "); };
     $("setHoleRound").addEventListener("input", (e) => { for (const id of hIds) $(id).value = e.target.value; hBox(); hs("holeRound", +e.target.value); hs("holeRadii", hRad()); });
     for (const id of hIds) $(id).addEventListener("input", () => { hBox(); hs("holeRadii", hRad()); });
     $("setHolePlace").addEventListener("click", () => holePlace()); }
-  $("setDcJoin").addEventListener("change", (e) => { dcJoinBot = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcJoinBot }); });
-  $("setFriendsHold").addEventListener("change", (e) => { friendsHold = +e.target.value; window.jarvis.setConfig({ friendsHold }); });
-  for (const [id, k] of [["setScaleAi", "ai"], ["setScaleStrata", "strata"]]) $(id).addEventListener("input", (e) => { const v = +e.target.value; if (Math.abs(v - 1) < 0.03) delete scales[k]; else scales[k] = v; clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ scales }), 400); });
-  window.jarvis.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; $("setHoleRound").value = c.holeRound ?? 16; { const rd = Array.isArray(c.holeRadii) ? c.holeRadii : [0, 1, 2, 3].map(() => c.holeRound ?? 16); ["setHoleTL", "setHoleTR", "setHoleBR", "setHoleBL"].forEach((id, i) => { $(id).value = rd[i] ?? 16; }); $("holeBox").style.borderRadius = [0, 1, 2, 3].map((i) => (rd[i] ?? 16) + "px").join(" "); } dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
+  $("setDcJoin").addEventListener("change", (e) => { dcJoinBot = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ dcJoinBot }); });
+  $("setFriendsHold").addEventListener("change", (e) => { friendsHold = +e.target.value; window.argus.setConfig({ friendsHold }); });
+  for (const [id, k] of [["setScaleAi", "ai"], ["setScaleStrata", "strata"]]) $(id).addEventListener("input", (e) => { const v = +e.target.value; if (Math.abs(v - 1) < 0.03) delete scales[k]; else scales[k] = v; clearTimeout(scaleSave); scaleSave = setTimeout(() => window.argus.setConfig({ scales }), 400); });
+  window.argus.getConfig?.().then((c) => { ballLabels = c.ballLabels || "aktiv"; bgShoot = c.bgShoot ?? 1; friendsSplit = !!c.friendsSplit; friendsHold = c.friendsHold ?? 3; friendsStill = c.friendsStill !== false; $("setFriendsStill").checked = friendsStill; $("setHoleOn").checked = !!c.holeOn; $("setHoleRound").value = c.holeRound ?? 16; { const rd = Array.isArray(c.holeRadii) ? c.holeRadii : [0, 1, 2, 3].map(() => c.holeRound ?? 16); ["setHoleTL", "setHoleTR", "setHoleBR", "setHoleBL"].forEach((id, i) => { $(id).value = rd[i] ?? 16; }); $("holeBox").style.borderRadius = [0, 1, 2, 3].map((i) => (rd[i] ?? 16) + "px").join(" "); } dcJoinBot = c.dcJoinBot !== false; micId = c.micId || ""; spkId = c.spkId || ""; friendsSig = ""; });
   $("setWake").addEventListener("change", (e) => {
     const words = e.target.value.split(",").map((w) => w.trim().toLowerCase()).filter(Boolean);
-    if (words.length) { WAKE = buildWake(words); window.jarvis.setConfig({ wakeWords: words }); }
+    if (words.length) { WAKE = buildWake(words); window.argus.setConfig({ wakeWords: words }); }
   });
-  for (const [id, k] of [["setNotifyPanel", "notifyPanel"], ["setNotifyWin", "notifyWin"], ["setNotifySound", "notifySound"], ["setOceanNotify", "oceanNotify"], ["setPayoutNotify", "payoutNotify"]]) $(id).addEventListener("change", (e) => window.jarvis.setConfig({ [k]: e.target.checked }));
-  window.jarvis.getConfig?.().then((c) => { for (const [id, k] of [["setNotifyPanel", "notifyPanel"], ["setNotifyWin", "notifyWin"], ["setNotifySound", "notifySound"], ["setOceanNotify", "oceanNotify"], ["setPayoutNotify", "payoutNotify"]]) $(id).checked = c[k] !== false; });
+  for (const [id, k] of [["setNotifyPanel", "notifyPanel"], ["setNotifyWin", "notifyWin"], ["setNotifySound", "notifySound"], ["setOceanNotify", "oceanNotify"], ["setPayoutNotify", "payoutNotify"]]) $(id).addEventListener("change", (e) => window.argus.setConfig({ [k]: e.target.checked }));
+  window.argus.getConfig?.().then((c) => { for (const [id, k] of [["setNotifyPanel", "notifyPanel"], ["setNotifyWin", "notifyWin"], ["setNotifySound", "notifySound"], ["setOceanNotify", "oceanNotify"], ["setPayoutNotify", "payoutNotify"]]) $(id).checked = c[k] !== false; });
   // ---------- Täglicher Miner-Report ----------
   let rpText = "";
   function showReport(r) {
@@ -113,23 +113,23 @@
       body.append(tr); lines.push(`${f.name}: ${na ? offTxt : `typisch ${f.median}/${f.total} online (Spanne ${cells[3]})`}, Uptime ${cells[5]}, Verbrauch ${cells[6]}${names ? "\n  " + names.replace(/\n/g, "\n  ") : ""}`);
     }
     tb.append(body); $("rpBody").replaceChildren(tb); rpText = lines.join("\n");
-    window.jarvis.reportDays?.().then((ds) => { $("rpDay").replaceChildren(...ds.slice().reverse().map((k) => new Option(k.split("-").reverse().join("."), k))); $("rpDay").value = r.day; });
+    window.argus.reportDays?.().then((ds) => { $("rpDay").replaceChildren(...ds.slice().reverse().map((k) => new Option(k.split("-").reverse().join("."), k))); $("rpDay").value = r.day; });
     $("reportPop").hidden = false;
   }
   $("rpClose").addEventListener("click", () => { $("reportPop").hidden = true; const p = $("reportPop"); p.style.left = p.style.top = p.style.transform = ""; });
   $("rpCopy").addEventListener("click", () => { navigator.clipboard?.writeText(rpText); });
-  $("rpDay").addEventListener("change", (e) => window.jarvis.reportGet(e.target.value).then(showReport));
-  window.jarvis.onDailyReport?.((r) => { if (!expanded) window.jarvis.toggleExpanded?.(); showReport(r); });
+  $("rpDay").addEventListener("change", (e) => window.argus.reportGet(e.target.value).then(showReport));
+  window.argus.onDailyReport?.((r) => { if (!expanded) window.argus.toggleExpanded?.(); showReport(r); });
   // Report von gestern per Knopf (Datum rollt mit), älterer Tag per Auswahl; beides schließt die Einstellungen, damit das Fenster sichtbar ist
   const dayLbl = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }); };
   const keyOf = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   async function reportBtns() {
-    const yk = keyOf(Date.now() - 864e5), ds = (await window.jarvis.reportDays?.().catch(() => [])) || [];
+    const yk = keyOf(Date.now() - 864e5), ds = (await window.argus.reportDays?.().catch(() => [])) || [];
     $("setReportShow").textContent = "Report von gestern öffnen (" + dayLbl(yk) + ")";
     $("setReportDay").replaceChildren(new Option("Anderer Tag …", ""), ...ds.filter((k) => k !== yk).slice().reverse().map((k) => new Option(dayLbl(k), k)));
     $("setReportDay").hidden = ds.filter((k) => k !== yk).length === 0;
   }
-  const openReportDay = (k) => window.jarvis.reportGet(k).then(showReport);
+  const openReportDay = (k) => window.argus.reportGet(k).then(showReport);
   $("setReportShow").addEventListener("click", () => openReportDay(keyOf(Date.now() - 864e5)));
   $("setReportDay").addEventListener("change", (e) => { if (e.target.value) openReportDay(e.target.value); e.target.value = ""; });
   new MutationObserver(() => { if (!$("settings").hidden) reportBtns(); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
@@ -139,55 +139,55 @@
     for (const h of [$("rpTitle"), $("rpSub")]) { h.style.cursor = "move"; h.addEventListener("pointerdown", grab);
       h.addEventListener("pointermove", (e) => { if (!dr) return; pop.style.left = Math.max(0, Math.min(innerWidth - 80, e.clientX - dr.dx)) + "px"; pop.style.top = Math.max(0, Math.min(innerHeight - 40, e.clientY - dr.dy)) + "px"; });
       h.addEventListener("pointerup", () => { dr = null; }); } }
-  $("setReportOn").addEventListener("change", (e) => window.jarvis.setConfig({ reportOn: e.target.checked }));
-  $("setReportNotify").addEventListener("change", (e) => window.jarvis.setConfig({ reportNotify: e.target.checked }));
-  $("setReportHour").addEventListener("change", (e) => window.jarvis.setConfig({ reportHour: +e.target.value }));
-  $("setReportKeep").addEventListener("change", (e) => window.jarvis.setConfig({ reportKeep: +e.target.value }));
-  window.jarvis.getConfig?.().then((c) => { $("setReportOn").checked = c.reportOn !== false; $("setReportNotify").checked = c.reportNotify !== false; $("setReportHour").value = String(c.reportHour ?? 8); $("setReportKeep").value = String(c.reportKeep ?? 14); });
-  $("setFpsIdle").addEventListener("change", (e) => { fpsIdle = +e.target.value; window.jarvis.setConfig({ fpsIdle }); });
-  $("setFpsMax").addEventListener("change", (e) => { fpsMax = +e.target.value; window.jarvis.setConfig({ fpsMax }); });
-  window.jarvis.getConfig?.().then((c) => { fpsIdle = c.fpsIdle || 30; fpsMax = c.fpsMax || 60; $("setFpsIdle").value = String(fpsIdle); $("setFpsMax").value = String(fpsMax); });
+  $("setReportOn").addEventListener("change", (e) => window.argus.setConfig({ reportOn: e.target.checked }));
+  $("setReportNotify").addEventListener("change", (e) => window.argus.setConfig({ reportNotify: e.target.checked }));
+  $("setReportHour").addEventListener("change", (e) => window.argus.setConfig({ reportHour: +e.target.value }));
+  $("setReportKeep").addEventListener("change", (e) => window.argus.setConfig({ reportKeep: +e.target.value }));
+  window.argus.getConfig?.().then((c) => { $("setReportOn").checked = c.reportOn !== false; $("setReportNotify").checked = c.reportNotify !== false; $("setReportHour").value = String(c.reportHour ?? 8); $("setReportKeep").value = String(c.reportKeep ?? 14); });
+  $("setFpsIdle").addEventListener("change", (e) => { fpsIdle = +e.target.value; window.argus.setConfig({ fpsIdle }); });
+  $("setFpsMax").addEventListener("change", (e) => { fpsMax = +e.target.value; window.argus.setConfig({ fpsMax }); });
+  window.argus.getConfig?.().then((c) => { fpsIdle = c.fpsIdle || 30; fpsMax = c.fpsMax || 60; $("setFpsIdle").value = String(fpsIdle); $("setFpsMax").value = String(fpsMax); });
   const applyBar = (m) => { document.body.classList.remove("bar-kompakt", "bar-schwebend"); if (m === "kompakt" || m === "schwebend") document.body.classList.add("bar-" + m); };
-  $("setBarMode").addEventListener("change", (e) => { applyBar(e.target.value); window.jarvis.setConfig({ barMode: e.target.value }); });
-  window.jarvis.getConfig?.().then((c) => { $("setBarMode").value = c.barMode || "normal"; applyBar(c.barMode); });
+  $("setBarMode").addEventListener("change", (e) => { applyBar(e.target.value); window.argus.setConfig({ barMode: e.target.value }); });
+  window.argus.getConfig?.().then((c) => { $("setBarMode").value = c.barMode || "normal"; applyBar(c.barMode); });
   // schwebende Leiste: in den oberen 44 px einblenden
   addEventListener("mousemove", (e) => { if (document.body.classList.contains("bar-schwebend")) document.querySelector(".bar").classList.toggle("near", e.clientY < 44); }, { passive: true });
-  $("setAiShare").addEventListener("change", (e) => window.jarvis.setConfig({ aiShare: e.target.value }));
-  $("setClaudeAsk").addEventListener("change", (e) => window.jarvis.setConfig({ claudeAsk: e.target.checked }));
+  $("setAiShare").addEventListener("change", (e) => window.argus.setConfig({ aiShare: e.target.value }));
+  $("setClaudeAsk").addEventListener("change", (e) => window.argus.setConfig({ claudeAsk: e.target.checked }));
   const aiExtUi = (b) => document.querySelectorAll(".ai-ext").forEach((el) => { el.hidden = b !== "openai"; });
-  $("setBackend").addEventListener("change", (e) => { aiExtUi(e.target.value); window.jarvis.setConfig({ backend: e.target.value }).then(refreshBackend); });
-  $("setAiProv").addEventListener("change", (e) => window.jarvis.setConfig({ aiProv: e.target.value }).then(refreshBackend));
-  $("setAiModel").addEventListener("change", (e) => window.jarvis.setConfig({ aiModel: e.target.value.trim() }).then(refreshBackend));
-  $("setAiBase").addEventListener("change", (e) => window.jarvis.setConfig({ aiBase: e.target.value.trim() }).then(refreshBackend));
-  $("setAiKey").addEventListener("change", (e) => { if (e.target.value.trim()) window.jarvis.setConfig({ aiKey: e.target.value.trim() }).then(() => { e.target.value = ""; refreshBackend(); }); });
-  window.jarvis.getConfig?.().then((c) => { $("setAiProv").value = c.aiProv || "openai"; $("setAiModel").value = c.aiModel || ""; $("setAiBase").value = c.aiBase || ""; $("setAiKey").placeholder = c.hasAiKey ? "gespeichert (leer lassen = unverändert)" : "Key des Anbieters"; aiExtUi(c.backend); });
-  $("setGpu").addEventListener("change", (e) => window.jarvis.setConfig({ gpuUse: e.target.value }));
-  $("setCcModel").addEventListener("change", (e) => window.jarvis.setConfig({ claudeCodeModel: e.target.value }).then(refreshBackend));
-  $("setModel").addEventListener("change", (e) => window.jarvis.setConfig({ ollamaModel: e.target.value.trim() }));
-  $("setKey").addEventListener("change", (e) => { if (e.target.value.trim()) window.jarvis.setConfig({ anthropicApiKey: e.target.value.trim() }).then(refreshBackend); });
-  $("setAlerts").addEventListener("change", (e) => { alertsVoice = e.target.checked; window.jarvis.setConfig({ systemAlertsVoice: e.target.checked }); });
-  $("setAuto").addEventListener("change", (e) => window.jarvis.setConfig({ autostart: e.target.checked }));
-  $("setFile").addEventListener("click", () => window.jarvis.openSettings());
-  $("setChangelog").addEventListener("click", () => window.jarvis.openChangelog());
+  $("setBackend").addEventListener("change", (e) => { aiExtUi(e.target.value); window.argus.setConfig({ backend: e.target.value }).then(refreshBackend); });
+  $("setAiProv").addEventListener("change", (e) => window.argus.setConfig({ aiProv: e.target.value }).then(refreshBackend));
+  $("setAiModel").addEventListener("change", (e) => window.argus.setConfig({ aiModel: e.target.value.trim() }).then(refreshBackend));
+  $("setAiBase").addEventListener("change", (e) => window.argus.setConfig({ aiBase: e.target.value.trim() }).then(refreshBackend));
+  $("setAiKey").addEventListener("change", (e) => { if (e.target.value.trim()) window.argus.setConfig({ aiKey: e.target.value.trim() }).then(() => { e.target.value = ""; refreshBackend(); }); });
+  window.argus.getConfig?.().then((c) => { $("setAiProv").value = c.aiProv || "openai"; $("setAiModel").value = c.aiModel || ""; $("setAiBase").value = c.aiBase || ""; $("setAiKey").placeholder = c.hasAiKey ? "gespeichert (leer lassen = unverändert)" : "Key des Anbieters"; aiExtUi(c.backend); });
+  $("setGpu").addEventListener("change", (e) => window.argus.setConfig({ gpuUse: e.target.value }));
+  $("setCcModel").addEventListener("change", (e) => window.argus.setConfig({ claudeCodeModel: e.target.value }).then(refreshBackend));
+  $("setModel").addEventListener("change", (e) => window.argus.setConfig({ ollamaModel: e.target.value.trim() }));
+  $("setKey").addEventListener("change", (e) => { if (e.target.value.trim()) window.argus.setConfig({ anthropicApiKey: e.target.value.trim() }).then(refreshBackend); });
+  $("setAlerts").addEventListener("change", (e) => { alertsVoice = e.target.checked; window.argus.setConfig({ systemAlertsVoice: e.target.checked }); });
+  $("setAuto").addEventListener("change", (e) => window.argus.setConfig({ autostart: e.target.checked }));
+  $("setFile").addEventListener("click", () => window.argus.openSettings());
+  $("setChangelog").addEventListener("click", () => window.argus.openChangelog());
   let newsCats = {};
-  $("setNews").addEventListener("change", (e) => window.jarvis.setConfig({ newsOn: e.target.checked }));
-  $("setNewsTop").addEventListener("change", (e) => window.jarvis.setConfig({ newsOnTop: e.target.checked }));
-  $("setDockFx").addEventListener("change", (e) => window.jarvis.setConfig({ dockFx: e.target.checked }));
+  $("setNews").addEventListener("change", (e) => window.argus.setConfig({ newsOn: e.target.checked }));
+  $("setNewsTop").addEventListener("change", (e) => window.argus.setConfig({ newsOnTop: e.target.checked }));
+  $("setDockFx").addEventListener("change", (e) => window.argus.setConfig({ dockFx: e.target.checked }));
   $("setCoins").replaceChildren(...ALT_COINS.map((sym) => { const l = document.createElement("label"), c = document.createElement("input"); c.type = "checkbox"; c.value = sym; l.append(c, sym); return l; }));
-  $("setCoins").addEventListener("change", () => { coinSel = ["BTC", ...[...$("setCoins").querySelectorAll("input:checked")].map((c) => c.value)]; temps.forEach((t) => { t.val = undefined; }); window.jarvis.setConfig({ coins: coinSel }); });
-  window.jarvis.getConfig?.().then((c) => { coinSel = Array.isArray(c.coins) ? c.coins : ["BTC"]; for (const i of $("setCoins").querySelectorAll("input")) i.checked = coinSel.includes(i.value); });
-  $("setCur").addEventListener("change", (e) => { btcCur = e.target.value; temps.forEach((t) => { t.val = undefined; }); window.jarvis.setConfig({ btcCur }); });
-  for (const cb of document.querySelectorAll("[data-cat]")) cb.addEventListener("change", () => { newsCats[cb.dataset.cat] = cb.checked; window.jarvis.setConfig({ newsCats: { ...newsCats } }); });
-  for (const cb of document.querySelectorAll("[data-viz]")) cb.addEventListener("change", () => { viz = { ...viz, [cb.dataset.viz]: cb.checked }; window.jarvis.setConfig({ viz }); });
-  $("setMicFloat").addEventListener("change", (e) => { micFloatOn = e.target.checked; window.jarvis.setConfig({ micFloat: micFloatOn }); });
-  $("setSway").addEventListener("change", (e) => { swayMul = { schweben: 1, leicht: 0.4, fest: 0 }[e.target.value] ?? 1; window.jarvis.setConfig({ sway: e.target.value }); });
+  $("setCoins").addEventListener("change", () => { coinSel = ["BTC", ...[...$("setCoins").querySelectorAll("input:checked")].map((c) => c.value)]; temps.forEach((t) => { t.val = undefined; }); window.argus.setConfig({ coins: coinSel }); });
+  window.argus.getConfig?.().then((c) => { coinSel = Array.isArray(c.coins) ? c.coins : ["BTC"]; for (const i of $("setCoins").querySelectorAll("input")) i.checked = coinSel.includes(i.value); });
+  $("setCur").addEventListener("change", (e) => { btcCur = e.target.value; temps.forEach((t) => { t.val = undefined; }); window.argus.setConfig({ btcCur }); });
+  for (const cb of document.querySelectorAll("[data-cat]")) cb.addEventListener("change", () => { newsCats[cb.dataset.cat] = cb.checked; window.argus.setConfig({ newsCats: { ...newsCats } }); });
+  for (const cb of document.querySelectorAll("[data-viz]")) cb.addEventListener("change", () => { viz = { ...viz, [cb.dataset.viz]: cb.checked }; window.argus.setConfig({ viz }); });
+  $("setMicFloat").addEventListener("change", (e) => { micFloatOn = e.target.checked; window.argus.setConfig({ micFloat: micFloatOn }); });
+  $("setSway").addEventListener("change", (e) => { swayMul = { schweben: 1, leicht: 0.4, fest: 0 }[e.target.value] ?? 1; window.argus.setConfig({ sway: e.target.value }); });
   // Hinweis unter den Messbalken, wenn Temperaturen fehlen; Klick richtet die Messung ein
   let lastSys = null, procsAll = false; try { procsAll = localStorage.getItem("jarvisProcsAll") === "1"; } catch {}
   function renderSysHint(sys) {
     let hint = $("sysHint");
     if (!hint) {
       hint = document.createElement("div"); hint.id = "sysHint"; hint.className = "sys-hint"; $("meters").after(hint);
-      hint.addEventListener("click", () => { if (sensState !== "laeuft" && sensState !== "einrichten") window.jarvis.sensorSetup(); });
+      hint.addEventListener("click", () => { if (sensState !== "laeuft" && sensState !== "einrichten") window.argus.sensorSetup(); });
     }
     const miss = sys.temp == null || sys.gpuTemp == null, what = sys.temp == null && sys.gpuTemp == null ? "CPU-/GPU" : sys.temp == null ? "CPU" : "GPU";
     hint.style.cursor = miss && sensState !== "laeuft" && sensState !== "einrichten" ? "pointer" : "";
@@ -205,10 +205,10 @@
     $("setSensSetup").hidden = sensState === "laeuft" || sensState === "einrichten";
     lastSys && renderSysHint(lastSys);
   }
-  window.jarvis.onSensorStatus?.(showSens);
-  window.jarvis.sensorStatus?.().then(showSens);
-  $("setSensSetup").addEventListener("click", () => window.jarvis.sensorSetup());
-  $("setSensors").addEventListener("change", (e) => window.jarvis.setConfig({ sensors: e.target.checked }));
+  window.argus.onSensorStatus?.(showSens);
+  window.argus.sensorStatus?.().then(showSens);
+  $("setSensSetup").addEventListener("click", () => window.argus.sensorSetup());
+  $("setSensors").addEventListener("change", (e) => window.argus.setConfig({ sensors: e.target.checked }));
   let updPoll = null;
   // Der Knopf zeigt, was wirklich passiert: „Suche …“ nur beim Suchen, „Lädt … 42 %“ sobald ein Download läuft
   function syncUpdBtn(u) {
@@ -224,31 +224,31 @@
     }, 700);
   }
   async function refreshUpd(check) {
-    const u = await (check ? window.jarvis.updateCheck() : window.jarvis.updateStatus());
+    const u = await (check ? window.argus.updateCheck() : window.argus.updateStatus());
     $("updNote").textContent = "Version " + u.version + (u.text ? ". " + u.text.replace(/\.$/, "") + "." : ".");
     $("setUpdInstall").hidden = !u.ready;
     if (!check) { if (syncUpdBtn(u) && !updPoll) watchUpd(60000); return u; }
     syncUpdBtn({ text: "Suche" }); watchUpd(60000);
   }
-  $("setUpdChannel").addEventListener("change", (e) => { window.jarvis.setConfig({ updateChannel: e.target.value }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
-  $("setUpdUrl").addEventListener("change", (e) => { window.jarvis.setConfig({ updateUrl: e.target.value.trim() }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
+  $("setUpdChannel").addEventListener("change", (e) => { window.argus.setConfig({ updateChannel: e.target.value }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
+  $("setUpdUrl").addEventListener("change", (e) => { window.argus.setConfig({ updateUrl: e.target.value.trim() }).then(() => setTimeout(() => refreshUpd(false), 3000)); });
   $("setUpdCheck").addEventListener("click", () => refreshUpd(true));
   new MutationObserver(() => { if (!$("settings").hidden) refreshUpd(false); }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
-  $("setUpdInstall").addEventListener("click", () => window.jarvis.updateInstall());
-  $("setPinsReset").addEventListener("click", () => { pins = {}; scales = {}; window.jarvis.setConfig({ pins, scales }); });
-  $("setTaskbarFront").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarFront: e.target.checked }));
-  $("setTaskbarShow").addEventListener("change", (e) => window.jarvis.setConfig({ taskbarShow: e.target.value }));
-  $("setAfterHide").addEventListener("change", (e) => window.jarvis.setConfig({ afterHide: e.target.value }));
-  $("setOnTop").addEventListener("change", (e) => window.jarvis.setConfig({ onTop: e.target.value }));
-  $("setWakeFront").addEventListener("change", (e) => window.jarvis.setConfig({ wakeFront: e.target.checked }));
-  $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.jarvis.setConfig({ autoOpen }); });
-  $("setSteamOn").addEventListener("change", (e) => window.jarvis.setConfig({ steamOn: e.target.checked }));
-  $("setDiscordOn").addEventListener("change", (e) => window.jarvis.setConfig({ discordOn: e.target.checked }));
-  $("setDcMarked").addEventListener("change", (e) => { dcOnlyMarked = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcOnlyMarked }); });
-  $("setDcOnline").addEventListener("change", (e) => { dcAlsoOnline = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordAlsoOnline: dcAlsoOnline }); });
-  $("setDcVoice").addEventListener("change", (e) => { dcVoiceOnly = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordVoiceOnly: dcVoiceOnly }); });
-  $("setDcName").addEventListener("change", (e) => { myDc = normDc(e.target.value); friendsSig = ""; buildFriends(); window.jarvis.setConfig({ discordName: e.target.value.trim(), discordAuto: false }); });
-  window.jarvis.onDiscordSelf?.((me) => { myDc = normDc(me.name); $("setDcName").value = me.name; friendsSig = ""; buildFriends(); });
+  $("setUpdInstall").addEventListener("click", () => window.argus.updateInstall());
+  $("setPinsReset").addEventListener("click", () => { pins = {}; scales = {}; window.argus.setConfig({ pins, scales }); });
+  $("setTaskbarFront").addEventListener("change", (e) => window.argus.setConfig({ taskbarFront: e.target.checked }));
+  $("setTaskbarShow").addEventListener("change", (e) => window.argus.setConfig({ taskbarShow: e.target.value }));
+  $("setAfterHide").addEventListener("change", (e) => window.argus.setConfig({ afterHide: e.target.value }));
+  $("setOnTop").addEventListener("change", (e) => window.argus.setConfig({ onTop: e.target.value }));
+  $("setWakeFront").addEventListener("change", (e) => window.argus.setConfig({ wakeFront: e.target.checked }));
+  $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.argus.setConfig({ autoOpen }); });
+  $("setSteamOn").addEventListener("change", (e) => window.argus.setConfig({ steamOn: e.target.checked }));
+  $("setDiscordOn").addEventListener("change", (e) => window.argus.setConfig({ discordOn: e.target.checked }));
+  $("setDcMarked").addEventListener("change", (e) => { dcOnlyMarked = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ dcOnlyMarked }); });
+  $("setDcOnline").addEventListener("change", (e) => { dcAlsoOnline = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ discordAlsoOnline: dcAlsoOnline }); });
+  $("setDcVoice").addEventListener("change", (e) => { dcVoiceOnly = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ discordVoiceOnly: dcVoiceOnly }); });
+  $("setDcName").addEventListener("change", (e) => { myDc = normDc(e.target.value); friendsSig = ""; buildFriends(); window.argus.setConfig({ discordName: e.target.value.trim(), discordAuto: false }); });
+  window.argus.onDiscordSelf?.((me) => { myDc = normDc(me.name); $("setDcName").value = me.name; friendsSig = ""; buildFriends(); });
   // Zustand des eigenen Bots, mit Einladungslink sobald er verbunden ist
   function setBotStatus() {
     const el = $("dcBotState"); if (!el) return;
@@ -257,22 +257,22 @@
       : bot.status.startsWith("verbunden") ? `Bot ${bot.status}, auf ${n} Server${n === 1 ? "" : "n"}. ` : "Bot: " + bot.status + " ";
     if (bot.invite && bot.status.startsWith("verbunden")) {
       const a = document.createElement("a"); a.href = "#"; a.textContent = "Auf einen Server einladen"; a.style.color = "#8ff0c0";
-      a.addEventListener("click", (e) => { e.preventDefault(); window.jarvis.openUrl(bot.invite); }); el.append(a);
+      a.addEventListener("click", (e) => { e.preventDefault(); window.argus.openUrl(bot.invite); }); el.append(a);
     }
   }
   // Private Sprachkanäle: je Zeile „Name Link“ (Link über Rechtsklick auf den Kanal → „Link kopieren“)
   const parseExtra = (t) => t.split(/\n+/).map((l) => { const m = /(.*?)\s*https?:\/\/(?:\w+\.)?discord(?:app)?\.com\/channels\/(\d{15,22})\/(\d{15,22})/.exec(l); return m ? { name: m[1].trim().slice(0, 40), g: m[2], c: m[3] } : null; }).filter(Boolean).slice(0, 6);
-  $("setDcBot").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.jarvis.setConfig({ dcBotToken: v }); e.target.value = ""; e.target.placeholder = "gespeichert (leer lassen = unverändert)"; } });
-  $("setDcIcons").addEventListener("change", (e) => { dcIcons = e.target.checked; friendsSig = ""; buildFriends(); window.jarvis.setConfig({ dcIcons }); });
-  $("setDcExtra").addEventListener("change", (e) => { extraVoice = parseExtra(e.target.value); friendsSig = ""; buildFriends(); window.jarvis.setConfig({ extraVoice }); });
-  $("setOverlay").addEventListener("change", (e) => window.jarvis.setConfig({ voiceOverlay: e.target.checked }));
-  $("setOvCorner").addEventListener("change", (e) => window.jarvis.setConfig({ overlayCorner: e.target.value }));
-  $("setOvMode").addEventListener("change", (e) => window.jarvis.setConfig({ overlayMode: e.target.value }));
-  $("setTwMode").addEventListener("change", (e) => window.jarvis.setConfig({ twMode: e.target.value }));
-  $("setTwTop").addEventListener("change", (e) => window.jarvis.setConfig({ twOnTop: e.target.checked }));
-  $("setTwChan").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.jarvis.openTwitch(v.slice(0, 200)); e.target.value = ""; } });
-  window.jarvis.getConfig?.().then((c) => { $("setTwMode").value = c.twMode || "panel"; $("setTwTop").checked = !!c.twOnTop; $("setTwAlpha").value = c.twAlpha ?? 100; $("setTwRound").value = c.twRound ?? 14; $("setTwFeather").value = c.twFeather ?? 0; for (const id of ["setTwAlpha", "setTwRound", "setTwFeather"]) $(id).dispatchEvent(new Event("input")); });
-  $("ytBtn").addEventListener("click", () => { if (ytOn) window.jarvis.ytEmbed("close"); else window.jarvis.openYoutube(""); });
+  $("setDcBot").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.argus.setConfig({ dcBotToken: v }); e.target.value = ""; e.target.placeholder = "gespeichert (leer lassen = unverändert)"; } });
+  $("setDcIcons").addEventListener("change", (e) => { dcIcons = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ dcIcons }); });
+  $("setDcExtra").addEventListener("change", (e) => { extraVoice = parseExtra(e.target.value); friendsSig = ""; buildFriends(); window.argus.setConfig({ extraVoice }); });
+  $("setOverlay").addEventListener("change", (e) => window.argus.setConfig({ voiceOverlay: e.target.checked }));
+  $("setOvCorner").addEventListener("change", (e) => window.argus.setConfig({ overlayCorner: e.target.value }));
+  $("setOvMode").addEventListener("change", (e) => window.argus.setConfig({ overlayMode: e.target.value }));
+  $("setTwMode").addEventListener("change", (e) => window.argus.setConfig({ twMode: e.target.value }));
+  $("setTwTop").addEventListener("change", (e) => window.argus.setConfig({ twOnTop: e.target.checked }));
+  $("setTwChan").addEventListener("change", (e) => { const v = e.target.value.trim(); if (v) { window.argus.openTwitch(v.slice(0, 200)); e.target.value = ""; } });
+  window.argus.getConfig?.().then((c) => { $("setTwMode").value = c.twMode || "panel"; $("setTwTop").checked = !!c.twOnTop; $("setTwAlpha").value = c.twAlpha ?? 100; $("setTwRound").value = c.twRound ?? 14; $("setTwFeather").value = c.twFeather ?? 0; for (const id of ["setTwAlpha", "setTwRound", "setTwFeather"]) $(id).dispatchEvent(new Event("input")); });
+  $("ytBtn").addEventListener("click", () => { if (ytOn) window.argus.ytEmbed("close"); else window.argus.openYoutube(""); });
   // ---------- Strata: Ein/Aus-Knopf ----------
   function renderStrata(st) {
     if (!st) return; const b = $("strataBtn"); b.dataset.st = st.state; strataHas = !!st.dir || (st.state && st.state !== "aus");
@@ -280,12 +280,12 @@
     b.title = (st.text || "Strata (große lokale KI)") + (st.state === "an" ? " · Klick: ausschalten, Speicher freigeben" : " · Klick: einschalten (belegt rund 30 GB RAM)");
   }
   let strataLast = "";
-  window.jarvis.getConfig?.().then((c) => { if (c.strata) renderStrata(c.strata); });
-  window.jarvis.onStrata?.((st) => { renderStrata(st); if (st.text && st.text !== strataLast) { strataLast = st.text; log(st.text); if (/fehl|nicht|beendet/.test(st.state + st.text) && st.state !== "aus") notice(st.text); } });
-  $("strataBtn").addEventListener("click", async () => { const b = $("strataBtn"); b.classList.add("busy"); try { renderStrata(await window.jarvis.strataToggle()); } finally { b.classList.remove("busy"); } });
-  $("setStrataIdle").addEventListener("change", (e) => window.jarvis.setConfig({ strataIdleMin: +e.target.value }));
-  $("setStrataDir").addEventListener("change", (e) => window.jarvis.setConfig({ strataDir: e.target.value.trim() }));
-  window.jarvis.getConfig?.().then((c) => { renderStrata(c.strata); $("setStrataIdle").value = String(c.strataIdleMin ?? 20); $("setStrataDir").value = c.strataDir || ""; if (c.strata?.dir && !c.strataDir) $("setStrataDir").placeholder = c.strata.dir; });
+  window.argus.getConfig?.().then((c) => { if (c.strata) renderStrata(c.strata); });
+  window.argus.onStrata?.((st) => { renderStrata(st); if (st.text && st.text !== strataLast) { strataLast = st.text; log(st.text); if (/fehl|nicht|beendet/.test(st.state + st.text) && st.state !== "aus") notice(st.text); } });
+  $("strataBtn").addEventListener("click", async () => { const b = $("strataBtn"); b.classList.add("busy"); try { renderStrata(await window.argus.strataToggle()); } finally { b.classList.remove("busy"); } });
+  $("setStrataIdle").addEventListener("change", (e) => window.argus.setConfig({ strataIdleMin: +e.target.value }));
+  $("setStrataDir").addEventListener("change", (e) => window.argus.setConfig({ strataDir: e.target.value.trim() }));
+  window.argus.getConfig?.().then((c) => { renderStrata(c.strata); $("setStrataIdle").value = String(c.strataIdleMin ?? 20); $("setStrataDir").value = c.strataDir || ""; if (c.strata?.dir && !c.strataDir) $("setStrataDir").placeholder = c.strata.dir; });
 
   // ---------- Einrichtung beim ersten Start (neue Nutzer): Schritt für Schritt ----------
   let userName = "", suStep = 0, suCfg = {}, suPcInfo = null, suStrataDir = "", suDlStarted = false;
@@ -308,7 +308,7 @@
   // Empfehlung nach Ausstattung: Strata ab ~48 GB RAM und 16 GB Grafikspeicher, Kompakt ab 8 GB RAM, darunter keine
   function suRecLocal(p) { return p.strataDir && p.ramGB >= 46 && p.vramGB >= 16 ? "strata" : p.ramGB >= 8 ? "kompakt" : "keine"; }
   async function suLocalUi() {
-    const p = suPcInfo || (suPcInfo = await window.jarvis.pcInfo().catch(() => null)) || { ramGB: 0, cores: 0 };
+    const p = suPcInfo || (suPcInfo = await window.argus.pcInfo().catch(() => null)) || { ramGB: 0, cores: 0 };
     const rec = suRecLocal(p), big = p.ramGB >= 15;
     $("suPc").textContent = `Dein PC: ${p.ramGB} GB Arbeitsspeicher, ${p.cores} Kerne` + (p.gpu ? `, ${p.gpu}${p.vramGB ? ` (${p.vramGB} GB)` : ""}` : "") + "."
       + (rec === "keine" ? " Für eine lokale KI ist das knapp, sie wäre sehr langsam." : "");
@@ -325,22 +325,22 @@
     const l = suVal("suLocal"); $("suStrataRow").hidden = l !== "strata"; $("suDlRow").hidden = l !== "kompakt";
     $("suDlGo").hidden = suDlStarted;
   }
-  window.jarvis.onLocalAI?.((s) => {
+  window.argus.onLocalAI?.((s) => {
     if ($("setup").hidden || !s) return;
     $("suDlBar").style.width = (s.phase === "ready" ? 100 : s.pct ?? 0) + "%";
     $("suDlTxt").textContent = s.phase === "ready" ? "Lokale KI ist bereit." : (s.text || "") + (s.phase === "error" ? " (Argus versucht es später noch einmal)" : " · Du kannst währenddessen weiter einrichten.");
   });
   $("suDlGo").addEventListener("click", async () => {
     suDlStarted = true; suLocalSel(); $("suDlTxt").textContent = "Starte Download …";
-    await window.jarvis.setConfig({ backend: suVal("suAi"), ollamaOff: false }); // löst das Herunterladen aus (läuft im Hintergrund weiter)
+    await window.argus.setConfig({ backend: suVal("suAi"), ollamaOff: false }); // löst das Herunterladen aus (läuft im Hintergrund weiter)
   });
   $("suStrataPick").addEventListener("click", async () => {
-    const r = await window.jarvis.pickFolder(); if (!r?.dir) return;
+    const r = await window.argus.pickFolder(); if (!r?.dir) return;
     if (r.ok) { suStrataDir = r.dir; suLocalUi(); } else { $("suStrataState").textContent = "In diesem Ordner liegt kein Strata (START-HERE.bat fehlt)."; $("suStrataState").classList.remove("ok"); }
   });
   $("suFmTest").addEventListener("click", async () => {
     $("suFmNote").textContent = "Teste …";
-    const r = await window.jarvis.foremanTest({ client: $("suFmClient").value, key: $("suFmKey").value }).catch((e) => ({ text: String(e.message || e) }));
+    const r = await window.argus.foremanTest({ client: $("suFmClient").value, key: $("suFmKey").value }).catch((e) => ({ text: String(e.message || e) }));
     $("suFmNote").textContent = r?.text || "Keine Antwort.";
   });
   for (const e of document.querySelectorAll('input[name="suAi"]')) e.addEventListener("change", suAiUi);
@@ -358,7 +358,7 @@
     $("suEndNote").textContent = l === "kompakt" ? "Die lokale KI lädt im Hintergrund weiter, bis dahin antwortet " + (ai === "auto" && suCfg.claudeCode ? "Claude." : "Argus im Demo-Modus.") : "Mit Fertigstellen lädt Argus neu und ist bereit.";
   }
   function showSetup(c) {
-    if (!expanded) window.jarvis.toggleExpanded();
+    if (!expanded) window.argus.toggleExpanded();
     suCfg = c; suPcInfo = null; suDlStarted = false; suStrataDir = c.strataDir || "";
     $("suName").value = c.userName || ""; $("suInfo").value = c.userInfo || "";
     suSet("suAi", c.setupDone ? c.backend || "auto" : c.claudeCode ? "auto" : "ollama"); suAiUi();
@@ -396,8 +396,8 @@
     if (!suCfg.setupDone) patch.miningOn = !!mineAddr || !!fmClient; // neu eingerichtet ohne Mining-Konto: Mining-Rubrik gar nicht erst zeigen
     $("suNext").classList.add("busy");
     try {
-      if (fmClient) { await window.jarvis.foremanAccounts([{ name: $("suFmName").value.trim() || "Farm 1", client: fmClient, key: $("suFmKey").value.trim() }]); patch.foremanOn = true; }
-      await window.jarvis.setConfig(patch);
+      if (fmClient) { await window.argus.foremanAccounts([{ name: $("suFmName").value.trim() || "Farm 1", client: fmClient, key: $("suFmKey").value.trim() }]); patch.foremanOn = true; }
+      await window.argus.setConfig(patch);
     } finally { $("suNext").classList.remove("busy"); }
     userName = name; if (wake.length) WAKE = buildWake(wake);
     $("setup").hidden = true; location.reload(); // alles mit den neuen Einstellungen neu aufbauen
@@ -452,7 +452,7 @@
     $("hpSteps").replaceChildren(...h.steps.map(([txt, url]) => {
       const li = document.createElement("li");
       txt.split(/(`[^`]+`)/).forEach((part) => { if (/^`.*`$/.test(part)) { const c = document.createElement("code"); c.textContent = part.slice(1, -1); li.append(c); } else li.append(part); });
-      if (url) { const a = document.createElement("a"); a.textContent = " " + url.replace(/^https:\/\//, "").replace(/\/$/, "") + " ↗"; a.addEventListener("click", () => window.jarvis.openUrl(url)); li.append(a); }
+      if (url) { const a = document.createElement("a"); a.textContent = " " + url.replace(/^https:\/\//, "").replace(/\/$/, "") + " ↗"; a.addEventListener("click", () => window.argus.openUrl(url)); li.append(a); }
       return li;
     }));
     $("helpPop").hidden = false;
@@ -479,16 +479,16 @@
     $("crTitleH").textContent = hist ? "Gespeicherter Bericht" : "Fehlerbericht"; $("crState").hidden = !hist; if (hist) $("crState").textContent = fmtT(hist.t) + " · " + hist.state + " · wird nach 14 Tagen gelöscht";
     $("crashPop").hidden = false;
   }
-  function showCrash(r) { if (!r) return; if (!expanded) window.jarvis.toggleExpanded(); crOpen(r.title, r.text, null); }
+  function showCrash(r) { if (!r) return; if (!expanded) window.argus.toggleExpanded(); crOpen(r.title, r.text, null); }
   async function crRender() {
-    const l = await window.jarvis.crashList().catch(() => []), box = $("crList");
+    const l = await window.argus.crashList().catch(() => []), box = $("crList");
     if (!l.length) { box.replaceChildren(Object.assign(document.createElement("div"), { className: "cr-empty", textContent: "Noch keine Berichte gespeichert." })); return; }
     box.replaceChildren(...l.map((it) => { const b = document.createElement("button"); b.type = "button"; b.className = "cr-item"; b.title = "Bericht ansehen";
       const t = document.createElement("b"); t.textContent = it.title; const g = document.createElement("span"); g.className = "tag" + (it.state === "gesendet" ? " sent" : ""); g.textContent = it.state; const d = document.createElement("small"); d.textContent = fmtT(it.t);
-      b.append(t, g, d); b.addEventListener("click", async () => { const v = await window.jarvis.crashView(it.id); if (v) crOpen(v.title, v.text, v); else crRender(); }); return b; }));
+      b.append(t, g, d); b.addEventListener("click", async () => { const v = await window.argus.crashView(it.id); if (v) crOpen(v.title, v.text, v); else crRender(); }); return b; }));
   }
   const crClose = () => {
-    if (!crHistId && !crDone) window.jarvis.crashDismiss($("crIgnore").checked, crTitle, $("crText").value).then(() => crRender());
+    if (!crHistId && !crDone) window.argus.crashDismiss($("crIgnore").checked, crTitle, $("crText").value).then(() => crRender());
     $("crashPop").hidden = true;
   };
   $("crNo").addEventListener("click", crClose); $("crX").addEventListener("click", crClose);
@@ -496,20 +496,20 @@
   dragPop($("crashPop"), $("crHead"));
   $("crCopy").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(crTitle + "\n\n" + $("crText").value); notice("Fehlerbericht kopiert"); } catch { $("crText").select(); document.execCommand("copy"); }
-    if (!crHistId && !crDone) { crDone = true; await window.jarvis.crashArchive(crTitle, $("crText").value, "kopiert"); crRender(); }
+    if (!crHistId && !crDone) { crDone = true; await window.argus.crashArchive(crTitle, $("crText").value, "kopiert"); crRender(); }
   });
-  $("crSend").addEventListener("click", async () => { crDone = true; await window.jarvis.crashSend(crTitle, $("crText").value); $("crashPop").hidden = true; notice("GitHub öffnet sich, dort noch auf „Submit new issue“ klicken"); crRender(); });
-  $("crDel").addEventListener("click", async () => { if (crHistId) await window.jarvis.crashDel(crHistId); $("crashPop").hidden = true; crRender(); });
-  $("setCrashNow").addEventListener("click", async () => { showCrash(await window.jarvis.crashGet(true)); }); // Einstellungen bleiben offen
+  $("crSend").addEventListener("click", async () => { crDone = true; await window.argus.crashSend(crTitle, $("crText").value); $("crashPop").hidden = true; notice("GitHub öffnet sich, dort noch auf „Submit new issue“ klicken"); crRender(); });
+  $("crDel").addEventListener("click", async () => { if (crHistId) await window.argus.crashDel(crHistId); $("crashPop").hidden = true; crRender(); });
+  $("setCrashNow").addEventListener("click", async () => { showCrash(await window.argus.crashGet(true)); }); // Einstellungen bleiben offen
   crRender();
-  $("setCrash").addEventListener("change", (e) => window.jarvis.setConfig({ crashReport: e.target.checked }));
-  window.jarvis.getConfig?.().then((c) => { $("setCrash").checked = c.crashReport !== false; if (c.setupDone) setTimeout(() => window.jarvis.crashGet(false).then(showCrash).catch(() => {}), 6000); });
-  $("setUserName").addEventListener("change", (e) => { userName = e.target.value.trim(); window.jarvis.setConfig({ userName }); });
-  $("setUserInfo").addEventListener("change", (e) => window.jarvis.setConfig({ userInfo: e.target.value.trim() }));
-  $("setExport").addEventListener("click", async () => { const r = await window.jarvis.settingsExport(); if (r?.ok) $("setExpNote").textContent = "Gesichert: " + r.file; });
-  $("setImport").addEventListener("click", async () => { const r = await window.jarvis.settingsImport(); if (r?.ok) $("setExpNote").textContent = `${r.n} Einstellungen geladen, Argus startet neu …`; else if (r?.error) $("setExpNote").textContent = r.error; });
-  $("setRerun").addEventListener("click", () => window.jarvis.getConfig().then((c) => { $("settings").hidden = true; showSetup(c); }));
-  window.jarvis.getConfig?.().then((c) => {
+  $("setCrash").addEventListener("change", (e) => window.argus.setConfig({ crashReport: e.target.checked }));
+  window.argus.getConfig?.().then((c) => { $("setCrash").checked = c.crashReport !== false; if (c.setupDone) setTimeout(() => window.argus.crashGet(false).then(showCrash).catch(() => {}), 6000); });
+  $("setUserName").addEventListener("change", (e) => { userName = e.target.value.trim(); window.argus.setConfig({ userName }); });
+  $("setUserInfo").addEventListener("change", (e) => window.argus.setConfig({ userInfo: e.target.value.trim() }));
+  $("setExport").addEventListener("click", async () => { const r = await window.argus.settingsExport(); if (r?.ok) $("setExpNote").textContent = "Gesichert: " + r.file; });
+  $("setImport").addEventListener("click", async () => { const r = await window.argus.settingsImport(); if (r?.ok) $("setExpNote").textContent = `${r.n} Einstellungen geladen, Argus startet neu …`; else if (r?.error) $("setExpNote").textContent = r.error; });
+  $("setRerun").addEventListener("click", () => window.argus.getConfig().then((c) => { $("settings").hidden = true; showSetup(c); }));
+  window.argus.getConfig?.().then((c) => {
     userName = c.userName || ""; $("setUserName").value = userName; $("setUserInfo").value = c.userInfo || "";
     if (!c.setupDone) setTimeout(() => showSetup(c), 800);
   });
@@ -524,8 +524,8 @@
     body.dataset.dbtn = c.design === "ruhig" && c.designBtn === "ruhig" ? "ruhig" : "";
   };
   const fill = (c) => { $("setDesign").value = c.design === "ruhig" ? "ruhig" : "klassisch"; $("setDSet").checked = c.designSet !== false; $("setDBlk").checked = c.designBlk !== false; $("setDType").checked = c.designType !== false; $("setDBtn").value = c.designBtn === "ruhig" ? "ruhig" : ""; };
-  const save = (patch) => { window.jarvis.setConfig(patch); window.jarvis.getConfig().then(apply); };
-  window.jarvis.getConfig().then((c) => { apply(c); fill(c); });
+  const save = (patch) => { window.argus.setConfig(patch); window.argus.getConfig().then(apply); };
+  window.argus.getConfig().then((c) => { apply(c); fill(c); });
   $("setDesign").addEventListener("change", (e) => save({ design: e.target.value }));
   $("setDSet").addEventListener("change", (e) => save({ designSet: e.target.checked }));
   $("setDBlk").addEventListener("change", (e) => save({ designBlk: e.target.checked }));
@@ -533,12 +533,12 @@
   $("setDBtn").addEventListener("change", (e) => save({ designBtn: e.target.value }));
 })();
 
-$("setDonate").addEventListener("change", (e) => { const v = e.target.value.trim(); window.jarvis.setConfig({ donateUrl: /^https:\/\/\S+$/i.test(v) ? v : "" }); if (v && !/^https:\/\//i.test(v)) { e.target.value = ""; try { notice("Nur https-Adressen sind erlaubt."); } catch {} } });
-$("setDonateBtn").addEventListener("click", () => window.jarvis.openDonate?.());
+$("setDonate").addEventListener("change", (e) => { const v = e.target.value.trim(); window.argus.setConfig({ donateUrl: /^https:\/\/\S+$/i.test(v) ? v : "" }); if (v && !/^https:\/\//i.test(v)) { e.target.value = ""; try { notice("Nur https-Adressen sind erlaubt."); } catch {} } });
+$("setDonateBtn").addEventListener("click", () => window.argus.openDonate?.());
 
 // Saved requests remain intact; unavailable relationships access never substitutes server members.
 $("dcFriendsUnavailable").textContent = window.argusDiscordList.capability.reason;
 $("setDcVoice").checked = true;
 
-$("setBackgroundPresentation").addEventListener("change", e => window.jarvis.setConfig({ backgroundPresentation: e.target.value }));
-window.jarvis.getConfig().then(c => { $("setBackgroundPresentation").value = c.backgroundPresentation || "fluid"; });
+$("setBackgroundPresentation").addEventListener("change", e => window.argus.setConfig({ backgroundPresentation: e.target.value }));
+window.argus.getConfig().then(c => { $("setBackgroundPresentation").value = c.backgroundPresentation || "fluid"; });

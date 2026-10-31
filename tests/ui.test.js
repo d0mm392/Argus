@@ -2,7 +2,7 @@
 const { run } = require("./harness");
 run(async ({ w, ev, wait, check, menus, app }) => {
   const click = (sel) => ev(`document.querySelector(${JSON.stringify(sel)}).click(); true`);
-  const cfg = () => ev(`window.jarvis.getConfig()`);
+  const cfg = () => ev(`window.argus.getConfig()`);
   await ev(`document.getElementById('crashPop').hidden=true; true`);
 
   // R-DEF-1 / R-DEF-2: Standardwerte
@@ -24,7 +24,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   // R-IND-2: Kugel aus -> Messzeiger bleiben, Kugel zeichnet nichts
   const px = (() => `(()=>{ const c=document.getElementById('brain'); const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for(let i=3;i<d.length;i+=4) if(d[i]>20) n++; return n; })()`)();
   const nOn = await ev(px);
-  await ev(`window.jarvis.setConfig({ballOn:false}); true`); await click("#setBallOn").catch(() => {}); // Einstellung spiegeln
+  await ev(`window.argus.setConfig({ballOn:false}); true`); await click("#setBallOn").catch(() => {}); // Einstellung spiegeln
   await ev(`(()=>{const e=document.getElementById('setBallOn'); if(e&&e.checked){e.checked=false; e.dispatchEvent(new Event('change'));} return true})()`); await wait(1500);
   const nOff = await ev(px);
   check("R-IND-2 Kugel aus: deutlich weniger Pixel, Messzeiger bleiben", nOn > 3000 && nOff < nOn / 4 && nOff > 0, { nOn, nOff });
@@ -75,7 +75,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   await ev(`document.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:window.innerWidth-12,clientY:Math.round(window.innerHeight/2)})); true`); await wait(2200);
   const mw4 = menus()[0]; await mw4.webContents.executeJavaScript(`[...document.querySelectorAll('#m button')].find(x=>x.textContent.trim().startsWith('Freundesliste')).dispatchEvent(new PointerEvent('pointerenter'))`); await wait(1500);
   const sw4 = menus().find((x) => x !== mw4); const tg = `[...document.querySelectorAll('#m button')].find(b=>b.textContent.includes('Freundesliste anzeigen')).click()`;
-  const fr = () => ev(`window.jarvis.getConfig().then(c=>c.widgets?.friends?.on!==false)`);
+  const fr = () => ev(`window.argus.getConfig().then(c=>c.widgets?.friends?.on!==false)`);
   const f0 = await fr(); await sw4.webContents.executeJavaScript(tg); await wait(700); const f1 = await fr(); await sw4.webContents.executeJavaScript(tg); await wait(700); const f2 = await fr();
   check("R-MENU-4 Freundesliste per Menü aus und wieder an", f0 === true && f1 === false && f2 === true, { f0, f1, f2 });
   for (const x of menus()) x.close(); await wait(400);
@@ -92,7 +92,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   const bfGone = await ev(`!document.getElementById("briefCard")`);
   check("R-BRIEF-1 Briefing-Karte oben, Esc schließt", bf.onTop && bfGone, { bf, bfGone });
   // R-VOICE-2: Stimmen-Verwaltung ist da (Liste oder Windows-Hinweis) und Briefing-Einstellungen sind eingebunden
-  const vb = await ev(`(async()=>{ const l = await window.jarvis.voiceList(); return { box: !!document.getElementById("voiceBox"), n: l.voices.length, dir: !!l.dir, brief: !!document.getElementById("setBriefOn") }; })()`);
+  const vb = await ev(`(async()=>{ const l = await window.argus.voiceList(); return { box: !!document.getElementById("voiceBox"), n: l.voices.length, dir: !!l.dir, brief: !!document.getElementById("setBriefOn") }; })()`);
   check("R-VOICE-2 Stimmen-Verwaltung und Briefing-Einstellungen vorhanden", vb.box && vb.n >= 3 && vb.dir && vb.brief, vb);
   const pf = await ev(`[fmtPower(3500), fmtPower(1250000), fmtEnergy(84.2), fmtEnergy(2500)]`);
   check("R-POWER-2 Anzeige: kW, ab 1000 kW MW; kWh, ab 1000 MWh", pf[0] === "3,50 kW" && pf[1] === "1,25 MW" && pf[2] === "84,2 kWh" && pf[3] === "2,50 MWh", pf);
@@ -234,7 +234,7 @@ run(async ({ w, ev, wait, check, menus, app }) => {
   check("R-OPT-19 mindestens 12 Last-Anzeigen (inkl. 3D: Orbit, Säulen, Kugeln), jede zeichnet ohne Fehler", Array.isArray(gs) && gs.length >= 12 && ["orbit","saeulen","kugeln"].every(x=>gs.includes(x)));
   const tl = await ev(`(async()=>{ const x=document.getElementById('setBtnTiltX'), y=document.getElementById('setBtnTiltY'); x.value=25; x.dispatchEvent(new Event('input')); y.value=-20; y.dispatchEvent(new Event('input')); await new Promise(r=>setTimeout(r,700)); const t=[...document.querySelectorAll('.temp')].find(e=>e.offsetWidth)?.style.transform||''; x.value=0; x.dispatchEvent(new Event('input')); y.value=0; y.dispatchEvent(new Event('input')); await new Promise(r=>setTimeout(r,500)); const t2=[...document.querySelectorAll('.temp')].find(e=>e.offsetWidth)?.style.transform||''; return [t, t2]; })()`);
   check("R-OPT-20 Buttons lassen sich neigen/drehen (2D-Näherung, kein perspective) und gehen zurück auf flach", Array.isArray(tl) && /scale\(/.test(tl[0]) && /skew\(/.test(tl[0]) && !/skew|scale/.test(tl[1]), JSON.stringify(tl));
-  const twc = await ev(`(()=>{ const ids=['twBtn','tw','twBody','twVo','twSmaller','twBigger','twPop','twClose','setTwMode','setTwAlpha','setTwRound','setTwFeather','setTwTop','setTwChan']; const miss=ids.filter(i=>!document.getElementById(i)); const api=['twEmbed','twRect','onTwEmbed','onTwTitle','openTwitch'].filter(k=>typeof window.jarvis[k]!=='function'); return [miss, api, BLOCKS_HAS_TW=typeof BLOCK_NAMES==='undefined' ? 'n/a' : !!BLOCK_NAMES.tw]; })()`);
+  const twc = await ev(`(()=>{ const ids=['twBtn','tw','twBody','twVo','twSmaller','twBigger','twPop','twClose','setTwMode','setTwAlpha','setTwRound','setTwFeather','setTwTop','setTwChan']; const miss=ids.filter(i=>!document.getElementById(i)); const api=['twEmbed','twRect','onTwEmbed','onTwTitle','openTwitch'].filter(k=>typeof window.argus[k]!=='function'); return [miss, api, BLOCKS_HAS_TW=typeof BLOCK_NAMES==='undefined' ? 'n/a' : !!BLOCK_NAMES.tw]; })()`);
   check("R-WIN-1 Twitch-Fenster hat dieselben Bedienelemente und Einstellungen wie das YouTube-Fenster", Array.isArray(twc) && twc[0].length === 0 && twc[1].length === 0, JSON.stringify(twc));
   const ri = await ev(`(()=>{ const bs=[...document.querySelectorAll('#ringPick button')];  const hole=[...document.querySelectorAll('h4')].find(h=>/Aussparung/.test(h.textContent)); return [bs.length, bs.filter(b=>!b.querySelector('svg')||b.querySelector('svg').children.length===0).length, hole && hole.dataset.tab]; })()`);
   check("R-UI-5 jede Last-Anzeige hat ein Symbol; Aussparung steht im Reiter Aussehen", Array.isArray(ri) && ri[0] >= 12 && ri[1] === 0 && ri[2] === "Aussehen", JSON.stringify(ri));

@@ -85,12 +85,12 @@
   // × zum Ausblenden und Griff unten rechts zum Größe-Ändern (wie bei den anderen Fenstern)
   { const x = document.createElement("button"); x.type = "button"; x.className = "ringh-x"; x.textContent = "×"; x.title = "Last-Anzeige ausblenden (zurück: Rechtsklick › Anzeigen oder Einstellungen)";
     x.addEventListener("pointerdown", (e) => e.stopPropagation());
-    x.addEventListener("click", (e) => { e.stopPropagation(); const cb = document.querySelector('[data-viz="rings"]'); if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change")); } else { viz = { ...viz, rings: false }; window.jarvis.setConfig({ viz }); } });
+    x.addEventListener("click", (e) => { e.stopPropagation(); const cb = document.querySelector('[data-viz="rings"]'); if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change")); } else { viz = { ...viz, rings: false }; window.argus.setConfig({ viz }); } });
     const g = document.createElement("div"); g.className = "ringh-g"; g.title = "Ziehen: Größe ändern";
     let gs = null;
     g.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); g.setPointerCapture(e.pointerId); gs = { x: e.clientX, y: e.clientY, s: scales.rings || 1, w: ringHandle.offsetWidth || 100 }; });
     g.addEventListener("pointermove", (e) => { if (!gs) return; const k = 1 + ((e.clientX - gs.x) + (e.clientY - gs.y)) / (2 * gs.w); scales.rings = Math.max(0.5, Math.min(3, gs.s * k)); if (Math.abs(scales.rings - 1) < 0.03) delete scales.rings; });
-    const end = () => { if (gs) { gs = null; window.jarvis.setConfig({ scales }); } };
+    const end = () => { if (gs) { gs = null; window.argus.setConfig({ scales }); } };
     g.addEventListener("pointerup", end); g.addEventListener("pointercancel", end);
     ringHandle.append(x, g); }
   let ringHandleOn = false;

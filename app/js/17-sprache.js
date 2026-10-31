@@ -46,6 +46,6 @@
     } else revert();
   }
   window.argusLang = { set: setLang, get: () => lang };
-  window.jarvis.getConfig().then((c) => { const s = $("setLang"); if (s) s.value = c.lang === "en" ? "en" : "de"; setLang(c.lang); }).catch(() => {});
-  $("setLang")?.addEventListener("change", (e) => { window.jarvis.setConfig({ lang: e.target.value }); setLang(e.target.value); });
+  window.argus.getConfig().then((c) => { const s = $("setLang"); if (s) s.value = c.lang === "en" ? "en" : "de"; setLang(c.lang); }).catch(() => {});
+  $("setLang")?.addEventListener("change", (e) => { window.argus.setConfig({ lang: e.target.value }); setLang(e.target.value); });
 })();

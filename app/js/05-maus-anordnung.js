@@ -37,7 +37,7 @@
   const FIXED = new Set(["friends", "friends2", "media", "ai", "mic", "strata"]);
   const cOf = (key) => (expanded ? { x: W / 2, y: H / 2 + 6 } : { x: homeX || CX, y: homeY || CY }); // Anzeigen bleiben, wo die Form zuhause ist, auch wenn der Symbiont umherstreift
   const pinPos = (key) => { const p = pins[key], c = cOf(key); return p ? { x: c.x + Math.cos(p.a) * p.r * SB, y: c.y + Math.sin(p.a) * p.r * SB } : null; };
-  const savePins = () => { clearTimeout(pinSave); pinSave = setTimeout(() => window.jarvis.setConfig({ pins }), 300); };
+  const savePins = () => { clearTimeout(pinSave); pinSave = setTimeout(() => window.argus.setConfig({ pins }), 300); };
   // Bewegungen am ganzen Fenster verfolgen, damit das Teil auch bei schnellem Ziehen nicht "verloren" geht
   window.addEventListener("pointermove", (e) => {
     if (!drag) return;
@@ -81,9 +81,9 @@
     if (nx + b.width > innerWidth - 2) x -= nx + b.width - innerWidth + 2; if (ny + b.height > innerHeight - 2) y -= ny + b.height - innerHeight + 2;
     o.x = Math.round(x); o.y = Math.round(y); applyPill();
   });
-  const pillEnd = () => { if (!pillDrag) return; pillDrag = null; $("pill").classList.remove("dragging"); window.jarvis.setConfig({ pillOff }); };
+  const pillEnd = () => { if (!pillDrag) return; pillDrag = null; $("pill").classList.remove("dragging"); window.argus.setConfig({ pillOff }); };
   $("pill").addEventListener("pointerup", pillEnd); $("pill").addEventListener("pointercancel", pillEnd);
-  $("pill").addEventListener("dblclick", (e) => { e.stopPropagation(); pillOff[pillKey()] = { x: 0, y: 0, s: 1 }; applyPill(); window.jarvis.setConfig({ pillOff }); });
+  $("pill").addEventListener("dblclick", (e) => { e.stopPropagation(); pillOff[pillKey()] = { x: 0, y: 0, s: 1 }; applyPill(); window.argus.setConfig({ pillOff }); });
 
   let ptr = { x: 0, y: 0 }, holdT = null;
   window.addEventListener("pointermove", (e) => { ptr = { x: e.clientX, y: e.clientY }; }, true);
@@ -128,7 +128,7 @@
       // Freundesliste nicht festhalten: sonst landet der Klick auf der Liste statt auf Person oder „Beitreten“
       if (!isFr) try { el.setPointerCapture(e.pointerId); } catch {}
     });
-    el.addEventListener("dblclick", (e) => { e.stopPropagation(); const k = keyOf(); delete pins[k]; savePins(); if (scales[k]) { delete scales[k]; window.jarvis.setConfig({ scales }); } });
+    el.addEventListener("dblclick", (e) => { e.stopPropagation(); const k = keyOf(); delete pins[k]; savePins(); if (scales[k]) { delete scales[k]; window.argus.setConfig({ scales }); } });
   }
   // Feinjustierung: angeklicktes Teil (Anzeige, Symbol, Freundesliste, Leerlauf, im Anordnen-Modus auch Blöcke)
   // mit den Pfeiltasten um 1 Pixel verschieben, mit Umschalt um 10 Pixel. Esc oder Klick daneben hebt die Auswahl auf
@@ -154,11 +154,11 @@
       clearTimeout(nudgeSave); nudgeSave = setTimeout(savePins, 400);
     } else if (s.kind === "pill") {
       const o = pillOff[pillKey()]; o.x = (o.x || 0) + dx; o.y = (o.y || 0) + dy; applyPill();
-      clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ pillOff }), 400);
+      clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.argus.setConfig({ pillOff }), 400);
     } else if (s.kind === "blk" && freeLayout?.[s.id]) {
       const pr = panelEl.getBoundingClientRect(), r = freeLayout[s.id];
       r.x = Math.max(0, Math.min(1 - r.w, r.x + dx / pr.width)); r.y = Math.max(0, r.y + dy / pr.height); applyLayout();
-      clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 400);
+      clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.argus.setConfig({ panelLayout: freeLayout }), 400);
     }
   }, true);
   // Nach dem Ziehen kein Klick auslösen (sonst öffnet z. B. der BTC-Kurs die Webseite)
@@ -208,7 +208,7 @@
     lblLayer.append(r.el);
   }
   // Zeiger kommt im Desktop-Fenster vom Hauptprozess (Ziehbereich schluckt Mausbewegungen), sonst vom Browser
-  window.jarvis?.onCursor?.((c) => { cursor = c; });
+  window.argus?.onCursor?.((c) => { cursor = c; });
   document.addEventListener("pointermove", (e) => { cursor = { x: e.clientX, y: e.clientY }; });
   document.documentElement.addEventListener("pointerleave", () => { cursor = null; });
 

@@ -15,10 +15,10 @@ function undoMove() {
   const e = undoStack.pop(); if (!e) { try { notice("Nichts zum Zurücksetzen."); } catch {} return; }
   const st = JSON.parse(e.s);
   freeLayout = st.l; pins = st.p || {}; scales = st.s || {}; ballOff = st.o || { x: 0, y: 0 }; ballScale = st.b || 1;
-  try { applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } catch {}
+  try { applyBallScale(); window.argus.setScale("ballScale", ballScale); } catch {}
   try { applyLayout(); } catch {}
   undoBase = undoState();
-  window.jarvis.setConfig({ panelLayout: freeLayout || {}, pins, scales, ballOff });
+  window.argus.setConfig({ panelLayout: freeLayout || {}, pins, scales, ballOff });
   try { notice("Zurückgesetzt: " + e.n + " auf die vorherige Position."); } catch {}
 }
 addEventListener("keydown", (e) => { if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) && !document.activeElement?.isContentEditable) { e.preventDefault(); undoMove(); } });

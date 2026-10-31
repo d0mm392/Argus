@@ -1,4 +1,4 @@
-# Jarvis "Laeuft gerade": liest ueber die Windows-Mediensteuerung (wie das Lautstaerke-Popup) Titel, Interpret, Cover
+# Argus "Laeuft gerade": liest ueber die Windows-Mediensteuerung (wie das Lautstaerke-Popup) Titel, Interpret, Cover
 # und Status der Musik-App (Apple Music bevorzugt, sonst die aktuelle, z. B. Spotify oder ein Browser-Tab).
 # Schreibt eine JSON-Zeile pro Aenderung auf stdout. Befehle (play/next/prev) kommen ueber die Datei -Cmd.
 param([string]$Cmd)
@@ -110,7 +110,7 @@ while ($true) {
       if ($vol -ne $null) { $o.vol = $vol }
     }
     $sig = ($o.Keys | Where-Object { $_ -ne "t" -and $_ -ne "art" -and $_ -ne "pos" } | Sort-Object | ForEach-Object { "$_=$($o[$_])" }) -join ";"
-    # Position nur alle paar Sekunden mitschicken, dazwischen rechnet Jarvis selbst weiter
+    # Position nur alle paar Sekunden mitschicken, dazwischen rechnet Argus selbst weiter
     if ($sig -ne $lastSig -or $o.art -or ($o.on -and ($idle++ % 5) -eq 0)) { [Console]::Out.WriteLine(($o | ConvertTo-Json -Compress)); [Console]::Out.Flush(); $lastSig = $sig }
   } catch { [Console]::Out.WriteLine((@{ on = $false; err = $_.Exception.Message } | ConvertTo-Json -Compress)); [Console]::Out.Flush() }
   Start-Sleep -Milliseconds 400

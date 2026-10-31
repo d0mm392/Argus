@@ -21,7 +21,7 @@ function iobRender(d) {
       s.textContent = it.name; s.title = it.id; bb.textContent = iobFmt(it); if (typeof it.val === "boolean") bb.classList.add(it.val ? "on" : "off");
       if (it.write && it.type === "boolean") { e.classList.add("sw"); e.title = "Klick: umschalten"; e.addEventListener("click", () => iobToggle(it, e, bb)); }
       const x = document.createElement("button"); x.type = "button"; x.className = "iob-x"; x.textContent = "×"; x.title = "Kachel entfernen"; x.setAttribute("aria-label", "Entfernen");
-      x.addEventListener("click", (ev) => { ev.stopPropagation(); iobPick = iobPick.filter((p) => p.id !== it.id); window.jarvis.setConfig({ iobPick }); iobRender({ ...d, items: d.items.filter((q) => q.id !== it.id) }); });
+      x.addEventListener("click", (ev) => { ev.stopPropagation(); iobPick = iobPick.filter((p) => p.id !== it.id); window.argus.setConfig({ iobPick }); iobRender({ ...d, items: d.items.filter((q) => q.id !== it.id) }); });
       e.append(s, bb, x); out.push(e);
     }
     st.textContent = d.ts ? "Stand " + new Date(d.ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : ""; st.dataset.health = "ok";
@@ -38,7 +38,7 @@ const iobRow = (it) => {
 };
 const iobDet = (key, label, fill) => { const d = document.createElement("details"); d.dataset.k = key; const s = document.createElement("summary"); s.textContent = label; d.append(s); d.open = iobOpen.has(key); if (d.open) fill(d); d.addEventListener("toggle", () => { if (d.open) { iobOpen.add(key); if (d.children.length < 2) fill(d); } else iobOpen.delete(key); }); return d; };
 async function iobFillAdapter(d) {
-  const key = d.dataset.k, items = await window.jarvis.iobGroup(key).catch(() => []), devs = new Map();
+  const key = d.dataset.k, items = await window.argus.iobGroup(key).catch(() => []), devs = new Map();
   for (const it of items) { const rest = it.id.slice(key.length + 1).split("."), dev = rest.length > 1 ? rest.slice(0, -1).join(".") : "(allgemein)"; (devs.get(dev) || devs.set(dev, []).get(dev)).push(it); }
   const wrap = document.createElement("div"); wrap.className = "iob-dev";
   for (const [dev, arr] of devs) wrap.append(iobDet(key + "|" + dev, dev + " (" + arr.length + ")", (dd) => { const b = document.createElement("div"); b.className = "iob-rows"; for (const it of arr) b.append(iobRow({ ...it, write: it.write && iobLast?.write })); dd.append(b); }));
@@ -47,16 +47,16 @@ async function iobFillAdapter(d) {
 async function iobAllRender(force) {
   const box = $("iobAllBox"); if (!box) return; box.hidden = !(iobOn && iobAllOn && iobLast?.state === "ok"); if (box.hidden) return;
   const q = $("iobAllQ").value.trim(), body = $("iobAllBody");
-  if (q) { const res = await window.jarvis.iobBrowse(q).catch(() => []); body.dataset.mode = "search"; body.replaceChildren(...res.map((o) => iobRow({ ...o, write: o.write && iobLast?.write }))); if (!res.length) body.textContent = "Nichts gefunden."; return; }
+  if (q) { const res = await window.argus.iobBrowse(q).catch(() => []); body.dataset.mode = "search"; body.replaceChildren(...res.map((o) => iobRow({ ...o, write: o.write && iobLast?.write }))); if (!res.length) body.textContent = "Nichts gefunden."; return; }
   if (!force && body.dataset.mode === "tree") { for (const d of body.querySelectorAll(":scope > details[open]")) await iobFillAdapter(d); return; } // nur offene Adapter auffrischen
-  const tree = await window.jarvis.iobTree().catch(() => []); body.dataset.mode = "tree";
+  const tree = await window.argus.iobTree().catch(() => []); body.dataset.mode = "tree";
   body.replaceChildren(...tree.map((t) => iobDet(t.key, t.key + " (" + t.n + ")", (d) => iobFillAdapter(d))));
 }
 $("iobAllQ").addEventListener("input", () => { $("iobAllBody").dataset.mode = ""; clearTimeout(iobQT); iobQT = setTimeout(() => iobAllRender(true), 250); });
 setInterval(() => { if (iobOn && iobAllOn && !document.hidden && !$("iobAllQ").value) iobAllRender(false); }, 5000);
 async function iobToggle(it, el, bb) {
   if (IOB_CRIT.test(it.id + " " + it.role) && iobArm !== it.id) { iobArm = it.id; bb.textContent = "Wirklich?"; setTimeout(() => { if (iobArm === it.id) { iobArm = ""; bb.textContent = iobFmt(it); } }, 3000); return false; }
-  iobArm = ""; const r = await window.jarvis.iobSet(it.id, !it.val).catch(() => ({ ok: false }));
+  iobArm = ""; const r = await window.argus.iobSet(it.id, !it.val).catch(() => ({ ok: false }));
   if (!r?.ok) try { notice(r?.reason || "Schalten nicht möglich."); } catch {}
   return !!r?.ok;
 }
@@ -75,11 +75,11 @@ function iobMsg(d) {
 const iobClose = () => { $("iobDlg").hidden = true; };
 let iobQT = null;
 async function iobSearch() {
-  const q = $("iobQ").value, res = await window.jarvis.iobBrowse(q).catch(() => []), box = $("iobList"), out = [];
+  const q = $("iobQ").value, res = await window.argus.iobBrowse(q).catch(() => []), box = $("iobList"), out = [];
   if (!res.length) { const m = document.createElement("div"); m.className = "t-dim"; m.textContent = iobLast?.state === "ok" ? "Nichts gefunden." : "Noch keine Verbindung zu ioBroker."; out.push(m); }
   for (const o of res) {
     const l = document.createElement("label"); l.className = "iob-row"; const c = document.createElement("input"); c.type = "checkbox"; c.checked = iobPick.some((p) => p.id === o.id);
-    c.addEventListener("change", () => { iobPick = c.checked ? [...iobPick, { id: o.id, label: o.name, role: o.role, type: o.type, unit: o.unit }].slice(0, 60) : iobPick.filter((p) => p.id !== o.id); window.jarvis.setConfig({ iobPick }); });
+    c.addEventListener("change", () => { iobPick = c.checked ? [...iobPick, { id: o.id, label: o.name, role: o.role, type: o.type, unit: o.unit }].slice(0, 60) : iobPick.filter((p) => p.id !== o.id); window.argus.setConfig({ iobPick }); });
     const t = document.createElement("span"); const n = document.createElement("b"), a = document.createElement("small"); n.textContent = o.name; a.textContent = o.id + (o.role ? " · " + o.role : ""); t.append(n, a); l.append(c, t); out.push(l);
   }
   box.replaceChildren(...out);
@@ -97,16 +97,16 @@ function iobPageEnsure() {
   pgTabs(); pgSave(); try { switchPage("Smart Home"); } catch {}
 }
 const iobApply = () => { $("iob").hidden = !iobOn; try { applyHidden(); } catch {} };
-$("setIobOn").addEventListener("change", (e) => { iobOn = e.target.checked; window.jarvis.setConfig({ iobOn }); if (iobOn) iobPageEnsure(); iobApply(); setTimeout(iobPoll, 1500); });
-$("setIobUrl").addEventListener("change", (e) => window.jarvis.setConfig({ iobUrl: e.target.value.trim() }));
-$("setIobUser").addEventListener("change", (e) => window.jarvis.setConfig({ iobUser: e.target.value.trim() }));
-$("setIobPass").addEventListener("change", (e) => { if (e.target.value) { window.jarvis.setConfig({ iobPass: e.target.value }); iobHasPass = true; e.target.value = ""; e.target.placeholder = "gespeichert"; } });
-$("setIobAll").addEventListener("change", (e) => { iobAllOn = e.target.checked; window.jarvis.setConfig({ iobAll: iobAllOn }); $("iobAllBody").dataset.mode = ""; setTimeout(() => iobAllRender(true), 3000); });
-$("setIobWrite").addEventListener("change", (e) => window.jarvis.setConfig({ iobWrite: e.target.checked }));
-async function iobPoll() { try { iobRender(await window.jarvis.iobData()); } catch {} }
-window.jarvis.onIob?.(iobRender);
+$("setIobOn").addEventListener("change", (e) => { iobOn = e.target.checked; window.argus.setConfig({ iobOn }); if (iobOn) iobPageEnsure(); iobApply(); setTimeout(iobPoll, 1500); });
+$("setIobUrl").addEventListener("change", (e) => window.argus.setConfig({ iobUrl: e.target.value.trim() }));
+$("setIobUser").addEventListener("change", (e) => window.argus.setConfig({ iobUser: e.target.value.trim() }));
+$("setIobPass").addEventListener("change", (e) => { if (e.target.value) { window.argus.setConfig({ iobPass: e.target.value }); iobHasPass = true; e.target.value = ""; e.target.placeholder = "gespeichert"; } });
+$("setIobAll").addEventListener("change", (e) => { iobAllOn = e.target.checked; window.argus.setConfig({ iobAll: iobAllOn }); $("iobAllBody").dataset.mode = ""; setTimeout(() => iobAllRender(true), 3000); });
+$("setIobWrite").addEventListener("change", (e) => window.argus.setConfig({ iobWrite: e.target.checked }));
+async function iobPoll() { try { iobRender(await window.argus.iobData()); } catch {} }
+window.argus.onIob?.(iobRender);
 setInterval(() => { if (iobOn && !document.hidden) iobPoll(); }, 60000);
-window.jarvis.getConfig().then((c) => {
+window.argus.getConfig().then((c) => {
   iobOn = !!c.iobOn; iobPick = Array.isArray(c.iobPick) ? c.iobPick : []; iobHasPass = !!c.hasIobPass;
   $("setIobOn").checked = iobOn; $("setIobUrl").value = c.iobUrl || ""; $("setIobUser").value = c.iobUser || ""; $("setIobWrite").checked = !!c.iobWrite; iobAllOn = c.iobAll !== false; $("setIobAll").checked = iobAllOn; if (iobHasPass) $("setIobPass").placeholder = "gespeichert";
   iobApply(); if (iobOn) iobPoll();

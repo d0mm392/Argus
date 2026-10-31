@@ -14,7 +14,7 @@
     for (const [id, , hRes] of BLOCKS) {
       const el = $(id); el.classList.toggle("blk", !!freeLayout);
       let r = freeLayout?.[id];
-      if (!r && freeLayout && (id === "yt" || id === "tw" || id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "portal" || id === "iob" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "game" || id === "aiLog" || TRADE_IDS.includes(id))) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.jarvis.setConfig({ panelLayout: freeLayout }), 600); }
+      if (!r && freeLayout && (id === "yt" || id === "tw" || id === "mine" || id === "mOver" || id === "mTick" || id === "mHeat" || id === "mLive" || id === "portal" || id === "iob" || id === "clocks" || id === "wx" || id.startsWith("farm") || id === "notes" || id === "quick" || id === "mirror" || id === "game" || id === "aiLog" || TRADE_IDS.includes(id))) { r = freeLayout[id] = newBlockSpot(id); clearTimeout(nudgeSave); nudgeSave = setTimeout(() => window.argus.setConfig({ panelLayout: freeLayout }), 600); }
       if (!r) { el.style.left = el.style.top = el.style.width = ""; if (!(id === "sys" && sysBox.h)) el.style.height = ""; continue; }
       el.style.left = r.x * 100 + "%"; el.style.top = r.y * 100 + "%"; el.style.width = r.w * 100 + "%";
       // Statuszeile und Hinweisleiste: über die ganze Breite gespeichert = nur so breit wie der Inhalt (kleiner ziehen geht trotzdem, dann zählt die gezogene Breite)
@@ -192,7 +192,7 @@
     r.x = Math.max(0, Math.min(1 - r.w, r.x)); r.y = Math.max(0, Math.min(1 - Math.min(hh, 1), r.y));
     freeLayout[id] = r; applyLayout();
   }, true);
-  const arrEnd = () => { if (!arrSt) return; arrSt = null; showGuides(); document.body.classList.remove("gridshow"); window.jarvis.setConfig({ panelLayout: freeLayout }); };
+  const arrEnd = () => { if (!arrSt) return; arrSt = null; showGuides(); document.body.classList.remove("gridshow"); window.argus.setConfig({ panelLayout: freeLayout }); };
   window.addEventListener("pointerup", arrEnd, true); window.addEventListener("pointercancel", arrEnd, true);
   // Direkt anfassen, ohne Anordnen-Modus: am Kopf (obere Kante) ziehen = verschieben, Ecke unten rechts = Größe,
   // sonst irgendwo kurz festhalten (0,35 s) und dann ziehen. Tasten, Felder und Bildlaufleiste bleiben normal bedienbar
@@ -241,7 +241,7 @@
   window.addEventListener("pointerup", () => { for (const g of document.querySelectorAll(".panel > .grabbed")) { g.classList.remove("grabbed"); noClick = g; setTimeout(() => { if (noClick === g) noClick = null; }, 50); } }, true);
   function setArrange(on) {
     if (on && !expanded) return;
-    if (on && !freeLayout) { freeLayout = captureLayout(); applyLayout(); window.jarvis.setConfig({ panelLayout: freeLayout }); }
+    if (on && !freeLayout) { freeLayout = captureLayout(); applyLayout(); window.argus.setConfig({ panelLayout: freeLayout }); }
     document.body.classList.toggle("arrange", on); $("arrangeBtn").setAttribute("aria-pressed", String(on)); placeOverlays();
     ytLast = ""; ytLayout?.(); twLastKey = ""; twLayout?.();
   }
@@ -260,15 +260,15 @@
     // „Claude“, „Lokal“ an der Kugel: gleiche Schalter wie unter Einstellungen, Anzeigen
     $("blockRows").append(...[["aiClaude", "Claude-Anzeige"], ["aiLocal", "Lokal-Anzeige"]].map(([k, n]) => { const l = document.createElement("label"), c = document.createElement("input");
       l.className = "row"; l.append(n + " "); c.type = "checkbox"; c.checked = widgets[k]?.on !== false;
-      c.addEventListener("change", () => { widgets[k] = { ...widgets[k], on: c.checked }; window.jarvis.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} });
+      c.addEventListener("change", () => { widgets[k] = { ...widgets[k], on: c.checked }; window.argus.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} });
       l.append(c); return l; }));
     try { renderMineFx(); renderMOver(); } catch {} // gerade eingeblendet: gleich füllen
     try { mirrorSync(); } catch {}
     fitPanel?.(); placeOverlays();
   }
-  function setHidden(id, hide) { if (hide) hiddenSet.add(id); else hiddenSet.delete(id); applyHidden(); window.jarvis.setConfig({ hiddenBlocks: [...hiddenSet] }); }
+  function setHidden(id, hide) { if (hide) hiddenSet.add(id); else hiddenSet.delete(id); applyHidden(); window.argus.setConfig({ hiddenBlocks: [...hiddenSet] }); }
   $("arrAdd").addEventListener("change", (e) => { if (e.target.value) setHidden(e.target.value, false); });
-  window.jarvis.getConfig?.().then((c) => { hiddenSet = new Set(Array.isArray(c.hiddenBlocks) ? c.hiddenBlocks : []); applyHidden(); });
+  window.argus.getConfig?.().then((c) => { hiddenSet = new Set(Array.isArray(c.hiddenBlocks) ? c.hiddenBlocks : []); applyHidden(); });
   $("arrDone").addEventListener("click", () => setArrange(false));
   // Schrift je Block größer/kleiner: Strg + Mausrad über Protokoll, Chat, Systemwache oder Statuszeile; gemerkt als blockFont
   let blockFont = {};
@@ -280,18 +280,18 @@
     e.preventDefault(); e.stopPropagation();
     const v = Math.max(0.7, Math.min(2.5, (blockFont[id] || 1) * (e.deltaY < 0 ? 1.08 : 1 / 1.08)));
     showPct(e, v); if (Math.abs(v - 1) < 0.03) delete blockFont[id]; else blockFont[id] = Math.round(v * 100) / 100;
-    applyBlockFont(); clearTimeout(bfSave); bfSave = setTimeout(() => window.jarvis.setConfig({ blockFont }), 300);
+    applyBlockFont(); clearTimeout(bfSave); bfSave = setTimeout(() => window.argus.setConfig({ blockFont }), 300);
   }, { passive: false });
-  window.jarvis.getConfig?.().then((c) => { blockFont = c.blockFont || {}; applyBlockFont(); });
+  window.argus.getConfig?.().then((c) => { blockFont = c.blockFont || {}; applyBlockFont(); });
   // Chat-Höhe direkt an der Linie über dem Chat ziehen (ohne Anordnen-Modus), gemerkt als chatH
   let chatH = 0;
   const applyChat = () => { document.body.classList.toggle("chatfix", chatH > 0); if (chatH > 0) document.documentElement.style.setProperty("--chatH", chatH + "px"); fitPanel?.(); };
   { const g = $("chatGrip"); let st = null;
     g.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; e.preventDefault(); st = { y: e.clientY, h: $("transcript").offsetHeight }; g.classList.add("on"); });
     window.addEventListener("pointermove", (e) => { if (!st) return; chatH = Math.round(Math.max(64, Math.min(innerHeight * 0.75, st.h - (e.clientY - st.y)))); applyChat(); }, true);
-    window.addEventListener("pointerup", () => { if (!st) return; st = null; g.classList.remove("on"); window.jarvis.setConfig({ chatH }); }, true);
-    g.addEventListener("dblclick", () => { chatH = 0; applyChat(); window.jarvis.setConfig({ chatH: 0 }); }); }
-  window.jarvis.getConfig?.().then((c) => { chatH = c.chatH || 0; applyChat(); });
+    window.addEventListener("pointerup", () => { if (!st) return; st = null; g.classList.remove("on"); window.argus.setConfig({ chatH }); }, true);
+    g.addEventListener("dblclick", () => { chatH = 0; applyChat(); window.argus.setConfig({ chatH: 0 }); }); }
+  window.argus.getConfig?.().then((c) => { chatH = c.chatH || 0; applyChat(); });
   // Seiten wie ein Homescreen: jede Seite hat ihre eigene Anordnung und eigene sichtbare Fenster
   // Gaming-Seite: laufendes Spiel (aus den Systemdaten), Infos von Steam, Tipps. Nichts wird im Spiel gelesen.
   let gameCur = null, gameInfoFor = "", gameInfo = null, gameDraw = "";
@@ -301,7 +301,7 @@
   async function gameTick(force) {
     if (page !== "Gaming") return;
     const g = gameCur, key = g ? g.name + "|" + (g.appid || "") : "";
-    if (key !== gameInfoFor) { gameInfoFor = key; gameInfo = null; gameDraw = ""; if (g) window.jarvis.gameInfo(g.name, g.appid).then((i) => { if (gameInfoFor === key) { gameInfo = i; gameDraw = ""; gameRender(); } }).catch(() => {}); }
+    if (key !== gameInfoFor) { gameInfoFor = key; gameInfo = null; gameDraw = ""; if (g) window.argus.gameInfo(g.name, g.appid).then((i) => { if (gameInfoFor === key) { gameInfo = i; gameDraw = ""; gameRender(); } }).catch(() => {}); }
     gameRender(force);
   }
   // Verlauf von CPU-, GPU-Last und GPU-Temperatur seit Spielstart (aus den Systemdaten, nichts im Spiel gelesen)
@@ -356,9 +356,9 @@
         out.push(gel("h5", "Controller: " + pad.name)); const pt = gel("div", null, "g-keys"); const ps = pad.kind === "ps" ? { A: "✕", B: "○", X: "□", Y: "△", RT: "R2", LT: "L2", RB: "R1", LB: "L1", Start: "Options" } : null;
         for (const [k, v] of i.pads) { const r = gel("div"); r.append(gel("kbd", ps ? k.replace(/\b(A|B|X|Y|RT|LT|RB|LB|Start)\b/g, (m) => ps[m]) : k), gel("span", v)); pt.append(r); } out.push(pt);
       } else if (i?.pads?.length) out.push(gel("div", "Controller anschließen und eine Taste drücken, dann erscheint hier die Belegung.", "g-dim"));
-      if (i?.news?.length) { out.push(gel("h5", "Neuigkeiten")); for (const n of i.news) { const d = gel("div", n.title, "g-news"); if (n.url) d.addEventListener("click", () => window.jarvis.openUrl(n.url)); out.push(d); } }
+      if (i?.news?.length) { out.push(gel("h5", "Neuigkeiten")); for (const n of i.news) { const d = gel("div", n.title, "g-news"); if (n.url) d.addEventListener("click", () => window.argus.openUrl(n.url)); out.push(d); } }
       out.push(gel("h5", "Nachschlagen")); const L = gel("div", null, "g-links"), q = encodeURIComponent(i?.title || g.name);
-      for (const [lbl, url] of [["PCGamingWiki", "https://www.pcgamingwiki.com/w/index.php?search=" + q], ["Tipps auf YouTube", "https://www.youtube.com/results?search_query=" + q + "+tipps"], ["Steam-Guides", i?.appid || g.appid ? "https://steamcommunity.com/app/" + (i?.appid || g.appid) + "/guides/" : "https://steamcommunity.com/search/SearchResultsAjax?text=" + q], ["Reddit", "https://www.reddit.com/search/?q=" + q]]) { const b = gel("button", lbl, "btn"); b.type = "button"; b.addEventListener("click", () => window.jarvis.openUrl(url)); L.append(b); }
+      for (const [lbl, url] of [["PCGamingWiki", "https://www.pcgamingwiki.com/w/index.php?search=" + q], ["Tipps auf YouTube", "https://www.youtube.com/results?search_query=" + q + "+tipps"], ["Steam-Guides", i?.appid || g.appid ? "https://steamcommunity.com/app/" + (i?.appid || g.appid) + "/guides/" : "https://steamcommunity.com/search/SearchResultsAjax?text=" + q], ["Reddit", "https://www.reddit.com/search/?q=" + q]]) { const b = gel("button", lbl, "btn"); b.type = "button"; b.addEventListener("click", () => window.argus.openUrl(url)); L.append(b); }
       out.push(L);
     }
     body.replaceChildren(...out);
@@ -388,7 +388,7 @@
   function applyLook(l) {
     if (l.viz) { viz = { ...viz, ...l.viz }; for (const cb of document.querySelectorAll("[data-viz]")) if (cb.dataset.viz in viz) cb.checked = !!viz[cb.dataset.viz]; try { markRing(); } catch {} }
     if (l.widgets) { widgets = JSON.parse(JSON.stringify(l.widgets)); try { buildWidgetRows(); } catch {} }
-    window.jarvis.setConfig({ viz, widgets });
+    window.argus.setConfig({ viz, widgets });
   }
   function snapPage() { return { look: { viz: { ...viz }, widgets: JSON.parse(JSON.stringify(widgets)) }, panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, ballScale, ballOff: { ...ballOff }, ballOn, statusOn, aiOn: widgets.ai?.on !== false, strataOn: widgets.strata?.on !== false, friendsOn: widgets.friends?.on !== false, friendsBox: { ...friendsBox } }; }
   // Je Seite gespeichert (pageLooks): Kugel-Optik, Fenster-Stil (Deckkraft, Textfarbe, Schrift) und Fenster-Designs. Nichts davon darf auf eine andere Seite durchschlagen.
@@ -396,7 +396,7 @@
   let pageLooks = {}, applyingLook = false, pageLookTimer = 0;
   const copyJ = (o) => JSON.parse(JSON.stringify(o ?? {}));
   const pageLookNow = () => ({ ball: ballLook(), win: copyJ(window.winStyleGet?.()), looks: copyJ(window.looksGet?.()) });
-  function savePageLookNow() { clearTimeout(pageLookTimer); if (applyingLook) return; pageLooks[page] = pageLookNow(); window.jarvis.setConfig({ pageLooks }); }
+  function savePageLookNow() { clearTimeout(pageLookTimer); if (applyingLook) return; pageLooks[page] = pageLookNow(); window.argus.setConfig({ pageLooks }); }
   const savePageLookSoon = () => { if (applyingLook) return; clearTimeout(pageLookTimer); pageLookTimer = setTimeout(savePageLookNow, 250); };
   window.onPageStyle = savePageLookSoon;
   for (const id of Object.values(BALL_LOOK)) { const e = $(id); if (e) { e.addEventListener("change", savePageLookSoon); e.addEventListener("input", savePageLookSoon); } }
@@ -410,7 +410,7 @@
     const names = ["Start", "Mining", "Gaming", "Trading", ...customPages], cur = pageLookNow(), had = !!pageLooks[page];
     for (const n of names) if (!pageLooks[n]) pageLooks[n] = { ball: { ...cur.ball, ...(pages[n]?.look?.ball || {}) }, win: copyJ(cur.win), looks: copyJ(cur.looks) };
     if (had) loadPageLook(page);
-    window.jarvis.setConfig({ pageLooks });
+    window.argus.setConfig({ pageLooks });
   }
   function renderPages() { for (const b of $("pageTabs").children) b.classList.toggle("on", b.dataset.pg === page); }
   window.notesGeometryRead = () => copyJ({ layout: freeLayout?.notes || null, pin: pins.notes || null, scale: scales.notes ?? null });
@@ -426,31 +426,31 @@
     window.notesSwitchPage?.(n);
     savePageLookNow(); pages[page] = snapPage(); page = n; loadPageLook(n);
     const def = PAGE_DEF[n] || (isCustom(n) ? CUSTOM_DEF : null), pf = pages[n] || (def ? { panelLayout: {}, hiddenBlocks: BLOCKS.map(([id]) => id).filter((id) => !def.includes(id)), pins: {}, scales: {} } : null);
-    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming" && !isCustom(n)) hiddenSet.add("game"); if (n !== "Trading" && !isCustom(n)) for (const id of TRADE_IDS) hiddenSet.add(id); else for (const id of TRADE_IDS) if (!pages[n]) hiddenSet.delete(id); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.jarvis.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
+    if (pf) { const L = pf.panelLayout || {}; freeLayout = Object.keys(L).length ? JSON.parse(JSON.stringify(L)) : null; hiddenSet = new Set(pf.hiddenBlocks || []); if (n === "Mining") hiddenSet.add("yt"); if (n !== "Gaming" && !isCustom(n)) hiddenSet.add("game"); if (n !== "Trading" && !isCustom(n)) for (const id of TRADE_IDS) hiddenSet.add(id); else for (const id of TRADE_IDS) if (!pages[n]) hiddenSet.delete(id); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) }; if (pf.ballScale) { ballScale = pf.ballScale; applyBallScale(); window.argus.setScale("ballScale", ballScale); } if (pf.ballOff) ballOff = { ...pf.ballOff };
       if (pf.look) applyLook(pf.look);
       ballOn = pf.ballOn !== false; statusOn = pf.statusOn !== false; $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; applyUi();
       widgets.ai = { ...widgets.ai, on: pf.aiOn !== false }; widgets.strata = { ...widgets.strata, on: pf.strataOn !== false }; widgets.friends = { ...widgets.friends, on: pf.friendsOn !== false }; $("setFriendsOn").checked = widgets.friends.on; try { buildWidgetRows(); } catch {}
       friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; gripSt.f1 = null; gripSt.f2 = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
-      window.jarvis.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
+      window.argus.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
       restoreNotesGeometry(n); applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
-    renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.jarvis.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
+    renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.argus.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
   }
   function applyMiningOn() {
     document.body.classList.toggle("nomining", !miningOn);
     if ((!miningOn && page === "Mining") || (!gamingOn && page === "Gaming") || (!tradeCfg.on && page === "Trading")) { const p = pagesOn; pagesOn = true; switchPage("Start"); pagesOn = p; }
     pageClasses(); applyHidden();
   }
-  $("setGamingOn").addEventListener("change", (e) => { gamingOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ gamingOn }); if (gamingOn) { switchPage("Gaming"); try { notice?.("Gaming-Seite oben links neben ARGUS (Strg+3)"); } catch {} } });
-  $("setMiningOn").addEventListener("change", (e) => { miningOn = e.target.checked; applyMiningOn(); window.jarvis.setConfig({ miningOn }); });
-  $("setPagesOn").addEventListener("change", (e) => { pagesOn = e.target.checked; if (!pagesOn && page === "Mining") { pagesOn = true; switchPage("Start"); pagesOn = false; } pageClasses(); window.jarvis.setConfig({ pagesOn }); });
-  $("setMineOrb").addEventListener("change", (e) => { mineOrb = e.target.checked; pageClasses(); window.jarvis.setConfig({ mineOrb }); });
-  $("setOceanTotal").addEventListener("change", (e) => { oceanInTotal = e.target.checked; fmTotC = null; renderMOver(); renderFarm(); window.jarvis.setConfig({ oceanInTotal }); });
-  $("setPageFriends").addEventListener("change", (e) => { pageFriends = e.target.checked; window.jarvis.setConfig({ pageFriends }); });
+  $("setGamingOn").addEventListener("change", (e) => { gamingOn = e.target.checked; applyMiningOn(); window.argus.setConfig({ gamingOn }); if (gamingOn) { switchPage("Gaming"); try { notice?.("Gaming-Seite oben links neben ARGUS (Strg+3)"); } catch {} } });
+  $("setMiningOn").addEventListener("change", (e) => { miningOn = e.target.checked; applyMiningOn(); window.argus.setConfig({ miningOn }); });
+  $("setPagesOn").addEventListener("change", (e) => { pagesOn = e.target.checked; if (!pagesOn && page === "Mining") { pagesOn = true; switchPage("Start"); pagesOn = false; } pageClasses(); window.argus.setConfig({ pagesOn }); });
+  $("setMineOrb").addEventListener("change", (e) => { mineOrb = e.target.checked; pageClasses(); window.argus.setConfig({ mineOrb }); });
+  $("setOceanTotal").addEventListener("change", (e) => { oceanInTotal = e.target.checked; fmTotC = null; renderMOver(); renderFarm(); window.argus.setConfig({ oceanInTotal }); });
+  $("setPageFriends").addEventListener("change", (e) => { pageFriends = e.target.checked; window.argus.setConfig({ pageFriends }); });
   const applyMineView = (v) => { document.body.classList.toggle("mview-balken", v === "balken"); fitPanel?.(); };
-  $("setMineView").addEventListener("change", (e) => { applyMineView(e.target.value); window.jarvis.setConfig({ mineView: e.target.value }); });
+  $("setMineView").addEventListener("change", (e) => { applyMineView(e.target.value); window.argus.setConfig({ mineView: e.target.value }); });
   for (const b of $("pageTabs").children) b.addEventListener("click", () => switchPage(b.dataset.pg));
   addEventListener("keydown", (e) => { if (e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4" || (e.key >= "5" && e.key <= "9"))) { e.preventDefault(); const t = e.key === "1" ? "Start" : e.key === "2" ? "Mining" : e.key === "3" ? "Gaming" : e.key === "4" ? "Trading" : customPages[+e.key - 5]; if (!t) return; if ((t === "Mining" && !miningOn) || (t === "Gaming" && !gamingOn) || (t === "Trading" && !tradeCfg.on)) return; switchPage(t); } });
-  window.jarvis.getConfig?.().then((c) => {
+  window.argus.getConfig?.().then((c) => {
     pageLooks = c.pageLooks && typeof c.pageLooks === "object" ? c.pageLooks : {}; setTimeout(seedPageLooks, 1800);
     pages = c.pages || {}; gamingOn = c.gamingOn !== false; $("setGamingOn").checked = gamingOn; page = c.page === "Mining" ? "Mining" : c.page === "Gaming" && c.gamingOn !== false ? "Gaming" : c.page === "Trading" && c.tradeOn !== false ? "Trading" : Array.isArray(c.customPages) && c.customPages.includes(c.page) ? c.page : "Start"; customPages = Array.isArray(c.customPages) ? c.customPages.filter((x) => typeof x === "string").slice(0, 8) : []; if (page !== "Gaming" && !isCustom(page)) hiddenSet.add("game"); if (page !== "Trading" && !isCustom(page)) for (const id of TRADE_IDS) hiddenSet.add(id); miningOn = c.miningOn !== false; $("setMiningOn").checked = miningOn; pagesOn = c.pagesOn !== false; mineOrb = c.mineOrb !== false; pageFriends = !!c.pageFriends; oceanInTotal = c.oceanInTotal !== false; $("setOceanTotal").checked = oceanInTotal; fmTotC = null;
     $("setPagesOn").checked = pagesOn; $("setMineOrb").checked = mineOrb; $("setPageFriends").checked = pageFriends; $("setMineView").value = c.mineView || "kacheln"; applyMineView(c.mineView);
@@ -460,21 +460,21 @@
       const nw = ["mTick", "mHeat", "mLive"];
       if (page !== "Mining") { nw.forEach((id) => hiddenSet.add(id)); applyHidden(); } else if (pages.Start) pages.Start.hiddenBlocks = [...new Set([...(pages.Start.hiddenBlocks || []), ...nw])];
       if (pages.Mining && page !== "Mining") pages.Mining.hiddenBlocks = (pages.Mining.hiddenBlocks || []).filter((id) => !nw.includes(id));
-      window.jarvis.setConfig({ mFxInit: true, pages, hiddenBlocks: [...hiddenSet] });
+      window.argus.setConfig({ mFxInit: true, pages, hiddenBlocks: [...hiddenSet] });
     }
     mineFx = { ...mineFx, ...(c.mineFx || {}) }; $("setTickSpeed").value = mineFx.tick; $("setTickFont").value = mineFx.tickFont; $("setHeatSize").value = mineFx.heat; $("setLiveRange").value = String(mineFx.live); $("setLiveH").value = mineFx.liveH; $("setSinceOn").checked = mineFx.since !== false;
     if (!c.mOverInit) {
       if (page !== "Mining") { hiddenSet.add("mOver"); applyHidden(); } else if (pages.Start) pages.Start.hiddenBlocks = [...new Set([...(pages.Start.hiddenBlocks || []), "mOver"])];
       if (pages.Mining && page !== "Mining") pages.Mining.hiddenBlocks = (pages.Mining.hiddenBlocks || []).filter((id) => id !== "mOver");
-      window.jarvis.setConfig({ mOverInit: true, pages, hiddenBlocks: [...hiddenSet] });
+      window.argus.setConfig({ mOverInit: true, pages, hiddenBlocks: [...hiddenSet] });
     }
     // 0.31.9: YouTube nur auf der Start-Seite (0.31.8 hatte es auf Mining mitgenommen)
     if (pages.Mining) pages.Mining.hiddenBlocks = [...new Set([...(pages.Mining.hiddenBlocks || []), "yt", "tw"])];
-    if (page === "Mining" && (!hiddenSet.has("yt") || !hiddenSet.has("tw"))) { hiddenSet.add("yt"); hiddenSet.add("tw"); applyHidden(); window.jarvis.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); }
+    if (page === "Mining" && (!hiddenSet.has("yt") || !hiddenSet.has("tw"))) { hiddenSet.add("yt"); hiddenSet.add("tw"); applyHidden(); window.argus.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); }
     if (!pagesOn && page === "Mining") { pagesOn = true; switchPage("Start"); pagesOn = false; }
     renderPages(); pageClasses(); renderMOver(); renderMineFx(); applyMiningOn();
   });
-  const saveFx = (patch) => { mineFx = { ...mineFx, ...patch }; tickSig = ""; renderMineFx(); renderMOver(); clearTimeout(saveFx.t); saveFx.t = setTimeout(() => window.jarvis.setConfig({ mineFx }), 300); };
+  const saveFx = (patch) => { mineFx = { ...mineFx, ...patch }; tickSig = ""; renderMineFx(); renderMOver(); clearTimeout(saveFx.t); saveFx.t = setTimeout(() => window.argus.setConfig({ mineFx }), 300); };
   $("setTickSpeed").addEventListener("input", (e) => saveFx({ tick: +e.target.value }));
   $("setTickFont").addEventListener("input", (e) => saveFx({ tickFont: +e.target.value }));
   $("setHeatSize").addEventListener("input", (e) => saveFx({ heat: +e.target.value }));
@@ -489,23 +489,23 @@
   $("arrProf").addEventListener("change", (e) => {
     prof = e.target.value; const pf = profs[prof]; if (!pf) return renderProfs();
     freeLayout = JSON.parse(JSON.stringify(pf.panelLayout || {})); hiddenSet = new Set(pf.hiddenBlocks || []); pins = { ...(pf.pins || {}) }; scales = { ...(pf.scales || {}) };
-    applyLayout(); applyHidden(); renderProfs(); window.jarvis.setConfig({ panelLayout: freeLayout, hiddenBlocks: [...hiddenSet], pins, scales, profLast: prof });
+    applyLayout(); applyHidden(); renderProfs(); window.argus.setConfig({ panelLayout: freeLayout, hiddenBlocks: [...hiddenSet], pins, scales, profLast: prof });
   });
   $("arrProfSave").addEventListener("click", () => {
     const d = new Date(), base = (onMining() ? "Mining" : "Start") + " · " + d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }) + " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
     let n = base, k = 2; while (profs[n]) n = base + " (" + k++ + ")";
     profs[n] = { panelLayout: JSON.parse(JSON.stringify(freeLayout || {})), hiddenBlocks: [...hiddenSet], pins: { ...pins }, scales: { ...scales }, t: Date.now() }; prof = n;
     const all = profNames(); for (const old of all.slice(20)) delete profs[old]; // höchstens 20 behalten
-    window.jarvis.setConfig({ layoutProfiles: profs, profLast: prof }); renderProfs(); $("arrProfSave").textContent = "Gespeichert ✓"; setTimeout(() => { $("arrProfSave").textContent = "Speichern"; }, 1500);
+    window.argus.setConfig({ layoutProfiles: profs, profLast: prof }); renderProfs(); $("arrProfSave").textContent = "Gespeichert ✓"; setTimeout(() => { $("arrProfSave").textContent = "Speichern"; }, 1500);
   });
-  $("arrProfDel").addEventListener("click", () => { if (!profs[prof]) return; delete profs[prof]; prof = ""; window.jarvis.setConfig({ layoutProfiles: profs, profLast: "" }); renderProfs(); });
-  window.jarvis.getConfig?.().then((c) => { profs = c.layoutProfiles || {}; prof = c.profLast || ""; renderProfs(); });
+  $("arrProfDel").addEventListener("click", () => { if (!profs[prof]) return; delete profs[prof]; prof = ""; window.argus.setConfig({ layoutProfiles: profs, profLast: "" }); renderProfs(); });
+  window.argus.getConfig?.().then((c) => { profs = c.layoutProfiles || {}; prof = c.profLast || ""; renderProfs(); });
   $("arrHole").addEventListener("click", () => holePlace());
   $("arrTidy").addEventListener("click", () => {
     if (!freeLayout) return;
     const pr = panelEl.getBoundingClientRect(), g = (f, n) => Math.round(f * n / GRID) * GRID / n;
     for (const [id, , hRes] of BLOCKS) { const r = freeLayout[id]; if (!r) continue; r.x = g(r.x, pr.width); r.y = g(r.y, pr.height); r.w = g(r.w, pr.width); if (hRes && r.h) r.h = g(r.h, pr.height); }
-    applyLayout(); window.jarvis.setConfig({ panelLayout: freeLayout });
+    applyLayout(); window.argus.setConfig({ panelLayout: freeLayout });
   });
   // Rahmen dürfen nie mitscrollen: sonst rutschen Kopfleiste (Einstellungen, Minimieren, Schließen) und Panel aus dem Bild
   // (Nutzerwunsch: nach „Zurücksetzen“/Profil kam man an nichts mehr heran). Listen, Chat und Textfelder scrollen weiter normal.
@@ -514,7 +514,7 @@
   document.addEventListener("scroll", (e) => { const t = e.target; if (t === document || t === document.documentElement || t === document.body) { unscroll(document.documentElement); unscroll(document.body); } else if (t.matches?.(NO_SCROLL)) unscroll(t); }, true);
   setInterval(() => { unscroll(document.documentElement); unscroll(document.body); document.querySelectorAll(NO_SCROLL).forEach(unscroll); }, 1000);
   // Anzeigen „Claude · Lokal“, Strata und Leerlauf: × zum Ausblenden (zurück: Rechtsklick → Anzeigen)
-  function hideWidget(k, on) { widgets[k] = { ...widgets[k], on }; window.jarvis.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} }
+  function hideWidget(k, on) { widgets[k] = { ...widgets[k], on }; window.argus.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} }
   for (const [el, fn] of [[$("pill"), () => { statusOn = false; $("setStatusOn").checked = false; applyUi(); sv({ statusOn }); }], [who, () => hideWidget("ai", false)], [$("strataBtn"), () => hideWidget("strata", false)]]) {
     const x = document.createElement("button"); x.type = "button"; x.className = "hx"; x.textContent = "×"; x.title = "Ausblenden (zurück: Rechtsklick → Anzeigen)"; x.setAttribute("aria-label", "Ausblenden");
     for (const ev of ["pointerdown", "mousedown", "dblclick"]) x.addEventListener(ev, (e) => e.stopPropagation());
@@ -554,10 +554,10 @@
     const cs = getComputedStyle(document.body), vars = {};
     for (const k of ["--menu-bg", "--menu-shadow", "--win-h", "--win-s", "--win-l", "--accent", "--ink", "--ink-dim", "--line", "--f-body", "--f-mono", "--f-display"]) vars[k] = cs.getPropertyValue(k).trim();
     vars["--menu-a"] = String(Math.max(0.3, Math.min(1, menuAlpha / 100)));
-    const cfg = await window.jarvis.getConfig().catch(() => ({}));
+    const cfg = await window.argus.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
     const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS, pulse: pulseStyle, nodeStyle, aura: auraMode, breath: breathOn, structK: Math.round(structK * 100), nodeK: Math.round(nodeK * 100), edgeK, look3dK: Math.round(look3dK * 100), dens: densK, ringStyles: RING_STYLES, ringStyle: viz.ringStyle || "form", ringSize: scales.rings || 1, ringMono: !!viz.ringMono, tiltX: gTiltX, tiltY: gTiltY };
-    window.jarvis.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn, trading: page === "Trading", undo: typeof undoStack !== "undefined" ? undoStack.length : 0, pageList: ["Start", ...(miningOn && pagesOn ? ["Mining"] : []), ...(gamingOn ? ["Gaming"] : []), ...(tradeCfg.on ? ["Trading"] : []), ...customPages], page, custom: isCustom(page) }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.argus.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn, trading: page === "Trading", undo: typeof undoStack !== "undefined" ? undoStack.length : 0, pageList: ["Start", ...(miningOn && pagesOn ? ["Mining"] : []), ...(gamingOn ? ["Gaming"] : []), ...(tradeCfg.on ? ["Trading"] : []), ...customPages], page, custom: isCustom(page) }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   // Gibt es für diese Anzeige gerade Messwerte? Argus erkennt das selbst aus den Live-Daten (Sensor fehlt = nicht anbieten)
   function btnAvail(k) {
@@ -569,10 +569,10 @@
     if (!ts.length) return true;
     return ts.some((t) => { try { const v = t.get(); return v != null && !Number.isNaN(v); } catch { return false; } });
   }
-  window.jarvis.onCtxAction?.(({ a, v }) => {
+  window.argus.onCtxAction?.(({ a, v }) => {
     if (a === "showfan" && typeof v === "string") { // genau diesen Lüfter einblenden; war die ganze Lüfter-Anzeige aus, erscheint nur er allein
       if (widgets.fans?.on === false) { hiddenFans = (sys.fans || []).map((f) => f.name).filter((n) => n !== v); hideWidget("fans", true); } else hiddenFans = hiddenFans.filter((n) => n !== v);
-      window.jarvis.setConfig({ hiddenFans }); return; }
+      window.argus.setConfig({ hiddenFans }); return; }
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
     else if (a === "arrange") $("arrangeBtn").click();
     else if (a === "holeplace") holePlace();
@@ -583,12 +583,12 @@
       else if (v === "mini") { miniMore = !miniMore; $("setMiniMore").checked = miniMore; applyUi(); sv({ miniMore }); }
       else if (v === "steam" || v === "discord") { // aus der gespeicherten Einstellung umschalten (das Häkchen in den Einstellungen kann veraltet sein); Einschalten holt auch die Freundesliste zurück
         const k = v === "steam" ? "steamOn" : "discordOn", box = $(v === "steam" ? "setSteamOn" : "setDiscordOn");
-        window.jarvis.getConfig().then((c) => { const nv = c[k] === false; box.checked = nv; window.jarvis.setConfig({ [k]: nv }); if (nv && widgets.friends?.on === false) setFriendsOn(true); });
+        window.argus.getConfig().then((c) => { const nv = c[k] === false; box.checked = nv; window.argus.setConfig({ [k]: nv }); if (nv && widgets.friends?.on === false) setFriendsOn(true); });
       }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }
-    else if (a === "setw" && v && typeof v.k === "string") { const nv = v.flip ? widgets[v.k]?.on === false : !!v.on; if (v.k === "fans" && nv && hiddenFans.length) { hiddenFans = []; window.jarvis.setConfig({ hiddenFans }); } hideWidget(v.k, nv); } // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
-    else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t && /^fan\d$/.test(t.key)) { const nm = fanOf(+t.key.slice(3))?.name; if (nm) { hiddenFans = [...hiddenFans, nm]; window.jarvis.setConfig({ hiddenFans }); } } else if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.jarvis.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
+    else if (a === "setw" && v && typeof v.k === "string") { const nv = v.flip ? widgets[v.k]?.on === false : !!v.on; if (v.k === "fans" && nv && hiddenFans.length) { hiddenFans = []; window.argus.setConfig({ hiddenFans }); } hideWidget(v.k, nv); } // flip: vom aktuellen Stand umschalten (das Menü bleibt offen, sein Häkchen kann veraltet sein)
+    else if (a === "hidetemp") { const t = temps.find((x) => x.key === v); if (t && /^fan\d$/.test(t.key)) { const nm = fanOf(+t.key.slice(3))?.name; if (nm) { hiddenFans = [...hiddenFans, nm]; window.argus.setConfig({ hiddenFans }); } } else if (t) { widgets[t.w] = { ...widgets[t.w], on: false }; window.argus.setConfig({ widgets: { [t.w]: widgets[t.w] } }); try { buildWidgetRows(); } catch {} } }
     else if (a === "gopage" && typeof v === "string" && (v === "Start" || PAGE_DEF[v] || isCustom(v))) switchPage(v);
     else if (["newpage", "renamepage", "delpage"].includes(a) && typeof pgDialog === "function") pgDialog(a.slice(0, -4));
     else if (a === "undo" && typeof undoMove === "function") undoMove();
@@ -596,13 +596,13 @@
     else if (a === "hideblk" && BLOCK_NAMES[v]) setHidden(v, true);
     else if ((a === "blkfront" || a === "blkback") && BLOCK_NAMES[v]) {
       if (!freeLayout) { freeLayout = captureLayout(); applyLayout(); }
-      if (freeLayout[v]) { if (a === "blkfront") bringFront(v); else { for (const k of Object.keys(freeLayout)) if (freeLayout[k]) freeLayout[k].z = (freeLayout[k].z || 0) + 1; freeLayout[v].z = 0; applyZ(); } window.jarvis.setConfig({ panelLayout: freeLayout }); }
+      if (freeLayout[v]) { if (a === "blkfront") bringFront(v); else { for (const k of Object.keys(freeLayout)) if (freeLayout[k]) freeLayout[k].z = (freeLayout[k].z || 0) + 1; freeLayout[v].z = 0; applyZ(); } window.argus.setConfig({ panelLayout: freeLayout }); }
     }
-    else if (a === "holetoggle") window.jarvis.getConfig().then((c) => { window.jarvis.setConfig({ holeOn: !c.holeOn, holeEdit: false }); $("setHoleOn").checked = !c.holeOn; });
+    else if (a === "holetoggle") window.argus.getConfig().then((c) => { window.argus.setConfig({ holeOn: !c.holeOn, holeEdit: false }); $("setHoleOn").checked = !c.holeOn; });
     else if (a === "ctxset" && v && typeof v.k === "string") { // Rechtsklick-Menü am Element: stellt über die Einstellungs-Steuerung ein, damit alles den gleichen Weg nimmt
       const ids = { shape: "setShape", hue: "setHue", regions: "setRegions", glow: "setGlow", spin: "setSpin", flash: "setFlash", labels: "setBallLabels", bshape: "setBtnShape", blook: "setBtnLook", rim: "setShapeRim", struct: "setStruct", pulse: "setPulse", nodestyle: "setNodeStyle", aura: "setAura", breath: "setBreath", nodek: "setNodeK", edgek: "setEdgeK", look3d: "setLook3dK", dens: "setDens", flat: "setShape2d" }, el = ids[v.k] && $(ids[v.k]);
       if (v.k === "ringstyle") { document.querySelector(`#ringPick [data-v="${String(v.v).replace(/[^a-z0-9]/gi, "")}"]`)?.click(); return; }
-      if (v.k === "ringmono") { viz = { ...viz, ringMono: !!v.v }; window.jarvis.setConfig({ viz }); return; }
+      if (v.k === "ringmono") { viz = { ...viz, ringMono: !!v.v }; window.argus.setConfig({ viz }); return; }
       if (v.k === "ringoff") { const cb = document.querySelector('[data-viz="rings"]'); if (cb) { cb.checked = false; cb.dispatchEvent(new Event("change")); } return; }
       if (v.k === "ringtilt") { $("setGaugeTiltX").value = v.v[0]; $("setGaugeTiltY").value = v.v[1]; $("setGaugeTiltX").dispatchEvent(new Event("input")); $("setGaugeTiltY").dispatchEvent(new Event("input")); return; }
       if (v.k === "ringsize") { $("setRingSize").value = v.v; $("setRingSize").dispatchEvent(new Event("input")); $("setRingSize").dispatchEvent(new Event("change")); return; }
@@ -617,8 +617,8 @@
     else if (a === "yt") $("ytBtn").click();
     else if (a === "tw") $("twBtn").click();
     else if (a === "unhide") { if (v === "*") { for (const id of [...hiddenSet]) setHidden(id, false); } else if (BLOCK_NAMES[v]) setHidden(v, false); }
-    else if (a === "media") { mediaOn = true; $("setMedia").checked = true; renderMedia(); window.jarvis.setConfig({ mediaOn }); }
+    else if (a === "media") { mediaOn = true; $("setMedia").checked = true; renderMedia(); window.argus.setConfig({ mediaOn }); }
   });
-  $("arrReset").addEventListener("click", () => { freeLayout = null; ballOff = { x: 0, y: 0 }; applyLayout(); setArrange(false); window.jarvis.setConfig({ panelLayout: {}, ballOff }); });
+  $("arrReset").addEventListener("click", () => { freeLayout = null; ballOff = { x: 0, y: 0 }; applyLayout(); setArrange(false); window.argus.setConfig({ panelLayout: {}, ballOff }); });
   window.addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("arrange")) { e.stopPropagation(); setArrange(false); } }, true);
 

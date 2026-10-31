@@ -28,7 +28,7 @@
   // ---------- KI (läuft im Hauptprozess: Claude API, Ollama oder Demo) ----------
   let backend = { kind: "wait" };
   async function refreshBackend() {
-    backend = await window.jarvis.backendInfo();
+    backend = await window.argus.backendInfo();
     const el = $("backend"); el.dataset.kind = backend.kind; el.querySelector("span").textContent = backend.label;
     aiName = backend.kind === "ollama" || backend.kind === "strata" ? "Lokal" : backend.kind === "demo" ? "Argus" : backend.kind === "openai" ? String(backend.label).split(" · ")[0] : "Claude";
   }
@@ -42,19 +42,19 @@
     if (st.phase === "missing" || st.phase === "error") {
       const el = $("notice"); el.textContent = st.text + " ";
       const a = document.createElement("a"); a.href = "#"; a.textContent = "Erneut versuchen";
-      a.addEventListener("click", (e) => { e.preventDefault(); window.jarvis.setupLocal(); });
+      a.addEventListener("click", (e) => { e.preventDefault(); window.argus.setupLocal(); });
       el.append(a);
     } else notice(st.text);
     if (changed) { log(st.text); refreshBackend(); }
     if (st.phase === "pull" || st.phase === "install") $("capRegion").textContent = st.text;
   }
-  window.jarvis.onLocalAI(onLocalAI);
-  $("setOllamaOn").addEventListener("change", (e) => { window.jarvis.setConfig({ ollamaOff: !e.target.checked }); ollamaRows(!e.target.checked, false); });
+  window.argus.onLocalAI(onLocalAI);
+  $("setOllamaOn").addEventListener("change", (e) => { window.argus.setConfig({ ollamaOff: !e.target.checked }); ollamaRows(!e.target.checked, false); });
   // Ollama-Felder nur zeigen, wenn Ollama genutzt wird (ohne Strata-Ordner bleibt der Schalter sichtbar, sonst käme man nicht zurück)
   const ollamaRows = (off, hasStrata) => document.querySelectorAll(".ollama-only").forEach((e) => { e.hidden = off && (hasStrata || !e.querySelector("#setOllamaOn")); });
-  $("setStrataWake").addEventListener("change", (e) => window.jarvis.setConfig({ strataWake: e.target.checked }));
-  window.jarvis.getConfig?.().then((c) => { $("setOllamaOn").checked = !c.ollamaOff; $("setStrataWake").checked = c.strataWake !== false; ollamaRows(c.ollamaOff, !!c.strata?.dir); });
-  window.jarvis.localAI().then(onLocalAI);
+  $("setStrataWake").addEventListener("change", (e) => window.argus.setConfig({ strataWake: e.target.checked }));
+  window.argus.getConfig?.().then((c) => { $("setOllamaOn").checked = !c.ollamaOff; $("setStrataWake").checked = c.strataWake !== false; ollamaRows(c.ollamaOff, !!c.strata?.dir); });
+  window.argus.localAI().then(onLocalAI);
 
   // ---------- Groß / Klein ----------
   let autoExpanded = false, collapseTimer = null;
@@ -63,30 +63,30 @@
     if (!on && !$("settings").hidden) { $("settings").hidden = true; setThrough(false); } // Einstellungen gehören zum großen Fenster
     if (on) setTimeout(() => $("askInput").focus({ preventScroll: true }), 50);
   };
-  window.jarvis.onExpanded(onExp);
+  window.argus.onExpanded(onExp);
   // nach Neustart/Update kann das Panel schon offen sein, bevor dieses Skript lief (Meldung verpasst): Stand einmal abfragen
-  window.jarvis.getConfig?.().then((c) => { if (c.expandedNow && !expanded) onExp(true); });
+  window.argus.getConfig?.().then((c) => { if (c.expandedNow && !expanded) onExp(true); });
   // Angesprochen: kurz nach vorn holen (falls eingestellt) und das Panel nur aufklappen, wenn das gewünscht ist
   let autoOpen = true;
-  function autoExpand() { window.jarvis.attention?.(true); if (autoOpen && !expanded) { autoExpanded = true; window.jarvis.setExpanded(true, false); } clearTimeout(collapseTimer); }
-  setInterval(() => { if (!busy && !voice.awake) window.jarvis.attention?.(false); }, 4000); // nach der Antwort wieder in die normale Ebene
+  function autoExpand() { window.argus.attention?.(true); if (autoOpen && !expanded) { autoExpanded = true; window.argus.setExpanded(true, false); } clearTimeout(collapseTimer); }
+  setInterval(() => { if (!busy && !voice.awake) window.argus.attention?.(false); }, 4000); // nach der Antwort wieder in die normale Ebene
   function scheduleAutoCollapse() {
     if (!autoExpanded) return;
     clearTimeout(collapseTimer);
     collapseTimer = setTimeout(() => {
-      if (!busy && !voice.awake && !document.body.matches(":hover")) { autoExpanded = false; window.jarvis.setExpanded(false, false); }
+      if (!busy && !voice.awake && !document.body.matches(":hover")) { autoExpanded = false; window.argus.setExpanded(false, false); }
       else scheduleAutoCollapse();
     }, 12000);
   }
-  $("expandBtn").addEventListener("click", () => { autoExpanded = false; window.jarvis.setExpanded(true, true); });
-  $("collapseBtn").addEventListener("click", () => { autoExpanded = false; window.jarvis.setExpanded(false, false); });
+  $("expandBtn").addEventListener("click", () => { autoExpanded = false; window.argus.setExpanded(true, true); });
+  $("collapseBtn").addEventListener("click", () => { autoExpanded = false; window.argus.setExpanded(false, false); });
   // ---------- Fensterknöpfe ----------
-  $("closeBtn").addEventListener("click", () => window.jarvis.quit());
+  $("closeBtn").addEventListener("click", () => window.argus.quit());
   // Wie bei normalen Programmen nur Minimieren, Maximieren, Schließen. Minimieren macht Argus zur Kugel, die sichtbar bleibt
-  $("minBtn").addEventListener("click", () => { autoExpanded = false; window.jarvis.setExpanded(false, false); });
-  $("maxBtn").addEventListener("click", () => window.jarvis.winMode("max"));
-  $("fullBtn").addEventListener("click", () => window.jarvis.winMode("full"));
-  window.jarvis.onLayout((l) => { const mx = !!l.mode && l.mode !== "normal"; document.body.classList.toggle("maxed", mx); const b = $("maxBtn"); b.title = mx ? "Wiederherstellen (vorherige Größe)" : "Maximieren"; b.setAttribute("aria-label", mx ? "Wiederherstellen" : "Maximieren"); });
+  $("minBtn").addEventListener("click", () => { autoExpanded = false; window.argus.setExpanded(false, false); });
+  $("maxBtn").addEventListener("click", () => window.argus.winMode("max"));
+  $("fullBtn").addEventListener("click", () => window.argus.winMode("full"));
+  window.argus.onLayout((l) => { const mx = !!l.mode && l.mode !== "normal"; document.body.classList.toggle("maxed", mx); const b = $("maxBtn"); b.title = mx ? "Wiederherstellen (vorherige Größe)" : "Maximieren"; b.setAttribute("aria-label", mx ? "Wiederherstellen" : "Maximieren"); });
 
   // ---------- Farben ----------
   const BASE_HUES = REGIONS.map((r) => r.hue);
@@ -107,13 +107,13 @@
   }
   $("swatches").replaceChildren(...PRESETS.map(([name, h]) => {
     const b = document.createElement("button"); b.type = "button"; b.title = name; b.dataset.h = h; b.style.setProperty("--h", h);
-    b.addEventListener("click", () => { theme.hue = h; $("setHue").value = h; applyTheme(); window.jarvis.setConfig({ themeHue: h }); });
+    b.addEventListener("click", () => { theme.hue = h; $("setHue").value = h; applyTheme(); window.argus.setConfig({ themeHue: h }); });
     return b;
   }));
   $("setHue").addEventListener("input", (e) => { theme.hue = +e.target.value; applyTheme(); });
-  $("setHue").addEventListener("change", (e) => window.jarvis.setConfig({ themeHue: +e.target.value }));
+  $("setHue").addEventListener("change", (e) => window.argus.setConfig({ themeHue: +e.target.value }));
   $("setShape").replaceChildren(...SHAPES.map(([v, l]) => Object.assign(document.createElement("option"), { value: v, textContent: l })));
-  $("setShape").addEventListener("change", (e) => { shape = e.target.value; resize(); applyShapeWords(); window.jarvis.setConfig({ shape }); });
+  $("setShape").addEventListener("change", (e) => { shape = e.target.value; resize(); applyShapeWords(); window.argus.setConfig({ shape }); });
   // Formen als Kacheln: Drüberfahren zeigt die Form sofort als Vorschau, Klick übernimmt sie, Wegfahren stellt die gewählte wieder her
   const SHAPE_ICONS = { kugel: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/>', hexagon: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>',
     wuerfel: '<path d="M12 3l8 4v10l-8 4-8-4V7z M4 7l8 4 8-4M12 11v10"/>', kristall: '<path d="M12 2l6 7-6 13-6-13z M6 9h12M12 2v20"/>', gehirn: '<path d="M12 5c-2-2-6-1-6 2-3 0-3 5 0 5-1 3 2 5 4 4 1 2 2 2 2 0zM12 5c2-2 6-1 6 2 3 0 3 5 0 5 1 3-2 5-4 4-1 2-2 2-2 0z M12 5v15"/>',
@@ -135,7 +135,7 @@
     const b = document.createElement("button"); b.type = "button"; b.role = "radio"; b.dataset.v = v;
     b.innerHTML = `<svg viewBox="0 0 24 24">${SHAPE_ICONS[v] || ""}</svg><span></span>`; b.lastChild.textContent = l;
     b.addEventListener("mouseenter", () => { if (shapePreview === null) shapePreview = shape; shape = v; resize(); });
-    b.addEventListener("click", () => { shapePreview = null; shape = v; $("setShape").value = v; markShape(); resize(); applyShapeWords(); window.jarvis.setConfig({ shape }); });
+    b.addEventListener("click", () => { shapePreview = null; shape = v; $("setShape").value = v; markShape(); resize(); applyShapeWords(); window.argus.setConfig({ shape }); });
     return b;
   }));
   $("shapePick").addEventListener("mouseleave", () => { if (shapePreview !== null) { shape = shapePreview; shapePreview = null; resize(); } });
@@ -153,16 +153,16 @@
     const b = document.createElement("button"); b.type = "button"; b.role = "radio"; b.dataset.v = v;
     b.innerHTML = `<svg viewBox="0 0 24 24">${RING_ICONS[v] || RING_FALLBACK}</svg><span></span>`; b.lastChild.textContent = l;
     b.addEventListener("mouseenter", () => { ringPreview = v; });
-    b.addEventListener("click", () => { ringPreview = null; viz = { ...viz, ringStyle: v, rings: true }; markRing(); window.jarvis.setConfig({ viz }); const cb = document.querySelector('[data-viz="rings"]'); if (cb) cb.checked = true; });
+    b.addEventListener("click", () => { ringPreview = null; viz = { ...viz, ringStyle: v, rings: true }; markRing(); window.argus.setConfig({ viz }); const cb = document.querySelector('[data-viz="rings"]'); if (cb) cb.checked = true; });
     return b;
   }));
   $("ringPick").addEventListener("mouseleave", () => { ringPreview = null; });
   function markRing() { for (const b of $("ringPick").children) b.setAttribute("aria-checked", String(b.dataset.v === (viz.ringStyle || "form"))); }
   $("setRingSize").addEventListener("input", (e) => { scales.rings = +e.target.value; if (Math.abs(scales.rings - 1) < 0.03) delete scales.rings; });
-  $("setMedia").addEventListener("change", (e) => { mediaOn = e.target.checked; renderMedia(); window.jarvis.setConfig({ mediaOn }); });
-  $("setRingSize").addEventListener("change", () => window.jarvis.setConfig({ scales }));
+  $("setMedia").addEventListener("change", (e) => { mediaOn = e.target.checked; renderMedia(); window.argus.setConfig({ mediaOn }); });
+  $("setRingSize").addEventListener("change", () => window.argus.setConfig({ scales }));
   // Erst beim Loslassen anwenden: sonst wächst das Fenster unter dem Regler mit und der Regler springt (Flackern)
-  $("setZoom").addEventListener("change", (e) => { document.documentElement.style.setProperty("--set-zoom", e.target.value); window.jarvis.setConfig({ setZoom: +e.target.value }); });
+  $("setZoom").addEventListener("change", (e) => { document.documentElement.style.setProperty("--set-zoom", e.target.value); window.argus.setConfig({ setZoom: +e.target.value }); });
   // Skins: fertige Kombinationen aus Form, Grundfarbe, Fensterfarbe, Glühen und Drehtempo
   const SKINS = [
     ["Bitcoin", "muenze", 38, ["Braun", 28, 35, 8], 1.5, 0.8], ["Atom", "atom", 188, ["Petrol", 190, 50, 7], 1.3, 1.6], ["Sternenstaub", "stern", 275, ["Lila", 270, 45, 8], 1.4, 0.7],
@@ -171,7 +171,7 @@
   function applySkin([name, sh, hue, win, glow, spin]) {
     shape = sh; $("setShape").value = sh; theme.hue = hue; $("setHue").value = hue; glowK = glow; $("setGlow").value = glow; spinK = spin; $("setSpin").value = spin;
     winColor = { follow: false, h: win[1], s: win[2], l: win[3] }; applyWinColor(); syncWinInputs?.(); applyTheme(); markShape(); resize(); applyShapeWords?.();
-    window.jarvis.setConfig({ shape, themeHue: hue, glow, spin, winColor, skin: name }); markSkin(name);
+    window.argus.setConfig({ shape, themeHue: hue, glow, spin, winColor, skin: name }); markSkin(name);
   }
   function markSkin(n) { for (const b of $("skinPick").children) b.setAttribute("aria-pressed", String(b.dataset.n === n)); }
   $("skinPick").replaceChildren(...SKINS.map((k) => { const b = document.createElement("button"); b.type = "button"; b.dataset.n = k[0];
@@ -181,18 +181,18 @@
     b.addEventListener("mouseleave", () => { if (shapePreview !== null) { shape = shapePreview; shapePreview = null; resize(); } });
     b.addEventListener("click", () => { shapePreview = null; applySkin(k); }); return b; }));
   $("setSpin").addEventListener("input", (e) => { spinK = +e.target.value; });
-  $("setSpin").addEventListener("change", (e) => window.jarvis.setConfig({ spin: +e.target.value }));
-  $("setDens").addEventListener("change", (e) => { densK = +e.target.value; resize(); window.jarvis.setConfig({ density: densK }); });
-  window.jarvis.getConfig?.().then((c) => { spinK = typeof c.spin === "number" ? c.spin : 1; densK = typeof c.density === "number" ? c.density : 1; $("setSpin").value = spinK; $("setDens").value = String(densK); venomRoam = !!c.venomRoam; $("setVenomRoam").checked = venomRoam; if (c.skin) markSkin(c.skin); resize(); });
+  $("setSpin").addEventListener("change", (e) => window.argus.setConfig({ spin: +e.target.value }));
+  $("setDens").addEventListener("change", (e) => { densK = +e.target.value; resize(); window.argus.setConfig({ density: densK }); });
+  window.argus.getConfig?.().then((c) => { spinK = typeof c.spin === "number" ? c.spin : 1; densK = typeof c.density === "number" ? c.density : 1; $("setSpin").value = spinK; $("setDens").value = String(densK); venomRoam = !!c.venomRoam; $("setVenomRoam").checked = venomRoam; if (c.skin) markSkin(c.skin); resize(); });
   function markShape() { for (const b of $("shapePick").children) b.setAttribute("aria-checked", String(b.dataset.v === (shapePreview ?? shape))); }
   // 2D: Punkte, Linien und Umriss wie zuvor, ohne gefüllten Körper; Stern und Herz gibt es nur hier
   function sync2dPick() {
     for (const b of $("shapePick").children) b.hidden = SHAPES2D.has(b.dataset.v) && !flat2d;
-    if (!flat2d && SHAPES2D.has(shape)) { shape = "kugel"; $("setShape").value = shape; markShape(); window.jarvis.setConfig({ shape }); }
+    if (!flat2d && SHAPES2D.has(shape)) { shape = "kugel"; $("setShape").value = shape; markShape(); window.argus.setConfig({ shape }); }
     resize();
   }
-  $("setShape2d").addEventListener("change", (e) => { flat2d = e.target.checked; window.jarvis.setConfig({ shape2d: flat2d }); sync2dPick(); });
-  $("setShapeRim").addEventListener("change", (e) => { shapeRim = e.target.checked; window.jarvis.setConfig({ shapeRim }); });
+  $("setShape2d").addEventListener("change", (e) => { flat2d = e.target.checked; window.argus.setConfig({ shape2d: flat2d }); sync2dPick(); });
+  $("setShapeRim").addEventListener("change", (e) => { shapeRim = e.target.checked; window.argus.setConfig({ shapeRim }); });
   // 3D-Optik: berührtes Fenster kippt höchstens 3° zur Maus, beim Verlassen zurück
   let look3d = false, tiltEl = null;
   const applyLook3d = () => { document.body.classList.toggle("look3d", look3d); if (!look3d && tiltEl) { tiltEl.classList.remove("tilt"); tiltEl.style.removeProperty("--rx"); tiltEl.style.removeProperty("--ry"); tiltEl = null; } };
@@ -213,7 +213,7 @@
   const applyUi = () => { const b = document.body.classList; b.toggle("noball", !ballOn); b.toggle("nostatus", !statusOn); b.toggle("mini-more", miniMore); };
   const applyFont = () => { const st = document.documentElement.style; if (uiFont) { const f = `"${uiFont}", system-ui, sans-serif`; st.setProperty("--f-body", f); st.setProperty("--f-display", f); } else { st.removeProperty("--f-body"); st.removeProperty("--f-display"); } const k = fitK(), pc = Math.round(uiScale * k * 10) / 10; st.fontSize = pc === 100 ? "" : pc + "%"; };
   { let ft = 0; window.addEventListener("resize", () => { if (!autoFit || ft) return; ft = requestAnimationFrame(() => { ft = 0; applyFont(); try { fitPanel?.(); } catch {} }); }); }
-  const sv = (patch) => window.jarvis.setConfig(patch);
+  const sv = (patch) => window.argus.setConfig(patch);
   const bind = (id, key, get, set) => $(id).addEventListener(get === "check" ? "change" : "input", (e) => { const v = get === "check" ? e.target.checked : +e.target.value; set(v); sv({ [key]: key === "look3dK" ? Math.round(v * 100) : key === "structK" || key === "nodeK" ? Math.round(v * 100) : v }); });
   $("setBallOn").addEventListener("change", (e) => { ballOn = e.target.checked; applyUi(); sv({ ballOn }); });
   $("setStatusOn").addEventListener("change", (e) => { statusOn = e.target.checked; applyUi(); sv({ statusOn }); });
@@ -227,7 +227,7 @@
   $("setNodeK").addEventListener("input", (e) => { nodeK = +e.target.value / 100; clearTimeout(bind.t2); bind.t2 = setTimeout(() => sv({ nodeK: +e.target.value }), 300); });
   $("setEdgeK").addEventListener("input", (e) => { edgeK = +e.target.value; shapeBuilt = ""; clearTimeout(bind.t3); bind.t3 = setTimeout(() => sv({ edgeK }), 300); });
   $("setLook3dK").addEventListener("input", (e) => { look3dK = +e.target.value / 100; clearTimeout(bind.t4); bind.t4 = setTimeout(() => sv({ look3dK: +e.target.value }), 300); });
-  window.jarvis.getConfig?.().then((c) => {
+  window.argus.getConfig?.().then((c) => {
     ballOn = c.ballOn !== false; statusOn = c.statusOn !== false; miniMore = !!c.miniMore; uiFont = c.uiFont || ""; uiScale = c.uiScale || 100; autoFit = c.autoFit !== false; if ($("setAutoFit")) $("setAutoFit").checked = autoFit; applyFont();
     structK = (c.structK ?? 100) / 100; nodeK = (c.nodeK ?? 100) / 100; edgeK = c.edgeK || 3; look3dK = (c.look3dK ?? 35) / 100; shapeBuilt = "";
     $("setBallOn").checked = ballOn; $("setStatusOn").checked = statusOn; $("setMiniMore").checked = miniMore; $("setUiFont").value = uiFont; $("setUiScale").value = uiScale;
@@ -236,16 +236,16 @@
     for (const i of ["setUiScale", "setStruct", "setNodeK", "setLook3dK"]) $(i).dispatchEvent(new Event("input"));
     applyUi(); applyFont();
   });
-  $("setLook3d").addEventListener("change", (e) => { look3d = e.target.checked; applyLook3d(); window.jarvis.setConfig({ look3d }); });
-  window.jarvis.getConfig?.().then((c) => { look3d = !!c.look3d; $("setLook3d").checked = look3d; applyLook3d(); });
-  $("setMediaBrowser").addEventListener("change", (e) => window.jarvis.setConfig({ mediaBrowser: e.target.checked }));
-  $("setCpuHot").addEventListener("change", (e) => window.jarvis.setConfig({ cpuHotC: +e.target.value }));
-  $("setWarnDisk").addEventListener("change", (e) => window.jarvis.setConfig({ warnDiskGB: +e.target.value }));
-  $("setWarnRam").addEventListener("change", (e) => window.jarvis.setConfig({ warnRamPct: +e.target.value }));
-  $("setWarnCpu").addEventListener("change", (e) => window.jarvis.setConfig({ warnCpuPct: +e.target.value }));
-  $("setWarnInet").addEventListener("change", (e) => window.jarvis.setConfig({ warnInet: e.target.checked }));
-  $("setGpuHot").addEventListener("change", (e) => window.jarvis.setConfig({ gpuHotC: +e.target.value }));
-  window.jarvis.getConfig?.().then((c) => { $("setMediaBrowser").checked = !!c.mediaBrowser; $("setCpuHot").value = c.cpuHotC || 100; $("setGpuHot").value = c.gpuHotC || 88; $("setWarnDisk").value = c.warnDiskGB ?? 10; $("setWarnRam").value = c.warnRamPct ?? 92; $("setWarnCpu").value = c.warnCpuPct ?? 90; $("setWarnInet").checked = c.warnInet !== false; showRangeValues(); });
+  $("setLook3d").addEventListener("change", (e) => { look3d = e.target.checked; applyLook3d(); window.argus.setConfig({ look3d }); });
+  window.argus.getConfig?.().then((c) => { look3d = !!c.look3d; $("setLook3d").checked = look3d; applyLook3d(); });
+  $("setMediaBrowser").addEventListener("change", (e) => window.argus.setConfig({ mediaBrowser: e.target.checked }));
+  $("setCpuHot").addEventListener("change", (e) => window.argus.setConfig({ cpuHotC: +e.target.value }));
+  $("setWarnDisk").addEventListener("change", (e) => window.argus.setConfig({ warnDiskGB: +e.target.value }));
+  $("setWarnRam").addEventListener("change", (e) => window.argus.setConfig({ warnRamPct: +e.target.value }));
+  $("setWarnCpu").addEventListener("change", (e) => window.argus.setConfig({ warnCpuPct: +e.target.value }));
+  $("setWarnInet").addEventListener("change", (e) => window.argus.setConfig({ warnInet: e.target.checked }));
+  $("setGpuHot").addEventListener("change", (e) => window.argus.setConfig({ gpuHotC: +e.target.value }));
+  window.argus.getConfig?.().then((c) => { $("setMediaBrowser").checked = !!c.mediaBrowser; $("setCpuHot").value = c.cpuHotC || 100; $("setGpuHot").value = c.gpuHotC || 88; $("setWarnDisk").value = c.warnDiskGB ?? 10; $("setWarnRam").value = c.warnRamPct ?? 92; $("setWarnCpu").value = c.warnCpuPct ?? 90; $("setWarnInet").checked = c.warnInet !== false; showRangeValues(); });
   // Regler zeigen ihren Wert (Prozent, Grad), damit man die richtige Stelle wiederfindet
   function rangeText(r) { const v = +r.value, mx = +r.max; return r.dataset.unit ? Math.round(v) + r.dataset.unit : /Hue|WinH/.test(r.id) ? Math.round(v) + "°" : mx <= 5 ? Math.round(v * 100) + " %" : Math.round(v) + " %"; }
   function showRangeValues() {
@@ -258,19 +258,19 @@
   // Sparmodus: halbe Bildrate, ruhigerer Hintergrund, keine teuren Unschärfe- und Schatteneffekte. „automatisch“ greift bei ≤ 4 Kernen oder ≤ 4 GB RAM
   const weakPc = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
   function applyLite(v) { lite = v === "an" || (v !== "aus" && weakPc); document.body.classList.toggle("lite", lite); bg.w = 0; }
-  $("setLite").addEventListener("change", (e) => { applyLite(e.target.value); window.jarvis.setConfig({ liteMode: e.target.value }); });
-  window.jarvis.getConfig?.().then((c) => { $("setLite").value = c.liteMode || "auto"; applyLite(c.liteMode || "auto"); });
-  $("setGfxSafe").addEventListener("change", (e) => { window.jarvis.setConfig({ gfxSafe: e.target.checked }); });
-  window.jarvis.getConfig?.().then((c) => { $("setGfxSafe").checked = !!c.gfxSafe; });
-  $("setVenomRoam").addEventListener("change", (e) => { venomRoam = e.target.checked; window.jarvis.setConfig({ venomRoam }); });
+  $("setLite").addEventListener("change", (e) => { applyLite(e.target.value); window.argus.setConfig({ liteMode: e.target.value }); });
+  window.argus.getConfig?.().then((c) => { $("setLite").value = c.liteMode || "auto"; applyLite(c.liteMode || "auto"); });
+  $("setGfxSafe").addEventListener("change", (e) => { window.argus.setConfig({ gfxSafe: e.target.checked }); });
+  window.argus.getConfig?.().then((c) => { $("setGfxSafe").checked = !!c.gfxSafe; });
+  $("setVenomRoam").addEventListener("change", (e) => { venomRoam = e.target.checked; window.argus.setConfig({ venomRoam }); });
   $("setFlash").addEventListener("input", (e) => { flashK = +e.target.value; });
-  $("setFlash").addEventListener("change", (e) => window.jarvis.setConfig({ flashK: +e.target.value }));
-  $("setFansReset").addEventListener("click", () => { hiddenFans = []; window.jarvis.setConfig({ hiddenFans }); });
+  $("setFlash").addEventListener("change", (e) => window.argus.setConfig({ flashK: +e.target.value }));
+  $("setFansReset").addEventListener("click", () => { hiddenFans = []; window.argus.setConfig({ hiddenFans }); });
   $("setFlashT").addEventListener("input", (e) => { flashT = +e.target.value; });
-  $("setFlashT").addEventListener("change", (e) => window.jarvis.setConfig({ flashT: +e.target.value }));
+  $("setFlashT").addEventListener("change", (e) => window.argus.setConfig({ flashT: +e.target.value }));
   $("setGlow").addEventListener("input", (e) => { glowK = +e.target.value; });
-  $("setGlow").addEventListener("change", (e) => window.jarvis.setConfig({ glow: +e.target.value }));
-  $("setRegions").addEventListener("change", (e) => { theme.regions = e.target.value; applyTheme(); window.jarvis.setConfig({ themeRegions: theme.regions }); });
+  $("setGlow").addEventListener("change", (e) => window.argus.setConfig({ glow: +e.target.value }));
+  $("setRegions").addEventListener("change", (e) => { theme.regions = e.target.value; applyTheme(); window.argus.setConfig({ themeRegions: theme.regions }); });
 
   // ---------- Anzeigen an/aus und Farbe ----------
   const WIDGET_ROWS = [["ai", "Wer antwortet (alle Anzeigen)", null], ["aiClaude", "… davon „Claude“", null], ["aiLocal", "… davon „Lokal“", null], ["strata", "Strata-Knopf", null], ["cpuTemp", "CPU-Temperatur", "nach Temperatur"], ["gpuTemp", "GPU-Temperatur", "nach Temperatur"], ["cpuClock", "CPU-Takt (GHz)", "Grundfarbe"],
@@ -288,7 +288,7 @@
       const on = document.createElement("input"); on.type = "checkbox"; on.checked = widgets[k]?.on !== false; on.title = "an/aus";
       const save = () => {
         widgets[k] = { ...widgets[k], on: on.checked, ...(autoName ? { hue: +color.value } : {}) };
-        window.jarvis.setConfig({ widgets: { [k]: widgets[k] } });
+        window.argus.setConfig({ widgets: { [k]: widgets[k] } });
         temps.forEach((t) => { t.val = undefined; });
       };
       on.addEventListener("change", save); color.addEventListener("change", save);
@@ -303,7 +303,7 @@
     const rows = [...all].sort((a, b) => a[1].localeCompare(b[1])).map(([key, name]) => {
       const row = document.createElement("label"); row.className = "row";
       const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !hiddenApps.has(key);
-      cb.addEventListener("change", () => { if (cb.checked) hiddenApps.delete(key); else hiddenApps.add(key); window.jarvis.setConfig({ hiddenApps: [...hiddenApps] }); });
+      cb.addEventListener("change", () => { if (cb.checked) hiddenApps.delete(key); else hiddenApps.add(key); window.argus.setConfig({ hiddenApps: [...hiddenApps] }); });
       row.append(document.createTextNode(name), cb); return row;
     });
     $("appRows").replaceChildren(...(rows.length ? rows : [Object.assign(document.createElement("div"), { className: "set-note", textContent: "Gerade läuft kein erkanntes Programm." })]));
@@ -314,14 +314,14 @@
   let opacity = { ball: 1, labels: 1, badges: 1, apps: 1, ai: 1, panel: 1, friends: 1, news: 1 };
   function applyOpacity() { for (const [k] of OP_ROWS) document.documentElement.style.setProperty("--op-" + k, String(opacity[k] ?? 1)); }
   $("setPanelOp").addEventListener("input", (e) => { opacity.panel = +e.target.value; applyOpacity(); });
-  $("setPanelOp").addEventListener("change", () => window.jarvis.setConfig({ opacity: { ...opacity } }));
+  $("setPanelOp").addEventListener("change", () => window.argus.setConfig({ opacity: { ...opacity } }));
   function buildOpRows() {
     $("setPanelOp").value = String(opacity.panel ?? 1);
     $("opRows").replaceChildren(...OP_ROWS.filter(([k]) => k !== "panel").map(([k, label]) => {
       const row = document.createElement("label"); row.className = "row";
       const r = document.createElement("input"); r.type = "range"; r.min = k === "panel" ? "0" : "0.1"; r.max = "1"; r.step = "0.05"; r.value = String(opacity[k] ?? 1);
       r.addEventListener("input", () => { opacity[k] = +r.value; applyOpacity(); });
-      r.addEventListener("change", () => window.jarvis.setConfig({ opacity: { ...opacity } }));
+      r.addEventListener("change", () => window.argus.setConfig({ opacity: { ...opacity } }));
       row.append(document.createTextNode(label), r); return row;
     }));
   }

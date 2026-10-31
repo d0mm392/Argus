@@ -5,10 +5,10 @@
   let labelScale = 1, tempScale = 1, appScale = 1;
   // Im Panel bestimmt ballScale, wie viel Höhe die Kugel bekommt
   const applyBallScale = () => { if (started) resize(); };
-  window.jarvis.getConfig().then((c) => { labelScale = c.labelScale || 1; tempScale = c.tempScale || 1; appScale = c.appScale || 1; ballScale = c.ballScale || 1; applyBallScale(); });
+  window.argus.getConfig().then((c) => { labelScale = c.labelScale || 1; tempScale = c.tempScale || 1; appScale = c.appScale || 1; ballScale = c.ballScale || 1; applyBallScale(); });
   let overBall = false;
   let layout = { corner: "bottom-right", size: 320 }, gesture = null, rimHot = false, rimGlow = 0, throughOn = false;
-  window.jarvis.onLayout((l) => { layout = l; });
+  window.argus.onLayout((l) => { layout = l; });
   const micFloat = document.querySelector(".controls .mic-btn");
   micFloat.classList.add("mic-float"); stage.append(micFloat);
   makeDraggable(micFloat, () => "mic");
@@ -23,7 +23,7 @@
   const resizeCursor = (ang) => { const a = ((ang * 180 / Math.PI) + 360) % 180; return a < 22.5 || a >= 157.5 ? "ew-resize" : a < 67.5 ? "nwse-resize" : a < 112.5 ? "ns-resize" : "nesw-resize"; };
   // Bildschirmposition aus Fensterposition + Fensterkoordinate (zuverlässiger als e.screenX)
   const scr = (e) => ({ x: e.clientX + window.screenX, y: e.clientY + window.screenY });
-  function setThrough(on) { if (on !== throughOn) { throughOn = on; window.jarvis.clickThrough(on); } }
+  function setThrough(on) { if (on !== throughOn) { throughOn = on; window.argus.clickThrough(on); } }
   document.addEventListener("pointermove", (e) => {
     if (gesture) return;
     const h = hit(e);
@@ -62,7 +62,7 @@
       // Im Panel dreht Ziehen die Kugel (das Panel verschiebt man an der Kopfleiste), klein verschiebt es das Fenster
       // Im Panel verschiebt Linksziehen die Form, Rechtsziehen dreht sie
       if (expanded) { if (roam.x || roam.y) { ballOff = { x: ballOff.x + (CX - homeX) / W, y: ballOff.y + (CY - homeY) / H }; roam.x = roam.y = roam.vx = roam.vy = 0; roam.mode = "rest"; roam.t = 4; } gesture = { type: "ballmove", sx: p.x, sy: p.y, ox: ballOff.x, oy: ballOff.y }; }
-      else { gesture.type = "move"; window.jarvis.moveStart(); }
+      else { gesture.type = "move"; window.argus.moveStart(); }
       canvas.style.cursor = "grabbing";
     }
     if (gesture.type === "ballmove") {
@@ -82,7 +82,7 @@
       const k = Math.max(0.3, d / Math.max(20, g.d0));
       if (expanded) { setBallScale(g.ball0 * k); return; } // im Panel ändert der Rand nur die Kugel, nicht das Fenster
       const want = g.size0 * k;
-      cancelAnimationFrame(g.raf); g.raf = requestAnimationFrame(() => window.jarvis.setSize(want));
+      cancelAnimationFrame(g.raf); g.raf = requestAnimationFrame(() => window.argus.setSize(want));
     }
   });
   let held = null, heldEl = null; // was gerade mit gedrückter linker Taste gehalten wird
@@ -91,7 +91,7 @@
     if (e.button === 0 && t) { held = t.classList.contains("lbl") ? "label" : "temp"; heldEl = t; t.setPointerCapture(e.pointerId); }
   });
   document.addEventListener("pointerup", () => { held = null; heldEl = null; });
-  function setBallScale(v) { ballScale = Math.max(0.6, Math.min(1.8, v)); applyBallScale(); window.jarvis.setScale("ballScale", ballScale); }
+  function setBallScale(v) { ballScale = Math.max(0.6, Math.min(1.8, v)); applyBallScale(); window.argus.setScale("ballScale", ballScale); }
   // kleine Prozentanzeige neben dem Mauszeiger, solange per Mausrad die Größe geändert wird
   const pctTip = document.createElement("div"); pctTip.className = "pct-tip"; document.body.append(pctTip); let pctT = null;
   function showPct(e, v) {
@@ -103,7 +103,7 @@
     // Mausrad über einer Anzeige, Beschriftung oder einem Programm-Symbol: dessen Größe, wie bei der Kugel
     // Status-Anzeige (Leerlauf …): eigene Größe je Ansicht
     const pl = e.target.closest?.("#pill");
-    if (pl && !held) { e.preventDefault(); const o = pillOff[pillKey()]; o.s = Math.max(0.5, Math.min(3, (o.s || 1) * (e.deltaY < 0 ? 1.06 : 1 / 1.06))); applyPill(); showPct(e, o.s); clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ pillOff }), 400); return; }
+    if (pl && !held) { e.preventDefault(); const o = pillOff[pillKey()]; o.s = Math.max(0.5, Math.min(3, (o.s || 1) * (e.deltaY < 0 ? 1.06 : 1 / 1.06))); applyPill(); showPct(e, o.s); clearTimeout(scaleSave); scaleSave = setTimeout(() => window.argus.setConfig({ pillOff }), 400); return; }
     const over = e.target.closest?.(".lbl, .temp, .appf, .who, .media, .ringh, .strata-float");
     if (over && !held && over.dataset.pk) {
       // Nur das Teil unter der Maus wird größer oder kleiner
@@ -111,7 +111,7 @@
       const k = over.dataset.pk, f2 = e.deltaY < 0 ? 1.06 : 1 / 1.06;
       scales[k] = Math.max(0.5, Math.min(3, (scales[k] || 1) * f2)); showPct(e, scales[k]);
       if (Math.abs(scales[k] - 1) < 0.03) delete scales[k];
-      clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ scales }), 400);
+      clearTimeout(scaleSave); scaleSave = setTimeout(() => window.argus.setConfig({ scales }), 400);
       return;
     }
     // Im Panel reicht das Mausrad über der Kugel, ohne Taste; klein: Taste halten + Mausrad
@@ -125,18 +125,18 @@
       const k = heldEl.dataset.pk, f2 = e.deltaY < 0 ? 1.06 : 1 / 1.06;
       scales[k] = Math.max(0.5, Math.min(3, (scales[k] || 1) * f2)); showPct(e, scales[k]);
       if (Math.abs(scales[k] - 1) < 0.03) delete scales[k];
-      clearTimeout(scaleSave); scaleSave = setTimeout(() => window.jarvis.setConfig({ scales }), 400);
+      clearTimeout(scaleSave); scaleSave = setTimeout(() => window.argus.setConfig({ scales }), 400);
     }
-    else if (held === "label") { labelScale = Math.max(0.6, Math.min(2.5, labelScale * f)); window.jarvis.setScale("labelScale", labelScale); showPct(e, labelScale); }
-    else if (held === "temp") { tempScale = Math.max(0.6, Math.min(2.5, tempScale * f)); window.jarvis.setScale("tempScale", tempScale); showPct(e, tempScale); }
+    else if (held === "label") { labelScale = Math.max(0.6, Math.min(2.5, labelScale * f)); window.argus.setScale("labelScale", labelScale); showPct(e, labelScale); }
+    else if (held === "temp") { tempScale = Math.max(0.6, Math.min(2.5, tempScale * f)); window.argus.setScale("tempScale", tempScale); showPct(e, tempScale); }
     else if (expanded && (overBall || gesture)) {
       if (gesture && gesture.type === "press") gesture.type = "wheel"; // Loslassen klappt dann nicht zu
       setBallScale(ballScale * f); showPct(e, ballScale);
     }
     else if (gesture && gesture.type !== "size" && gesture.type !== "rotate") {
-      if (gesture.type === "move") window.jarvis.moveEnd();
+      if (gesture.type === "move") window.argus.moveEnd();
       gesture.type = "wheel"; // Loslassen öffnet dann nicht das Panel
-      window.jarvis.resizeBy(f);
+      window.argus.resizeBy(f);
     }
   }, { passive: false });
   // Panel wie ein normales Fenster an jeder Kante und Ecke größer/kleiner ziehen; Doppelklick = Standardgröße
@@ -148,27 +148,27 @@
       // Freundesliste nicht festhalten: sonst landet der Klick auf der Liste statt auf Person oder „Beitreten“
       if (!el.classList.contains("friends")) try { el.setPointerCapture(e.pointerId); } catch {} // Loslassen auch außerhalb des Fensters mitbekommen
       st = { el, k };
-      window.jarvis.panelResizeStart(k);
+      window.argus.panelResizeStart(k);
     });
     el.addEventListener("lostpointercapture", () => endEdge());
-    el.addEventListener("dblclick", () => window.jarvis.setPanelSize(0, 0));
+    el.addEventListener("dblclick", () => window.argus.setPanelSize(0, 0));
     return el;
   });
   let st = null;
-  const endEdge = () => { if (st) { st.el.classList.remove("active"); window.jarvis.panelResizeEnd(); } st = null; };
+  const endEdge = () => { if (st) { st.el.classList.remove("active"); window.argus.panelResizeEnd(); } st = null; };
   window.addEventListener("blur", endEdge);
   document.addEventListener("pointerup", endEdge); document.addEventListener("pointercancel", endEdge);
 
   const endGesture = () => {
     if (!gesture) return;
-    if (gesture.type === "move") window.jarvis.moveEnd();
+    if (gesture.type === "move") window.argus.moveEnd();
     if (gesture.type === "rotate") dragging = false;
-    if (gesture.type === "ballmove") window.jarvis.setConfig({ ballOff });
+    if (gesture.type === "ballmove") window.argus.setConfig({ ballOff });
     gesture = null; canvas.style.cursor = "";
   };
   document.addEventListener("pointerup", endGesture);
-  canvas.addEventListener("pointercancel", () => { if (gesture?.type === "move") window.jarvis.moveEnd(); dragging = false; gesture = null; });
-  window.addEventListener("blur", () => { if (gesture?.type === "move") window.jarvis.moveEnd(); dragging = false; gesture = null; });
+  canvas.addEventListener("pointercancel", () => { if (gesture?.type === "move") window.argus.moveEnd(); dragging = false; gesture = null; });
+  window.addEventListener("blur", () => { if (gesture?.type === "move") window.argus.moveEnd(); dragging = false; gesture = null; });
 
   // Schwebende Anzeigen: Temperaturen, Takt und Lüfter; jede einzeln an/aus und in eigener Farbe
   const tempHue = (v) => Math.max(0, Math.min(140, 140 - (v - 45) * 3.5)); // 45 °C grün, 85 °C rot
@@ -190,17 +190,17 @@
     { key: "btc", w: "btc", name: "BTC", ang: -1.57, ph: 5.2, get: () => market?.btc?.[btcCur.toLowerCase()]?.price, txt: (v) => coinTxt(v, market?.btc?.[btcCur.toLowerCase()]?.change),
       auto: () => { const c = market?.btc?.[btcCur.toLowerCase()]?.change; return c == null ? CORE_HUE : c >= 0 ? 145 : 4; },
       tip: () => { const q = market?.btc?.[btcCur.toLowerCase()]; return (q?.change != null ? (q.change > 0 ? "+" : "") + q.change.toFixed(2).replace(".", ",") + " % in 24 Stunden · " : "") + "Quelle: " + (market?.btc?.source || "") + " (Klick öffnet)"; },
-      click: () => market?.btc?.url && window.jarvis.openUrl(market.btc.url), trend: true },
+      click: () => market?.btc?.url && window.argus.openUrl(market.btc.url), trend: true },
     // Weitere Coins (Einstellungen → Lagebild): eigene Anzeige je Coin, grün/rot nach 24 h, Pfeil zeigt die Richtung
     ...ALT_COINS.map((sym, i) => ({ key: "c_" + sym, w: "coin_" + sym, name: sym, ang: -1.57 + (i % 2 ? 1 : -1) * (0.36 + 0.3 * Math.floor(i / 2)), ph: 9 + i, trend: true,
       get: () => coinSel.includes(sym) ? market?.coins?.[sym]?.[btcCur.toLowerCase()]?.price : undefined, txt: (v) => coinTxt(v, market?.coins?.[sym]?.[btcCur.toLowerCase()]?.change),
       auto: () => { const c = market?.coins?.[sym]?.[btcCur.toLowerCase()]?.change; return c == null ? CORE_HUE : c >= 0 ? 145 : 4; },
       tip: () => { const q = market?.coins?.[sym]?.[btcCur.toLowerCase()]; return (q?.change != null ? (q.change > 0 ? "+" : "") + q.change.toFixed(2).replace(".", ",") + " % in 24 Stunden · " : "") + "Quelle: " + (market?.coins?.[sym]?.source || "") + " (Klick öffnet)"; },
-      click: () => market?.coins?.[sym]?.url && window.jarvis.openUrl(market.coins[sym].url) })),
+      click: () => market?.coins?.[sym]?.url && window.argus.openUrl(market.coins[sym].url) })),
     // Mining-Seite: eigene Anzeigen aus Foreman und OCEAN, genauso frei verschiebbar wie die anderen
     { key: "mOn", w: "mOnline", name: "MINER ONLINE", page: "Mining", ang: -2.5, ph: 1.4, get: () => { const f = fmTot(); return f?.n ? f.on + " / " + f.n : undefined; }, txt: (v) => v, auto: () => { const f = fmTot(), r = f.on / f.n; return r >= 0.97 ? 145 : r >= 0.9 ? 38 : 4; }, tip: () => "Alle Farmen zusammen" },
     { key: "mHr", w: "mHash", name: "HASHRATE", page: "Mining", ang: -1.9, ph: 2.4, get: () => fmTot()?.hr || undefined, txt: (v) => fmtHash(v) + (fmTot().pct ? " · " + fmTot().pct + " %" : ""), auto: () => { const p = fmTot().pct; return !p || p >= 95 ? 145 : p >= 85 ? 38 : 4; }, tip: () => "Summe SHA-256, Prozent vom Nennwert" },
-    { key: "mOff", w: "mOffline", name: "OFFLINE", page: "Mining", ang: -1.25, ph: 3.4, get: () => fmTot()?.off, txt: (v) => String(v), auto: (v) => v ? 4 : 145, tip: () => (fmTot()?.offNames || []).slice(0, 12).join(", ") + " · Klick öffnet Foreman", click: () => window.jarvis.openUrl("https://dashboard.foreman.mn/dashboard/miners/") },
+    { key: "mOff", w: "mOffline", name: "OFFLINE", page: "Mining", ang: -1.25, ph: 3.4, get: () => fmTot()?.off, txt: (v) => String(v), auto: (v) => v ? 4 : 145, tip: () => (fmTot()?.offNames || []).slice(0, 12).join(", ") + " · Klick öffnet Foreman", click: () => window.argus.openUrl("https://dashboard.foreman.mn/dashboard/miners/") },
     { key: "mHot", w: "mHot", name: "HEISSESTER", page: "Mining", ang: -0.6, ph: 4.4, get: () => fmTot()?.hot ?? undefined, txt: (v) => Math.round(v) + " °C", auto: (v) => v >= 90 ? 4 : v >= 80 ? 38 : 145, tip: () => fmTot()?.hotName || "", click: () => fmTot()?.hotM && openMiner(fmTot().hotM) },
     { key: "mRev", w: "mRevenue", name: "ERTRAG 24 H", page: "Mining", ang: 0.2, ph: 5.4, get: () => minePool()?.day ?? undefined, txt: (v) => sats(v / 1e8), tip: () => "OCEAN, letzte 24 Stunden" },
     { key: "mPool", w: "mPool", name: "POOL 10 MIN", page: "Mining", ang: 0.9, ph: 6.4, get: () => minePool()?.hr?.m10 ?? undefined, txt: (v) => fmtHash(v), tip: () => "Hashrate beim Pool (OCEAN)" },
@@ -212,18 +212,18 @@
     // Wer online ist: Steam-Freunde und Discord-Server; Klick öffnet das Lagebild
     { key: "steam", w: "steam", name: "STEAM", ang: 0.55, ph: 6.1, get: () => market?.steam?.online?.length, txt: (v) => v + " online",
       cycle: () => (market?.steam?.online || []).map((f) => f.name + (f.game ? " · " + f.game : "")),
-      tip: () => (market?.steam?.online || []).slice(0, 12).map((f) => f.name + (f.game ? " – " + f.game : "")).join("\n") || "Kein Freund online", click: () => window.jarvis.setConfig({ newsOn: true }) },
+      tip: () => (market?.steam?.online || []).slice(0, 12).map((f) => f.name + (f.game ? " – " + f.game : "")).join("\n") || "Kein Freund online", click: () => window.argus.setConfig({ newsOn: true }) },
     { key: "dc", w: "discord", name: "DISCORD", ang: 2.6, ph: 7.3,
       cycle: () => (market?.discord?.servers || []).filter((x) => !x.error).flatMap((x) => window.argusDiscordList.voiceMembers(x.online).map((m) => m.name + (m.voice ? " · " + m.voice : m.game ? " · " + m.game : ""))).slice(0, 40), get: () => { const sv = (market?.discord?.servers || []).filter((x) => !x.error); return sv.length ? sv.reduce((n, x) => n + (x.count || 0), 0) : null; }, txt: (v) => v + " online",
-      tip: () => (market?.discord?.servers || []).filter((x) => !x.error).map((x) => x.server + ": " + x.online.filter((m) => m.voice).map((m) => m.name + " (" + m.voice + ")").join(", ")).join("\n") || "", click: () => window.jarvis.setConfig({ newsOn: true }) },
+      tip: () => (market?.discord?.servers || []).filter((x) => !x.error).map((x) => x.server + ": " + x.online.filter((m) => m.voice).map((m) => m.name + " (" + m.voice + ")").join(", ")).join("\n") || "", click: () => window.argus.setConfig({ newsOn: true }) },
     ...[2.95, 0.12, 2.15, 0.98, 3.45, 6.0, 1.65, 5.5, 2.55, 0.55, 4.4, 5.1].map((ang, i) => ({ key: "fan" + i, w: "fans", name: "", ang, ph: 4 + i, get: () => fanOf(i)?.val,
       txt: (v) => (v === 0 ? "steht" : v + " " + (fanOf(i)?.unit || "rpm")), label: () => (fanOf(i)?.name || "Lüfter").replace(/#/g, "").replace(/\s+/g, " ") })),
   ];
   let widgets = {}, market = null, btcCur = "USD";
-  window.jarvis.onVoiceLive?.((v) => { live = v || { auth: false, ch: {} }; buildFriends(); });
+  window.argus.onVoiceLive?.((v) => { live = v || { auth: false, ch: {} }; buildFriends(); });
   // Steam-Downloads in der Systemwache: Name, Fortschritt, Tempo, Restzeit
   const fmtB = (b) => (b >= 1e9 ? (b / 1e9).toFixed(1) + " GB" : Math.round(b / 1e6) + " MB");
-  window.jarvis.onSteamDl?.((list) => {
+  window.argus.onSteamDl?.((list) => {
     $("steamDl").replaceChildren(...(list || []).map((d) => {
       const el = document.createElement("div"); el.className = "dl" + (d.active ? "" : " paused");
       const n = document.createElement("span"), v = document.createElement("b"), bar = document.createElement("i");
@@ -235,8 +235,8 @@
       bar.style.setProperty("--v", d.pct + "%"); el.append(n, v, bar); return el;
     }));
   });
-  window.jarvis.onVoiceBot?.((v) => { bot = v || { status: "aus", guilds: [] }; buildFriends(); setBotStatus(); });
-  window.jarvis.onMarket?.((m) => { market = m; for (const t of temps) if (t.trend || ["steam", "dc"].includes(t.key)) t.val = undefined; buildFriends(); });
+  window.argus.onVoiceBot?.((v) => { bot = v || { status: "aus", guilds: [] }; buildFriends(); setBotStatus(); });
+  window.argus.onMarket?.((m) => { market = m; for (const t of temps) if (t.trend || ["steam", "dc"].includes(t.key)) t.val = undefined; buildFriends(); });
   const temps = BADGES.map((b) => {
     const el = document.createElement("div"); el.className = "temp na off" + (b.click ? " link" : "");
     el.innerHTML = `<small>${b.name}</small><span>–</span>`;
@@ -261,18 +261,18 @@
   // Lautstärke: wirkt auf die Musik-App selbst (wie im Windows-Lautstärkemixer), sonst auf die Gesamtlautstärke
   const mvol = media.querySelector(".mvol");
   for (const ev of ["pointerdown", "wheel"]) mvol.addEventListener(ev, (e) => e.stopPropagation());
-  mvol.addEventListener("input", () => { mvol.style.setProperty("--v", mvol.value + "%"); volBusy = Date.now(); window.jarvis.mediaCmd?.("vol:" + (mvol.value / 100).toFixed(2)); });
+  mvol.addEventListener("input", () => { mvol.style.setProperty("--v", mvol.value + "%"); volBusy = Date.now(); window.argus.mediaCmd?.("vol:" + (mvol.value / 100).toFixed(2)); });
   // Größe an der Ecke unten rechts ziehen (wie Mausrad)
   { const g = media.querySelector(".mgrip"); let st = null;
     g.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; e.stopPropagation(); e.preventDefault(); st = { x: e.clientX, w: media.offsetWidth, s: scales.media || 1 }; });
     window.addEventListener("pointermove", (e) => { if (!st) return; scales.media = Math.max(0.6, Math.min(3, st.s * (st.w + e.clientX - st.x) / st.w)); }, true);
-    window.addEventListener("pointerup", () => { if (!st) return; st = null; noClick = media; setTimeout(() => { if (noClick === media) noClick = null; }, 50); window.jarvis.setConfig({ scales }); }, true); }
+    window.addEventListener("pointerup", () => { if (!st) return; st = null; noClick = media; setTimeout(() => { if (noClick === media) noClick = null; }, 50); window.argus.setConfig({ scales }); }, true); }
   { const x = document.createElement("button"); x.type = "button"; x.className = "blk-x"; x.textContent = "×"; x.title = "Musik-Player ausblenden (wieder an: Einstellungen › Musik)";
     x.addEventListener("pointerdown", (e) => e.stopPropagation()); // sonst fängt der Musik-Player den Zeiger ein und der Klick kommt nie an
-    x.addEventListener("click", (e) => { e.stopPropagation(); mediaOn = false; renderMedia(); $("setMedia").checked = false; window.jarvis.setConfig({ mediaOn }); }); media.append(x); }
+    x.addEventListener("click", (e) => { e.stopPropagation(); mediaOn = false; renderMedia(); $("setMedia").checked = false; window.argus.setConfig({ mediaOn }); }); media.append(x); }
   for (const b of media.querySelectorAll("button:not(.blk-x)")) {
     b.addEventListener("pointerdown", (e) => e.stopPropagation());
-    b.addEventListener("click", (e) => { e.stopPropagation(); window.jarvis.mediaCmd?.(b.dataset.c); if (b.dataset.c === "play") { mediaSt.playing = !mediaSt.playing; renderMedia(); } });
+    b.addEventListener("click", (e) => { e.stopPropagation(); window.argus.mediaCmd?.(b.dataset.c); if (b.dataset.c === "play") { mediaSt.playing = !mediaSt.playing; renderMedia(); } });
   }
   function renderMedia() {
     const m = mediaSt, on = mediaOn && m.on && !!(m.title || m.artist);
@@ -286,7 +286,7 @@
     media.querySelector("[data-c=play]").innerHTML = m.playing ? MI.pause : MI.play;
     if (m.vol != null && Date.now() - volBusy > 2500) { mvol.value = Math.round(Math.abs(m.vol < 0 ? -1 - m.vol : m.vol) * 100); mvol.style.setProperty("--v", mvol.value + "%"); mvol.title = m.vol < 0 ? "Gesamtlautstärke (die App hat keinen eigenen Regler)" : "Lautstärke der Musik-App"; }
   }
-  window.jarvis.onMedia?.((m) => { mediaSt = { ...m, rx: Date.now() }; renderMedia(); });
+  window.argus.onMedia?.((m) => { mediaSt = { ...m, rx: Date.now() }; renderMedia(); });
   makeDraggable(who, () => "ai");
   let aiSt = null, aiBusy = null;
   function renderWho() {
@@ -304,9 +304,9 @@
     $("askInput").placeholder = ph.replace(" (startet bei Bedarf)", ""); $("askInput").title = (ph.includes("startet bei Bedarf") ? "Strata ist gerade aus und startet bei der ersten Frage (ca. 20 s). " : "") + "Umschalt+Enter: neue Zeile";
     who.title = aiSt?.mode === "auto" && cUp && lUp ? "Team: kurze Fragen beantwortet die lokale KI, anspruchsvolle Claude" : "";
   }
-  window.jarvis.onAiStatus?.((st) => { aiSt = st; renderWho(); });
-  window.jarvis.onAiWho?.((w) => { aiBusy = w.who === "claude" || w.who === "local" ? w.who : null; if (w.who) aiName = w.who === "local" ? (/strata/i.test(w.label || "") ? "Strata" : "Lokal") : w.who === "claude" ? "Claude" : "Argus"; renderWho(); if (w.label) log("Antwortet: " + w.label); });
-  window.jarvis.aiStatus?.().then((st) => { aiSt = st; renderWho(); });
+  window.argus.onAiStatus?.((st) => { aiSt = st; renderWho(); });
+  window.argus.onAiWho?.((w) => { aiBusy = w.who === "claude" || w.who === "local" ? w.who : null; if (w.who) aiName = w.who === "local" ? (/strata/i.test(w.label || "") ? "Strata" : "Lokal") : w.who === "claude" ? "Claude" : "Argus"; renderWho(); if (w.label) log("Antwortet: " + w.label); });
+  window.argus.aiStatus?.().then((st) => { aiSt = st; renderWho(); });
 
   // Laufende Programme: jedes Symbol schwebt einzeln; welche erscheinen, steht in den Einstellungen
   let hiddenApps = new Set();
@@ -326,7 +326,7 @@
       let o = appEls.get(a.key);
       if (!o) {
         const el = document.createElement("button"); el.type = "button"; el.className = "appf gone"; el.dataset.name = a.name; el.setAttribute("aria-label", a.name + " öffnen");
-        el.addEventListener("click", (e) => { e.stopPropagation(); window.jarvis.focusApp(a.key).then((ok) => { if (!ok) window.jarvis.action("öffne " + a.name); }); });
+        el.addEventListener("click", (e) => { e.stopPropagation(); window.argus.focusApp(a.key).then((ok) => { if (!ok) window.argus.action("öffne " + a.name); }); });
         makeDraggable(el, () => "app:" + a.key); el.dataset.pk = "app:" + a.key;
         lblLayer.append(el);
         o = { el, ph: Math.random() * 6.28, icon: null, x: null, y: null };
@@ -376,10 +376,10 @@
   let lastT = performance.now(), time = 0, lite = false;
   let lastAct = performance.now(), fpsIdle = 30, fpsMax = 60;
   let presentationState = { mode: "fluid", visible: true, focused: true };
-  window.jarvis.onBackgroundPresentation?.(s => { presentationState = s; const select = $("setBackgroundPresentation"); if (select) select.value = s.mode; });
+  window.argus.onBackgroundPresentation?.(s => { presentationState = s; const select = $("setBackgroundPresentation"); if (select) select.value = s.mode; });
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) addEventListener(ev, () => { lastAct = performance.now(); }, { passive: true, capture: true });
   // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
-  let videoWin = false; window.jarvis.onVideoWin?.((v) => { videoWin = v; });
+  let videoWin = false; window.argus.onVideoWin?.((v) => { videoWin = v; });
   window.videoBusy = () => videoWin || !!(window.videoEmbed?.yt || window.videoEmbed?.tw);
   function frame(now, once) {
     if (gameMode && sys?.fullscreen && !once && !drag) { // Spielmodus: läuft ein Programm im Vollbild, nur noch ein Bild pro Sekunde

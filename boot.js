@@ -11,7 +11,8 @@ const path = require("path");
   const appData = app.getPath("appData"), newUD = path.join(appData, "argus-desktop");
   const oldUD = ["jarvis-desktop", "Jarvis"].map((n) => path.join(appData, n)).find((d) => fs.existsSync(path.join(d, "jarvis-config.json"))) || path.join(appData, "jarvis-desktop");
   const done = path.join(newUD, ".umzug-von-jarvis.json");
-  if (fs.existsSync(done) || !fs.existsSync(path.join(oldUD, "jarvis-config.json"))) { app.setPath("userData", newUD); return; }
+  // Ein vorhandenes Argus-Profil hat Vorrang, auch wenn der historische Umzugsmarker fehlt.
+  if (fs.existsSync(path.join(newUD, "argus-config.json")) || fs.existsSync(done) || !fs.existsSync(path.join(oldUD, "jarvis-config.json"))) { app.setPath("userData", newUD); return; }
   const SKIP = new Set(["Cache", "Code Cache", "GPUCache", "DawnCache", "DawnGraphiteCache", "DawnWebGPUCache", "ShaderCache", "GrShaderCache", "Crashpad", "blob_storage",
     "SingletonLock", "SingletonCookie", "SingletonSocket", "lockfile", "selfimprove-pending.json"]);
   // Daten der Selbstverbesserung (Arbeitsordner, Archive, Sicherungen, Marker) liegen nur direkt im Profil und werden nicht übernommen

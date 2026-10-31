@@ -53,10 +53,10 @@
     fitPanel?.();
   }
   const wxPg = makePager("wx", "wxPg", () => renderWx());
-  $("setWxPlaces").addEventListener("change", (e) => { window.jarvis.setConfig({ wxPlaces: e.target.value.trim() }); });
-  window.jarvis.onWeather?.((m) => { wxData = m; for (const t of temps) if (t.key === "wx") t.val = undefined; renderWx(); });
-  $("setWxOn").addEventListener("change", (e) => { wxOn = e.target.checked; renderWx(); window.jarvis.setConfig({ weatherOn: wxOn }); });
-  window.jarvis.getConfig?.().then((c) => { wxOn = c.weatherOn !== false; $("setWxOn").checked = wxOn; $("setWxPlaces").value = c.wxPlaces || ""; if (c.weather?.ts || c.weather?.error) wxData = c.weather; renderWx(); });
+  $("setWxPlaces").addEventListener("change", (e) => { window.argus.setConfig({ wxPlaces: e.target.value.trim() }); });
+  window.argus.onWeather?.((m) => { wxData = m; for (const t of temps) if (t.key === "wx") t.val = undefined; renderWx(); });
+  $("setWxOn").addEventListener("change", (e) => { wxOn = e.target.checked; renderWx(); window.argus.setConfig({ weatherOn: wxOn }); });
+  window.argus.getConfig?.().then((c) => { wxOn = c.weatherOn !== false; $("setWxOn").checked = wxOn; $("setWxPlaces").value = c.wxPlaces || ""; if (c.weather?.ts || c.weather?.error) wxData = c.weather; renderWx(); });
 
   // ---------- Mining (eigener OCEAN-Pool, Bitcoin-Netz) und Weltuhren ----------
   let mineAll = false; try { mineAll = localStorage.getItem("jarvisMineAll") === "1"; } catch {}
@@ -136,7 +136,7 @@
       error: pools.every((x) => x.error) ? pools[0].error : "", workersUnknown: pools.some((x) => x.workersUnknown) };
   }
   const minePg = makePager("mine", "minePg", () => renderMine());
-  window.jarvis.onMining?.((m) => { mineData = m; renderMine(); renderMOver?.(); renderMineFx?.(); try { renderFarm(); } catch {} });
+  window.argus.onMining?.((m) => { mineData = m; renderMine(); renderMOver?.(); renderMineFx?.(); try { renderFarm(); } catch {} });
   // ---------- Farm aus Foreman: Überblick, Auffällige zuerst (offline, heiß ab 85 °C, Fehler, Hashrate unter 80 % vom Median) ----------
   let farmData = null, farmOn = false, farmAll = false; try { farmAll = localStorage.getItem("jarvisFarmAll") === "1"; } catch {}
   // Ansicht: „blaettern“ = ein Fenster, Seiten wechseln; „standort“ = je Standort ein eigenes Fenster;
@@ -243,7 +243,7 @@
     $(P + "Hint").textContent = !farmData ? (fmList.length ? "Hole Daten von Foreman…" : "Trag in den Einstellungen unter Mining ein Foreman-Konto ein.") : !f ? "" : errs ? errs : f.note && !f.total ? f.note : !ms.length ? "Foreman meldet keine Miner. Ein Beispiel der Antwort liegt im Argus-Datenordner als foreman-beispiel.json." : "";
   }
   const farmPg = makePager("farm", "farmPg", () => renderFarm()), farm4Pg = makePager("farm4", "farm4Pg", () => renderFarm());
-  window.jarvis.onFarm?.((f) => { farmData = f; renderFarm(); renderMOver(); renderMineFx(); });
+  window.argus.onFarm?.((f) => { farmData = f; renderFarm(); renderMOver(); renderMineFx(); });
   let fmEvOn = true, fmUrl = "https://dashboard.foreman.mn/dashboard/miners/{id}/details/";
   // Summen über alle sichtbaren Farmen für Anzeigen, Überblick und Mining-Kugel (je Datenstand einmal gerechnet)
   // OCEAN-Pool-Adressen ohne Foreman (z. B. Farm A) zählen mit: Worker als Miner, Pool-Hashrate (10 min) zur Hashrate
@@ -251,7 +251,7 @@
   const nf = (v, d) => v.toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
   window.fmtPower = (w) => { const kw = w / 1000; return kw >= 1000 ? nf(kw / 1000, 2) + " MW" : nf(kw, 2) + " kW"; };
   window.fmtEnergy = (kwh) => kwh >= 1000 ? nf(kwh / 1000, 2) + " MWh" : nf(kwh, kwh >= 100 ? 0 : 1) + " kWh";
-  var energyD = null; const energyTick = () => window.jarvis.energyGet?.().then((e) => { energyD = e; try { renderMOver(); } catch {} }).catch(() => {}); setTimeout(energyTick, 4000); setInterval(energyTick, 5 * 60e3);
+  var energyD = null; const energyTick = () => window.argus.energyGet?.().then((e) => { energyD = e; try { renderMOver(); } catch {} }).catch(() => {}); setTimeout(energyTick, 4000); setInterval(energyTick, 5 * 60e3);
   function fmTot() {
     if (fmTotK === farmData && fmTotM === mineData && fmTotC) return fmTotC;
     fmTotK = farmData; fmTotM = mineData; const accs = (farmData?.accounts || []).filter((a) => !a.hidden), ms = accs.flatMap((a) => a.pxOff ? (a.miners || []).map((m) => ({ ...m, on: false, hr: 0, temp: null, watt: m.watt != null ? 0 : null })) : a.miners || []); // Standort ohne Verbindung (Pickaxe offline): alle Miner zählen als offline mit
@@ -301,7 +301,7 @@
       const ms = a.miners || [], lOn = ms.filter((m) => m.on !== false).length, on = a.pxOff ? 0 : a.dashN != null ? Math.max(a.dashOn, lOn) : lOn, tot = a.dashN != null && !a.ocean ? Math.max(a.dashN, ms.length) : ms.length, hr = a.poolHr || (a.pxOff ? 0 : ms.reduce((x, m) => x + (m.algo !== "scrypt" && m.on !== false && m.hr ? m.hr : 0), 0));
       const mx = ms.reduce((x, m) => m.temp != null && m.temp > x ? m.temp : x, -1), noW = !!a.ocean && !ms.length && hr > 0, r = noW ? 1 : tot ? on / tot : 0, d = document.createElement("div"); // OCEAN sieht Hashrate, liefert aber (kurz) keine Worker-Liste: nicht als „0 / 0 offline“ melden
       d.className = "link " + (noW ? "warn" : a.pxOff || r < 0.9 ? "crit" : r < 0.97 || mx >= 85 ? "warn" : "ok"); d.title = a.ocean ? "Daten vom OCEAN-Pool (Worker statt Miner)" + (a.url ? " · Klick öffnet OCEAN" : "") : "Klick öffnet die Minerliste in Foreman";
-      d.addEventListener("click", () => window.jarvis.openUrl(a.ocean ? a.url || "https://ocean.xyz/" : "https://dashboard.foreman.mn/dashboard/miners/"));
+      d.addEventListener("click", () => window.argus.openUrl(a.ocean ? a.url || "https://ocean.xyz/" : "https://dashboard.foreman.mn/dashboard/miners/"));
       const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = a.name; sv.textContent = a.err || (a.pxOff ? "Pickaxe offline" : noW ? "Worker-Liste fehlt kurz" : `${on} / ${tot}` + (a.stale ? ` · Stand vor ${agoTxt(a.stale)}` : "")); h.append(nm, sv);
       const bar = document.createElement("div"); bar.className = "mo-bar"; const bi = document.createElement("i"); bi.style.width = Math.round(r * 100) + "%"; bar.append(bi);
       const ps = document.createElement("div"); ps.className = "mo-ps";
@@ -322,7 +322,7 @@
       const ps = window.portalSnap, d = document.createElement("div"); d.className = "link warn"; d.title = "Klick: Portal-Fenster öffnen und anmelden";
       const h = document.createElement("h5"), nm = document.createElement("b"), sv = document.createElement("span"); nm.textContent = "Hosting-Portal"; sv.textContent = ps?.state === "nohost" ? "Adresse fehlt" : ps?.err && ps.state !== "login" ? "keine Daten" : "bitte anmelden"; h.append(nm, sv);
       const m = document.createElement("div"); m.className = "mo-ps"; const q = document.createElement("p"); q.textContent = ps?.err || "Nicht angemeldet oder Portal nicht erreichbar. Klick zum Anmelden."; m.append(q);
-      d.addEventListener("click", () => window.jarvis.portalLogin()); d.append(h, m); return [d];
+      d.addEventListener("click", () => window.argus.portalLogin()); d.append(h, m); return [d];
     }
     if (!portalOn || !portalLast?.total) return [];
     const L = { working: "laufen", broken: "defekt", stopped: "gestoppt", offline: "offline", off: "aus", online: "online" };
@@ -347,7 +347,7 @@
     const run = $("mTickRun"), newest = evs[0]?.[0] || 0;
     const items = evs.length ? evs.map(([ts, t, bad, names]) => { const sp = document.createElement("span"), tm = document.createElement("time"), d = new Date(ts);
       tm.textContent = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); sp.className = (bad ? "bad" : "") + (tickSeen && ts > tickSeen ? " new" : ""); sp.append(tm, (bad ? "▼ " : "▲ ") + t);
-      sp.title = d.toLocaleString("de-DE") + (names?.length ? " · Klick öffnet in Foreman" : ""); sp.addEventListener("click", () => names?.length ? openMiner(names[0]) : window.jarvis.openUrl("https://dashboard.foreman.mn/dashboard/miners/")); return sp; })
+      sp.title = d.toLocaleString("de-DE") + (names?.length ? " · Klick öffnet in Foreman" : ""); sp.addEventListener("click", () => names?.length ? openMiner(names[0]) : window.argus.openUrl("https://dashboard.foreman.mn/dashboard/miners/")); return sp; })
       : [Object.assign(document.createElement("span"), { textContent: "Noch keine Meldungen von Foreman – alles ruhig." })];
     run.replaceChildren(...items); tickSeen = newest;
     // Tempo: Länge der Zeile / Geschwindigkeit, 100 % ≈ 70 px pro Sekunde
@@ -410,13 +410,13 @@
   function openMiner(m) {
     if (typeof m === "string") { const n = m.replace(/^.* · /, ""); m = (farmData?.accounts || []).flatMap((a) => a.miners || []).find((x) => x.name === n || x.name === m) || { name: m }; }
     const u = m.id != null ? fmUrl.replace("{id}", encodeURIComponent(m.id)) : "https://dashboard.foreman.mn/dashboard/miners/";
-    window.jarvis.openUrl(u);
+    window.argus.openUrl(u);
   }
-  $("setFmNotify").addEventListener("change", (e) => window.jarvis.setConfig({ fmNotify: e.target.checked }));
-  $("setFmUrl").addEventListener("change", (e) => { const v = e.target.value.trim(); if (/^https:\/\//i.test(v)) { fmUrl = v; window.jarvis.setConfig({ fmMinerUrl: v }); } else e.target.value = fmUrl; });
-  $("setFmView").addEventListener("change", (e) => { fmView = e.target.value; renderFarm(); window.jarvis.setConfig({ fmView }); });
-  $("setFmEv").addEventListener("change", (e) => { fmEvOn = e.target.checked; renderFarm(); window.jarvis.setConfig({ fmEvOn }); });
-  $("setFmOn").addEventListener("change", (e) => { farmOn = e.target.checked; farmData = null; renderFarm(); window.jarvis.setConfig({ foremanOn: farmOn }); });
+  $("setFmNotify").addEventListener("change", (e) => window.argus.setConfig({ fmNotify: e.target.checked }));
+  $("setFmUrl").addEventListener("change", (e) => { const v = e.target.value.trim(); if (/^https:\/\//i.test(v)) { fmUrl = v; window.argus.setConfig({ fmMinerUrl: v }); } else e.target.value = fmUrl; });
+  $("setFmView").addEventListener("change", (e) => { fmView = e.target.value; renderFarm(); window.argus.setConfig({ fmView }); });
+  $("setFmEv").addEventListener("change", (e) => { fmEvOn = e.target.checked; renderFarm(); window.argus.setConfig({ fmEvOn }); });
+  $("setFmOn").addEventListener("change", (e) => { farmOn = e.target.checked; farmData = null; renderFarm(); window.argus.setConfig({ foremanOn: farmOn }); });
   // Konten-Liste in den Einstellungen: je Zeile Name, Client-ID, Schlüssel (leer = gespeicherten behalten), × entfernt
   let fmList = [];
   function fmRows() {
@@ -428,7 +428,7 @@
       x.type = "button"; x.textContent = "×"; x.title = "Konto entfernen";
       const t = document.createElement("button"); t.type = "button"; t.className = "fm-t"; t.textContent = "Testen"; t.title = "Verbindung zu Foreman mit diesen Angaben prüfen";
       t.addEventListener("click", async () => { const nt = $("fmNote"); nt.className = "fm-note"; nt.textContent = `${n.value.trim() || "Konto"}: prüfe…`; t.disabled = true;
-        try { const r = await window.jarvis.foremanTest?.({ client: c.value.trim(), key: key.value.trim() }); nt.textContent = `${n.value.trim() || "Konto"}: ${r?.text || "keine Antwort"}`; nt.className = "fm-note " + (r?.ok ? "ok" : "bad"); }
+        try { const r = await window.argus.foremanTest?.({ client: c.value.trim(), key: key.value.trim() }); nt.textContent = `${n.value.trim() || "Konto"}: ${r?.text || "keine Antwort"}`; nt.className = "fm-note " + (r?.ok ? "ok" : "bad"); }
         finally { t.disabled = false; } });
       const save = () => { fmList[k] = { name: n.value.trim(), client: c.value.trim(), key: key.value.trim(), hasKey: a.hasKey }; fmSave(); };
       n.addEventListener("change", save); c.addEventListener("change", save); key.addEventListener("change", save);
@@ -449,39 +449,39 @@
       const l = document.createElement("label"), sel = document.createElement("select"), k = `${a.client}:*`, acc = (a.name || "").split(" · ")[0] || a.client;
       for (const [v, t] of [["auto", "automatisch"], ["merge", "zusammenfassen"], ["split", "getrennt"]]) { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.append(o); }
       sel.value = a.pxMode || "auto"; l.className = "row"; l.append(`${acc}: ${a.pxCount} Pickaxes ${a.merged ? "(ein Standort)" : "(getrennt)"}`, sel);
-      sel.addEventListener("change", () => { fmPxCfg = { ...fmPxCfg, [k]: { mode: sel.value } }; window.jarvis.setConfig({ foremanPx: fmPxCfg }); });
+      sel.addEventListener("change", () => { fmPxCfg = { ...fmPxCfg, [k]: { mode: sel.value } }; window.argus.setConfig({ foremanPx: fmPxCfg }); });
       items.push(l);
     }
     for (const a of sites) {
       const l = document.createElement("label"), cb = document.createElement("input"), nm = document.createElement("input"), sm = document.createElement("small"), k = `${a.client}:${a.px}`;
       cb.type = "checkbox"; cb.checked = !a.hidden; cb.title = "Im Farm-Block zeigen"; nm.type = "text"; nm.value = fmPxCfg[k]?.name || ""; nm.placeholder = a.pxName || "Name"; nm.spellcheck = false;
       const on = (a.miners || []).filter((m) => m.on === true).length; sm.textContent = a.pxOff ? `offline · ${(a.miners || []).length} Miner` : `${on} / ${(a.miners || []).length} online`; if (a.pxOff) l.className = "off";
-      const save = () => { fmPxCfg = { ...fmPxCfg, [k]: { name: nm.value.trim().slice(0, 30), hidden: !cb.checked } }; window.jarvis.setConfig({ foremanPx: fmPxCfg }); };
+      const save = () => { fmPxCfg = { ...fmPxCfg, [k]: { name: nm.value.trim().slice(0, 30), hidden: !cb.checked } }; window.argus.setConfig({ foremanPx: fmPxCfg }); };
       cb.addEventListener("change", save); nm.addEventListener("change", save);
       l.append(cb, nm, sm); items.push(l);
     }
     $("fmPx").replaceChildren(...items);
   }
   async function fmSave() {
-    const r = await window.jarvis.foremanAccounts?.(fmList.filter((a) => a.client).map((a) => ({ name: a.name, client: a.client, key: a.key || "" })));
+    const r = await window.argus.foremanAccounts?.(fmList.filter((a) => a.client).map((a) => ({ name: a.name, client: a.client, key: a.key || "" })));
     if (!Array.isArray(r)) return; // Zeilen nicht neu bauen (Fokus bleibt), nur Schlüssel-Hinweise auffrischen
     const has = new Map(r.map((a) => [a.client, a.hasKey])), rows = $("fmRows").children;
     fmList.forEach((a, k) => { const c = a.client.replace(/\D/g, ""), kk = rows[k]?.children[2]; a.hasKey = !!has.get(c); a.key = ""; if (kk) { if (a.hasKey) kk.value = ""; kk.placeholder = a.hasKey ? "Schlüssel gespeichert" : "API-Schlüssel"; } });
   }
   $("fmAdd").addEventListener("click", () => { fmList.push({ name: "", client: "", key: "" }); fmRows(); $("fmRows").lastElementChild?.querySelector("input")?.focus(); });
-  window.jarvis.getConfig?.().then((c) => { farmOn = !!c.foremanOn; farmData = c.farm || null; $("setFmOn").checked = farmOn; fmEvOn = c.fmEvOn !== false; $("setFmEv").checked = fmEvOn; $("setFmNotify").checked = c.fmNotify !== false; if (c.fmMinerUrl) fmUrl = c.fmMinerUrl; $("setFmUrl").value = fmUrl; fmView = ["standort", "konto"].includes(c.fmView) ? c.fmView : "blaettern"; $("setFmView").value = fmView; fmPxCfg = c.foremanPx || {}; fmList = c.foremanAccts || []; if (!fmList.length) fmList = [{ name: "", client: "", key: "" }]; fmRows(); renderFarm(); });
+  window.argus.getConfig?.().then((c) => { farmOn = !!c.foremanOn; farmData = c.farm || null; $("setFmOn").checked = farmOn; fmEvOn = c.fmEvOn !== false; $("setFmEv").checked = fmEvOn; $("setFmNotify").checked = c.fmNotify !== false; if (c.fmMinerUrl) fmUrl = c.fmMinerUrl; $("setFmUrl").value = fmUrl; fmView = ["standort", "konto"].includes(c.fmView) ? c.fmView : "blaettern"; $("setFmView").value = fmView; fmPxCfg = c.foremanPx || {}; fmList = c.foremanAccts || []; if (!fmList.length) fmList = [{ name: "", client: "", key: "" }]; fmRows(); renderFarm(); });
   // ---------- Notizblock (optional): Text wird kurz nach dem Tippen gespeichert ----------
   // KI-Verlauf (optional): neueste oben, bis 40 Zeilen
   let aiLogOn = false;
   function aiLogLine([ts, t, kind]) { const li = document.createElement("li"), tm = document.createElement("time"); tm.textContent = new Date(ts).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); li.className = { err: "bad", done: "ok" }[kind] || kind; li.title = t; li.append(tm, document.createTextNode(t)); return li; }
   function aiLogAdd(e) { const l = $("aiLogList"); l.prepend(aiLogLine(e)); while (l.children.length > 40) l.lastChild.remove(); $("aiLogState").textContent = e[2] === "start" || e[2] === "tool" ? "arbeitet" : e[2] === "err" ? "Fehler" : "bereit"; $("aiLogState").dataset.health = e[2] === "err" ? "warn" : "ok"; }
-  window.jarvis.onAiLog?.((e) => aiLogAdd(e));
+  window.argus.onAiLog?.((e) => aiLogAdd(e));
   const renderAiLog = () => { $("aiLog").hidden = !aiLogOn; fitPanel?.(); };
-  $("setAiLog").addEventListener("change", (e) => { aiLogOn = e.target.checked; renderAiLog(); window.jarvis.setConfig({ aiLogOn }); });
-  window.jarvis.getConfig?.().then(async (c) => { aiLogOn = !!c.aiLogOn; $("setAiLog").checked = aiLogOn; renderAiLog(); for (const e of (await window.jarvis.aiHist?.()) || []) aiLogAdd(e); });
+  $("setAiLog").addEventListener("change", (e) => { aiLogOn = e.target.checked; renderAiLog(); window.argus.setConfig({ aiLogOn }); });
+  window.argus.getConfig?.().then(async (c) => { aiLogOn = !!c.aiLogOn; $("setAiLog").checked = aiLogOn; renderAiLog(); for (const e of (await window.argus.aiHist?.()) || []) aiLogAdd(e); });
   let notesOn = false, notesT = null;
   function renderNotes() { $("notes").hidden = !notesOn; fitPanel?.(); }
-  $("setNotesOn").addEventListener("change", (e) => { notesOn = e.target.checked; renderNotes(); window.jarvis.setConfig({ notesOn }); if (notesOn) setTimeout(() => $("notesText").focus({ preventScroll: true }), 50); });
+  $("setNotesOn").addEventListener("change", (e) => { notesOn = e.target.checked; renderNotes(); window.argus.setConfig({ notesOn }); if (notesOn) setTimeout(() => $("notesText").focus({ preventScroll: true }), 50); });
   // Mehrere Seiten, optional in Ordnern. Rechtsklick auf einen Reiter: umbenennen, Ordner, löschen
   let nPages = [], nCur = "", nFolder = "", nOwner = "start", nByPage = {}, nIds = {}, nReady = false;
   const nPage = () => nPages.find((p) => p.id === nCur) || nPages[0];
@@ -490,7 +490,7 @@
     nByPage[nOwner] = { ...(nByPage[nOwner] || {}), pages: window.argusNotesStore.clone(nPages), current: nCur, folder: nFolder,
       ...(window.notesGeometryRead ? { geometry: window.notesGeometryRead() } : {}) };
     const snapshot = { notesByPage: window.argusNotesStore.clone(nByPage), pageIds: { ...nIds } };
-    return synchronous === true && window.jarvis.saveNotesNow ? window.jarvis.saveNotesNow(snapshot) : window.jarvis.setConfig(snapshot);
+    return synchronous === true && window.argus.saveNotesNow ? window.argus.saveNotesNow(snapshot) : window.argus.setConfig(snapshot);
   };
   window.notesPageId = (name) => {
     if (!Object.hasOwn(nIds, name)) Object.defineProperty(nIds, name, { value: "page-" + Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""), enumerable: true, configurable: true, writable: true });
@@ -543,7 +543,7 @@
   $("notesFolder").addEventListener("change", (e) => { nCommit(); nFolder = e.target.value; nRender(); $("notesText").value = nPage()?.text || ""; nSave(); });
   $("notesText").addEventListener("input", () => { $("notesState").textContent = "…"; clearTimeout(notesT); notesT = setTimeout(() => { nCommit(); nSave(); $("notesState").textContent = "gespeichert"; setTimeout(() => { $("notesState").textContent = ""; }, 1500); }, 600); });
   $("notesText").addEventListener("keydown", (e) => e.stopPropagation()); // Tippen löst keine Tastenkürzel aus
-  window.jarvis.getConfig?.().then((c) => {
+  window.argus.getConfig?.().then((c) => {
     notesOn = !!c.notesOn; $("setNotesOn").checked = notesOn;
     const scoped = window.argusNotesStore.migrate(c, () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""));
     nIds = scoped.pageIds; nByPage = scoped.notesByPage;
@@ -561,32 +561,32 @@
   }
   async function renderQuick() {
     $("quick").hidden = !quickOn; if (!quickOn) return;
-    const list = (await window.jarvis.quickList().catch(() => [])) || [];
+    const list = (await window.argus.quickList().catch(() => [])) || [];
     $("qsGrid").style.setProperty("--qs", quickSize + "px");
     const tiles = list.map((it) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "qs" + (it.missing ? " missing" : ""); b.title = it.name + (it.missing ? " (Datei nicht gefunden)" : " · Klick: starten · Rechtsklick: entfernen");
       if (it.icon) { const im = document.createElement("img"); im.src = it.icon; im.alt = ""; b.append(im); } else { const ph = document.createElement("div"); ph.className = "ph"; ph.textContent = (it.name || "?").slice(0, 1).toUpperCase(); b.append(ph); }
       if (quickLabels) { const sp = document.createElement("span"); sp.textContent = it.name; b.append(sp); }
-      b.addEventListener("click", async () => { const r = await window.jarvis.quickLaunch(it.i).catch((e) => ({ ok: false, text: String(e.message || e) })); if (!r.ok) notice(r.text); else $("quickState").textContent = it.name; setTimeout(() => { $("quickState").textContent = ""; }, 2500); });
-      b.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, it.name, [[`„${it.name}“ aus dem Schnellstart entfernen`, async () => { await window.jarvis.quickRemove(it.i); renderQuick(); }, true], ["Abbrechen"]]); });
+      b.addEventListener("click", async () => { const r = await window.argus.quickLaunch(it.i).catch((e) => ({ ok: false, text: String(e.message || e) })); if (!r.ok) notice(r.text); else $("quickState").textContent = it.name; setTimeout(() => { $("quickState").textContent = ""; }, 2500); });
+      b.addEventListener("contextmenu", (e) => { e.preventDefault(); e.stopPropagation(); ctxMenu(e.clientX, e.clientY, it.name, [[`„${it.name}“ aus dem Schnellstart entfernen`, async () => { await window.argus.quickRemove(it.i); renderQuick(); }, true], ["Abbrechen"]]); });
       return b;
     });
     const add = document.createElement("button"); add.type = "button"; add.className = "qs add"; add.title = "Programm hinzufügen"; add.innerHTML = '<div class="ph">+</div>' + (quickLabels ? "<span>Hinzufügen</span>" : "");
-    add.addEventListener("click", async () => { await window.jarvis.quickAdd(); renderQuick(); });
+    add.addEventListener("click", async () => { await window.argus.quickAdd(); renderQuick(); });
     $("qsGrid").replaceChildren(...tiles, add);
-    $("quickRows").replaceChildren(...list.map((it) => { const r = document.createElement("div"); r.className = "wrow"; const n = document.createElement("span"); n.textContent = it.name; const x = document.createElement("button"); x.type = "button"; x.className = "btn"; x.textContent = "Entfernen"; x.addEventListener("click", async () => { await window.jarvis.quickRemove(it.i); renderQuick(); }); r.append(n, x); return r; }));
+    $("quickRows").replaceChildren(...list.map((it) => { const r = document.createElement("div"); r.className = "wrow"; const n = document.createElement("span"); n.textContent = it.name; const x = document.createElement("button"); x.type = "button"; x.className = "btn"; x.textContent = "Entfernen"; x.addEventListener("click", async () => { await window.argus.quickRemove(it.i); renderQuick(); }); r.append(n, x); return r; }));
   }
-  $("setQuickOn").addEventListener("change", (e) => { quickOn = e.target.checked; window.jarvis.setConfig({ quickOn }); renderQuick(); fitPanel?.(); });
-  $("setQuickSize").addEventListener("input", (e) => { quickSize = +e.target.value; $("qsGrid").style.setProperty("--qs", quickSize + "px"); clearTimeout(quickSave); quickSave = setTimeout(() => window.jarvis.setConfig({ quickSize }), 300); });
+  $("setQuickOn").addEventListener("change", (e) => { quickOn = e.target.checked; window.argus.setConfig({ quickOn }); renderQuick(); fitPanel?.(); });
+  $("setQuickSize").addEventListener("input", (e) => { quickSize = +e.target.value; $("qsGrid").style.setProperty("--qs", quickSize + "px"); clearTimeout(quickSave); quickSave = setTimeout(() => window.argus.setConfig({ quickSize }), 300); });
   let quickSave = null;
-  $("setQuickLabels").addEventListener("change", (e) => { quickLabels = e.target.checked; window.jarvis.setConfig({ quickLabels }); renderQuick(); });
-  $("setQuickAdd").addEventListener("click", async () => { await window.jarvis.quickAdd(); renderQuick(); });
-  window.jarvis.onQuickUpdate?.(() => renderQuick());
+  $("setQuickLabels").addEventListener("change", (e) => { quickLabels = e.target.checked; window.argus.setConfig({ quickLabels }); renderQuick(); });
+  $("setQuickAdd").addEventListener("click", async () => { await window.argus.quickAdd(); renderQuick(); });
+  window.argus.onQuickUpdate?.(() => renderQuick());
   // Programme auf den Block ziehen
   $("quick").addEventListener("dragover", (e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); $("quick").classList.add("drop"); } });
   $("quick").addEventListener("dragleave", () => $("quick").classList.remove("drop"));
-  $("quick").addEventListener("drop", async (e) => { e.preventDefault(); $("quick").classList.remove("drop"); const paths = [...(e.dataTransfer?.files || [])].map((f) => window.jarvis.pathOf(f)).filter(Boolean); if (paths.length) { await window.jarvis.quickAddPaths(paths); renderQuick(); } });
-  window.jarvis.getConfig?.().then((c) => { quickOn = !!c.quickOn; quickSize = c.quickSize || 44; quickLabels = c.quickLabels !== false; $("setQuickOn").checked = quickOn; $("setQuickSize").value = quickSize; $("setQuickLabels").checked = quickLabels; renderQuick(); });
+  $("quick").addEventListener("drop", async (e) => { e.preventDefault(); $("quick").classList.remove("drop"); const paths = [...(e.dataTransfer?.files || [])].map((f) => window.argus.pathOf(f)).filter(Boolean); if (paths.length) { await window.argus.quickAddPaths(paths); renderQuick(); } });
+  window.argus.getConfig?.().then((c) => { quickOn = !!c.quickOn; quickSize = c.quickSize || 44; quickLabels = c.quickLabels !== false; $("setQuickOn").checked = quickOn; $("setQuickSize").value = quickSize; $("setQuickLabels").checked = quickLabels; renderQuick(); });
 
   // ---------- Fenster-Spiegel: ein offenes Fenster (zum Beispiel das Discord-Popup mit den Kameras) live im Panel zeigen ----------
   let mirrorSig = "", mirrorQ = 1280, mirrorOn = false, mirrorStream = null, mirrorMatch = "discord", mirrorFps = 15, mirrorPoll = null, mirrorBusy = false;
@@ -596,7 +596,7 @@
   async function mirrorFind(auto) {
     if (mirrorBusy) return; mirrorBusy = true;
     try {
-      const list = (await window.jarvis.mirrorSources().catch(() => [])) || [], sel = $("mirrorSel");
+      const list = (await window.argus.mirrorSources().catch(() => [])) || [], sel = $("mirrorSel");
       const cur = sel.value && list.some((x) => x.id === sel.value) ? sel.value : "";
       const sig = list.map((x) => x.id + x.name).join("|");
       if (sig !== mirrorSig) { mirrorSig = sig; sel.replaceChildren(new Option("Fenster oder Bildschirm wählen …", ""), ...list.map((x) => new Option((x.screen ? "🖥 " : "") + x.name.slice(0, 70), x.id))); }
@@ -624,14 +624,14 @@
   }
   $("mirrorSel").addEventListener("change", async (e) => {
     const o = e.target.selectedOptions[0]; mirrorStop();
-    if (!e.target.value) { mirrorMatch = ""; window.jarvis.setConfig({ mirrorMatch }); mirrorSet("kein Fenster gewählt", "warn"); return; }
-    mirrorMatch = o.textContent; window.jarvis.setConfig({ mirrorMatch }); await mirrorStart(e.target.value);
+    if (!e.target.value) { mirrorMatch = ""; window.argus.setConfig({ mirrorMatch }); mirrorSet("kein Fenster gewählt", "warn"); return; }
+    mirrorMatch = o.textContent; window.argus.setConfig({ mirrorMatch }); await mirrorStart(e.target.value);
   });
-  $("setMirrorOn").addEventListener("change", (e) => { mirrorOn = e.target.checked; window.jarvis.setConfig({ mirrorOn }); mirrorSync(); fitPanel?.(); });
-  $("setMirrorQ").addEventListener("change", (e) => { mirrorQ = +e.target.value; window.jarvis.setConfig({ mirrorQ }); if (mirrorStream) { const id = $("mirrorSel").value; if (id) mirrorStart(id); } });
+  $("setMirrorOn").addEventListener("change", (e) => { mirrorOn = e.target.checked; window.argus.setConfig({ mirrorOn }); mirrorSync(); fitPanel?.(); });
+  $("setMirrorQ").addEventListener("change", (e) => { mirrorQ = +e.target.value; window.argus.setConfig({ mirrorQ }); if (mirrorStream) { const id = $("mirrorSel").value; if (id) mirrorStart(id); } });
   $("mirrorSel").addEventListener("mousedown", () => mirrorFind(true)); // Liste beim Aufklappen neu holen (Fenster, die erst jetzt offen sind)
-  $("setMirrorFps").addEventListener("change", (e) => { mirrorFps = +e.target.value; window.jarvis.setConfig({ mirrorFps }); if (mirrorStream) { const id = $("mirrorSel").value; if (id) mirrorStart(id); } });
-  window.jarvis.getConfig?.().then((c) => { mirrorOn = !!c.mirrorOn; mirrorMatch = c.mirrorMatch ?? "discord"; mirrorFps = c.mirrorFps || 15; mirrorQ = c.mirrorQ ?? 1280; $("setMirrorQ").value = String(mirrorQ); $("setMirrorOn").checked = mirrorOn; $("setMirrorFps").value = String(mirrorFps); setTimeout(mirrorSync, 1500); });
+  $("setMirrorFps").addEventListener("change", (e) => { mirrorFps = +e.target.value; window.argus.setConfig({ mirrorFps }); if (mirrorStream) { const id = $("mirrorSel").value; if (id) mirrorStart(id); } });
+  window.argus.getConfig?.().then((c) => { mirrorOn = !!c.mirrorOn; mirrorMatch = c.mirrorMatch ?? "discord"; mirrorFps = c.mirrorFps || 15; mirrorQ = c.mirrorQ ?? 1280; $("setMirrorQ").value = String(mirrorQ); $("setMirrorOn").checked = mirrorOn; $("setMirrorFps").value = String(mirrorFps); setTimeout(mirrorSync, 1500); });
 
   // Weltuhren: eigene Ortszeit vorn, dann die eingestellten Zonen mit Abstand in Stunden
   const tzOk = (tz) => { try { new Intl.DateTimeFormat("de-DE", { timeZone: tz }); return true; } catch { return false; } };
@@ -668,9 +668,9 @@
     return ALL_TZ.find((z) => z.split("/").pop().toLowerCase() === kk) || null;
   }
   const clocksText = () => clocks.map((c) => `${c.n} = ${c.tz}`).join("\n");
-  $("setMineOn").addEventListener("change", (e) => { mineOn = e.target.checked; if (mineOn && pagesOn) { for (const [n, pf] of Object.entries(pages)) if (n !== page && pf) pf.hiddenBlocks = [...new Set([...(pf.hiddenBlocks || []), "mine"])]; if (hiddenSet.delete("mine")) applyHidden(); window.jarvis.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); } renderMine(); window.jarvis.setConfig({ mineOn }); });
-  $("setMineAddr").addEventListener("change", (e) => { mineAddr = e.target.value.trim(); mineData = mineData ? { ...mineData, pool: null } : null; renderMine(); window.jarvis.setConfig({ mineAddr }); });
-  $("setClocksOn").addEventListener("change", (e) => { clocksOn = e.target.checked; renderClocks(true); fitPanel?.(); window.jarvis.setConfig({ clocksOn }); });
+  $("setMineOn").addEventListener("change", (e) => { mineOn = e.target.checked; if (mineOn && pagesOn) { for (const [n, pf] of Object.entries(pages)) if (n !== page && pf) pf.hiddenBlocks = [...new Set([...(pf.hiddenBlocks || []), "mine"])]; if (hiddenSet.delete("mine")) applyHidden(); window.argus.setConfig({ pages, hiddenBlocks: [...hiddenSet] }); } renderMine(); window.argus.setConfig({ mineOn }); });
+  $("setMineAddr").addEventListener("change", (e) => { mineAddr = e.target.value.trim(); mineData = mineData ? { ...mineData, pool: null } : null; renderMine(); window.argus.setConfig({ mineAddr }); });
+  $("setClocksOn").addEventListener("change", (e) => { clocksOn = e.target.checked; renderClocks(true); fitPanel?.(); window.argus.setConfig({ clocksOn }); });
   $("setClocks").addEventListener("change", (e) => {
     const out = [], bad = [];
     for (const line of e.target.value.split(/\n/)) {
@@ -678,15 +678,15 @@
       const m = /^\s*(.+?)\s*[=:]\s*(.+?)\s*$/.exec(line), name = (m ? m[1] : line).trim(), tz = findTz(m ? m[2] : line);
       if (tz) out.push({ n: name.slice(0, 24), tz }); else bad.push(line.trim());
     }
-    clocks = out.slice(0, 10); renderClocks(true); fitPanel?.(); window.jarvis.setConfig({ clocks });
+    clocks = out.slice(0, 10); renderClocks(true); fitPanel?.(); window.argus.setConfig({ clocks });
     $("clocksNote").textContent = bad.length ? `Nicht erkannt: ${bad.join(", ")}. Format: Name = Stadt oder Land, z. B. Farm = Asuncion.` : "Gespeichert. Deine Ortszeit steht vorn, Uhren mit derselben Zeit werden ausgeblendet.";
   });
-  window.jarvis.getConfig?.().then((c) => {
+  window.argus.getConfig?.().then((c) => {
     mineOn = c.mineOn !== false; mineAddr = c.mineAddr || ""; mineData = c.mining || null; clocksOn = c.clocksOn !== false; clocks = Array.isArray(c.clocks) ? c.clocks : [];
     $("setMineOn").checked = mineOn; $("setMineAddr").value = mineAddr; $("setClocksOn").checked = clocksOn; $("setClocks").value = clocksText();
     $("setGameMode").checked = !!c.gameMode; gameMode = !!c.gameMode; $("setSnap").checked = c.snapGuides !== false; snapOn = c.snapGuides !== false;
     renderMine(); renderClocks(true);
   });
-  $("setGameMode").addEventListener("change", (e) => { gameMode = e.target.checked; window.jarvis.setConfig({ gameMode }); });
-  $("setSnap").addEventListener("change", (e) => { snapOn = e.target.checked; window.jarvis.setConfig({ snapGuides: snapOn }); });
+  $("setGameMode").addEventListener("change", (e) => { gameMode = e.target.checked; window.argus.setConfig({ gameMode }); });
+  $("setSnap").addEventListener("change", (e) => { snapOn = e.target.checked; window.argus.setConfig({ snapGuides: snapOn }); });
 

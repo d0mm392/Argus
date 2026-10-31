@@ -1,6 +1,6 @@
 // Tagesbriefing: Karte (verschiebbar nicht nötig, × / Esc / Schließen) und Sprache. Text kommt aus briefing.js im Hauptprozess.
 window.runBriefing = async function (pre) {
-  const b = pre || (await window.jarvis.briefBuild().catch(() => null));
+  const b = pre || (await window.argus.briefBuild().catch(() => null));
   if (!b) return;
   document.getElementById("briefCard")?.remove();
   const el = document.createElement("div");
@@ -19,16 +19,16 @@ window.runBriefing = async function (pre) {
   el.querySelector("[data-a=say]").onclick = say;
   say();
 };
-window.jarvis.onBrief?.((b) => window.runBriefing(b));
+window.argus.onBrief?.((b) => window.runBriefing(b));
 document.getElementById("briefBtn")?.addEventListener("click", () => window.runBriefing());
 (function () {
   const on = document.getElementById("setBriefOn"); if (!on) return;
   const time = document.getElementById("setBriefTime"), len = document.getElementById("setBriefLen"), parts = document.querySelectorAll("[data-bp]");
-  window.jarvis.getConfig().then((c) => {
+  window.argus.getConfig().then((c) => {
     on.checked = !!c.briefOn; time.value = c.briefTime || "08:00"; len.value = c.briefLen || "short";
     parts.forEach((p) => { p.checked = c.briefParts?.[p.dataset.bp] !== false && true; });
   }).catch(() => {});
-  const save = () => window.jarvis.setConfig({ briefOn: on.checked, briefTime: time.value || "08:00", briefLen: len.value, briefParts: Object.fromEntries([...parts].map((p) => [p.dataset.bp, p.checked])) });
+  const save = () => window.argus.setConfig({ briefOn: on.checked, briefTime: time.value || "08:00", briefLen: len.value, briefParts: Object.fromEntries([...parts].map((p) => [p.dataset.bp, p.checked])) });
   [on, time, len, ...parts].forEach((x) => x.addEventListener("change", save));
   document.getElementById("setBriefTest")?.addEventListener("click", () => window.runBriefing());
 })();
