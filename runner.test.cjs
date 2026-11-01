@@ -109,3 +109,15 @@ test('promise return is not completion: unresolved and rejected work is distingu
   f.exit(0xFFFF7003);assert.deepEqual(f.runner.snapshot().unsettledObservedPromises,[{id:1,name:'pending',promise:true}]);
   assert.equal(f.runner.snapshot().jsFailureEvidence.length,1);assert.equal(f.runner.snapshot().nativeFailure,null);
 });
+test('worker fault and last native boundary survive export without claiming a main-process native exclusion',()=>{
+  const f=fixture();f.runner.start('apps-worker');f.mark();
+  fs.appendFileSync(path.join(f.runner.last.profile,'startup-markers.jsonl'),[
+    {event:'apps:worker.exit',detail:{code:0xFFFF7003,hex:'0xFFFF7003'}},
+    {event:'apps:worker.result',detail:{complete:false,reason:'worker-exit',count:0}}
+  ].map(JSON.stringify).join('\n')+'\n');
+  fs.writeFileSync(path.join(f.runner.last.profile,'shortcut-worker-markers.jsonl'),JSON.stringify({event:'apps:worker.native:before',detail:{index:3}})+'\n');
+  f.exit(1);const state=f.runner.snapshot();assert.equal(state.nativeFailure,null);assert.equal(state.appDiscovery.workerExit.hex,'0xFFFF7003');
+  assert.equal(state.appDiscovery.workerOutcome.complete,false);assert.equal(state.appDiscovery.recentWorkerStages[0].detail.index,3);
+  const file=path.join(f.root,'worker-report.zip');f.runner.exportZip(file);
+  const zip=new(require('adm-zip'))(file);assert(zip.getEntry('shortcut-worker-markers.jsonl'));assert(!zip.getEntries().some(entry=>/\.dmp/.test(entry.entryName)));
+});

@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; connect-src 'none'">
 <title>Argus Startdiagnose</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.4</div>
+  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.5</div>
   <h1>Argus Startdiagnose</h1>
   <p class="intro">Wir prüfen den Start in einer eigenen Testumgebung. Diese Oberfläche bleibt auch bei einem Argus-Absturz geöffnet.</p>
   <div class="notice"><strong>Frisches Diagnoseprofil</strong><p>Deine Installation und dein Originalprofil werden nicht verändert. Ein erfolgreicher Test bestätigt nicht, dass dein bisheriges Profil funktioniert.</p></div>
@@ -12,6 +12,13 @@
     <option value="argus">Argus-Diagnose (bisheriger Vergleich)</option>
     <option value="minimal">1. Minimales Electron-Fenster</option>
     <option value="argus-no-gpu">2. Argus ohne Hardwarebeschleunigung</option>
+    <optgroup label="Gezielt: App-Erkennung">
+    <option value="apps-callback">P0. App-Erkennung: nur PowerShell-Callback</option>
+    <option value="apps-parse">P1. App-Erkennung: Callback + JSON, ohne Verknuepfungen</option>
+    <option value="apps-walk">P2. App-Erkennung: Pfadpruefung, ohne native Aufloesung</option>
+    <option value="apps-worker">P3. App-Erkennung: native Aufloesung im Hilfsprozess (Korrektur)</option>
+    <option value="apps-native">P4. App-Erkennung: bisherige native Aufloesung im Hauptprozess</option>
+    </optgroup>
     <option value="modules">A. Argus-Modulimporte + Minimalfenster</option>
     <option value="core">B. Argus-Fenster ohne Hintergrundgruppen</option>
     <option value="stage-1">C1. Zusaetzlich Desktopfunktionen</option>
@@ -19,7 +26,7 @@
     <option value="stage-3">C3. Zusaetzlich Integrationen</option>
     <option value="stage-4">C4. Zusaetzlich lokale KI / Statusarbeiten</option>
     <option value="stage-5">C5. Zusaetzlich Dateiindizierung (ab 8 s)</option>
-    <option value="stage-6">C7. Zusaetzlich Steam-Abfragen</option>
+    <option value="stage-6">C6. Zusaetzlich Steam-Abfragen</option>
     <option value="stage-7">C7. Zusaetzlich Netzwerk / Lagebild</option>
     <option value="core-desktop">Einzelgruppe: Fenster + desktop</option>
     <option value="core-apps">Einzelgruppe: Fenster + apps</option>

@@ -1,6 +1,6 @@
 {
   "name": "argus-diagnostic-controller",
-  "version": "0.58.27-diagnose.4",
+  "version": "0.58.27-diagnose.5",
   "private": true,
   "description": "Separate Argus-Startdiagnose, kein normales Argus-Update",
   "author": "Argus",

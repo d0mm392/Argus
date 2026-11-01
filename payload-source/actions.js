@@ -63,40 +63,88 @@ const verifiedAppIds = new Set();
 const STORE_PS = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;$ok=@{};" +
   "foreach($p in Get-AppxPackage){try{$m=$p|Get-AppxPackageManifest;foreach($a in @($m.Package.Applications.Application)){if($a.Id){$ok[$p.PackageFamilyName+'!'+$a.Id]=1}}}catch{}};" +
   "@(Get-StartApps|Where-Object{$ok.ContainsKey([string]$_.AppID)})|ConvertTo-Json -Compress";
+let shortcutSequence = 0;
+const appMark = (phase, detail) => diagnostic.mark('apps:'+phase, detail);
+const appProbe = () => diagnostic.currentPlan.appsProbe;
 function storeApps() {
   return new Promise((resolve) => {
     if (process.platform !== "win32") return resolve([]);
-    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", STORE_PS], { windowsHide: true, timeout: 60000, maxBuffer: 8 << 20 }, (err, out) => {
-      verifiedAppIds.clear();
-      if (err) return resolve([]);
-      let l; try { l = JSON.parse(out || "[]"); } catch { return resolve([]); }
-      const { claimed, complete } = shortcutAppIds();
-      if (!complete) return resolve([]);
-      const list = (Array.isArray(l) ? l : [l]).filter((x) => x?.Name && isPackagedAppId(x.AppID) && !claimed.has(String(x.AppID).toLowerCase()) && !/uninstall|deinstall|readme/i.test(x.Name));
-      verifiedAppIds.clear(); for (const x of list) verifiedAppIds.add(String(x.AppID).toLowerCase());
-      resolve(list.map((x) => ({ name: x.Name, appId: x.AppID })));
+    verifiedAppIds.clear();
+    appMark('powershell:before');
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", STORE_PS], { windowsHide: true, timeout: 60000, maxBuffer: 8 << 20 }, async (err, out, stderr) => {
+      appMark('callback:enter',{error:!!err,stdoutBytes:Buffer.byteLength(out||''),stderrBytes:Buffer.byteLength(stderr||'')});
+      const finish = (list, reason) => {
+        appMark('resolve:before',{count:list.length,reason});resolve(list);appMark('resolve:after',{count:list.length,reason});
+      };
+      try {
+        appMark('verified-clear:before');verifiedAppIds.clear();appMark('verified-clear:after');
+        if (err) return finish([],'powershell-error');
+        if (appProbe()==='callback-only') return finish([],'probe-no-authorization');
+        appMark('json-parse:before');
+        let parsed;try{parsed=JSON.parse(out||'[]');}catch{appMark('json-parse:exception');return finish([],'invalid-json');}
+        appMark('json-parse:after',{array:Array.isArray(parsed)});
+        const rows=Array.isArray(parsed)?parsed:[parsed];
+        appMark('schema:before',{count:rows.length});
+        const candidates=rows.filter(x=>typeof x?.Name==='string'&&x.Name&&isPackagedAppId(x.AppID)&&!/uninstall|deinstall|readme/i.test(x.Name));
+        appMark('schema:after',{count:candidates.length});
+        if(appProbe()==='parse-only')return finish([],'probe-no-authorization');
+        appMark('collision:before');
+        const {claimed,complete}=await diagnostic.task('actions.shortcutAppIds',shortcutAppIds);
+        appMark('collision:after',{complete,count:claimed.size});
+        if(!complete)return finish([],appProbe()==='walk-only'?'probe-no-authorization':'collision-incomplete');
+        appMark('filter:before');
+        const list=candidates.filter(x=>!claimed.has(String(x.AppID).toLowerCase()));
+        appMark('filter:after',{count:list.length});
+        appMark('verified-populate:before');
+        for(const x of list)verifiedAppIds.add(String(x.AppID).toLowerCase());
+        appMark('verified-populate:after',{count:verifiedAppIds.size});
+        appMark('map:before');const result=list.map(x=>({name:x.Name,appId:x.AppID}));appMark('map:after',{count:result.length});
+        finish(result,'complete');
+      }catch{verifiedAppIds.clear();appMark('callback:exception');finish([],'callback-error');}
+      finally{appMark('callback:complete');}
     });
+    appMark('powershell:return'); // execFile returned; no implication about callback/Promise completion.
   });
 }
-// App-IDs, die Verknüpfungen in Startmenü und Desktop tragen (shell.readShortcutLink: appUserModelId)
-function shortcutAppIds() {
-  const claimed = new Set();
-  let complete = true;
-  const walked = walkMenus((p) => {
-    if (!/\.lnk$/i.test(p)) return;
-    const c = files.checkPath(p, { read: true });
-    if (!c.ok || c.st.isDirectory()) { complete = false; return; }
-    try { const id = shell.readShortcutLink(c.real).appUserModelId; if (id) claimed.add(String(id).toLowerCase()); }
-    catch { complete = false; }
-  });
-  return { claimed, complete: complete && walked };
+async function shortcutAppIds() {
+  const claimed=new Set(),paths=[];let complete=true;
+  appMark('walk:before',{probe:appProbe()});
+  const walked=walkMenus(p=>{
+    if(!/\.lnk$/i.test(p))return;
+    const index=shortcutSequence++;
+    appMark('path-check:before',{index});
+    const checked=files.checkPath(p,{read:true});
+    const ok=checked.ok&&!checked.st.isDirectory();
+    appMark('path-check:after',{index,ok:!!ok});
+    if(!ok){complete=false;return;}
+    if(appProbe()!=='native'){paths.push(checked.real);return;}
+    try{
+      appMark('native-read:before',{index});const link=shell.readShortcutLink(checked.real);appMark('native-read:return',{index});
+      appMark('native-appid:before',{index});const id=link.appUserModelId;appMark('native-appid:after',{index,hasAppId:!!id});
+      if(id){if(typeof id!=='string'||id.length>512)complete=false;else claimed.add(id.toLowerCase());}
+    }catch{appMark('native-read:exception',{index});complete=false;}
+  },true);
+  complete=complete&&walked;
+  appMark('walk:after',{complete,count:appProbe()==='native'?shortcutSequence:paths.length});
+  if(appProbe()==='walk-only')return {claimed:new Set(),complete:false};
+  if(appProbe()==='native')return {claimed,complete};
+  const result=await require('./shortcut-reader.cjs').readShortcuts(paths,{mark:diagnostic.mark});
+  const overallComplete=complete&&result.complete;
+  appMark('worker.validation-joined',{walkComplete:complete,nativeComplete:result.complete,complete:overallComplete});
+  return {claimed:new Set(overallComplete?result.claimed.map(id=>id.toLowerCase()):[]),complete:overallComplete};
 }
 // Begrenzte Suche: jede ausgelassene Stelle macht die App-ID-Kollisionspruefung unvollstaendig.
-function walkMenus(fn) {
-  let complete = true;
+function walkMenus(fn, trace=false) {
+  let complete = true, directorySequence=0;
   const walk = (dir, depth) => {
-    if (!files.enterDir(dir)) { complete = false; return; }
-    let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { complete = false; return; }
+    const directory=directorySequence++;
+    if(trace)appMark('directory-check:before',{directory,depth});
+    const allowed=files.enterDir(dir);
+    if(trace)appMark('directory-check:after',{directory,depth,allowed});
+    if(!allowed){complete=false;return;}
+    let entries;
+    try{if(trace)appMark('directory-read:before',{directory});entries=fs.readdirSync(dir,{withFileTypes:true});if(trace)appMark('directory-read:after',{directory,count:entries.length});}
+    catch{if(trace)appMark('directory-read:exception',{directory});complete=false;return;}
     for (const e of entries) {
       const p = path.join(dir, e.name);
       if (files.isSvPath(p)) { complete = false; continue; }
@@ -106,10 +154,11 @@ function walkMenus(fn) {
       else fn(p, e);
     }
   };
-  START_MENUS.forEach((d) => {
+  START_MENUS.forEach((d,root) => {
+    if(trace)appMark("root-check:before",{root});
     // Nicht vorhandene Standardordner enthalten keine Kollision; andere Fehler bleiben unklar.
-    try { fs.lstatSync(d); } catch (e) { if (e.code !== 'ENOENT') complete = false; return; }
-    const r = files.walkRoot(d); if (r) walk(r, 0); else complete = false;
+    try { fs.lstatSync(d); } catch (e) { if (e.code !== 'ENOENT') complete = false;if(trace)appMark('root-check:unavailable',{root,missing:e.code==='ENOENT'}); return; }
+    const r=files.walkRoot(d);if(trace)appMark('root-check:after',{root,allowed:!!r});if(r)walk(r,0);else complete=false;
   });
   return complete;
 }
@@ -118,7 +167,9 @@ async function refreshExtra() {
   if (Date.now() - extraAt < 10 * 60 * 1000 && extraApps.length) return;
   extraAt = Date.now();
   const bnet = fs.existsSync(path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Battle.net")) ? Object.entries(BNET).map(([n, code]) => ({ name: n.replace(/\b\w/g, (c) => c.toUpperCase()), uri: "battlenet://" + code, kind: "Battle.net-Spiel" })) : [];
-  extraApps = [...steamGames(), ...epicGames(), ...bnet, ...(await storeApps())];
+  appMark('sources:before');const steam=steamGames(),epic=epicGames();appMark('sources:after',{steam:steam.length,epic:epic.length});
+  appMark('store-await:before');const store=await diagnostic.task('actions.storeApps',storeApps);appMark('store-await:after',{count:store.length});
+  appMark('extra-assign:before');extraApps=[...steam,...epic,...bnet,...store];appMark('extra-assign:after',{count:extraApps.length});
 }
 if (process.platform === "win32" && diagnostic.enabled('apps')) setTimeout(() => diagnostic.task('actions.refreshExtra',refreshExtra).catch(() => {}), 5000);
 function scanApps() {
@@ -231,7 +282,9 @@ function launchCheck(p) {
   if (/\.exe$/i.test(c.real)) return { ok: true, exe: c.real, args: [], cwd: path.dirname(c.real) };
   if (/\.url$/i.test(c.real)) { const u = urlOf(c.real); return WEB.test(u) || GAME.test(u) ? { ok: true, url: u } : DENY("unklar"); }
   if (!/\.lnk$/i.test(c.real)) return DENY("unklar");
-  let t; try { t = shell.readShortcutLink(c.real); } catch { return DENY("unklar"); }
+  let t;const index=shortcutSequence++;
+  try{appMark('launch-native:before',{index});t=shell.readShortcutLink(c.real);appMark('launch-native:after',{index});}
+  catch{appMark('launch-native:exception',{index});return DENY('unklar');}
   if (!t || !t.target) return DENY("unklar"); // Ziel nicht feststellbar (z. B. Installer-Verknüpfungen): nicht über diesen Weg
   const tc = files.checkPath(expandEnv(t.target), { read: true });
   if (!tc.ok) return tc;

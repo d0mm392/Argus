@@ -7,7 +7,7 @@ const {EventEmitter} = require('node:events');
 const {StringDecoder} = require('node:string_decoder');
 
 const MAX_BYTES = 1024 * 1024;
-const VERSION = '0.58.27-diagnose.4';
+const VERSION = '0.58.27-diagnose.5';
 const {plan,modes:MODES}=require('./diagnostic-plan.cjs');
 
 function redact(value) {
@@ -119,7 +119,7 @@ class Runner extends EventEmitter {
   }
   collect() {
     // Explizite Exportliste, niemals Profilverzeichnisse/Config/Cookies/Dumps kopieren.
-    for (const name of ['startup-markers.jsonl','electron.log']) {
+    for (const name of ['startup-markers.jsonl','shortcut-worker-markers.jsonl','electron.log']) {
       try {
         const source=path.join(this.last.profile,name);
         if (!fs.existsSync(source)) continue;
@@ -157,6 +157,16 @@ class Runner extends EventEmitter {
       for(const row of events){if(row.event==='task:return'&&row.detail?.promise)pending.set(row.detail.id,row.detail);if(['task:resolved','task:rejected','task:throw'].includes(row.event))pending.delete(row.detail?.id);}
       summary.unsettledObservedPromises=[...pending.values()];
       summary.recentLifecycle=events.filter(row=>/^(task:|background:|native:|index:|timer:|group:)/.test(row.event)).slice(-40);
+      let workerEvents=[];
+      const workerLog=path.join(this.last.report,'shortcut-worker-markers.jsonl');
+      if(fs.existsSync(workerLog))try{workerEvents=fs.readFileSync(workerLog,'utf8').split('\n').filter(Boolean).map(JSON.parse);}catch{summary.workerMarkersIncomplete=true;}
+      const appEvents=events.filter(row=>row.event.startsWith('apps:'));
+      summary.appDiscovery={probe:summary.plan.appsProbe,callbackCompleted:events.some(row=>row.event==='apps:callback:complete'),
+        storeOutcome:events.filter(row=>row.event==='apps:resolve:before').at(-1)?.detail||null,
+        collision:events.filter(row=>row.event==='apps:collision:after').at(-1)?.detail||null,
+        workerOutcome:events.filter(row=>row.event==='apps:worker.result').at(-1)?.detail||null,
+        workerExit:events.filter(row=>row.event==='apps:worker.exit').at(-1)?.detail||null,
+        recentStages:appEvents.slice(-40),recentWorkerStages:workerEvents.slice(-40)};
       summary.status=keepActive?'stop-failed':summary.startError?'start-failed':summary.observationCompleted&&summary.controllerStopped&&summary.ready&&summary.windowLoaded&&summary.nativeFailure===null?'observed':'aborted';
       summary.reportReady=true;
       summary.finished=new Date().toISOString();
@@ -186,7 +196,7 @@ class Runner extends EventEmitter {
     if (!this.last || (this.active && !this.last.summary.reportReady)) throw Error('Bitte zuerst die Diagnose abschliessen.');
     const AdmZip=require('adm-zip');
     const zip=new AdmZip();
-    const names=['Ergebnis.txt','stdout.log','stderr.log','electron.log','startup-markers.jsonl','Startfehler.jsonl','Sammlungsfehler.jsonl'];
+    const names=['Ergebnis.txt','stdout.log','stderr.log','electron.log','startup-markers.jsonl','shortcut-worker-markers.jsonl','Startfehler.jsonl','Sammlungsfehler.jsonl'];
     let count=0;
     try {
       for(const name of names) {

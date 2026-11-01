@@ -11,6 +11,12 @@ function render(state){
   el('status').textContent=labels[state.status]||state.status;
   el('detail').textContent=state.status==='stop-failed'?'Der Bericht kann gespeichert werden. Ein weiterer Versuch bleibt gesperrt, solange der Testprozess läuft.':state.active?'Bitte bis zu einer Minute warten. Es gibt keine automatischen Wiederholungen.':state.status==='idle'?'Ein Klick startet genau einen Versuch. Die Beobachtung dauert bis zu einer Minute.':
     'Lauf: '+state.id+'; Vergleich: '+state.mode+'. '+(state.nativeFailureAssessment||'')+' Ergebnis gilt ausschließlich für ein frisches Diagnoseprofil. Exitcode: '+(state.exitCode??'nicht verfügbar')+(state.controllerStopped?' (Testprozess nach Beobachtung kontrolliert beendet).':'.')+' Bitte den Bericht speichern und zurückschicken.';
+  if(!state.active && state.appDiscovery?.workerOutcome){
+    const result=state.appDiscovery.workerOutcome;
+    el('detail').textContent+=' Verknuepfungs-Hilfsprozess: '+result.reason+'. '+(state.appDiscovery.collision?.complete?'Kollisionspruefung vollstaendig.':'Kollisionspruefung insgesamt unvollstaendig; keine Store-App-IDs freigegeben. Dies ist keine bestaetigte vollstaendige Reparatur.');
+  }else if(!state.active && state.appDiscovery?.storeOutcome){
+    el('detail').textContent+=' App-Erkennung: '+state.appDiscovery.storeOutcome.reason+'. Anzahl freigegebener Store-Apps: '+state.appDiscovery.storeOutcome.count+'.';
+  }
   el('errors').textContent=state.collectionErrors?.length?'Sammlung/Verarbeitung: '+state.collectionErrors.length+' Fehler. Verfügbare Protokolle bleiben erhalten und werden mit exportiert.':'';
 }
 el('start').addEventListener('click',async()=>{

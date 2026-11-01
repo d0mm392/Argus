@@ -1,5 +1,5 @@
 {
-  "version": "0.58.27-diagnose.4",
+  "version": "0.58.27-diagnose.5",
   "baseArgusCommit": "d0d941630be746fe39bf2e97ac67b6c3b73276b1",
   "originalInstrumentedFiles": {
     "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
@@ -14,15 +14,20 @@
     "Explicitly consented local-only crash capture",
     "Staged feature groups including import-time Appx enumeration",
     "Deferred timer/promise/native addon/child process lifecycle observations",
-    "PC-info and app enumeration guarded by selected group"
+    "PC-info and app enumeration guarded by selected group",
+    "Phase markers around PowerShell callback, JSON, path guards, native read and AppID access",
+    "Isolated authenticated local shortcut reader; fail-closed collision validation",
+    "Targeted apps callback/parse/walk/native/helper counterprobes"
   ],
   "finalPayload": {
-    "boot.js": "35093114514e3240b88e4309ae1acaebd0a8ec9323e59c8ce3455b7559f48045",
+    "boot.js": "02f172381354abfa523ec7cced75a2511291d598af8223acb66f9c46db9fe363",
     "main.js": "66159a700dd5573523c3046af692d3891b74543848f071cfb96465d254faceff",
     "startup-diagnostic.js": "c27e545099535fec628303b7d58f3e3436958d9d5de12c144c603ba5a9712ab2",
-    "actions.js": "b8f452af359f884db939d61ba9aef8d528e1aeaba3bea962705f258d3d9c5fbb",
+    "actions.js": "68cc6804ea7cd9a0596e63abd265ddca18788be3fcbef493bf958184a2f06947",
+    "shortcut-reader.cjs": "3cad0a8f0c2d95a80ec082c4cecc62d21edeb1627ebadfaca10006ab6686d249",
+    "shortcut-worker.cjs": "91ff6e60887ee73f6b80ff98e5c340a6ca71d1e2455fe3e62f8690e67b5f2877",
     "minimal-window.js": "e37de23ccb2987ec2381e50e78b89501e5d95237e933cbebbfd84263f76a940b",
     "minimal-window.html": "c60c7ebaaff11531abc2599981ea19c03b02a7d406931fd038b1a67217737df7"
   },
-  "diagnosticPlanSHA256": "c737ef95ee56c4e50eb34a8a0e395f6456560a151467f4688b35a81d673a7550"
+  "diagnosticPlanSHA256": "b5c7daa1e5d6ef23793a3ec2562c31ab9f4c8705c21729297a017d012a3828f3"
 }

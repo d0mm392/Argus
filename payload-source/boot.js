@@ -3,6 +3,7 @@
 const { app } = require("electron");
 const fs = require("fs");
 const path = require("path");
+if(process.env.ARGUS_SHORTCUT_WORKER==='1'){require('./shortcut-worker.cjs');return;}
 
 // Umzug Jarvis → Argus (0.30): Datenordner %APPDATA%\jarvis-desktop einmalig nach %APPDATA%\argus-desktop kopieren.
 // Der alte Ordner bleibt unverändert als Sicherung liegen. Klappt das Kopieren nicht, läuft Argus mit dem alten Ordner weiter

@@ -1,17 +1,18 @@
-Argus Startdiagnose 0.58.27-diagnose.4
+Argus Startdiagnose 0.58.27-diagnose.5 ? gezielte App-Erkennung
 
-Einmal das neue separate Diagnose-Setup installieren. Die bisherigen Versionen .2/.3 besitzen noch keine Updatefunktion. Danach pr?ft die Diagnose-App beim ?ffnen mit kurzem Timeout auf ausdr?cklich gekennzeichnete Diagnose-Releases. Ohne Internet bleiben alle Diagnosetests verf?gbar. Bei neuer Version auf Aktualisieren klicken; nach Download au?erhalb eines Tests Ergebnisse sichern und neu starten. Fr?here Berichte bleiben erhalten.
+Die Diagnose-App .4 ?ffnen, auf Aktualisieren klicken und nach Ende eines Tests Ergebnisse sichern und neu starten. Alternativ das separate Diagnose-Setup .5 installieren. Normales Argus und dessen Updatekan?le bleiben unver?ndert.
 
-Im Diagnoseprogramm einzeln ausw?hlen und jeweils Bericht speichern:
-A. Argus-Modulimporte + Minimalfenster.
-B. Argus-Fenster ohne Hintergrundgruppen.
-C1 bis C7 schalten nacheinander Desktop, App-/Spieleerkennung, Integrationen, lokale Arbeiten, Dateiindizierung, Steam und Netzwerk/Lagebild hinzu.
-Bei erstem Abbruch die zuletzt hinzugekommene Gruppe allein (Einzelgruppe) vergleichen. Alle neuen Stufen laufen ohne Hardwarebeschleunigung. Bestehende Minimal-/Argus-Vergleiche bleiben verf?gbar.
+Keine unbeteiligten Gruppen wiederholen. Je Test bis zu 60 Sekunden warten und SOFORT den Ergebnis-ZIP exportieren.
+1. P1. App-Erkennung: Callback + JSON, ohne Verknuepfungen
+   Bei Abbruch: P0. App-Erkennung: nur PowerShell-Callback. Danach ZIPs zur?ckschicken und stoppen.
+2. Wenn P1 stabil: P2. App-Erkennung: Pfadpruefung, ohne native Aufloesung
+   Bei Abbruch: ZIPs zur?ckschicken und stoppen.
+3. Wenn P1 und P2 stabil: P3. App-Erkennung: native Aufloesung im Hilfsprozess (Korrektur)
+   Danach alle ZIPs gesammelt zur?ckschicken. Helfer-Exitcode und vollst?ndige/unvollst?ndige Kollisionspr?fung stehen zus?tzlich im Bericht.
+P4 ist eine Restgegenprobe mit dem bisherigen gef?hrdeten Zugriff im Hauptprozess und zun?chst NICHT erforderlich.
 
-Jeder Klick: genau ein Start, eigenes frisches Profil, bis zu 60 Sekunden. Keine automatischen Wiederholungen. Nach jedem Lauf den Bericht speichern, bevor der n?chste gestartet wird. ZIP-Dateinamen und Berichte enthalten eindeutige Laufkennungen und Modi.
+Alle Proben: eigenes frisches Profil, gleiche 60 Sekunden, ohne Hardwarebeschleunigung und genau ein Start. P0/P1/P2 erlauben bewusst keine Store-App-Starts. Der Helfer in P3 pr?ft ebenfalls Pfade und kann bei unvollst?ndiger Pr?fung keine Store-App-IDs freigeben. Ein stabiler Hauptprozess mit Helferfehler ist keine best?tigte vollst?ndige Reparatur. Keine Programmlisten oder privaten Pfade in den zus?tzlichen Markern.
 
-nativeFailure=null bedeutet unbekannt, kein Ausschluss eines nativen Fehlers. task:return bedeutet Aufrufr?ckkehr, nicht Abschluss asynchroner Unterarbeiten. Ein stabiler Vergleich ist kein Ursachenbeweis.
+Dump-Option ausgeschaltet lassen, au?er der Kollege willigt ausdr?cklich f?r einen weiteren einzelnen Lauf ein. Dumps k?nnen sensible Speicherinhalte enthalten; nur lokale Erfassung, niemals im ZIP und kein automatischer Upload. Keine Host-, Treiber- oder Schutzfunktions?nderungen.
 
-Wenn die Gruppen nicht ausreichend eingrenzen: lokale Dumps f?r einen weiteren einzelnen Lauf anfragen. Vor Start ist ausdr?ckliche Einwilligung n?tig. Abbrechen startet keinen Lauf. Dumps k?nnen sensible Speicherinhalte enthalten. Nur lokale Erfassung; kein automatischer Upload und niemals im ZIP-Bericht. Ablage: %APPDATA%\argus-startdiagnose-controller\runs\<Laufkennung>\profile\local-dumps. Fehlender Dump schlie?t keinen nativen Fehler aus.
-
-Normale Argus-Installation und normale Updatekan?le bleiben unver?ndert. Keine Host-, Treiber- oder Schutzfunktions?nderungen erforderlich. Einzelheiten: EINGRENZUNG.md und DIAGNOSE-UPDATES.md.
+Normale Ver?ffentlichung auf source/updates erfolgt erst nach erfolgreicher R?ckmeldung. Stable bleibt unver?ndert.
