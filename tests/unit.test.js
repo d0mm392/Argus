@@ -2,7 +2,14 @@
 // Jeder Test trägt die Nummer der Anforderung aus ANFORDERUNGEN.md.
 const test = require("node:test"), assert = require("node:assert/strict");
 const fs = require("fs"), os = require("os"), path = require("path");
-const G = require("../games"), fx = require("./fixtures/readyornot-prozesse.json");
+// Fixture paths must not accidentally read a real Steam installation on the test host.
+const vm = require("node:vm"), gameModule = { exports: {} };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../games.js"), "utf8"), {
+  module: gameModule, require: name => name === "fs" ? { ...fs, readdirSync: () => [] } : name === "child_process" ? { execFileSync: () => "" } : require(name),
+  process, Buffer, console, setTimeout, clearTimeout, setInterval: () => ({ unref() {} }), URL, fetch
+});
+const G = gameModule.exports, fx = require("./fixtures/readyornot-prozesse.json");
+require.cache[require.resolve("../games")] = { exports: G };
 
 // si-Format nachstellen: Name ohne .exe, Pfad = Ordner (so liefert systeminformation unter Windows), mit und ohne Pfad
 const asSi = (withPath) => fx.prozesse.map((p) => ({ name: p.name, path: withPath ? path.win32.dirname(p.path) : "", cpu: p.name.includes("Shipping") ? 13 : 0 }));
@@ -105,7 +112,12 @@ test("R-PORTAL-1 Portal: Typnamen und Leistungsschätzung", () => {
 test("R-STEAM-1 Steam-Protokoll: laufendes Spiel gilt nicht als Download", async () => {
   const fs = require("fs"), os = require("os"), path = require("path");
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "stm-")); fs.mkdirSync(path.join(dir, "logs")); fs.mkdirSync(path.join(dir, "steamapps"));
-  process.env.JARVIS_STEAM_DIR = dir; const D = require("../steamdl");
+  const steamModule = { exports: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../steamdl.js"), "utf8"), {
+    module: steamModule, process: { platform: "linux", env: { JARVIS_STEAM_DIR: dir } },
+    require, console, Buffer, setTimeout, clearTimeout
+  });
+  const D = steamModule.exports;
   const log = (l) => fs.writeFileSync(path.join(dir, "logs", "content_log.txt"), l.join("\n") + "\n");
   log(["[2026-10-22 17:46:31] AppID 1203190 state changed : Fully Installed,Update Queued,Update Running,", "[2026-10-22 17:46:31] AppID 1203190 update started : download 10/5000", "[2026-10-22 17:46:39] AppID 1203190 state changed : Fully Installed,App Running,"]);
   assert.equal((await D.poll()).length, 0);

@@ -1,3 +1,7 @@
+// The one-shot shortcut helper must never load Argus or migrate its profile.
+if (process.env.ARGUS_SHORTCUT_WORKER === '1') {
+  require('./shortcut-worker.cjs');
+} else {
 // Startet Argus. Seit 0.58.20 gibt es keinen automatischen Rollback nach einer Selbstverbesserung mehr (abgeschaltet,
 // siehe selfimprove.js): Marker und Sicherungen werden nicht gelesen und nicht zurückgespielt.
 const { app } = require("electron");
@@ -42,4 +46,6 @@ try {
   // Beim allerersten Start existiert der Datenordner noch nicht; ohne ihn ginge der Eintrag verloren
   try { const ud = app.getPath("userData"); fs.mkdirSync(ud, { recursive: true }); fs.appendFileSync(path.join(ud, process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), `[${new Date().toISOString()}] Start fehlgeschlagen: ${e.stack || e}\n`); } catch {}
   app.exit(1);
+}
+
 }

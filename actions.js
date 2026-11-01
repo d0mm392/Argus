@@ -27,7 +27,7 @@ const ALIASES = { "brav": "brave", "bräwe": "brave", "breiv": "brave", "chrom":
 // ---------- Programme aus Startmenü und Desktop einsammeln ----------
 let apps = null, appsAt = 0;
 // Weitere Quellen, die nicht im Startmenü als Verknüpfung liegen: Store-Apps (Get-StartApps), Steam-, Epic- und Battle.net-Spiele
-let extraApps = [], extraAt = 0;
+let extraApps = [], extraAt = 0, storeReaderUnavailable = false;
 const BNET = { "diablo iv": "Fen", "diablo 4": "Fen", "diablo iii": "D3", "diablo 3": "D3", "overwatch": "Pro", "overwatch 2": "Pro", "world of warcraft": "WoW", "hearthstone": "WTCG", "starcraft ii": "S2", "call of duty": "auks", "diablo ii resurrected": "OSI" };
 // Spieleerkennung liest nur Dateien und Ordner, die die gemeinsame Schutzprüfung zulässt (0.58.21)
 function readChecked(p) { const c = files.checkPath(p, { read: true }); if (!c.ok || c.st.isDirectory()) return null; try { return fs.readFileSync(c.real, "utf8"); } catch { return null; } }
@@ -62,33 +62,46 @@ const verifiedAppIds = new Set();
 const STORE_PS = "[Console]::OutputEncoding=[Text.Encoding]::UTF8;$ok=@{};" +
   "foreach($p in Get-AppxPackage){try{$m=$p|Get-AppxPackageManifest;foreach($a in @($m.Package.Applications.Application)){if($a.Id){$ok[$p.PackageFamilyName+'!'+$a.Id]=1}}}catch{}};" +
   "@(Get-StartApps|Where-Object{$ok.ContainsKey([string]$_.AppID)})|ConvertTo-Json -Compress";
+
 function storeApps() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (process.platform !== "win32") return resolve([]);
-    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", STORE_PS], { windowsHide: true, timeout: 60000, maxBuffer: 8 << 20 }, (err, out) => {
+    verifiedAppIds.clear();
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", STORE_PS], { windowsHide: true, timeout: 60000, maxBuffer: 8 << 20 }, async (err, out) => {
       verifiedAppIds.clear();
-      if (err) return resolve([]);
-      let l; try { l = JSON.parse(out || "[]"); } catch { return resolve([]); }
-      const { claimed, complete } = shortcutAppIds();
-      if (!complete) return resolve([]);
-      const list = (Array.isArray(l) ? l : [l]).filter((x) => x?.Name && isPackagedAppId(x.AppID) && !claimed.has(String(x.AppID).toLowerCase()) && !/uninstall|deinstall|readme/i.test(x.Name));
-      verifiedAppIds.clear(); for (const x of list) verifiedAppIds.add(String(x.AppID).toLowerCase());
-      resolve(list.map((x) => ({ name: x.Name, appId: x.AppID })));
+      try {
+        if (err) return resolve([]);
+        const parsed = JSON.parse(out || "[]");
+        const candidates = (Array.isArray(parsed) ? parsed : [parsed]).filter(x => typeof x?.Name === "string" && x.Name && isPackagedAppId(x.AppID) && !/uninstall|deinstall|readme/i.test(x.Name));
+        const { claimed, complete } = await shortcutAppIds();
+        if (!complete) return resolve([]);
+        const list = candidates.filter(x => !claimed.has(String(x.AppID).toLowerCase()));
+        for (const x of list) verifiedAppIds.add(String(x.AppID).toLowerCase());
+        resolve(list.map(x => ({ name: x.Name, appId: x.AppID })));
+      } catch { verifiedAppIds.clear(); resolve([]); }
     });
   });
 }
-// App-IDs, die Verknüpfungen in Startmenü und Desktop tragen (shell.readShortcutLink: appUserModelId)
-function shortcutAppIds() {
-  const claimed = new Set();
-  let complete = true;
-  const walked = walkMenus((p) => {
-    if (!/\.lnk$/i.test(p)) return;
-    const c = files.checkPath(p, { read: true });
-    if (!c.ok || c.st.isDirectory()) { complete = false; return; }
-    try { const id = shell.readShortcutLink(c.real).appUserModelId; if (id) claimed.add(String(id).toLowerCase()); }
-    catch { complete = false; }
+// Native shortcut inspection lives exclusively in a disposable Electron process.
+async function shortcutAppIds() {
+  const paths=[];let complete=true;
+
+  const walked=walkMenus(p=>{
+    if(!/\.lnk$/i.test(p))return;
+
+    const checked=files.checkPath(p,{read:true});
+    const ok=checked.ok&&!checked.st.isDirectory();
+
+    if(!ok){complete=false;return;}
+    paths.push(checked.real);
   });
-  return { claimed, complete: complete && walked };
+  complete=complete&&walked;
+
+  const result=await require('./shortcut-reader.cjs').readShortcuts(paths);
+  if(!result.complete)storeReaderUnavailable=true;
+  const overallComplete=complete&&result.complete;
+
+  return {claimed:new Set(overallComplete?result.claimed.map(id=>id.toLowerCase()):[]),complete:overallComplete};
 }
 // Begrenzte Suche: jede ausgelassene Stelle macht die App-ID-Kollisionspruefung unvollstaendig.
 function walkMenus(fn) {
@@ -113,10 +126,13 @@ function walkMenus(fn) {
   return complete;
 }
 async function refreshExtra() {
+  if(storeReaderUnavailable){return;}
   if (Date.now() - extraAt < 10 * 60 * 1000 && extraApps.length) return;
   extraAt = Date.now();
   const bnet = fs.existsSync(path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Battle.net")) ? Object.entries(BNET).map(([n, code]) => ({ name: n.replace(/\b\w/g, (c) => c.toUpperCase()), uri: "battlenet://" + code, kind: "Battle.net-Spiel" })) : [];
-  extraApps = [...steamGames(), ...epicGames(), ...bnet, ...(await storeApps())];
+  const steam=steamGames(),epic=epicGames();
+  const store=await storeApps();
+  extraApps=[...steam,...epic,...bnet,...store];
 }
 if (process.platform === "win32") setTimeout(() => refreshExtra().catch(() => {}), 5000);
 function scanApps() {
@@ -144,7 +160,7 @@ function lev(a, b) {
   return d[a.length][b.length];
 }
 // Bestes Programm zum gesprochenen Namen: exakt, Wortanfang, enthalten, dann Tippfehler-tolerant
-function findApp(spoken) {
+async function findApp(spoken) {
   const q = norm(ALIASES[norm(spoken)] || spoken);
   if (!q) return null;
   let best = null, bestScore = 0;
@@ -153,13 +169,17 @@ function findApp(spoken) {
     let score = n === q ? 100 : first === q ? 90 : n.startsWith(q) ? 80 : n.split(" ").includes(q) ? 70 : n.includes(q) && q.length >= 4 ? 50 : 0;
     if (!score && q.length >= 4) { const dist = Math.min(lev(q, first), lev(q, n)); if (dist <= (q.length > 6 ? 2 : 1)) score = 40 - dist * 10; }
     score -= n.length / 100; // kürzere Namen bevorzugen ("Brave" vor "Brave Beta Updater")
-    if (score > bestScore && (!a.path || launchCheck(a.path).ok)) { bestScore = score; best = a; } // nicht prüfbare Verknüpfungen überspringen (0.58.21)
+    if(score>bestScore){
+      const checked=a.path?await launchCheck(a.path):{ok:true};
+      if(checked.helperFailure)return null; // One failed helper ends this request, no candidate retry loop.
+      if(checked.ok){bestScore=score;best=a;}
+    } // nicht prüfbare Verknüpfungen überspringen (0.58.21)
   }
   return bestScore > 15 ? best : null;
 }
 // Startet ein Programm. Gibt null zurück, wenn gestartet wurde, sonst den Ablehnungssatz. Programme aus Pfaden (Startmenü, Desktop)
 // laufen durch launchCheck; gestartet wird das geprüfte Ziel selbst, nicht die Verknüpfung (0.58.21).
-function launchApp(a, arg) {
+async function launchApp(a, arg) {
   if (a.uri) { shell.openExternal(a.uri); return null; } // von Argus selbst erzeugte Spiele-Adressen (Steam, Epic, Battle.net)
   if (a.appId) { if (!isPackagedAppId(a.appId) || !verifiedAppIds.has(String(a.appId).toLowerCase())) return DENIED(a.name || "Programm", "unklar"); spawn(path.join(process.env.SystemRoot || process.env.windir || "C:\\Windows", "explorer.exe"), ["shell:AppsFolder\\" + a.appId], { detached: true, stdio: "ignore" }).unref(); return null; }
   if (a.cmd) {
@@ -168,7 +188,7 @@ function launchApp(a, arg) {
     if (!c.ok || !/\.exe$/i.test(c.real)) return DENIED(a.cmd, c.ok ? "unklar" : c.why);
     spawn(c.real, arg ? [arg] : [], { detached: true, stdio: "ignore" }).unref(); return null;
   }
-  const ck = launchCheck(a.path);
+  const ck = await launchCheck(a.path);
   if (!ck.ok) return DENIED(a.path, ck.why);
   if (ck.url) { shell.openExternal(ck.url); return null; }
   spawn(ck.exe, [...ck.args, ...(arg ? [arg] : [])], { detached: true, stdio: "ignore", cwd: ck.cwd }).unref();
@@ -221,14 +241,26 @@ function openCheck(p, how = "open") {
   return c;
 }
 // Wie starten? Ergebnis { ok, exe, args, cwd } bzw. { ok, url } oder { ok: false, why }
-function launchCheck(p) {
+async function launchCheck(p) {
   const c = files.checkPath(p, { read: true });
   if (!c.ok) return c;
   if (c.st.isDirectory()) return DENY("unklar");
   if (/\.exe$/i.test(c.real)) return { ok: true, exe: c.real, args: [], cwd: path.dirname(c.real) };
   if (/\.url$/i.test(c.real)) { const u = urlOf(c.real); return WEB.test(u) || GAME.test(u) ? { ok: true, url: u } : DENY("unklar"); }
   if (!/\.lnk$/i.test(c.real)) return DENY("unklar");
-  let t; try { t = shell.readShortcutLink(c.real); } catch { return DENY("unklar"); }
+
+  const result=await require('./shortcut-reader.cjs').readShortcuts([c.real],{operation:'resolve'});
+
+  if(!result.complete||result.shortcuts?.length!==1){
+    verifiedAppIds.clear();storeReaderUnavailable=true;
+    return {...DENY('unklar'),helperFailure:true};
+  }
+  // The asynchronous boundary must not turn an old source-path decision into a fresh authorization.
+  const again=files.checkPath(p,{read:true});
+  if(!again.ok||again.st.isDirectory()||again.real.toLowerCase()!==c.real.toLowerCase()||['dev','ino','size','mtimeMs'].some(field=>again.st[field]!==c.st[field])){
+    verifiedAppIds.clear();storeReaderUnavailable=true;return DENY('unklar');
+  }
+  const t=result.shortcuts[0];
   if (!t || !t.target) return DENY("unklar"); // Ziel nicht feststellbar (z. B. Installer-Verknüpfungen): nicht über diesen Weg
   const tc = files.checkPath(expandEnv(t.target), { read: true });
   if (!tc.ok) return tc;
@@ -339,8 +371,8 @@ async function run(text) {
   if (c.kind === "search") { await shell.openExternal("https://www.google.com/search?q=" + encodeURIComponent(c.q)); return `Ich suche im Internet nach ${c.q}.`; }
   if (c.kind === "url") {
     const host = c.url.replace(/^https?:\/\//, "").split("/")[0];
-    const b = c.via && findApp(c.via);
-    if (b) return launchApp(b, c.url) || `Öffne ${host} in ${b.name}.`;
+    const b = c.via && await findApp(c.via);
+    if (b) return (await launchApp(b, c.url)) || `Öffne ${host} in ${b.name}.`;
     await shell.openExternal(c.url); return `Öffne ${host}.`;
   }
   if (c.kind === "path") { return (await openGuarded(c.path)) || `Öffne ${c.label}.`; }
@@ -368,8 +400,8 @@ async function run(text) {
   }
   if (c.kind === "file") { const f = (await files.search(c.q, 1))[0]?.replace(/[\\/]$/, "") || findFile(c.q); if (!f) return `Ich finde keine Datei namens ${c.q}.`; return (await openGuarded(f)) || `Öffne ${path.basename(f)}.`; }
   if (!extraApps.length) await refreshExtra().catch(() => {});
-  const a = findApp(c.q);
-  if (a) return launchApp(a) || `Starte ${a.name}` + (a.kind ? ` (${a.kind})` : "") + ".";
+  const a = await findApp(c.q);
+  if (a) return (await launchApp(a)) || `Starte ${a.name}` + (a.kind ? ` (${a.kind})` : "") + ".";
   // Kein Programm: im Dateiverzeichnis aller Laufwerke nach Ordner oder Datei mit dem Namen schauen
   const hit = (await files.search(c.q, 1))[0];
   if (hit) { lastHits = [hit]; return (await openGuarded(hit)) || `Öffne ${hit.replace(/[\\/]$/, "")}.`; }
@@ -381,4 +413,4 @@ async function run(text) {
 }
 
 const hooks = {};
-module.exports = { run, parse, findApp, scanApps, hooks, openGuarded, _launchApp: launchApp, _steamGames: steamGames, _epicGames: epicGames, _isPackagedAppId: isPackagedAppId, _storeApps: storeApps }; // _…: nur für Tests
+module.exports = { run, parse, findApp, scanApps, hooks, openGuarded, _launchApp: launchApp, _steamGames: steamGames, _epicGames: epicGames, _isPackagedAppId: isPackagedAppId, _storeApps: storeApps, _refreshExtra: refreshExtra }; // _…: nur für Tests

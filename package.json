@@ -1,6 +1,6 @@
 {
   "name": "argus-desktop",
-  "version": "0.58.28",
+  "version": "0.58.29",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {
@@ -70,9 +70,22 @@
       "assets/**",
       "node_modules/**",
       "!node_modules/electron/**",
-      "!node_modules/electron-builder/**"
+      "!node_modules/electron-builder/**",
+      "shortcut-reader.cjs",
+      "shortcut-worker.cjs"
     ],
-    "extraResources": [{"from":"discord-runtime","to":"discord-social","filter":["argus-discord-social.exe","discord_partner_sdk.dll","*-LICENSE*.txt","Discord-SDK-TERMS.txt"]}],
+    "extraResources": [
+      {
+        "from": "discord-runtime",
+        "to": "discord-social",
+        "filter": [
+          "argus-discord-social.exe",
+          "discord_partner_sdk.dll",
+          "*-LICENSE*.txt",
+          "Discord-SDK-TERMS.txt"
+        ]
+      }
+    ],
     "win": {
       "target": [
         "nsis"

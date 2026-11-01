@@ -1,0 +1,11 @@
+# Argus 0.58.29 – Absturzbegrenzung bei Windows-Verknüpfungen
+
+Die native Electron-Funktion `shell.readShortcutLink` läuft jetzt ausschließlich in einem kurzlebigen Helferprozess. Das gilt für die Store-App-Kollisionsprüfung und für die Auflösung von Programmverknüpfungen. Ein nativer Helferabbruch beendet dadurch nicht mehr den Argus-Hauptprozess.
+
+Unvollständige Antworten, fehlerhafte Protokolle, Zeitüberschreitungen und ein abnormaler Prozessabschluss werden abgelehnt. Es gibt keine automatische Helfer-Neustartschleife. Bestehende Pfad- und Startschutzprüfungen bleiben erhalten; nach der asynchronen Verknüpfungsauflösung wird die Quelldatei erneut geprüft.
+
+**Einschränkung:** Bricht der Helfer ab, kann die Store-App-Erkennung für diese Sitzung ausfallen. Nicht vollständig geprüfte App-IDs werden nicht zum Start freigegeben. Eine betroffene Programmverknüpfung kann ebenfalls nicht über Argus gestartet werden.
+
+Die Diagnose .6 wurde auf dem betroffenen Rechner im Modus `full-normal` bestätigt: 60 Sekunden, alle sieben Gruppen, `disableGpu=false`, Argus blieb ohne JS-Fehler aktiv. Der Helfer brach erneut unmittelbar vor dem nativen Zugriff bei Index 38 mit `0xFFFF7003` ab. Das belegt eine erfolgreiche Absturzbegrenzung. **Der native Grundfehler ist weiterhin nicht behoben.** Die 60 Sekunden sind keine Aussage über unbegrenzt lange Laufzeit oder andere Absturzursachen.
+
+Avatar-Fix und Namensbereinigung aus 0.58.28 bleiben erhalten. Normale App-ID, Installationskennung, Profile und Updateadresse bleiben kompatibel. Diagnose-Updater und normale Updates bleiben getrennt; Stable wird nicht verändert. Keine Änderung an Treibern oder Schutzfunktionen, keine automatische Dump-Erfassung oder Dump-Uploads.

@@ -58,7 +58,7 @@ const shellCalls = [], spawnCalls = [], argsOf = {}, cwdOf = {}, aumidOf = {}; l
 { const realSpawn = cp.spawn; cp.spawn = function (cmd, args, ...r) { if (String(cmd) === process.execPath) return realSpawn.call(this, cmd, args, ...r); spawnCalls.push([cmd, args]); return { unref() {} }; }; } // nur der MCP-Test startet echte Prozesse
 const electronMock = { shell: { openPath: async (p) => { shellCalls.push(["openPath", p]); return ""; }, showItemInFolder: (p) => shellCalls.push(["showItemInFolder", p]), openExternal: async (u) => shellCalls.push(["openExternal", u]),
   readShortcutLink: (p) => { shortcutReads.push(p); const k = path.resolve(p).toLowerCase(); if (!(k in shortcutTargets)) throw new Error("keine Verknüpfung"); return { target: shortcutTargets[k], args: argsOf[k] || "", cwd: cwdOf[k] || "", appUserModelId: aumidOf[k] || "" }; } } };
-const origLoad = Module._load; Module._load = function (req, ...r) { return req === "electron" ? electronMock : origLoad.call(this, req, ...r); };
+const origLoad = Module._load; Module._load = function (req, ...r) { if(req === './shortcut-reader.cjs') return {readShortcuts:async(paths,options={})=>{try{const links=paths.map(p=>electronMock.shell.readShortcutLink(p));return {complete:true,claimed:links.map(x=>x.appUserModelId).filter(Boolean),...(options.operation==='resolve'?{shortcuts:links.map(({target,args,cwd})=>({target,args,cwd}))}:{})};}catch{return {complete:false,claimed:[],shortcuts:[]};}}}; return req === "electron" ? electronMock : origLoad.call(this, req, ...r); };
 const realExecFile = cp.execFile; let execHook = null, startAppsJson = "[]";
 cp.execFile = function (cmd, args, opts, cb) { if (Array.isArray(args) && args.some((x) => String(x).includes("Get-StartApps"))) { const done = typeof opts === "function" ? opts : cb; setImmediate(() => done(null, startAppsJson, "")); return {}; } if (execHook) return execHook(cmd, args, opts, cb); return realExecFile.apply(this, arguments); };
 const F = require(path.join(REPO, "files.js")), A = require(path.join(REPO, "actions.js"));
@@ -128,7 +128,7 @@ test("P6 harte Verknüpfungen: weder gelesen noch geöffnet oder gestartet", asy
   shellCalls.length = 0; assert.match(await A.openGuarded(hl), /öffne ich nicht/); assert.match(await A.openGuarded(hl, "show"), /öffne ich nicht/); assert.deepEqual(shellCalls, []);
   // Programmstart: harte Verknüpfung außerhalb von Program Files/Windows wird nicht gestartet
   const exe = path.join(DOCS, "werkzeug.exe"); fs.linkSync(path.join(PROF, "notiz.txt"), exe);
-  assert.ok(/öffne ich nicht/.test(A._launchApp({ name: "werkzeug", path: exe }) || ""), "Start einer harten Verknüpfung abgelehnt"); assert.deepEqual(shellCalls, []);
+  assert.ok(/öffne ich nicht/.test(await A._launchApp({ name: "werkzeug", path: exe }) || ""), "Start einer harten Verknüpfung abgelehnt"); assert.deepEqual(shellCalls, []);
   // Bekannte Grenze: eine normale Datei mit zweitem Namen ist ebenfalls nicht lesbar (Fehlalarm, dokumentiert)
   const a = path.join(DOCS, "zwei-namen.txt"), b = path.join(DOCS, "zwei-namen-2.txt"); put(a, "ZWEI"); fs.linkSync(a, b); assert.ok(blocked(F.read(a)));
 });
@@ -222,14 +222,14 @@ test("P11b Programmstart (launchApp): nur geprüfte .exe, Verknüpfungen streng,
     ["Argument mit Variable", L("l11.lnk", okExe, "--datei=%APPDATA%\\argus-desktop\\notiz.txt")], ["Argument Skript", L("l12.lnk", okExe, "-Command Get-Content x")], ["Arbeitsordner über Junction", L("l13.lnk", okExe, "", path.join(DOCS, "harmlos"))],
     ["Programm im Profil", profExe], ["Programm über Junction", path.join(DOCS, "harmlos", "tool.exe")], ["Dokument", path.join(DOCS, "normal.txt")], ["Unbekannte Verknüpfung", path.join(DOCS, "kaputt.lnk")]];
   put(path.join(DOCS, "kaputt.lnk"), "LNK");
-  for (const [why, p] of deny) assert.match(launch(p) || "", /öffne ich nicht/, why);
+  for (const [why, p] of deny) assert.match(await launch(p) || "", /öffne ich nicht/, why);
   assert.deepEqual(spawnCalls, [], "nichts gestartet"); assert.deepEqual(shellCalls, []);
   // Erlaubt: .exe direkt, .lnk auf .exe mit reinen Optionen; gestartet wird das geprüfte Ziel, nicht die Verknüpfung
-  assert.equal(launch(okExe), null); assert.deepEqual(spawnCalls.pop(), [okExe, []]);
-  for (const args of ['--profile-directory="Profile 1"', "-n", "--require=modul"]) assert.match(launch(L("opt.lnk", okExe, args)) || "", /öffne ich nicht/, "Verknüpfung mit Argumenten: " + args); assert.deepEqual(spawnCalls, []);
-  assert.equal(launch(L("gut2.lnk", okExe), "https://example.com/"), null); assert.deepEqual(spawnCalls.pop(), [okExe, ["https://example.com/"]]);
-  const u = path.join(DOCS, "spiel.url"); put(u, "[InternetShortcut]\r\nURL=steam://rungameid/1\r\n"); assert.equal(launch(u), null); assert.deepEqual(shellCalls.pop(), ["openExternal", "steam://rungameid/1"]);
-  const u2 = path.join(DOCS, "fremd2.url"); put(u2, "[InternetShortcut]\r\nURL=irgendwas://x\r\n"); assert.match(launch(u2) || "", /öffne ich nicht/);
+  assert.equal(await launch(okExe), null); assert.deepEqual(spawnCalls.pop(), [okExe, []]);
+  for (const args of ['--profile-directory="Profile 1"', "-n", "--require=modul"]) assert.match(await launch(L("opt.lnk", okExe, args)) || "", /öffne ich nicht/, "Verknüpfung mit Argumenten: " + args); assert.deepEqual(spawnCalls, []);
+  assert.equal(await launch(L("gut2.lnk", okExe), "https://example.com/"), null); assert.deepEqual(spawnCalls.pop(), [okExe, ["https://example.com/"]]);
+  const u = path.join(DOCS, "spiel.url"); put(u, "[InternetShortcut]\r\nURL=steam://rungameid/1\r\n"); assert.equal(await launch(u), null); assert.deepEqual(shellCalls.pop(), ["openExternal", "steam://rungameid/1"]);
+  const u2 = path.join(DOCS, "fremd2.url"); put(u2, "[InternetShortcut]\r\nURL=irgendwas://x\r\n"); assert.match(await launch(u2) || "", /öffne ich nicht/);
   // Sprachbefehle: nicht prüfbare Startmenü-Verknüpfungen werden übersprungen, nichts Geschütztes gestartet
   const sm = path.join(APPDATA, "Microsoft", "Windows", "Start Menu", "Programs");
   const bad = path.join(sm, "Testbrowser.lnk"); put(bad, "LNK"); shortcutTargets[bad.toLowerCase()] = profExe;
@@ -300,9 +300,9 @@ test("P15 Startwege ohne Pfad: App-IDs nur von Paket-Apps, eingebaute Programme 
   assert.equal(A._isPackagedAppId("Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"), true);
   for (const id of ["C:\\Users\\x\\AppData\\Roaming\\argus-desktop\\tool.exe", "{6D809377-6AF0-444B-8957-A3773F02200E}\\Programm\\app.exe", "Chrome", "", "a_b!c"]) assert.equal(A._isPackagedAppId(id), false, id);
   spawnCalls.length = 0;
-  assert.match(A._launchApp({ name: "x", appId: "{6D809377-6AF0-444B-8957-A3773F02200E}\\Programm\\app.exe" }) || "", /öffne ich nicht/);
-  assert.match(A._launchApp({ name: "x", cmd: path.join(PROF, "tool.exe") }) || "", /öffne ich nicht/);
-  assert.match(A._launchApp({ name: "x", cmd: path.join(DOCS, "harmlos", "tool.exe") }) || "", /öffne ich nicht/);
+  assert.match(await A._launchApp({ name: "x", appId: "{6D809377-6AF0-444B-8957-A3773F02200E}\\Programm\\app.exe" }) || "", /öffne ich nicht/);
+  assert.match(await A._launchApp({ name: "x", cmd: path.join(PROF, "tool.exe") }) || "", /öffne ich nicht/);
+  assert.match(await A._launchApp({ name: "x", cmd: path.join(DOCS, "harmlos", "tool.exe") }) || "", /öffne ich nicht/);
   assert.deepEqual(spawnCalls, []);
   // Store-App-Liste (Attrappe für das PowerShell-Ergebnis, das nur App-IDs installierter Pakete enthält): kehrt zurück, übernimmt nur
   // paketartige IDs, die keine Verknüpfung in Startmenü oder Desktop trägt; gestartet wird nur aus dieser geprüften Menge
@@ -312,9 +312,9 @@ test("P15 Startwege ohne Pfad: App-IDs nur von Paket-Apps, eingebaute Programme 
   startAppsJson = JSON.stringify([{ Name: "Paketapp", AppID: "Firma.Paket_8wekyb3d8bbwe!App" }, { Name: "Rechner", AppID: calc }, { Name: "Gefaelscht", AppID: fake }, { Name: "Desktopapp", AppID: "{6D809377-6AF0-444B-8957-A3773F02200E}\\Programm\\desktop.exe" }, { Name: "Einzeln", AppID: "Chrome" }]);
   const sa = await Promise.race([A._storeApps(), new Promise((r) => setTimeout(() => r("ZEITLIMIT"), 5000))]); startAppsJson = "[]";
   assert.deepEqual(sa, [{ name: "Paketapp", appId: "Firma.Paket_8wekyb3d8bbwe!App" }, { name: "Rechner", appId: calc }], "storeApps kehrt zurück, filtert und schließt die von einer Verknüpfung getragene ID aus");
-  for (const id of [fake, other]) assert.match(A._launchApp({ name: "x", appId: id }) || "", /öffne ich nicht/, id);
+  for (const id of [fake, other]) assert.match(await A._launchApp({ name: "x", appId: id }) || "", /öffne ich nicht/, id);
   assert.deepEqual(spawnCalls, []);
-  assert.equal(A._launchApp({ name: "Rechner", appId: calc }), null); assert.equal(spawnCalls.pop()[1][0], "shell:AppsFolder\\" + calc);
+  assert.equal(await A._launchApp({ name: "Rechner", appId: calc }), null); assert.equal(spawnCalls.pop()[1][0], "shell:AppsFolder\\" + calc);
   const asrc = fs.readFileSync(path.join(REPO, "actions.js"), "utf8"); assert.ok(asrc.includes("Get-AppxPackageManifest") && asrc.includes("$ok.ContainsKey([string]$_.AppID)"), "PowerShell prüft installierte Pakete");});
 
 test("P15b unvollstaendige Kollisionssuche sperrt und widerruft App-IDs", async () => {
@@ -323,7 +323,7 @@ test("P15b unvollstaendige Kollisionssuche sperrt und widerruft App-IDs", async 
   startAppsJson = JSON.stringify([{ Name: "Rechner", AppID: id }]);
   const denied = async () => {
     assert.deepEqual(await A._storeApps(), []);
-    assert.match(A._launchApp({ name: "Rechner", appId: id }) || "", /\u00f6ffne ich nicht/);
+    assert.match(await A._launchApp({ name: "Rechner", appId: id }) || "", /\u00f6ffne ich nicht/);
   };
   const alias = path.join(sm, "alias.lnk"), source = path.join(PROF, "privat.lnk");
   put(source, "PRIVATE"); fs.linkSync(source, alias);
