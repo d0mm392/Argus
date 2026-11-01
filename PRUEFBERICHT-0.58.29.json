@@ -1,0 +1,128 @@
+{
+  "version": "0.58.29",
+  "status": "PASS",
+  "sourceCommit": "d376e7df3c4668215e58833454ea73ce53f46e8c",
+  "nodeTests": {
+    "pass": 88,
+    "fail": 0,
+    "skipped": 4,
+    "skips": [
+      "8.3 parent aliases unavailable",
+      "8.3 protected folder alias unavailable",
+      "file/directory symbolic links not permitted",
+      "subst only enabled in VM"
+    ]
+  },
+  "vmPathguard": {
+    "pass": 23,
+    "fail": 0,
+    "skipped": 1,
+    "coveredAdditionally": [
+      "8.3 parent aliases",
+      "8.3 protected folder alias",
+      "subst"
+    ],
+    "remainingSkip": "file/directory symbolic links not permitted; security settings unchanged"
+  },
+  "rendererTests": [
+    "discord-social-ui",
+    "discord-list",
+    "notes-pages",
+    "settings",
+    "menus",
+    "friends-settings"
+  ],
+  "packagedHelper": {
+    "status": "PASS",
+    "normalPackagedHelper": true,
+    "collisions": true,
+    "resolve": true,
+    "deniedPath": true,
+    "controlledNativeExit": "0xFFFF7003",
+    "partialResultsRejected": true,
+    "retries": 0
+  },
+  "updater": {
+    "status": "PASS",
+    "from": "0.58.28",
+    "to": "0.58.29",
+    "check": true,
+    "download": true,
+    "installerSHA256": "65393129b103aa1c5ed6db2b4361a1a72b7de11cf0c5a4f58c465679566bc26d",
+    "autoInstall": false,
+    "localFeed": true,
+    "actualNsisUpdater": true,
+    "sha512Verified": true
+  },
+  "vm": {
+    "checks": [
+      "existing 0.58.28 installation",
+      "update keeps install directory and registry key",
+      "installer preserves existing settings byte-for-byte",
+      "Argus update Argus bridge and notes",
+      "Argus update autostart preference retained",
+      "Argus update synthetic credential file preserved",
+      "Argus update Windows autostart targets installed executable",
+      "Argus update memory retained",
+      "Argus update desktop and Start menu shortcuts",
+      "normal installed Argus remains responsive for 60 seconds without renderer exceptions",
+      "Argus update installed version and update identity",
+      "Argus update updater feed retained",
+      "Argus update CSP identical",
+      "uninstall preserves profile and memory",
+      "uninstall removes registration",
+      "uninstall removes shortcuts",
+      "fresh install registers Argus",
+      "Clean first launch Argus bridge and notes",
+      "Clean first launch autostart preference retained",
+      "Clean first launch desktop and Start menu shortcuts",
+      "Clean first launch installed version and update identity",
+      "Clean first launch updater feed retained",
+      "Clean first launch CSP identical",
+      "Fresh installation Argus bridge and notes",
+      "Fresh installation autostart preference retained",
+      "Fresh installation synthetic credential file preserved",
+      "Fresh installation Windows autostart targets installed executable",
+      "Fresh installation memory retained",
+      "Fresh installation desktop and Start menu shortcuts",
+      "Fresh installation installed version and update identity",
+      "Fresh installation updater feed retained",
+      "Fresh installation CSP identical",
+      "Jarvis profile update Argus bridge and notes",
+      "Jarvis profile update autostart preference retained",
+      "Jarvis profile update synthetic credential file preserved",
+      "Jarvis profile update Windows autostart targets installed executable",
+      "Jarvis profile update memory retained",
+      "Jarvis profile update desktop and Start menu shortcuts",
+      "Jarvis profile update installed version and update identity",
+      "Jarvis profile update updater feed retained",
+      "Jarvis profile update CSP identical",
+      "legacy source profile remains intact",
+      "legacy display name upgraded to Argus"
+    ],
+    "installedFilesVerified": 4822,
+    "nativeAvatarHelperPreflight": true
+  },
+  "colleagueDiagnosticConfirmation": {
+    "version": "0.58.27-diagnose.6",
+    "mode": "full-normal",
+    "seconds": 60,
+    "groups": 7,
+    "disableGpu": false,
+    "workerExit": "0xFFFF7003",
+    "lastMarker": "native:before",
+    "index": 38,
+    "argusSurvived": true,
+    "jsErrors": false,
+    "interpretation": "Successful crash containment; native root cause remains unresolved."
+  },
+  "avatarAndNamingPreserved": true,
+  "stableUnchanged": "18598e99467d0299657a1e8650d5b6301029a739",
+  "limitations": [
+    "Native shortcut defect is not fixed. Store-App detection may be unavailable for the session after helper failure; incomplete results are rejected.",
+    "60-second colleague observation does not prove unlimited uptime.",
+    "Windows installer remains unsigned.",
+    "Four environment-specific host pathguard cases were skipped; VM covers three of these, while the symlink-permission case remains explicitly untested.",
+    "Legacy migration uses synthetic data and the original installer GUID, not an archived legacy installer."
+  ]
+}

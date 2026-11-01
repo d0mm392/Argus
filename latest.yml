@@ -1,20 +1,21 @@
-version: 0.58.28
+version: 0.58.29
 files:
-  - url: Argus-Setup-0.58.28.exe
-    sha512: kqkp4ME7u9jOC7fI5E5mxr3QO06ktL0/C8sDmomuzeimY4QPYoghFOh41pNLbKZm2ALzUwdA1CgapuUxjUlLAg==
-    size: 93484791
-path: Argus-Setup-0.58.28.exe
-sha512: kqkp4ME7u9jOC7fI5E5mxr3QO06ktL0/C8sDmomuzeimY4QPYoghFOh41pNLbKZm2ALzUwdA1CgapuUxjUlLAg==
-releaseDate: '2026-10-31T11:34:05.424Z'
-releaseName: "Argus 0.58.28 - Discord-Avatare und einheitliche Namen"
+  - url: Argus-Setup-0.58.29.exe
+    sha512: IM2NSWwPHN6rG3sOk84Juo9/CB914D//bF3UvVoYYPptOfYlLtV33fiTkec9qOtYUJTeNYf5uwrWHnp36yoVoA==
+    size: 93488961
+path: Argus-Setup-0.58.29.exe
+sha512: IM2NSWwPHN6rG3sOk84Juo9/CB914D//bF3UvVoYYPptOfYlLtV33fiTkec9qOtYUJTeNYf5uwrWHnp36yoVoA==
+releaseDate: '2026-11-01T16:25:33.427Z'
+releaseName: "Argus 0.58.29 - Absturzbegrenzung bei Verknüpfungen"
 releaseNotes: |
-  # Argus 0.58.28 – Discord-Avatare und einheitliche Namen
+  # Argus 0.58.29 – Absturzbegrenzung bei Windows-Verknüpfungen
   
-  - Discord-Konto und Freunde übernehmen ihre Avatar-URLs aus dem nativen SDK. Standardavatare werden angezeigt; bei Ladefehlern erscheint lokal der erste Buchstabe des Namens. Avatar-Wechsel aktualisieren die Liste. Die CSP bleibt unverändert.
-  - Interne Oberfläche und heutige Komponenten verwenden Argus. Technische Altkennungen für Installation, Profile, Sensor-Aufgabe, Einstellungen und lokale Schnittstellen bleiben gezielt kompatibel; siehe ARGUS-NAMEN-KOMPATIBILITAET.md. Keine Projektdateien wurden gelöscht.
-  - Ein bestehendes Argus-Profil wird beim Start nicht mehr durch ein älteres Jarvis-Profil überschrieben, wenn der historische Umzugsmarker fehlt.
-  - Einstellungen werden atomar gespeichert. Unlesbare Einstellungen bleiben gesichert; eine vorhandene lesbare Sicherung wird verwendet.
+  Die native Electron-Funktion `shell.readShortcutLink` läuft jetzt ausschließlich in einem kurzlebigen Helferprozess. Das gilt für die Store-App-Kollisionsprüfung und für die Auflösung von Programmverknüpfungen. Ein nativer Helferabbruch beendet dadurch nicht mehr den Argus-Hauptprozess.
   
-  Windows x64, unsignierter Installer. Persönliche Discord-Freunde benötigen weiterhin die eigene Discord-Anmeldung. Tests verwenden synthetische Konten; eine reale Discord-Anmeldung wurde nicht automatisiert.
+  Unvollständige Antworten, fehlerhafte Protokolle, Zeitüberschreitungen und ein abnormaler Prozessabschluss werden abgelehnt. Es gibt keine automatische Helfer-Neustartschleife. Bestehende Pfad- und Startschutzprüfungen bleiben erhalten; nach der asynchronen Verknüpfungsauflösung wird die Quelldatei erneut geprüft.
   
-  Verteilung ausschließlich über source und updates. Stable und das separate Startdiagnosepaket bleiben unverändert.
+  **Einschränkung:** Bricht der Helfer ab, kann die Store-App-Erkennung für diese Sitzung ausfallen. Nicht vollständig geprüfte App-IDs werden nicht zum Start freigegeben. Eine betroffene Programmverknüpfung kann ebenfalls nicht über Argus gestartet werden.
+  
+  Die Diagnose .6 wurde auf dem betroffenen Rechner im Modus `full-normal` bestätigt: 60 Sekunden, alle sieben Gruppen, `disableGpu=false`, Argus blieb ohne JS-Fehler aktiv. Der Helfer brach erneut unmittelbar vor dem nativen Zugriff bei Index 38 mit `0xFFFF7003` ab. Das belegt eine erfolgreiche Absturzbegrenzung. **Der native Grundfehler ist weiterhin nicht behoben.** Die 60 Sekunden sind keine Aussage über unbegrenzt lange Laufzeit oder andere Absturzursachen.
+  
+  Avatar-Fix und Namensbereinigung aus 0.58.28 bleiben erhalten. Normale App-ID, Installationskennung, Profile und Updateadresse bleiben kompatibel. Diagnose-Updater und normale Updates bleiben getrennt; Stable wird nicht verändert. Keine Änderung an Treibern oder Schutzfunktionen, keine automatische Dump-Erfassung oder Dump-Uploads.
