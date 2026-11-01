@@ -19,8 +19,19 @@ process.env.JARVIS_INDEX = path.join(diagnosticRoot, 'dateiindex.txt');
 require('./startup-diagnostic').init(app, diagnosticRoot);
 
 
+if (process.env.ARGUS_DIAGNOSTIC_MODE === 'argus-no-gpu') app.disableHardwareAcceleration();
+if (process.env.ARGUS_DIAGNOSTIC_DUMPS === 'consented') {
+  // Ausschliesslich lokal, pro Lauf; keine WER-Registry oder Host-Konfiguration.
+  const dumps = path.join(diagnosticRoot, 'local-dumps');
+  fs.mkdirSync(dumps, {recursive:true});
+  app.setPath('crashDumps', dumps);
+  require('electron').crashReporter.start({uploadToServer:false, compress:false});
+  require('./startup-diagnostic').mark('dump:capture-enabled');
+}
+
 try {
-  require("./main.js");
+  if (process.env.ARGUS_DIAGNOSTIC_MODE === 'minimal') require('./minimal-window.js');
+  else require("./main.js");
 } catch (e) {
   // Beim allerersten Start existiert der Datenordner noch nicht; ohne ihn ginge der Eintrag verloren
   try { const ud = app.getPath("userData"); fs.mkdirSync(ud, { recursive: true }); fs.appendFileSync(path.join(ud, process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), `[${new Date().toISOString()}] Start fehlgeschlagen: ${e.stack || e}\n`); } catch {}

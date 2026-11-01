@@ -13,3 +13,8 @@ Der Build verwendet eine vorhandene Windows-x64-Electron-Laufzeit mit den Argus-
 `validation/` dokumentiert das VM-Verfahren; es benötigt eine eigene Test-VM mit Node.js, dem WebSocket-Testmodul und aktiver Desktop-Sitzung. Ein lokaler Debugging-Port wird ausschließlich vom Teststarter gesetzt, niemals beim normalen Produktstart. Keine Testschalter oder automatischen Uploads im Produkt.
 
 Release: eigener Branch und Tag, Prerelease, `make_latest=false`; nur Diagnose-Setup, SHA256.txt, Anleitung, Quellarchiv und Prüfbericht anhängen. Die normalen Update-Branches, `latest.yml` und Stable sind ausdrücklich ausgeschlossen. Die eigene GitHub-Veröffentlichung ist vom lokalen Build getrennt.
+
+
+Stand diagnose.3: Die acht Runner-Tests muessen bestehen. Zusaetzlich beide Vergleichsmodi mit echter mitgelieferter Runtime jeweils 60 Sekunden pruefen (validation/comparison-smoke.cjs). Die bisherigen VM-/Release-Nachweise unter validation/ gelten nur fuer diagnose.2 und duerfen nicht als Nachweis fuer diagnose.3 wiederverwendet werden. Fuer eine Veroeffentlichung GUI-Auswahl, Einwilligung/Abbrechen, ZIP-Export und Installation ueber diagnose.2 erneut in der VM pruefen. Kein automatisches Publizieren durch den lokalen Build.
+
+Details zu Abdeckung und Grenzen: INSTRUMENTIERUNG.md. Dump-Erfassung nicht ohne ausdrueckliche Einwilligung einschalten; auch im Test keine sensiblen Dumps exportieren.

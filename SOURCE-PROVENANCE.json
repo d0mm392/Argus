@@ -1,5 +1,5 @@
 {
-  "version": "0.58.27-diagnose.2",
+  "version": "0.58.27-diagnose.3",
   "baseArgusCommit": "d0d941630be746fe39bf2e97ac67b6c3b73276b1",
   "originalInstrumentedFiles": {
     "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
@@ -8,11 +8,16 @@
   },
   "payloadChanges": [
     "Separate AppUserModelId for diagnostic payload",
-    "Additional window:ready-to-show marker"
+    "Additional window:ready-to-show marker",
+    "Minimal local Electron comparison before Argus modules",
+    "Per-run hardware acceleration disable before ready",
+    "Explicitly consented local-only crash capture"
   ],
   "finalPayload": {
-    "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
+    "boot.js": "ab7056df1d611a0563b9567c3bf82e71cfb486e474667406a1a0e2a073042d12",
     "main.js": "bbd504c46e3b0471a6d5ff596aae7a401ea3ba80436c7cc49117b706de0fc9f4",
-    "startup-diagnostic.js": "d100cb527c8c15562b6d859558f843f7da596f49f046e576d17d6fafd0772451"
+    "startup-diagnostic.js": "d100cb527c8c15562b6d859558f843f7da596f49f046e576d17d6fafd0772451",
+    "minimal-window.js": "2bdff6ac14b79b2af963c8fb0b0a2459d65b6095737d4bd08dd42a18f61e324f",
+    "minimal-window.html": "c60c7ebaaff11531abc2599981ea19c03b02a7d406931fd038b1a67217737df7"
   }
 }

@@ -7,7 +7,7 @@ function fixture(options={}) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'argus-controller-test-'));
   let launches=0,child;
   const runner=new Runner({dataRoot:root,executable:path.join(root,'Payload with spaces','Argus-Startdiagnose.exe'),durationMs:10000,
-    spawn:(_exe,_args,config)=>{launches++;child=new EventEmitter();child.pid=12345;child.exitCode=null;child.signalCode=null;child.stdout=new PassThrough();child.stderr=new PassThrough();child.config=config;return child;},
+    spawn:(_exe,_args,config)=>{launches++;child=new EventEmitter();child.pid=12345;child.exitCode=null;child.signalCode=null;child.stdout=new PassThrough();child.stderr=new PassThrough();child.config=config;child.args=_args;return child;},
     terminate:async target=>{target.exitCode=1;target.emit('exit',1,null);target.stdout.end();target.stderr.end();target.emit('close',1,null);},...options});
   const exit=(code=42)=>{child.exitCode=code;child.emit('exit',code,null);child.stdout.end();child.stderr.end();child.emit('close',code,null);};
   const mark=()=>fs.writeFileSync(path.join(runner.last.profile,'startup-markers.jsonl'),'{"event":"ready"}\n{"event":"window:ready-to-show"}\n');
@@ -23,7 +23,7 @@ test('successful observation stops only own child once and records fresh-profile
   const f=fixture({durationMs:15});const terminate=f.runner.terminate;f.runner.terminate=async child=>{killed++;assert.equal(child.pid,12345);return terminate(child);};
   f.runner.start();f.mark();
   await new Promise(resolve=>f.runner.on('state',state=>{if(!state.active)resolve();}));
-  assert.equal(f.runner.snapshot().status,'success');assert.equal(killed,1);assert.equal(f.launches,1);
+  assert.equal(f.runner.snapshot().status,'observed');assert.equal(killed,1);assert.equal(f.launches,1);
   assert.match(f.runner.snapshot().profileDescription,/NICHT/);
 });
 test('collection failure retains other logs and export contains no profiles/dumps/config/messages',()=>{
@@ -63,4 +63,27 @@ test('termination failure remains exportable but blocks new attempts',async()=>{
   assert.throws(()=>f.runner.start(),/bereits/);
   f.runner.exportZip(path.join(f.root,'termination-error.zip'));
   assert.ok(fs.existsSync(path.join(f.root,'termination-error.zip')));f.exit();
+});
+
+test('comparison modes each launch once with isolated profiles and explicit identity',()=>{
+  const f=fixture();const profiles=[];
+  for(const mode of ['minimal','argus-no-gpu','argus']){
+    f.runner.start(mode);profiles.push(f.runner.last.profile);
+    assert.equal(f.child.config.env.ARGUS_DIAGNOSTIC_MODE,mode);
+    assert.equal(f.child.config.env.ARGUS_DIAGNOSTIC_DUMPS,undefined);
+    f.mark();f.exit(0xFFFF7003);
+    const state=f.runner.snapshot();assert.equal(state.mode,mode);
+    assert.equal(state.nativeFailure,null);assert.equal(state.exitCodeHex,'0xFFFF7003');
+    assert.equal(state.controllerStopped,false);assert.equal(state.status,'aborted');
+  }
+  assert.equal(new Set(profiles).size,3);assert.equal(f.launches,3);
+  assert.throws(()=>f.runner.start('invalid'));assert.equal(f.launches,3);
+});
+test('native event is positive evidence, missing markers remain unknown; consent is per run',()=>{
+  const f=fixture();f.runner.start('argus',true);
+  assert.equal(f.child.config.env.ARGUS_DIAGNOSTIC_DUMPS,'consented');
+  f.mark();fs.appendFileSync(path.join(f.runner.last.profile,'startup-markers.jsonl'),'\n'+JSON.stringify({event:'child:gone',detail:{type:'GPU',reason:'crashed',exitCode:1}})+'\n');
+  f.exit();assert.equal(f.runner.snapshot().nativeFailure,true);
+  f.runner.start('minimal');f.exit();assert.equal(f.runner.snapshot().nativeFailure,null);
+  assert.equal(f.runner.snapshot().dumpConsent,false);
 });

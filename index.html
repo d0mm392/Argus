@@ -3,10 +3,20 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; connect-src 'none'">
 <title>Argus Startdiagnose</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.2</div>
+  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.3</div>
   <h1>Argus Startdiagnose</h1>
   <p class="intro">Wir prüfen den Start in einer eigenen Testumgebung. Diese Oberfläche bleibt auch bei einem Argus-Absturz geöffnet.</p>
   <div class="notice"><strong>Frisches Diagnoseprofil</strong><p>Deine Installation und dein Originalprofil werden nicht verändert. Ein erfolgreicher Test bestätigt nicht, dass dein bisheriges Profil funktioniert.</p></div>
+  <label for="mode">Einzeln auszufuehrender Lauf</label>
+  <select id="mode">
+    <option value="argus">Argus-Diagnose (bisheriger Vergleich)</option>
+    <option value="minimal">1. Minimales Electron-Fenster</option>
+    <option value="argus-no-gpu">2. Argus ohne Hardwarebeschleunigung</option>
+  </select>
+  <p>Jeder Klick: genau ein Start, eigenes frisches Profil, hoechstens 60 Sekunden Beobachtung. Den Bericht vor dem naechsten Lauf speichern.</p>
+  <details><summary>Nur falls die Vergleiche nicht ausreichen: lokale Dumps</summary>
+  <p>Dumps koennen sensible Speicherinhalte enthalten. Nur mit ausdruecklicher Einwilligung fuer einen einzelnen Lauf. Keine Aufnahme in den Bericht, kein Upload. Keine Host- oder Treiberaenderungen.</p>
+  <label><input id="dumps" type="checkbox"> Lokale Dump-Erfassung fuer den naechsten Lauf anfragen</label></details>
   <button id="start" type="button">Argus-Diagnose starten</button>
   <section aria-live="polite" aria-atomic="true"><h2 id="status">Bereit für einen Test</h2><p id="detail">Ein Klick startet genau einen Versuch. Die Beobachtung dauert bis zu einer Minute.</p><p id="errors"></p></section>
   <button id="save" class="secondary" type="button" disabled>Bericht speichern</button>

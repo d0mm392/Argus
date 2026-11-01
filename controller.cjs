@@ -22,7 +22,18 @@ else {
     win.webContents.on('will-navigate',e=>e.preventDefault());
     win.loadFile('index.html');
     ipcMain.handle('diagnose:state',event=>{if(!trusted(event))throw Error('Nicht erlaubt');return runner.snapshot();});
-    ipcMain.handle('diagnose:start',event=>{if(!trusted(event))throw Error('Nicht erlaubt');return runner.start();});
+    ipcMain.handle('diagnose:start',async (event,mode,dumps)=>{
+      if(!trusted(event))throw Error('Nicht erlaubt');
+      if(runner.active)throw Error('Es laeuft bereits eine Diagnose.');
+      let consent=false;
+      if(dumps===true){
+        const choice=await dialog.showMessageBox(win,{type:'warning',buttons:['Ohne Dumps zurueck','Ich willige fuer diesen Lauf ein'],defaultId:0,cancelId:0,
+          message:'Lokale Speicherabbilder fuer diesen einen Lauf erfassen?',detail:'Nur verwenden, wenn die Vergleichslaeufe nicht ausreichend eingrenzen. Dumps koennen sensible Speicherinhalte wie Zugangsdaten und Nachrichten enthalten. Sie bleiben im isolierten lokalen Laufprofil, werden niemals in den ZIP-Bericht aufgenommen und nicht hochgeladen. Crashpad erfasst nicht jede abrupte Beendigung. Ein fehlender Dump schliesst einen nativen Fehler nicht aus.'});
+        if(choice.response!==1)return runner.snapshot();
+        consent=true;
+      }
+      return runner.start(mode,consent);
+    });
     ipcMain.handle('diagnose:save',async event=>{
       if(!trusted(event))throw Error('Nicht erlaubt');
       if(!runner.last||(runner.active&&!runner.last.summary.reportReady))throw Error('Bitte zuerst eine Diagnose abschließen.');

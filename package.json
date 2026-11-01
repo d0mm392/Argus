@@ -1,6 +1,6 @@
 {
   "name": "argus-diagnostic-controller",
-  "version": "0.58.27-diagnose.2",
+  "version": "0.58.27-diagnose.3",
   "private": true,
   "description": "Separate Argus-Startdiagnose, kein normales Argus-Update",
   "author": "Argus",
@@ -31,7 +31,7 @@
       "uninstallDisplayName": "Argus Startdiagnose (separates Diagnosepaket)",
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
-      "artifactName": "Argus-Diagnose-Setup-0.58.27-diagnose.2.exe",
+      "artifactName": "Argus-Diagnose-Setup-0.58.27-diagnose.3.exe",
       "language": "1031",
       "installerLanguages": ["de_DE"],
       "multiLanguageInstaller": false

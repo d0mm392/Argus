@@ -7,7 +7,8 @@ const {EventEmitter} = require('node:events');
 const {StringDecoder} = require('node:string_decoder');
 
 const MAX_BYTES = 1024 * 1024;
-const VERSION = '0.58.27-diagnose.2';
+const VERSION = '0.58.27-diagnose.3';
+const MODES = ['argus', 'minimal', 'argus-no-gpu'];
 function redact(value) {
   return String(value)
     .replace(/C:[\\/]Users[\\/][^\\/\s"<>]+/gi, '%USERPROFILE%')
@@ -64,14 +65,16 @@ class Runner extends EventEmitter {
     stream.on('end', () => { pending += decoder.end(); if (pending) this.append(file,pending); });
     stream.on('error', e => this.error('Ausgabestream: '+path.basename(file),e));
   }
-  start() {
+  start(mode = 'argus', dumpConsent = false) {
+    if (!MODES.includes(mode)) throw Error('Unbekannter Vergleichslauf.');
+    if (typeof dumpConsent !== 'boolean') throw Error('Ungueltige Dump-Einwilligung.');
     if (this.active) throw Error('Es laeuft bereits ein Diagnoseversuch.');
     this.active = true;
     const id = new Date().toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomBytes(4).toString('hex');
     const dir = path.join(this.root,'runs',id);
     const report = path.join(dir,'report');
     const profile = path.join(dir,'profile');
-    this.last = {dir,report,profile, summary:{version:VERSION,id,started:new Date().toISOString(),status:'starting',freshProfile:true,
+    this.last = {dir,report,profile, summary:{version:VERSION,id,mode,dumpConsent,hardwareAccelerationDisabled:mode==='argus-no-gpu',started:new Date().toISOString(),status:'starting',freshProfile:true,
       profileDescription:'Frisches isoliertes Diagnoseprofil ohne Originaldaten. Erfolg bestaetigt NICHT das Originalprofil.',
       observationSeconds:this.duration/1000,collectionErrors:[],startErrors:[],exitCode:null,exitSignal:null,controllerStopped:false}};
     try {
@@ -85,6 +88,8 @@ class Runner extends EventEmitter {
         if (process.env[key]) env[key] = process.env[key];
       }
       env.ARGUS_DIAGNOSTIC_ROOT = profile;
+      env.ARGUS_DIAGNOSTIC_MODE = mode;
+      if (dumpConsent) env.ARGUS_DIAGNOSTIC_DUMPS = 'consented';
       const args = ['--enable-logging=file','--log-file='+path.join(profile,'electron.log'),'--v=0'];
       // Genau ein Start, kein Fallback/Retry. Keine Shell und keine globalen Prozessnamen verwenden.
       const child = this.spawn(this.executable,args,{cwd:path.dirname(this.executable),env,windowsHide:false,stdio:['ignore','pipe','pipe']});
@@ -137,15 +142,23 @@ class Runner extends EventEmitter {
       catch(e) { this.error('Startmarkierungen auswerten',e); }
       summary.windowLoaded=events.some(row=>row.event==='window:ready-to-show');
       summary.ready=events.some(row=>row.event==='ready');
-      summary.nativeFailure=events.some(row=>['renderer:gone','child:gone'].includes(row.event) && !['clean-exit','killed'].includes(row.detail?.reason));
-      summary.status=keepActive?'stop-failed':summary.startError?'start-failed':summary.observationCompleted&&summary.ready&&summary.windowLoaded&&!summary.nativeFailure?'success':'aborted';
+      summary.nativeFailureEvidence=events.filter(row=>['renderer:gone','child:gone'].includes(row.event) && !['clean-exit','killed'].includes(row.detail?.reason));
+      summary.nativeFailure=summary.nativeFailureEvidence.length ? true : null;
+      summary.nativeFailureAssessment=summary.nativeFailure ? 'Prozessabbruch gemeldet; Ursache damit nicht bewiesen.' : 'Unbekannt: kein Prozessabbruch-Ereignis erfasst. Ein nativer Hauptprozessfehler ist nicht ausgeschlossen.';
+      summary.exitCodeHex=Number.isInteger(summary.exitCode)?'0x'+(summary.exitCode>>>0).toString(16).toUpperCase().padStart(8,'0'):null;
+      summary.regularExitMarkers=events.filter(row=>['process:exit','before-quit','will-quit','app:quit','app:exit'].includes(row.event));
+      summary.lastHeartbeat=events.filter(row=>row.event==='heartbeat').at(-1)?.time || null;
+      summary.dumpCaptureStarted=events.some(row=>row.event==='dump:capture-enabled');
+      summary.status=keepActive?'stop-failed':summary.startError?'start-failed':summary.observationCompleted&&summary.controllerStopped&&summary.ready&&summary.windowLoaded&&summary.nativeFailure===null?'observed':'aborted';
       summary.reportReady=true;
       summary.finished=new Date().toISOString();
       fs.writeFileSync(path.join(this.last.report,'Ergebnis.json'),JSON.stringify(summary,null,2));
       fs.writeFileSync(path.join(this.last.report,'Ergebnis.txt'),[
-        'Argus Startdiagnose '+VERSION,'Status: '+summary.status,'Start: '+summary.started,'Ende: '+summary.finished,
+        'Argus Startdiagnose '+VERSION,'Lauf: '+summary.id+'; Vergleich: '+summary.mode,'Status: '+summary.status,'Start: '+summary.started,'Ende: '+summary.finished,
         summary.profileDescription,'Exitcode: '+summary.exitCode+'; Signal: '+summary.exitSignal,
         'Nach Beobachtungszeit vom Kontrollprozess beendet: '+summary.controllerStopped,
+        'Exitcode hex: '+summary.exitCodeHex,summary.nativeFailureAssessment,
+        'Dump-Einwilligung fuer diesen Lauf: '+summary.dumpConsent+'; Erfassung gestartet: '+summary.dumpCaptureStarted,
         'Startfehler: '+summary.startErrors.length+'; Sammlungsfehler: '+summary.collectionErrors.length,
         'Nur ausgewaehlte, begrenzte Diagnoseausgaben. URLs/Renderer-Konsoleninhalte werden entfernt.',
         'Keine Profile, Zugangsdaten, Nachrichten oder Speicherabbilder im Bericht. Keine Uploads.',
