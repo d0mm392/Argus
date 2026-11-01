@@ -1,9 +1,11 @@
-# Bedingte Dauerfreigabe
+# Bedingte Dauerfreigabe ? aktualisiert fuer Diagnose .6
 
-Status: WARTET AUF BEST?TIGUNG DES KOLLEGEN F?R DIAGNOSE .5.
+Bestaetigt: Prozessisolation schuetzt Argus bei nativem Helferabbruch 0xFFFF7003 am Verknuepfungszugriff. Akzeptierte Einschraenkung: Store-App-Erkennung kann bei Helferabbruch ausfallen. Der native Grundfehler ist nicht behoben. Eine vollstaendige Store-App-Wiederherstellung ist keine neue Freigabebedingung.
 
-Autorisiert: nach erfolgreicher Best?tigung den validierten Ansatz in normales Argus portieren, normalen Build und Regressionstests ausf?hren und auf source/updates ver?ffentlichen. Stable unver?ndert. Keine erneute grunds?tzliche Freigabe erfragen.
+Offener Schritt: Kollege fuehrt einmal full-normal in Diagnose .6 aus: alle Diagnosegruppen und normale Hardwarebeschleunigung im Argus-Haupt-/Rendererprozess, 60 Sekunden, Ergebnis-ZIP. Keine Teilproben wiederholen. Ein Helferfehler ist akzeptiert, wenn Argus weiterlaeuft und unvollstaendige Ergebnisse abweist.
 
-Bis zur Best?tigung keine normalen Branches/Updater-Assets ver?ndern. P3-Hauptprozess stabil bei Helferabbruch/unvollst?ndiger Kollisionspr?fung ist allein kein Beleg f?r vollst?ndige funktionale Wiederherstellung. Die Resultate und der gew?nschte Funktionsumfang m?ssen bewertet werden. Nicht stillschweigend Pfad-/Kollisions-/Programmstartpr?fungen entfernen. Das normale actions.js/boot.js wurde in dieser Phase nicht ge?ndert.
+Danach ohne erneute grundsaetzliche Freigabefrage: beide readShortcutLink-Aufrufstellen im normalen actions.js in denselben isolierten Helfer portieren; findApp/launchCheck/launchApp und deren Aufrufer wie im Diagnosepaket asynchron uebernehmen. Produktiven separaten Helfereinstieg in boot.js vor Migration/Hauptmodulen einbauen und Helferdateien im normalen Build verpacken. Produktgeeigneten eigenen Helfer-Profilpfad und Namen verwenden, keine Diagnose-Uploads/Debugports uebernehmen.
 
-Diagnose?nderungen: source/payload-source/actions.js, shortcut-reader.cjs, shortcut-worker.cjs und separater Einstieg in boot.js. Die sp?tere normale Integration muss Diagnosepfade/App-Namen/Umgebungsvariablen durch produktiv geeignete isolierte Helferpfade ersetzen; keine Debugports oder Diagnose-Uploads ?bernehmen. Danach insbesondere tests/pathguard.test.js mit abgelehnten/gef?lschten AppIDs und vollst?ndiger/unvollst?ndiger Suche sowie normale Paket-/Updater-Regressionspr?fungen durchf?hren.
+Alle Pfad-/Kollisions-/Startpruefungen erhalten: Ziel, Argumente, cwd, harte/symbolische Links, gepruefte AppID-Menge, vollstaendige Antwort und normale Helferbeendigung. Quelldatei nach asynchroner Grenze erneut pruefen. Kein Auto-Retry; Hintergrundfehler sperrt weitere automatische Store-Pruefung fuer diese Sitzung. Bei unsicherem Leser/Quelle Freigaben invalidieren.
+
+Danach normale Regressionstests (insbesondere tests/pathguard.test.js mit den jetzt asynchronen Testaufrufen, Guards gegen falsche AppIDs, partielle Ergebnisse, Verknuepfungsziele/Argumente/cwd und Quellwechsel), normalen Build und Installer in der VM pruefen. Erst bei bestandener Pruefung source und updates publizieren. Stable nicht veraendern. Bis dahin bleibt der normale Arbeitsstand unveraendert und unveroeffentlicht.

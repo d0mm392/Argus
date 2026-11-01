@@ -13,7 +13,7 @@ function render(state){
     'Lauf: '+state.id+'; Vergleich: '+state.mode+'. '+(state.nativeFailureAssessment||'')+' Ergebnis gilt ausschließlich für ein frisches Diagnoseprofil. Exitcode: '+(state.exitCode??'nicht verfügbar')+(state.controllerStopped?' (Testprozess nach Beobachtung kontrolliert beendet).':'.')+' Bitte den Bericht speichern und zurückschicken.';
   if(!state.active && state.appDiscovery?.workerOutcome){
     const result=state.appDiscovery.workerOutcome;
-    el('detail').textContent+=' Verknuepfungs-Hilfsprozess: '+result.reason+'. '+(state.appDiscovery.collision?.complete?'Kollisionspruefung vollstaendig.':'Kollisionspruefung insgesamt unvollstaendig; keine Store-App-IDs freigegeben. Dies ist keine bestaetigte vollstaendige Reparatur.');
+    el('detail').textContent+=' Verknuepfungs-Hilfsprozess: '+result.reason+'. '+(state.appDiscovery.collision?.complete&&!state.appDiscovery.authorizationInvalidated?'Kollisionspruefung vollstaendig.':'Kollisionspruefung insgesamt unvollstaendig; keine Store-App-IDs freigegeben. Der native Grundfehler ist nicht behoben.');
   }else if(!state.active && state.appDiscovery?.storeOutcome){
     el('detail').textContent+=' App-Erkennung: '+state.appDiscovery.storeOutcome.reason+'. Anzahl freigegebener Store-Apps: '+state.appDiscovery.storeOutcome.count+'.';
   }

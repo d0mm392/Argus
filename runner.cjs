@@ -7,7 +7,7 @@ const {EventEmitter} = require('node:events');
 const {StringDecoder} = require('node:string_decoder');
 
 const MAX_BYTES = 1024 * 1024;
-const VERSION = '0.58.27-diagnose.5';
+const VERSION = '0.58.27-diagnose.6';
 const {plan,modes:MODES}=require('./diagnostic-plan.cjs');
 
 function redact(value) {
@@ -151,6 +151,7 @@ class Runner extends EventEmitter {
       summary.regularExitMarkers=events.filter(row=>['process:exit','before-quit','will-quit','app:quit','app:exit'].includes(row.event));
       summary.lastHeartbeat=events.filter(row=>row.event==='heartbeat').at(-1)?.time || null;
       summary.dumpCaptureStarted=events.some(row=>row.event==='dump:capture-enabled');
+      summary.hardwareAccelerationObserved=events.find(row=>row.event==='runtime:hardware-acceleration')?.detail?.enabled??null;
       summary.recordedPlan=events.find(row=>row.event==='plan')?.detail || null;
       summary.jsFailureEvidence=events.filter(row=>['exception','task:throw','task:rejected','background:error','background:throw'].includes(row.event));
       const pending=new Map();
@@ -162,6 +163,7 @@ class Runner extends EventEmitter {
       if(fs.existsSync(workerLog))try{workerEvents=fs.readFileSync(workerLog,'utf8').split('\n').filter(Boolean).map(JSON.parse);}catch{summary.workerMarkersIncomplete=true;}
       const appEvents=events.filter(row=>row.event.startsWith('apps:'));
       summary.appDiscovery={probe:summary.plan.appsProbe,callbackCompleted:events.some(row=>row.event==='apps:callback:complete'),
+        authorizationInvalidated:events.some(row=>row.event==='apps:authorization-invalidated'),
         storeOutcome:events.filter(row=>row.event==='apps:resolve:before').at(-1)?.detail||null,
         collision:events.filter(row=>row.event==='apps:collision:after').at(-1)?.detail||null,
         workerOutcome:events.filter(row=>row.event==='apps:worker.result').at(-1)?.detail||null,

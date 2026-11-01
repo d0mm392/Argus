@@ -1,18 +1,14 @@
-Argus Startdiagnose 0.58.27-diagnose.5 ? gezielte App-Erkennung
+Argus Startdiagnose 0.58.27-diagnose.6
 
-Die Diagnose-App .4 ?ffnen, auf Aktualisieren klicken und nach Ende eines Tests Ergebnisse sichern und neu starten. Alternativ das separate Diagnose-Setup .5 installieren. Normales Argus und dessen Updatekan?le bleiben unver?ndert.
+In der Diagnose-App Aktualisieren waehlen; nach Ende eines Tests Ergebnisse sichern und neu starten. Alternativ separates Diagnose-Setup .6 installieren.
 
-Keine unbeteiligten Gruppen wiederholen. Je Test bis zu 60 Sekunden warten und SOFORT den Ergebnis-ZIP exportieren.
-1. P1. App-Erkennung: Callback + JSON, ohne Verknuepfungen
-   Bei Abbruch: P0. App-Erkennung: nur PowerShell-Callback. Danach ZIPs zur?ckschicken und stoppen.
-2. Wenn P1 stabil: P2. App-Erkennung: Pfadpruefung, ohne native Aufloesung
-   Bei Abbruch: ZIPs zur?ckschicken und stoppen.
-3. Wenn P1 und P2 stabil: P3. App-Erkennung: native Aufloesung im Hilfsprozess (Korrektur)
-   Danach alle ZIPs gesammelt zur?ckschicken. Helfer-Exitcode und vollst?ndige/unvollst?ndige Kollisionspr?fung stehen zus?tzlich im Bericht.
-P4 ist eine Restgegenprobe mit dem bisherigen gef?hrdeten Zugriff im Hauptprozess und zun?chst NICHT erforderlich.
+Nur diesen einen neuen Lauf ausfuehren:
+Vollstaendige Argus-Diagnose mit Absicherung (normale Hardwarebeschleunigung)
 
-Alle Proben: eigenes frisches Profil, gleiche 60 Sekunden, ohne Hardwarebeschleunigung und genau ein Start. P0/P1/P2 erlauben bewusst keine Store-App-Starts. Der Helfer in P3 pr?ft ebenfalls Pfade und kann bei unvollst?ndiger Pr?fung keine Store-App-IDs freigeben. Ein stabiler Hauptprozess mit Helferfehler ist keine best?tigte vollst?ndige Reparatur. Keine Programmlisten oder privaten Pfade in den zus?tzlichen Markern.
+Einmal starten, bis zu 60 Sekunden warten und danach Bericht speichern. Den Ergebnis-ZIP zurueckschicken. P1/P2/P3 und die C-Einzelgruppen nicht wiederholen. Dump-Option ausgeschaltet lassen.
 
-Dump-Option ausgeschaltet lassen, au?er der Kollege willigt ausdr?cklich f?r einen weiteren einzelnen Lauf ein. Dumps k?nnen sensible Speicherinhalte enthalten; nur lokale Erfassung, niemals im ZIP und kein automatischer Upload. Keine Host-, Treiber- oder Schutzfunktions?nderungen.
+Alle Diagnosegruppen sind zugeschaltet, normale Beschleunigung wird im Argus-Hauptprozess nicht abgeschaltet. Frisches isoliertes Profil und bisherige Diagnosevorgaben bleiben erhalten (Medien aus, keine Installation/Migration von KI/Autostart/normalem Updater).
 
-Normale Ver?ffentlichung auf source/updates erfolgt erst nach erfolgreicher R?ckmeldung. Stable bleibt unver?ndert.
+Die bestaetigte Prozessisolation ist eine Absturzabsicherung. Store-App-Erkennung kann bei Helferabbruch ausfallen. Auch ungepruefte Verknuepfungsstarts werden abgelehnt. Sicherheitspruefungen bleiben erhalten, unvollstaendige Ergebnisse werden verworfen, keine automatischen Helfer-Neustartschleifen. Der native Grundfehler ist nicht behoben.
+
+Ein Helferabbruch alleine ist fuer diesen Test unter der bekannten Einschraenkung erlaubt. Argus muss die 60 Sekunden weiterlaufen und darf unvollstaendige IDs/Startdaten nicht verwenden. Normaler Build, normale Regression/Installerpruefung und source/updates-Veroeffentlichung folgen erst nach erfolgreichem Kollegen-Gesamtlauf. Stable unveraendert.

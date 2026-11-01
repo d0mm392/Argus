@@ -26,3 +26,6 @@ Pr?fungen: node --test runner.test.cjs diagnostic-update.test.cjs (16 Tests); 16
 
 
 Diagnose .5: zus?tzlich apps-discovery.test.cjs ausf?hren (insgesamt 26 Tests). Gezielte echte Proben ?ber validation/apps-smoke.cjs, isolierten nativen Helfer und kontrollierten OS-Exit 0xFFFF7003 in der VM pr?fen. Keine normalen Argus-Dateien/Update-Branches vor der R?ckmeldung des Kollegen ver?ffentlichen. APP-ERKENNUNG-diagnose.5.md beschreibt die Grenzen.
+
+
+Diagnose .6: insgesamt 30 automatisierte Diagnosetests. full-normal-smoke.cjs prueft alle Gruppen mit normaler Beschleunigungsvorgabe. Bei Electron 33 nicht verfuegbare Abfragemethode bleibt hardwareAccelerationObserved=null. In der VM beide realen Helferoperationen (Kollision/Startaufloesung), kontrollierten Helferabbruch und den installierten Gesamtlauf pruefen. Das ersetzt den noch offenen Kollegenlauf und die spaetere normale Regression/Installerpruefung nicht.

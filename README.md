@@ -1,3 +1,3 @@
-# Separate Argus-Diagnose 0.58.27-diagnose.5
+# Separate Argus-Diagnose 0.58.27-diagnose.6
 
-Gezielte App-Erkennung und isolierter nativer Verkn?pfungsleser zur Best?tigung durch den Kollegen. Siehe APP-ERKENNUNG-diagnose.5.md. Der normale Release ist bis zur Best?tigung zur?ckgestellt; Stable bleibt unver?ndert.
+Bestaetigte Prozessisolation als Absturzabsicherung, beide Verknuepfungs-Lesewege isoliert, vorbereiteter Gesamtlauf mit normaler Hardwarebeschleunigung. Siehe ABSICHERUNG-diagnose.6.md. Der normale Release wartet auf diesen Kollegenlauf und anschliessende normale Regression/Installerpruefung. Stable unveraendert.

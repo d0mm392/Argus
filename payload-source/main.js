@@ -2029,6 +2029,7 @@ function startStep(name,fn){try{return diagnostic.task(name,fn);}catch(e){logErr
 
 app.whenReady().then(async () => {
   diagnostic.mark("ready");
+  diagnostic.mark("runtime:hardware-acceleration",{enabled:typeof app.isHardwareAccelerationEnabled==='function'?app.isHardwareAccelerationEnabled():null});
   if(diagnostic.currentPlan.modulesOnly){require("./minimal-window.js");return;}
   startStep("Einstellungen laden", () => loadConfig()); // zuerst: ioBroker, Foreman-Dashboard und Portal lesen ihre Schalter aus der Konfiguration
   if (typeof config === "undefined" || !config) config = { ...DEFAULTS }; // eigene Datei bleibt unverändert, solange nichts gespeichert wird

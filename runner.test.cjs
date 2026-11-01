@@ -121,3 +121,12 @@ test('worker fault and last native boundary survive export without claiming a ma
   const file=path.join(f.root,'worker-report.zip');f.runner.exportZip(file);
   const zip=new(require('adm-zip'))(file);assert(zip.getEntry('shortcut-worker-markers.jsonl'));assert(!zip.getEntries().some(entry=>/\.dmp/.test(entry.entryName)));
 });
+test('full normal-acceleration run selects every group and preserves unknown runtime capability evidence',async()=>{
+  const f=fixture({durationMs:15});f.runner.start('full-normal');f.mark();
+  fs.appendFileSync(path.join(f.runner.last.profile,'startup-markers.jsonl'),JSON.stringify({event:'runtime:hardware-acceleration',detail:{enabled:null}})+'\n');
+  assert.equal(f.child.config.env.ARGUS_DIAGNOSTIC_MODE,'full-normal');assert(!f.child.args.some(arg=>arg.includes('disable-gpu')));
+  await new Promise(resolve=>f.runner.on('state',state=>{if(!state.active)resolve();}));
+  const state=f.runner.snapshot();assert.equal(state.status,'observed');assert.equal(state.hardwareAccelerationDisabled,false);assert.equal(state.hardwareAccelerationObserved,null);
+  assert.deepEqual(state.plan.groups,['desktop','apps','integrations','local','index','steam','network']);
+  assert.equal(state.plan.appsProbe,'worker');assert.throws(()=>f.runner.start('apps-native'));
+});

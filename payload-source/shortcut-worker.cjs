@@ -33,8 +33,8 @@ socket.on('data',async bytes=>{
     mark('worker:ready:before');await app.whenReady();mark('worker:ready:after');
     phase='parse';mark('worker:input:before',{bytes:Buffer.byteLength(input)});const request=JSON.parse(input);mark('worker:input:after');
     phase='schema';
-    if(!Array.isArray(request.paths)||request.paths.length>1000||request.paths.some(p=>typeof p!=='string'))throw Error('input');
-    const claimed=new Set();let complete=true;
+    if(!['collisions','resolve'].includes(request.operation)||!Array.isArray(request.paths)||request.paths.length>1000||request.paths.some(p=>typeof p!=='string'))throw Error('input');
+    const claimed=new Set(),shortcuts=[];let complete=true;
     for(let index=0;index<request.paths.length;index++){
       phase='path-check';mark('apps:worker.path:before',{index});
       const checked=files.checkPath(request.paths[index],{read:true});
@@ -44,11 +44,19 @@ socket.on('data',async bytes=>{
       mark('apps:worker.native:before',{index});
       try{
         const result=shell.readShortcutLink(checked.real);mark('apps:worker.native:return',{index});
-        mark('apps:worker.appid:before',{index});const id=result?.appUserModelId;mark('apps:worker.appid:after',{index,hasAppId:!!id});
-        if(id){if(typeof id!=='string'||id.length>512)complete=false;else claimed.add(id.toLowerCase());}
+        if(request.operation==='collisions'){
+          mark('apps:worker.appid:before',{index});const id=result?.appUserModelId;mark('apps:worker.appid:after',{index,hasAppId:!!id});
+          if(id){if(typeof id!=='string'||id.length>512)complete=false;else claimed.add(id.toLowerCase());}
+        }else{
+          mark('apps:worker.target:before',{index});
+          const link={target:result?.target||'',args:result?.args||'',cwd:result?.cwd||''};
+          if(Object.values(link).some(value=>typeof value!=='string'||value.length>32768)){complete=false;}
+          else shortcuts.push(link);
+          mark('apps:worker.target:after',{index,hasTarget:!!link.target});
+        }
       }catch{mark('apps:worker.native:exception',{index});complete=false;}
     }
     mark('worker:complete',{complete,count:claimed.size});
-    socket.end(JSON.stringify({complete,claimed:complete?[...claimed]:[]})+'\n',()=>app.exit(0));
+    socket.end(JSON.stringify({complete,claimed:complete?[...claimed]:[],...(request.operation==='resolve'?{shortcuts:complete?shortcuts:[]}: {})})+'\n',()=>app.exit(0));
   }catch(error){mark('worker:failed',{phase,errorType:['Error','TypeError','SyntaxError','RangeError'].includes(error?.name)?error.name:'Error'});app.exit(2);}
 });

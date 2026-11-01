@@ -1,7 +1,7 @@
 'use strict';
 const cp=require('node:child_process'),net=require('node:net'),crypto=require('node:crypto');
-function readShortcuts(paths,{spawn=cp.spawn,kill,mark=()=>{},timeoutMs=15000,env=process.env,executable=process.execPath}={}){
-  if(!Array.isArray(paths)||paths.length>1000){mark('apps:worker.result',{complete:false,reason:'limit',count:0});return Promise.resolve({complete:false,claimed:[],reason:'limit'});}
+function readShortcuts(paths,{spawn=cp.spawn,kill,mark=()=>{},timeoutMs=15000,operation='collisions',env=process.env,executable=process.execPath}={}){
+  if(!['collisions','resolve'].includes(operation)||!Array.isArray(paths)||paths.length>1000||(operation==='resolve'&&paths.length!==1)){mark('apps:worker.result',{complete:false,reason:'limit',count:0});return Promise.resolve({complete:false,claimed:[],reason:'limit'});}
   return new Promise(resolve=>{
     let child,timer,settled=false,reply=null,closed=false,closeCode=null,closeSignal=null,transportEnded=false;
     const sockets=new Set(),token=crypto.randomBytes(32).toString('hex');
@@ -10,7 +10,7 @@ function readShortcuts(paths,{spawn=cp.spawn,kill,mark=()=>{},timeoutMs=15000,en
     const check=()=>{
       if(!closed)return;
       if(closeCode!==0||closeSignal)return finish({complete:false,claimed:[],reason:'worker-exit'});
-      if(reply)return finish({complete:reply.complete,claimed:reply.complete?reply.claimed:[],reason:reply.complete?'ok':'incomplete'});
+      if(reply)return finish({complete:reply.complete,claimed:reply.complete?reply.claimed:[],...(operation==='resolve'?{shortcuts:reply.complete?reply.shortcuts:[]}:{}),reason:reply.complete?'ok':'incomplete'});
       if(transportEnded)return finish({complete:false,claimed:[],reason:'protocol'});
     };
     const server=net.createServer(socket=>{
@@ -22,8 +22,10 @@ function readShortcuts(paths,{spawn=cp.spawn,kill,mark=()=>{},timeoutMs=15000,en
         if(buffer.length>(authenticated?1024*1024:128)){socket.destroy();if(authenticated){terminate();finish({complete:false,claimed:[],reason:'output-limit'});}return;}
         let end;
         while((end=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,end);buffer=buffer.slice(end+1);
-          if(!authenticated){if(!/^[a-f0-9]{64}$/.test(line)||!crypto.timingSafeEqual(Buffer.from(line),Buffer.from(token))){socket.destroy();return;}authenticated=true;socket.setTimeout(0);mark('apps:worker.transport:authenticated');socket.write(JSON.stringify({paths})+'\n');continue;}
-          try{mark('apps:worker.protocol:before');const value=JSON.parse(line);if(reply||typeof value.complete!=='boolean'||!Array.isArray(value.claimed)||value.claimed.length>paths.length||value.claimed.some(id=>typeof id!=='string'||id.length>512))throw Error('protocol');reply=value;mark('apps:worker.protocol:after',{complete:value.complete,count:value.claimed.length});check();}
+          if(!authenticated){if(!/^[a-f0-9]{64}$/.test(line)||!crypto.timingSafeEqual(Buffer.from(line),Buffer.from(token))){socket.destroy();return;}authenticated=true;socket.setTimeout(0);mark('apps:worker.transport:authenticated');socket.write(JSON.stringify({paths,operation})+'\n');continue;}
+          try{mark('apps:worker.protocol:before');const value=JSON.parse(line);if(reply||typeof value.complete!=='boolean'||!Array.isArray(value.claimed)||value.claimed.length>paths.length||value.claimed.some(id=>typeof id!=='string'||id.length>512))throw Error('protocol');
+            if(operation==='resolve'&&(!Array.isArray(value.shortcuts)||value.shortcuts.length!==(value.complete?paths.length:0)||value.shortcuts.some(link=>!link||['target','args','cwd'].some(field=>typeof link[field]!=='string'||link[field].length>32768))))throw Error('protocol');
+            reply=value;mark('apps:worker.protocol:after',{complete:value.complete,count:value.claimed.length});check();}
           catch{terminate();finish({complete:false,claimed:[],reason:'protocol'});}
         }
       });

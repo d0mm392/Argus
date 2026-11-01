@@ -28,4 +28,4 @@ async function run(mode){
     });runner.start(mode);
   });
 }
-(async()=>{for(const modes of [['apps-parse','apps-walk','apps-worker'],['apps-callback','apps-native']])await Promise.all(modes.map(run));console.log('PASS '+results.length+' focused runs');})().catch(error=>{console.error(error.stack);process.exitCode=1;});
+(async()=>{for(const modes of [['apps-parse','apps-walk','apps-worker'],['apps-callback']])await Promise.all(modes.map(run));console.log('PASS '+results.length+' focused runs');})().catch(error=>{console.error(error.stack);process.exitCode=1;});
