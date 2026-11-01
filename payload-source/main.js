@@ -45,6 +45,7 @@ function trustedDiscordFrame(contents, frame) {
   try { const url = new URL(frame.url); return contents === win?.webContents && frame === win.webContents.mainFrame && url.origin === discordUiOrigin && url.pathname === "/"; } catch { return false; }
 }
 function startDiscordSocial() {
+  if (!diagnostic.enabled("integrations")) return;
   discordSocial = require("./app/discord-social").create({safeStorage,
     authPath:path.join(app.getPath("userData"),"discord-social-auth.bin"),
     helperPath:app.isPackaged?path.join(process.resourcesPath,"discord-social","argus-discord-social.exe"):(process.env.ARGUS_DISCORD_HELPER||path.join(__dirname,"discord-runtime","argus-discord-social.exe")),
@@ -380,6 +381,7 @@ function startServer() {
 let voiceState = { ready: false, text: "Prüfe Sprachmodell…" };
 function setVoice(state) { voiceState = state; sendUI("voice-status", state); }
 async function ensureVoiceModel() {
+  if (!diagnostic.enabled("local")) return;
   if (fs.existsSync(MODEL_TGZ)) return setVoice({ ready: true, text: "Sprachmodell bereit" });
   try {
     fs.mkdirSync(MODEL_DIR, { recursive: true });
@@ -544,7 +546,8 @@ async function aiStatus() {
     extName: config.backend === "openai" ? aiPreset().name : "", apiKey: config.backend === "claude" && !!(config.anthropicApiKey || process.env.ANTHROPIC_API_KEY), local: local ? local.model : null, localText: localState.text, mode: config.backend,
     share: config.aiShare || "ausgewogen", strataWake: config.strataWake !== false && !!strata.findDir?.(), localKind: local?.kind || "" };
 }
-async function pushAiStatus() { try { sendUI("ai-status", await aiStatus()); } catch {} }
+async function pushAiStatus() {
+  if (!diagnostic.enabled("local")) return; try { sendUI("ai-status", await aiStatus()); } catch {} }
 
 // ---------- Stimme: Piper (lokal, natürliche deutsche Männerstimme "Thorsten") ----------
 const PIPER_DIR = path.join(app.getPath("userData"), "piper");
@@ -582,6 +585,7 @@ async function installVoice(id, onPct = () => {}) {
   onPct(100);
 }
 async function ensurePiper() {
+  if (!diagnostic.enabled("local")) return;
   const ok = () => fs.existsSync(piperExe()) && voiceHas(config.voiceId);
   if (ok()) { piperReady = true; return sendUI("tts-ready", true); }
   if (process.platform !== "win32" || config.voiceEngine === "windows" || config.voiceEngine === "server") return;
@@ -632,6 +636,7 @@ async function ollamaUp() {
 // Ollama finden und starten, sonst installieren, auf neue Version prüfen, Modell laden und aktuell halten.
 let installTried = false, updateChecked = false, modelRefreshed = false;
 async function ensureLocalAI(manual = false) {
+  if (!diagnostic.enabled("local")) return;
   // Ollama abgeschaltet (z. B. Strata ersetzt es): nichts starten, nichts installieren
   if (config.ollamaOff) return setLocal("off", strata.running() ? "Lokale KI: Strata" : "Ollama ist aus. Lokale Fragen beantwortet Strata, wenn es läuft, sonst Claude.");
   if (!manual && !config.setupDone) return; // neue Nutzer wählen in der Einrichtung, ob die lokale KI (Download mehrerer GB) kommt
@@ -914,7 +919,7 @@ function setupSensors() {
 ipcMain.handle("sensor-status", () => sensorState);
 ipcMain.on("sensor-setup", () => { config.sensors = true; saveConfig(); setupSensors(); });
 
-ipcMain.handle("game-info", (_e, name, appid) => require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })));
+ipcMain.handle("game-info", (_e, name, appid) => diagnostic.enabled('network') ? require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })) : {name:'',error:'Diagnosegruppe deaktiviert'});
 ipcMain.handle("get-config", () => ({ pageLooks: config.pageLooks && typeof config.pageLooks === "object" ? config.pageLooks : {}, nodeStyle: ["punkt", "ring", "leucht", "stern"].includes(config.nodeStyle) ? config.nodeStyle : "punkt", aura: ["aus", "weich", "stark"].includes(config.aura) ? config.aura : "aus", breath: !!config.breath, pulseStyle: ["punkte", "funken", "komet", "blitz", "welle", "licht"].includes(config.pulseStyle) ? config.pulseStyle : "punkte", iobOn: !!config.iobOn, iobUrl: config.iobUrl || "", iobUser: config.iobUser || "", hasIobPass: !!config.iobPass, iobPick: Array.isArray(config.iobPick) ? config.iobPick : [], iobWrite: !!config.iobWrite, iobAll: config.iobAll !== false, shapeRand: +config.shapeRand || 0, fmDashOn: !!config.fmDashOn, aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarShow !== "nie", taskbarShow: config.taskbarShow, hiddenFans: config.hiddenFans, afterHide: config.afterHide, taskbarFront: config.taskbarFront, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnTiltK: config.btnTiltK, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, flashT: config.flashT, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeRadii: config.holeRadii, friendsStill: config.friendsStill, ytFilterState, ytBackgroundAlpha: config.ytBackgroundAlpha ?? 100, ytFrame: config.ytFrame !== false, ytShadow: !!config.ytShadow, ytFilterOn: config.ytFilterOn !== false, uiSkin: "classic", reduceAnimations: !!config.reduceAnimations, backgroundPresentation: config.backgroundPresentation === "eco" ? "eco" : "fluid", notesScopeVersion: config.notesScopeVersion, pageIds: config.pageIds, notesByPage: config.notesByPage, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, warnDiskGB: config.warnDiskGB, warnRamPct: config.warnRamPct, warnCpuPct: config.warnCpuPct, warnInet: config.warnInet, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shape2d: config.shape2d, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordAlsoOnline: config.discordAlsoOnline, dcOnlyMarked: config.dcOnlyMarked, dcMarked: config.dcMarked, looks: config.looks, winStyle: config.winStyle, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine, voiceFallback: config.voiceFallback, donateUrl: config.donateUrl, lang: config.lang, portalOn: config.portalOn, portalUrl: config.portalUrl, briefOn: config.briefOn, briefTime: config.briefTime, briefLen: config.briefLen, briefParts: config.briefParts, customPages: config.customPages, autoFit: config.autoFit, tradeOn: config.tradeOn, tradeCur: config.tradeCur, tradeEvery: config.tradeEvery, tradeStock: config.tradeStock, tradeFng: config.tradeFng, tradeDom: config.tradeDom, tradeHalv: config.tradeHalv, tradeWatch: config.tradeWatch, tradePort: config.tradePort, hasFinnhubKey: !!config.finnhubKey, design: config.design, designSet: config.designSet, designBlk: config.designBlk, designType: config.designType, designBtn: config.designBtn,
   autostart: config.autostart, backend: config.backend, ollamaModel: config.ollamaModel || localModel(), hasApiKey: !!config.anthropicApiKey,
   ballScale: config.ballScale, labelScale: config.labelScale, tempScale: config.tempScale, appScale: config.appScale, wakeWords: config.wakeWords, voiceOutput: config.voiceOutput, voiceId: config.voiceId, voiceRobot: config.voiceRobot, micOnStart: config.micOnStart, systemAlertsVoice: config.systemAlertsVoice, voice: voiceState, system: watch?.data.ts ? withIcons(watch.data) : null }));
@@ -1243,6 +1248,7 @@ let attention = false;
 // Taskleiste vor Argus: Argus ist „immer oben“ und verdeckt eine automatisch ausblendende Taskleiste. Berührt die Maus den Bildschirmrand, nimmt Argus die Vordergrund-Stellung kurz zurück (nur wenn eingeschaltet; Abfrage alle 300 ms)
 let edgeT = null, edgeLow = false, edgeLeft = 0;
 function edgeWatch() {
+  if (!diagnostic.enabled("desktop")) return;
   clearInterval(edgeT); edgeT = null;
   if (edgeLow) { edgeLow = false; applyTop(); }
   if (!config.taskbarFront || process.platform !== "win32") return;
@@ -1373,6 +1379,7 @@ function watchCursor() {
 }
 
 function buildTray() {
+  if (!diagnostic.enabled("desktop")) return;
   const icon = nativeImage.createFromPath(path.join(__dirname, "assets", "tray.png"));
   tray = new Tray(icon);
   tray.setToolTip("Argus");
@@ -1522,7 +1529,7 @@ async function briefNews(d) {
 }
 async function briefNow() { const d = briefData(); if (config.briefParts?.headlines !== false) await briefNews(d); return briefing.build(d, { len: config.briefLen, parts: Object.keys(briefing.PARTS.reduce((o, k) => (config.briefParts?.[k] !== false && (o[k] = 1), o), {})) }); }
 ipcMain.handle("brief-build", () => briefNow());
-setInterval(() => {
+diagnostic.enabled("network") && setInterval(() => {
   if (!config.briefOn || !alive()) return;
   const n = new Date(), today = n.toLocaleDateString("sv-SE"), [h, m] = String(config.briefTime || "08:00").split(":").map(Number);
   if (config.briefLast === today || n.getHours() * 60 + n.getMinutes() < (h || 0) * 60 + (m || 0)) return;
@@ -1727,9 +1734,10 @@ ipcMain.on("set-size", (_e, px) => { if (Number.isFinite(px)) setSize(px, false)
 ipcMain.on("setup-local", () => ensureLocalAI(true));
 // Einrichtung: PC-Ausstattung für die Empfehlung der lokalen KI (RAM, Kerne, Grafikkarte mit Speicher)
 ipcMain.handle("pc-info", async () => {
+  if(!diagnostic.enabled('local')){diagnostic.mark('task:skipped','pc-info');return {ramGB:Math.round(os.totalmem()/GB),cores:os.cpus().length,cpu:'',gpu:'',vramGB:0,strataDir:'',claudeCode:false};}
   const out = { ramGB: Math.round(os.totalmem() / GB), cores: os.cpus().length, cpu: (os.cpus()[0]?.model || "").trim(), gpu: "", vramGB: 0, strataDir: strata.findDir?.() || "", claudeCode: !!findClaudeCode() };
   if (process.platform !== "win32") return out;
-  const run = (cmd, args) => new Promise((r) => execFile(cmd, args, { windowsHide: true, timeout: 6000 }, (e, so) => r(e ? "" : String(so || ""))));
+  const run = (cmd, args) => diagnostic.task('pc-info:'+cmd,()=>new Promise((r) => execFile(cmd, args, { windowsHide: true, timeout: 6000 }, (e, so) => r(e ? "" : String(so || "")))));
   const nv = (await run("nvidia-smi", ["--query-gpu=name,memory.total", "--format=csv,noheader,nounits"])).split(/\r?\n/)[0];
   if (nv && nv.includes(",")) { const [n, m] = nv.split(","); out.gpu = n.trim(); out.vramGB = Math.round(Number(m) / 1024) || 0; }
   else out.gpu = (await run("powershell.exe", ["-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController | Select-Object -First 1).Name"])).trim();
@@ -2017,20 +2025,25 @@ function withIcons(data) {
 }
 
 // Startschritt absichern: ein Fehler wird protokolliert, der Start geht weiter (das Fenster soll in jedem Fall erscheinen)
-function startStep(name, fn) { try { diagnostic.mark("step:begin", name); const value = fn(); diagnostic.mark("step:return", name); return value; } catch (e) { logError(new Error("Startschritt " + name + ": " + (e?.stack || e))); try { crash.add("Startfehler: " + name, e?.message || String(e), e?.stack || ""); } catch {} } }
+function startStep(name,fn){try{return diagnostic.task(name,fn);}catch(e){logError(e);crash.add('Startfehler',name);}}
+
 app.whenReady().then(async () => {
   diagnostic.mark("ready");
+  if(diagnostic.currentPlan.modulesOnly){require("./minimal-window.js");return;}
   startStep("Einstellungen laden", () => loadConfig()); // zuerst: ioBroker, Foreman-Dashboard und Portal lesen ihre Schalter aus der Konfiguration
   if (typeof config === "undefined" || !config) config = { ...DEFAULTS }; // eigene Datei bleibt unverändert, solange nichts gespeichert wird
   // 0.58.27: Der Apple-Modus aus 0.58.26 ist vorübergehend entfernt. Eine gespeicherte Apple-Wahl gilt als Klassisch; eine liegengebliebene
   // Startsicherung (ui-start.json, nur die Datei) wird entfernt. Alle übrigen Einstellungen, Anordnungen und Notizen bleiben unverändert.
   try { if (config.uiMode === "apple") { config.uiMode = "klassisch"; writeConfigNow(); } } catch (e) { logError(e); }
   try { fs.rmSync(path.join(app.getPath("userData"), "ui-start.json")); } catch {}
+  diagnostic.group('integrations', () => {
   startStep("Discord-Konto", () => startDiscordSocial());
   try { iob.init({ on: !!config.iobOn, url: config.iobUrl, user: config.iobUser, pass: unseal(config.iobPass) || "", write: !!config.iobWrite, all: config.iobAll !== false, pick: (Array.isArray(config.iobPick) ? config.iobPick : []).filter((p) => p && typeof p.id === "string").slice(0, 60) }, () => sendUI("iob", iob.data())); } catch {}
   try { fmdash.init(require("electron"), config.fmDashOn, (x) => { try { fs.writeFileSync(path.join(app.getPath("userData"), "foreman-dashboard-beispiel.json"), JSON.stringify(x, null, 1).slice(0, 3000)); } catch {} }); } catch {}
   try { portal.init(require("electron"), config.portalOn, (s) => { try { fs.writeFileSync(path.join(app.getPath("userData"), "portal-typen-beispiel.json"), JSON.stringify(s, null, 1).slice(0, 4000)); } catch {} }, () => config.portalUrl); } catch {}
-  setTimeout(edgeWatch, 3000);
+
+  });
+  diagnostic.group('desktop', () => setTimeout(edgeWatch,3000));
   if (process.platform === "win32") app.setAppUserModelId("de.argus.startdiagnose.payload");
   if (config.autostart) try { applyAutostart(); } catch (e) { logError(e); } // Autostart-Eintrag auf die aktuelle Programmdatei (nach dem Umzug Argus.exe)
   startStep("Berechtigungen", () => {
@@ -2051,7 +2064,8 @@ app.whenReady().then(async () => {
   if (config.setupDone) startStep("Sensoren", () => startSensors());
   win?.on("session-end", () => { quitting = true; }); // Windows fährt herunter: zählt wie Beenden
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
-  setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
+  diagnostic.group('integrations', () => setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000));
+  diagnostic.group('local', () => {
   strata.init(() => config, (s) => {
     if (s.state === "an" && strataPrev !== "an") { strataUsed = Date.now(); unloadOllama(); } // Strata übernimmt: kleines Modell aus dem Grafikspeicher werfen
     strataPrev = s.state; sendUI("strata", s); pushAiStatus();
@@ -2065,13 +2079,15 @@ app.whenReady().then(async () => {
     }
   }, 60e3);
   setInterval(() => strata.check(), 15e3); setTimeout(() => (config.strataOn ? strata.start() : strata.check()), 6000); // neue Nutzer entscheiden in der Einrichtung (Admin-Abfrage)
+  });
   diagnostic.mark('discord-bot:begin');
-  startDcBot();
+  diagnostic.task('startDcBot', () => startDcBot());
   diagnostic.mark('discord-bot:return');
   diagnostic.mark('media:begin');
-  startMedia();
+  diagnostic.task('startMedia', () => startMedia());
   diagnostic.mark('media:return');
   // Steam-Downloads alle 5 Sekunden aus den Spieldateien lesen, an die Systemwache
+  diagnostic.group('steam', () => {
   let dlSig = "";
   setInterval(async () => {
     if (config.steamDl === false) return;
@@ -2082,12 +2098,13 @@ app.whenReady().then(async () => {
     const sig = JSON.stringify(l);
     if (sig !== dlSig) { dlSig = sig; if (alive()) win.webContents.send("steam-dl", l); }
   }, 5000);
-  globalShortcut.register("CommandOrControl+Shift+J", () => { if (!alive()) return; toggleVisible(); });
+  });
+  diagnostic.group('desktop', () => globalShortcut.register("CommandOrControl+Shift+J", () => { if (!alive()) return; toggleVisible(); }));
   diagnostic.mark('voice:begin');
-  ensureVoiceModel();
+  diagnostic.task('ensureVoiceModel', () => ensureVoiceModel());
   diagnostic.mark('voice:return');
-  setInterval(pushAiStatus, 15000); setTimeout(pushAiStatus, 2500);
-  if (config.systemWatch) {
+  diagnostic.group('local', () => {setInterval(pushAiStatus,15000);setTimeout(pushAiStatus,2500);});
+  if (diagnostic.enabled('local') && config.systemWatch) {
     watch = new SystemWatch((data) => { netRx = (data?.net?.rxKBs || 0) * 1024; sendUI("system", withIcons(data)); });
     watch.limits = { cpu: config.cpuHotC, gpu: config.gpuHotC, diskGB: config.warnDiskGB, ramPct: config.warnRamPct, cpuPct: config.warnCpuPct, inet: config.warnInet };
     watch.appsOn = config.widgets.apps.on;
@@ -2096,21 +2113,21 @@ app.whenReady().then(async () => {
   // 0.31.5: Ollama nicht installiert, Strata aber da → Ollama gilt als bewusst entfernt (Strata ersetzt es) und wird nicht nachinstalliert
   // 0.31.6: Strata installiert → Ollama aus (Strata ersetzt es; 0.31.4 hatte das gerade entfernte Ollama noch einmal nachinstalliert). In den Einstellungen wieder einschaltbar
   if (config.ollamaOffChecked !== 2) { config.ollamaOffChecked = 2; try { if (process.platform === "win32" && strata.findDir()) config.ollamaOff = true; } catch {} saveConfig(); }
-  if (config.ollamaOff) stopOllama();
+  if (diagnostic.enabled('local') && config.ollamaOff) stopOllama();
   // Lokale KI vorbereiten und alle 20 s nachsehen, ob Ollama inzwischen da ist (z. B. selbst installiert)
   diagnostic.mark('local-ai:begin');
-  ensureLocalAI();
+  diagnostic.task('ensureLocalAI', () => ensureLocalAI());
   diagnostic.mark('local-ai:return');
   diagnostic.mark('piper:begin');
-  ensurePiper();
+  diagnostic.task('ensurePiper', () => ensurePiper());
   diagnostic.mark('piper:return');
-  setInterval(() => { if (["missing", "error", "check"].includes(localState.phase)) ensureLocalAI(); }, 20000);
+  diagnostic.group('local', () => setInterval(() => { if (["missing","error","check"].includes(localState.phase)) ensureLocalAI(); },20000));
   // Dateiverzeichnis aller Laufwerke im Hintergrund bauen, danach alle 12 Stunden erneuern
-  const reindex = () => files.build({ onDone: (n, e) => { if (n > 0) console.log("Dateiverzeichnis: " + n + " Einträge"); if (e) logError(e); } });
-  setTimeout(reindex, 8000); setInterval(reindex, 3600e3);
+  const reindex = () => diagnostic.task('files.build', () => files.build({ onDone: (n, e) => { if (n > 0) console.log("Dateiverzeichnis: " + n + " Einträge"); if (e) logError(e); diagnostic.mark('index:callback',{count:n,error:!!e}); } }));
+  diagnostic.group('index', () => {setTimeout(reindex,8000);setInterval(reindex,3600e3);});
   diagnostic.mark("claude-desktop:skipped"); // keine externe Konfiguration schreiben
   diagnostic.mark('market:begin');
-  startMarket();
+  diagnostic.task('startMarket', () => startMarket());
   diagnostic.mark('market:return');
 }).catch((e) => {
   // Start gescheitert (z. B. Fenster oder lokaler Server): protokollieren, Bescheid geben und beenden, damit die Einzelinstanz-Sperre frei wird
@@ -2133,6 +2150,7 @@ function pushMarket() {
 // Kurse: Bitcoin immer, dazu die in den Einstellungen gewählten Coins. Alle 3 Minuten Kurs, alle 15 Minuten echter 24-h-Verlauf
 const coinList = () => [...new Set(["BTC", ...(Array.isArray(config.coins) ? config.coins : [])])].filter((x) => news.COINS[x]);
 async function pollPrice() {
+  if(!diagnostic.enabled("network"))return;
   if (!marketWanted()) return;
   const r = await news.coins(coinList());
   market.btcError = r.coins.BTC ? "" : r.error || "kein Kurs";
@@ -2148,6 +2166,7 @@ async function pollPrice() {
 }
 const histTs = {};
 async function pollHist() {
+  if(!diagnostic.enabled("network"))return;
   if (!marketWanted()) return;
   let got = false;
   for (const sym of coinList()) {
@@ -2182,6 +2201,7 @@ async function pollPlaces() {
   wx.places = out;
 }
 async function pollWeather() {
+  if(!diagnostic.enabled("network"))return;
   if (config.weatherOn === false || wxBusy) return;
   wxBusy = true;
   try {
@@ -2219,6 +2239,7 @@ function wallets() {
 const fmtHash = (h) => { if (h == null) return "–"; const u = ["H/s", "kH/s", "MH/s", "GH/s", "TH/s", "PH/s", "EH/s"]; let i = 0; while (h >= 1000 && i < u.length - 1) { h /= 1000; i++; } return h.toFixed(h >= 100 ? 0 : h >= 10 ? 1 : 2) + " " + u[i]; };
 const pushMine = () => sendUI("mining", mine);
 async function pollPool() {
+  if(!diagnostic.enabled("network"))return;
   const ws = config.mineOn === false || config.miningOn === false ? [] : wallets();
   if (!ws.length) { if (mine.pools.length) { mine.pools = []; mine.pool = null; pushMine(); } return; }
   const before = mine.pools;
@@ -2237,6 +2258,7 @@ async function pollPool() {
   mine.pool = mine.pools[0]; pushMine();
 }
 async function pollNet() {
+  if(!diagnostic.enabled("network"))return;
   if (config.mineOn === false || config.miningOn === false) return;
   try { const n = await mining.network(); mine.net = n.error && mine.net ? { ...mine.net, error: n.error } : n; pushMine(); } catch (e) { logError(e); }
 }
@@ -2294,6 +2316,7 @@ function splitSites(acc, f) {
   });
 }
 async function pollFarm() {
+  if(!diagnostic.enabled("network"))return;
   const list = fmAccts(), gen = ++farmGen; // nur die jüngste Abfrage zählt (Einstellungen können währenddessen geändert werden)
   if (!config.foremanOn || config.miningOn === false || !list.length) { if (farmSt) { farmSt = null; sendUI("farm", null); } return; }
   try {
@@ -2413,16 +2436,19 @@ function mineAlarm(prev, p, pre = "") {
   else if (st.low === 0 && st.alarm === "low" && ref > 0 && cur >= ref * 0.85) { st.alarm = ""; say(`Hashrate wieder normal: ${fmtHash(cur)}`); }
 }
 async function pollFeeds() {
+  if(!diagnostic.enabled("network"))return;
   const cats = ["tech", "krypto"].filter((c) => config.newsCats[c] !== false);
   if (!config.newsOn || !cats.length) return;
   try { const f = await news.feeds(cats); Object.assign(market, f); pushMarket(); } catch (e) { logError(e); }
 }
 async function pollAlerts() {
+  if(!diagnostic.enabled("network"))return;
   if (!config.newsOn || config.newsCats.alerts === false) return;
   try { market.alerts = await news.alerts(market.btc); pushMarket(); } catch (e) { logError(e); }
 }
 // Wer ist online (Steam-Freunde, Discord-Server), alle 2 Minuten
 async function pollSocial() {
+  if(!diagnostic.enabled("network"))return;
   const [st, dc] = await Promise.all([
     config.steamOn !== false && (config.steamKey || config.steamId) ? social.steam(config.steamKey, config.steamId) : null,
     config.discordOn !== false && config.discordServers ? social.discord(config.discordServers) : null,
@@ -2431,6 +2457,7 @@ async function pollSocial() {
 }
 // Discord alle 30 Sekunden abfragen, damit Freundesliste und Overlay mitbekommen, wer in den Sprachkanal kommt oder geht
 async function pollDiscordFast() {
+  if(!diagnostic.enabled("network"))return;
   if (config.discordOn === false || !config.discordServers) return;
   market.discord = await social.discord(config.discordServers); pushMarket(); skSync(); updateOverlay();
 }
@@ -2457,6 +2484,7 @@ async function itunesArt(title, artist) {
 }
 const mediaCmdFile = () => path.join(app.getPath("userData"), "media-cmd.txt");
 function startMedia() {
+  if (!diagnostic.enabled("integrations")) return;
   if (process.platform !== "win32" || config.mediaOn === false || mediaProc) return;
   const ps = path.join(__dirname, "media", "media.ps1");
   if (!fs.existsSync(ps)) return;
@@ -2513,6 +2541,7 @@ async function detectDiscordSelf() {
   if (alive()) win.webContents.send("discord-self", me);
 }
 function startDcBot() {
+  if (!diagnostic.enabled("integrations")) return;
   dcbot.start(config.discordOn !== false ? config.dcBotToken : "", (snap) => {
     botSnap = snap; clearTimeout(botT);
     // kurz sammeln, beim Verbinden kommen viele Ereignisse auf einmal
@@ -2560,7 +2589,7 @@ function liveVoice() {
   for (const [id, s] of skWins) if (s.members && Date.now() - s.t < 6000) ch[id] = s.members;
   return { auth: skNeedsAuth, ch };
 }
-setInterval(async () => {
+diagnostic.enabled("integrations") && setInterval(async () => {
   if (!skWins.size) { if (skSentSig !== "") { skSentSig = ""; skNeedsAuth = false; win?.webContents.send("voice-live", liveVoice()); } return; }
   let auth = false;
   for (const [, s] of skWins) {
@@ -2895,6 +2924,7 @@ function fileIndexInfo() {
   try { const st = fs.statSync(files.INDEX()); return { ok: true, ts: st.mtimeMs, mb: Math.round(st.size / 1048576) }; } catch { return { ok: false }; }
 }
 function startMarket() {
+  if (!diagnostic.enabled("network")) return;
   setTimeout(pollSocial, 4000); setInterval(pollSocial, 120e3); setInterval(pollDiscordFast, 30e3);
   pollPrice().then(pollAlerts); setTimeout(pollFeeds, 3000);
   setTimeout(pollWeather, 5000); setInterval(pollWeather, 15 * 60e3);
@@ -3011,7 +3041,7 @@ function followDock() {
   syncNews();
 }
 // Sicherheitsnetz: Fenster, die per setBounds (Animation, Skalierung, Fernwartung) wandern, melden nicht immer "move": Lage alle 250 ms abgleichen
-{ let lastJ = ""; setInterval(() => { if (!config.newsDock || !newsAlive() || !alive() || !expanded) return; const j = win.getBounds(), k = j.x + "," + j.y + "," + j.width + "," + j.height; if (k !== lastJ) { lastJ = k; followDock(); } }, 250); }
+{ let lastJ = ""; diagnostic.enabled("desktop") && setInterval(() => { if (!config.newsDock || !newsAlive() || !alive() || !expanded) return; const j = win.getBounds(), k = j.x + "," + j.y + "," + j.width + "," + j.height; if (k !== lastJ) { lastJ = k; followDock(); } }, 250); }
 // Discord-App: Sprachkanal öffnen bzw. beitreten oder Profil einer Person (dort „Nachricht“); nur diese zwei Formen
 ipcMain.handle("dc-join", async (_e, gid, cid) => {
   if (config.dcJoinBot === false || !/^\d{15,22}$/.test(String(gid)) || !/^\d{15,22}$/.test(String(cid))) return { ok: false, reason: "aus" };
@@ -3154,5 +3184,5 @@ app.on("window-all-closed", () => app.quit());
       fs.writeFileSync(MEM_LOG, lines.slice(-600).join("\n") + "\n");
     } catch {}
   };
-  app.whenReady().then(() => { setTimeout(memRow, 60e3); setInterval(memRow, 5 * 60e3); });
+  app.whenReady().then(() => { if(!diagnostic.enabled("local"))return; setTimeout(memRow, 60e3); setInterval(memRow, 5 * 60e3); });
 }

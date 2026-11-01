@@ -1,24 +1,63 @@
 {
   "name": "argus-diagnostic-controller",
-  "version": "0.58.27-diagnose.3",
+  "version": "0.58.27-diagnose.4",
   "private": true,
   "description": "Separate Argus-Startdiagnose, kein normales Argus-Update",
   "author": "Argus",
   "license": "GPL-3.0-only",
   "main": "controller.cjs",
-  "dependencies": {"adm-zip": "0.5.16"},
-  "devDependencies": {"electron": "33.2.1", "electron-builder": "25.1.8"},
+  "dependencies": {
+    "adm-zip": "0.5.16",
+    "electron-updater": "6.8.9",
+    "semver": "7.7.3"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
   "build": {
     "appId": "de.argus.startdiagnose.controller",
     "productName": "Argus Startdiagnose",
     "executableName": "Argus-Startdiagnose-Kontrolle",
     "asar": false,
     "publish": null,
-    "files": ["controller.cjs", "runner.cjs", "preload.cjs", "index.html", "ui.js", "style.css", "node_modules/adm-zip/**", "package.json"],
-    "extraResources": [{"from": "payload", "to": "diagnostic-payload"}],
-    "directories": {"output": "dist"},
+    "files": [
+      "controller.cjs",
+      "runner.cjs",
+      "preload.cjs",
+      "index.html",
+      "ui.js",
+      "style.css",
+      "diagnostic-plan.cjs",
+      "diagnostic-update.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "payload",
+        "to": "diagnostic-payload"
+      },
+      {
+        "from": "diagnostic-updater.yml",
+        "to": "app-update.yml"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
     "electronVersion": "33.2.1",
-    "win": {"target": [{"target":"nsis", "arch":["x64"]}], "signAndEditExecutable": false, "icon":"icon.ico"},
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "icon": "icon.ico"
+    },
     "nsis": {
       "guid": "40b90b90-1a84-48be-9616-3880377de926",
       "oneClick": false,
@@ -31,9 +70,11 @@
       "uninstallDisplayName": "Argus Startdiagnose (separates Diagnosepaket)",
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
-      "artifactName": "Argus-Diagnose-Setup-0.58.27-diagnose.3.exe",
+      "artifactName": "Argus-Diagnose-Setup-${version}.exe",
       "language": "1031",
-      "installerLanguages": ["de_DE"],
+      "installerLanguages": [
+        "de_DE"
+      ],
       "multiLanguageInstaller": false
     }
   }

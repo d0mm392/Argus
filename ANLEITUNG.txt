@@ -1,14 +1,17 @@
-Argus Startdiagnose 0.58.27-diagnose.3
+Argus Startdiagnose 0.58.27-diagnose.4
 
-Das aktualisierte Diagnose-Setup ersetzt die bisherige separate Startdiagnose. Keine neue Ordnerprozedur. Normale Argus-Installation und Updatekanaele bleiben unveraendert.
+Einmal das neue separate Diagnose-Setup installieren. Die bisherigen Versionen .2/.3 besitzen noch keine Updatefunktion. Danach pr?ft die Diagnose-App beim ?ffnen mit kurzem Timeout auf ausdr?cklich gekennzeichnete Diagnose-Releases. Ohne Internet bleiben alle Diagnosetests verf?gbar. Bei neuer Version auf Aktualisieren klicken; nach Download au?erhalb eines Tests Ergebnisse sichern und neu starten. Fr?here Berichte bleiben erhalten.
 
-Im bestehenden Diagnoseprogramm einzeln auswaehlen:
-1. Minimales Electron-Fenster (dieselbe Laufzeit, ohne Argus-Module und externe Inhalte).
-2. Argus ohne Hardwarebeschleunigung (dieselbe Argus-Diagnose, Medien aus).
-Der bisherige Argus-Lauf bleibt ebenfalls auswaehlbar.
+Im Diagnoseprogramm einzeln ausw?hlen und jeweils Bericht speichern:
+A. Argus-Modulimporte + Minimalfenster.
+B. Argus-Fenster ohne Hintergrundgruppen.
+C1 bis C7 schalten nacheinander Desktop, App-/Spieleerkennung, Integrationen, lokale Arbeiten, Dateiindizierung, Steam und Netzwerk/Lagebild hinzu.
+Bei erstem Abbruch die zuletzt hinzugekommene Gruppe allein (Einzelgruppe) vergleichen. Alle neuen Stufen laufen ohne Hardwarebeschleunigung. Bestehende Minimal-/Argus-Vergleiche bleiben verf?gbar.
 
-Je Auswahl auf Start klicken und bis zu 60 Sekunden warten. Jeder Klick startet genau einen Prozess mit einem eigenen frischen Profil. Keine automatische Wiederholung. Nach JEDEM Lauf Bericht speichern, bevor der naechste gestartet wird. Laufkennung und Vergleich stehen im Bericht; ZIP-Dateinamen enthalten die Laufkennung.
+Jeder Klick: genau ein Start, eigenes frisches Profil, bis zu 60 Sekunden. Keine automatischen Wiederholungen. Nach jedem Lauf den Bericht speichern, bevor der n?chste gestartet wird. ZIP-Dateinamen und Berichte enthalten eindeutige Laufkennungen und Modi.
 
-nativeFailure null bedeutet unbekannt, kein Ausschluss eines nativen Fehlers. observed bedeutet nur Beobachtungszeit erreicht und anschliessend vom Controller beendet. Exitcode und Ereignisse gemeinsam beurteilen.
+nativeFailure=null bedeutet unbekannt, kein Ausschluss eines nativen Fehlers. task:return bedeutet Aufrufr?ckkehr, nicht Abschluss asynchroner Unterarbeiten. Ein stabiler Vergleich ist kein Ursachenbeweis.
 
-Nur wenn beide Vergleiche nicht ausreichend eingrenzen: Bereich lokale Dumps aufklappen, Option fuer den naechsten einzelnen Lauf markieren und starten. Ein weiterer Dialog verlangt ausdrueckliche Einwilligung. Ohne Bestaetigung kein Start mit Dumps. Dumps koennen sensible Speicherinhalte enthalten. Nur lokale Erfassung, kein automatischer Upload, niemals im ZIP-Bericht. Ablage: %APPDATA%\argus-startdiagnose-controller\runs\<Laufkennung>\profile\local-dumps. Ein fehlender Dump schliesst keinen nativen Fehler aus. Keine Host-, Registry- oder Treiberaenderungen.
+Wenn die Gruppen nicht ausreichend eingrenzen: lokale Dumps f?r einen weiteren einzelnen Lauf anfragen. Vor Start ist ausdr?ckliche Einwilligung n?tig. Abbrechen startet keinen Lauf. Dumps k?nnen sensible Speicherinhalte enthalten. Nur lokale Erfassung; kein automatischer Upload und niemals im ZIP-Bericht. Ablage: %APPDATA%\argus-startdiagnose-controller\runs\<Laufkennung>\profile\local-dumps. Fehlender Dump schlie?t keinen nativen Fehler aus.
+
+Normale Argus-Installation und normale Updatekan?le bleiben unver?ndert. Keine Host-, Treiber- oder Schutzfunktions?nderungen erforderlich. Einzelheiten: EINGRENZUNG.md und DIAGNOSE-UPDATES.md.

@@ -1,6 +1,7 @@
 // Aktionen: Programme, Webseiten, Ordner und Dokumente öffnen, wenn der Nutzer es sagt oder tippt.
 // Erkennt einfache deutsche Befehle direkt (schnell und zuverlässig) und fällt sonst auf die KI zurück.
 const { shell } = require("electron");
+const diagnostic = require('./startup-diagnostic');
 const { spawn, execFile } = require("child_process");
 const path = require("path");
 const fs = require("fs");
@@ -113,13 +114,15 @@ function walkMenus(fn) {
   return complete;
 }
 async function refreshExtra() {
+  if(!diagnostic.enabled('apps'))return;
   if (Date.now() - extraAt < 10 * 60 * 1000 && extraApps.length) return;
   extraAt = Date.now();
   const bnet = fs.existsSync(path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Battle.net")) ? Object.entries(BNET).map(([n, code]) => ({ name: n.replace(/\b\w/g, (c) => c.toUpperCase()), uri: "battlenet://" + code, kind: "Battle.net-Spiel" })) : [];
   extraApps = [...steamGames(), ...epicGames(), ...bnet, ...(await storeApps())];
 }
-if (process.platform === "win32") setTimeout(() => refreshExtra().catch(() => {}), 5000);
+if (process.platform === "win32" && diagnostic.enabled('apps')) setTimeout(() => diagnostic.task('actions.refreshExtra',refreshExtra).catch(() => {}), 5000);
 function scanApps() {
+  if(!diagnostic.enabled('apps'))return [];
   if (apps && Date.now() - appsAt < 10 * 60 * 1000) return apps;
   const found = new Map();
   walkMenus((p, e) => {

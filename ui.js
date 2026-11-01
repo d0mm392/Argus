@@ -26,3 +26,17 @@ el('save').addEventListener('click',async()=>{
 });
 window.diagnostic.onState(render);
 window.diagnostic.state().then(render).catch(e=>{el('detail').textContent=e.message;});
+
+function renderUpdate(state){
+  el('update-text').textContent=state.text;
+  el('update-check').disabled=['checking','downloading','installing'].includes(state.status);
+  el('update-download').hidden=!['available','error'].includes(state.status)||!state.version;
+  el('update-install').hidden=state.status!=='ready';el('update-install').disabled=!state.installAllowed;
+  el('update-progress').hidden=state.status!=='downloading';el('update-progress').value=state.percent||0;
+  if(state.status==='installing')el('start').disabled=true;
+}
+for(const [id,method]of [['update-check','updateCheck'],['update-download','updateDownload'],['update-install','updateInstall']]){
+  el(id).addEventListener('click',async()=>{try{renderUpdate(await window.diagnostic[method]());}catch(error){el('update-text').textContent=error.message;}});
+}
+window.diagnostic.onUpdate(renderUpdate);
+window.diagnostic.updateState().then(renderUpdate).catch(error=>{el('update-text').textContent=error.message;});

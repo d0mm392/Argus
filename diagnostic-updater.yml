@@ -1,0 +1,3 @@
+provider: generic
+url: https://github.com/d0mm392/Argus/releases/
+updaterCacheDirName: argus-startdiagnose-controller-updater

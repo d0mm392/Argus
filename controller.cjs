@@ -1,13 +1,14 @@
 'use strict';
 const {app,BrowserWindow,ipcMain,dialog,session} = require('electron');
 const path = require('node:path');
+const {DiagnosticUpdates}=require('./diagnostic-update.cjs');
 const {Runner} = require('./runner.cjs');
 app.setName('Argus Startdiagnose');
 app.setPath('userData',path.join(app.getPath('appData'),'argus-startdiagnose-controller'));
 app.setAppUserModelId('de.argus.startdiagnose.controller');
 if (!app.requestSingleInstanceLock()) { app.exit(0); }
 else {
-  let win,runner,closing=false;
+  let win,runner,updates,closing=false;
   function trusted(event) { return win && event.sender===win.webContents && event.senderFrame===win.webContents.mainFrame; }
   function send() { if(win&&!win.isDestroyed())win.webContents.send('diagnose:state',runner.snapshot()); }
   app.on('second-instance',()=>{if(win){win.show();win.focus();}});
@@ -15,15 +16,23 @@ else {
     session.defaultSession.setPermissionRequestHandler((_wc,_permission,cb)=>cb(false));
     session.defaultSession.setPermissionCheckHandler(()=>false);
     runner = new Runner({dataRoot:app.getPath('userData'),executable:path.join(process.resourcesPath,'diagnostic-payload','Argus-Startdiagnose.exe')});
-    runner.on('state',send);
-    win=new BrowserWindow({width:680,height:650,minWidth:580,minHeight:580,resizable:true,title:'Argus Startdiagnose',autoHideMenuBar:true,
+    runner.on('state',()=>{send();if(updates&&win&&!win.isDestroyed())win.webContents.send('diagnose:update-state',updates.snapshot());});
+    win=new BrowserWindow({width:760,height:850,minWidth:580,minHeight:580,resizable:true,title:'Argus Startdiagnose',autoHideMenuBar:true,
       webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
     win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
     win.webContents.on('will-navigate',e=>e.preventDefault());
     win.loadFile('index.html');
+    updates=new DiagnosticUpdates({app,runner});
+    updates.on('state',state=>{if(win&&!win.isDestroyed())win.webContents.send('diagnose:update-state',state);});
+    win.webContents.once('did-finish-load',()=>{void updates.check();});
+    ipcMain.handle('diagnose:update-state',event=>{if(!trusted(event))throw Error('Nicht erlaubt');return updates.snapshot();});
+    ipcMain.handle('diagnose:update-check',event=>{if(!trusted(event))throw Error('Nicht erlaubt');void updates.check();return updates.snapshot();});
+    ipcMain.handle('diagnose:update-download',event=>{if(!trusted(event))throw Error('Nicht erlaubt');void updates.download().catch(()=>{});return updates.snapshot();});
+    ipcMain.handle('diagnose:update-install',event=>{if(!trusted(event))throw Error('Nicht erlaubt');return updates.install();});
     ipcMain.handle('diagnose:state',event=>{if(!trusted(event))throw Error('Nicht erlaubt');return runner.snapshot();});
     ipcMain.handle('diagnose:start',async (event,mode,dumps)=>{
       if(!trusted(event))throw Error('Nicht erlaubt');
+      if(updates.installing)throw Error('Diagnose-Update wird installiert.');
       if(runner.active)throw Error('Es laeuft bereits eine Diagnose.');
       let consent=false;
       if(dumps===true){

@@ -7,8 +7,9 @@ const {EventEmitter} = require('node:events');
 const {StringDecoder} = require('node:string_decoder');
 
 const MAX_BYTES = 1024 * 1024;
-const VERSION = '0.58.27-diagnose.3';
-const MODES = ['argus', 'minimal', 'argus-no-gpu'];
+const VERSION = '0.58.27-diagnose.4';
+const {plan,modes:MODES}=require('./diagnostic-plan.cjs');
+
 function redact(value) {
   return String(value)
     .replace(/C:[\\/]Users[\\/][^\\/\s"<>]+/gi, '%USERPROFILE%')
@@ -74,7 +75,7 @@ class Runner extends EventEmitter {
     const dir = path.join(this.root,'runs',id);
     const report = path.join(dir,'report');
     const profile = path.join(dir,'profile');
-    this.last = {dir,report,profile, summary:{version:VERSION,id,mode,dumpConsent,hardwareAccelerationDisabled:mode==='argus-no-gpu',started:new Date().toISOString(),status:'starting',freshProfile:true,
+    this.last = {dir,report,profile, summary:{version:VERSION,id,mode,plan:plan(mode),dumpConsent,hardwareAccelerationDisabled:plan(mode).disableGpu,started:new Date().toISOString(),status:'starting',freshProfile:true,
       profileDescription:'Frisches isoliertes Diagnoseprofil ohne Originaldaten. Erfolg bestaetigt NICHT das Originalprofil.',
       observationSeconds:this.duration/1000,collectionErrors:[],startErrors:[],exitCode:null,exitSignal:null,controllerStopped:false}};
     try {
@@ -140,7 +141,8 @@ class Runner extends EventEmitter {
       let events=[];
       try { events=fs.readFileSync(path.join(this.last.report,'startup-markers.jsonl'),'utf8').split('\n').filter(Boolean).map(line=>JSON.parse(line)); }
       catch(e) { this.error('Startmarkierungen auswerten',e); }
-      summary.windowLoaded=events.some(row=>row.event==='window:ready-to-show');
+      summary.windowReadyToShow=events.some(row=>row.event==='window:ready-to-show');
+      summary.windowLoaded=summary.windowReadyToShow||events.some(row=>row.event==='contents:did-finish-load');
       summary.ready=events.some(row=>row.event==='ready');
       summary.nativeFailureEvidence=events.filter(row=>['renderer:gone','child:gone'].includes(row.event) && !['clean-exit','killed'].includes(row.detail?.reason));
       summary.nativeFailure=summary.nativeFailureEvidence.length ? true : null;
@@ -149,6 +151,12 @@ class Runner extends EventEmitter {
       summary.regularExitMarkers=events.filter(row=>['process:exit','before-quit','will-quit','app:quit','app:exit'].includes(row.event));
       summary.lastHeartbeat=events.filter(row=>row.event==='heartbeat').at(-1)?.time || null;
       summary.dumpCaptureStarted=events.some(row=>row.event==='dump:capture-enabled');
+      summary.recordedPlan=events.find(row=>row.event==='plan')?.detail || null;
+      summary.jsFailureEvidence=events.filter(row=>['exception','task:throw','task:rejected','background:error','background:throw'].includes(row.event));
+      const pending=new Map();
+      for(const row of events){if(row.event==='task:return'&&row.detail?.promise)pending.set(row.detail.id,row.detail);if(['task:resolved','task:rejected','task:throw'].includes(row.event))pending.delete(row.detail?.id);}
+      summary.unsettledObservedPromises=[...pending.values()];
+      summary.recentLifecycle=events.filter(row=>/^(task:|background:|native:|index:|timer:|group:)/.test(row.event)).slice(-40);
       summary.status=keepActive?'stop-failed':summary.startError?'start-failed':summary.observationCompleted&&summary.controllerStopped&&summary.ready&&summary.windowLoaded&&summary.nativeFailure===null?'observed':'aborted';
       summary.reportReady=true;
       summary.finished=new Date().toISOString();
@@ -166,6 +174,13 @@ class Runner extends EventEmitter {
       ].join('\r\n'));
     } catch(e) { this.error('Ergebnis abschliessen',e); this.last.summary.status='collection-failed'; }
     finally { this.active=keepActive;this.finishing=false;if(!keepActive)this.child=null;this.last.summary.reportReady=true;this.update(); }
+  }
+  preserveResults() {
+    if(this.active)throw Error('Vor einem Update muss der Diagnosetest beendet sein.');
+    if(this.last && !this.last.summary.reportReady)throw Error('Das letzte Ergebnis ist noch nicht gesichert.');
+    // Each run already persists independently; additionally save the current export before restart.
+    if(this.last)this.exportZip(path.join(this.last.dir,'Bericht-'+this.last.summary.id+'.zip'));
+    return true;
   }
   exportZip(destination) {
     if (!this.last || (this.active && !this.last.summary.reportReady)) throw Error('Bitte zuerst die Diagnose abschliessen.');

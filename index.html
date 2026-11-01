@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; connect-src 'none'">
 <title>Argus Startdiagnose</title><link rel="stylesheet" href="style.css"></head>
 <body><main>
-  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.3</div>
+  <div class="label">SEPARATES DIAGNOSEPAKET · 0.58.27-diagnose.4</div>
   <h1>Argus Startdiagnose</h1>
   <p class="intro">Wir prüfen den Start in einer eigenen Testumgebung. Diese Oberfläche bleibt auch bei einem Argus-Absturz geöffnet.</p>
   <div class="notice"><strong>Frisches Diagnoseprofil</strong><p>Deine Installation und dein Originalprofil werden nicht verändert. Ein erfolgreicher Test bestätigt nicht, dass dein bisheriges Profil funktioniert.</p></div>
@@ -12,7 +12,24 @@
     <option value="argus">Argus-Diagnose (bisheriger Vergleich)</option>
     <option value="minimal">1. Minimales Electron-Fenster</option>
     <option value="argus-no-gpu">2. Argus ohne Hardwarebeschleunigung</option>
+    <option value="modules">A. Argus-Modulimporte + Minimalfenster</option>
+    <option value="core">B. Argus-Fenster ohne Hintergrundgruppen</option>
+    <option value="stage-1">C1. Zusaetzlich Desktopfunktionen</option>
+    <option value="stage-2">C2. Zusaetzlich App-/Spieleerkennung (ab 5 s, PowerShell)</option>
+    <option value="stage-3">C3. Zusaetzlich Integrationen</option>
+    <option value="stage-4">C4. Zusaetzlich lokale KI / Statusarbeiten</option>
+    <option value="stage-5">C5. Zusaetzlich Dateiindizierung (ab 8 s)</option>
+    <option value="stage-6">C7. Zusaetzlich Steam-Abfragen</option>
+    <option value="stage-7">C7. Zusaetzlich Netzwerk / Lagebild</option>
+    <option value="core-desktop">Einzelgruppe: Fenster + desktop</option>
+    <option value="core-apps">Einzelgruppe: Fenster + apps</option>
+    <option value="core-integrations">Einzelgruppe: Fenster + integrations</option>
+    <option value="core-local">Einzelgruppe: Fenster + local</option>
+    <option value="core-index">Einzelgruppe: Fenster + index</option>
+    <option value="core-steam">Einzelgruppe: Fenster + steam</option>
+    <option value="core-network">Einzelgruppe: Fenster + network</option>
   </select>
+  <p>Die neuen Stufen A bis C7 und Einzelgruppen laufen durchgehend ohne Hardwarebeschleunigung. Schrittweise zuschalten; beim ersten Abbruch die neu hinzugekommene Gruppe einzeln vergleichen. Ein stabiler Lauf beweist keine Fehlerfreiheit.</p>
   <p>Jeder Klick: genau ein Start, eigenes frisches Profil, hoechstens 60 Sekunden Beobachtung. Den Bericht vor dem naechsten Lauf speichern.</p>
   <details><summary>Nur falls die Vergleiche nicht ausreichen: lokale Dumps</summary>
   <p>Dumps koennen sensible Speicherinhalte enthalten. Nur mit ausdruecklicher Einwilligung fuer einen einzelnen Lauf. Keine Aufnahme in den Bericht, kein Upload. Keine Host- oder Treiberaenderungen.</p>
@@ -21,5 +38,11 @@
   <section aria-live="polite" aria-atomic="true"><h2 id="status">Bereit für einen Test</h2><p id="detail">Ein Klick startet genau einen Versuch. Die Beobachtung dauert bis zu einer Minute.</p><p id="errors"></p></section>
   <button id="save" class="secondary" type="button" disabled>Bericht speichern</button>
   <p id="saved" role="status"></p>
-  <footer>Nur Startmarkierungen und gefilterte Diagnoseausgaben. Keine Nachrichten, Zugangsdaten, vollständigen Profile oder Speicherabbilder. Kein automatischer Upload.</footer>
+  <section aria-label="Diagnose aktualisieren"><h2>Diagnose-App aktualisieren</h2>
+  <p id="update-text" role="status">Suche nach Diagnose-Updates ...</p>
+  <progress id="update-progress" max="100" value="0" hidden></progress>
+  <button id="update-check" class="secondary">Erneut pruefen</button>
+  <button id="update-download" hidden>Aktualisieren</button>
+  <button id="update-install" hidden>Ergebnisse sichern und neu starten</button></section>
+  <footer>ZIP-Berichte enthalten ausgewaehlte, gefilterte Diagnoseausgaben und keine vollstaendigen Profile oder Speicherabbilder. Optionale Dumps bleiben nach ausdruecklicher Einwilligung ausschliesslich lokal. Kein automatischer Upload.</footer>
 </main><script src="ui.js"></script></body></html>

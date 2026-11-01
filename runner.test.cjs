@@ -87,3 +87,25 @@ test('native event is positive evidence, missing markers remain unknown; consent
   f.runner.start('minimal');f.exit();assert.equal(f.runner.snapshot().nativeFailure,null);
   assert.equal(f.runner.snapshot().dumpConsent,false);
 });
+test('all staged modes record their actual isolated comparison plan; previous results survive restart preservation',()=>{
+  const {plan,modes}=require('./diagnostic-plan.cjs');const f=fixture();let first;
+  for(const mode of modes.filter(m=>plan(m).staged)){
+    f.runner.start(mode);const profile=f.runner.last.profile;f.mark();f.exit(0xFFFF7003);
+    assert.deepEqual(f.runner.snapshot().plan,plan(mode));assert.equal(f.runner.snapshot().hardwareAccelerationDisabled,true);
+    f.runner.preserveResults();assert(fs.existsSync(path.join(f.runner.last.dir,'Bericht-'+f.runner.snapshot().id+'.zip')));
+    if(first)assert(fs.existsSync(first));else first=path.join(profile,'startup-markers.jsonl');
+  }
+  assert.equal(f.launches,modes.filter(m=>plan(m).staged).length);
+});
+test('promise return is not completion: unresolved and rejected work is distinguished in summary',()=>{
+  const f=fixture();f.runner.start('core');f.mark();
+  fs.appendFileSync(path.join(f.runner.last.profile,'startup-markers.jsonl'),[
+    {event:'task:return',detail:{id:1,name:'pending',promise:true}},
+    {event:'task:return',detail:{id:2,name:'completed',promise:true}},
+    {event:'task:resolved',detail:{id:2}},
+    {event:'task:return',detail:{id:3,name:'failed',promise:true}},
+    {event:'task:rejected',detail:{id:3}}
+  ].map(JSON.stringify).join('\n')+'\n');
+  f.exit(0xFFFF7003);assert.deepEqual(f.runner.snapshot().unsettledObservedPromises,[{id:1,name:'pending',promise:true}]);
+  assert.equal(f.runner.snapshot().jsFailureEvidence.length,1);assert.equal(f.runner.snapshot().nativeFailure,null);
+});

@@ -19,7 +19,7 @@ process.env.JARVIS_INDEX = path.join(diagnosticRoot, 'dateiindex.txt');
 require('./startup-diagnostic').init(app, diagnosticRoot);
 
 
-if (process.env.ARGUS_DIAGNOSTIC_MODE === 'argus-no-gpu') app.disableHardwareAcceleration();
+if (require('./diagnostic-plan.cjs').plan(process.env.ARGUS_DIAGNOSTIC_MODE || 'argus').disableGpu) app.disableHardwareAcceleration();
 if (process.env.ARGUS_DIAGNOSTIC_DUMPS === 'consented') {
   // Ausschliesslich lokal, pro Lauf; keine WER-Registry oder Host-Konfiguration.
   const dumps = path.join(diagnosticRoot, 'local-dumps');

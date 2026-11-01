@@ -1,5 +1,5 @@
 {
-  "version": "0.58.27-diagnose.3",
+  "version": "0.58.27-diagnose.4",
   "baseArgusCommit": "d0d941630be746fe39bf2e97ac67b6c3b73276b1",
   "originalInstrumentedFiles": {
     "boot.js": "421f7d5cd9e1ecacdc0b7746043de1107c5cad5e61db39a6085161cb41005b0b",
@@ -11,13 +11,18 @@
     "Additional window:ready-to-show marker",
     "Minimal local Electron comparison before Argus modules",
     "Per-run hardware acceleration disable before ready",
-    "Explicitly consented local-only crash capture"
+    "Explicitly consented local-only crash capture",
+    "Staged feature groups including import-time Appx enumeration",
+    "Deferred timer/promise/native addon/child process lifecycle observations",
+    "PC-info and app enumeration guarded by selected group"
   ],
   "finalPayload": {
-    "boot.js": "ab7056df1d611a0563b9567c3bf82e71cfb486e474667406a1a0e2a073042d12",
-    "main.js": "bbd504c46e3b0471a6d5ff596aae7a401ea3ba80436c7cc49117b706de0fc9f4",
-    "startup-diagnostic.js": "d100cb527c8c15562b6d859558f843f7da596f49f046e576d17d6fafd0772451",
-    "minimal-window.js": "2bdff6ac14b79b2af963c8fb0b0a2459d65b6095737d4bd08dd42a18f61e324f",
+    "boot.js": "35093114514e3240b88e4309ae1acaebd0a8ec9323e59c8ce3455b7559f48045",
+    "main.js": "66159a700dd5573523c3046af692d3891b74543848f071cfb96465d254faceff",
+    "startup-diagnostic.js": "c27e545099535fec628303b7d58f3e3436958d9d5de12c144c603ba5a9712ab2",
+    "actions.js": "b8f452af359f884db939d61ba9aef8d528e1aeaba3bea962705f258d3d9c5fbb",
+    "minimal-window.js": "e37de23ccb2987ec2381e50e78b89501e5d95237e933cbebbfd84263f76a940b",
     "minimal-window.html": "c60c7ebaaff11531abc2599981ea19c03b02a7d406931fd038b1a67217737df7"
-  }
+  },
+  "diagnosticPlanSHA256": "c737ef95ee56c4e50eb34a8a0e395f6456560a151467f4688b35a81d673a7550"
 }
