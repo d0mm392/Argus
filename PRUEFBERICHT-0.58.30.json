@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "version": "0.58.30",
+  "source": "6e546e64676b3cfef6ab9b0ff990dfd3679814b9",
+  "build": {
+    "status": "PASS",
+    "version": "0.58.30",
+    "source": "6e546e64676b3cfef6ab9b0ff990dfd3679814b9",
+    "productFiles": 91,
+    "manifestFiles": 4823,
+    "installerSHA256": "044bca10b2795d8b0ca065e95939e81e92c34038c49b2770de70cc527a82ca3a",
+    "cspUnchanged": true,
+    "startfixPreserved": true
+  },
+  "vm": {
+    "status": "PASS",
+    "version": "0.58.30",
+    "installerSHA256": "044bca10b2795d8b0ca065e95939e81e92c34038c49b2770de70cc527a82ca3a",
+    "manifestFiles": 4823,
+    "systemEnd": [
+      "restart",
+      "shutdown",
+      "logoff"
+    ],
+    "normalQuit": true,
+    "forcedProcessTermination": true,
+    "settingsAndLocationsPreserved": true,
+    "installedRenderer": true,
+    "windowsMessagesObserved": [
+      "WM_QUERYENDSESSION",
+      "WM_ENDSESSION(wParam=TRUE)",
+      "session-end"
+    ],
+    "testHarness": "Interactive Task Scheduler launches Node, which starts Argus through Explorer Shell.Application; lifecycle verification waits for the real normal process exit.",
+    "invalidatedAttempts": [
+      "Direct guest-control/task child launches could be terminated before Windows window notifications. These were replaced by independent Explorer launches.",
+      "One Windows/VirtualBox restart stalled after guest services exited. The VM was reset for recovery; that attempt was not counted as a completed restart. A subsequent complete restart passed.",
+      "The first post-logoff launcher could not read HKCU while the user hive was unloaded. Marker removal and absence of Argus/Explorer were checked directly; the next-start check was completed after automatic login on a regular reboot."
+    ],
+    "startupFixBaseline": "d376e7df3c4668215e58833454ea73ce53f46e8c"
+  },
+  "nodeTests": {
+    "pass": 83,
+    "fail": 0,
+    "skip": 0
+  },
+  "rendererTests": {
+    "pass": 5,
+    "fail": 0
+  },
+  "weatherScenarios": [
+    "HTTP 503",
+    "real 12-second stalled HTTP body timeout",
+    "offline socket failure",
+    "recovery",
+    "persisted stale cache after restart",
+    "empty cache outage",
+    "20 concurrent callers coalesced",
+    "bounded 30s/120s/15min retry scheduling",
+    "locations changed during request"
+  ],
+  "knownPreexistingTests": {
+    "suite": "tests/hotfix.test.js",
+    "pass": 14,
+    "fail": 3,
+    "identicalOnBaseline": "d376e7df3c4668215e58833454ea73ce53f46e8c",
+    "reason": "Legacy tests reject the isolated shortcut worker spawn introduced by 0.58.29 and match the obsolete boot.js comment marker."
+  },
+  "limitations": [
+    "Colleague root cause remains unconfirmed without time-matched logs/configuration.",
+    "Legacy numeric running markers have no end timestamp; interruption is reported with unknown cause and no historical log attribution.",
+    "Forced power loss cannot be distinguished from forced process termination without confirmed session-end.",
+    "Installer is unsigned."
+  ],
+  "stableUnchanged": "18598e99467d0299657a1e8650d5b6301029a739",
+  "localWeatherEvidence": {
+    "weatherEnabled": true,
+    "colleagueCauseConfirmed": false,
+    "settingsModified": false,
+    "customLocations": 2,
+    "localResponseStatus": 503,
+    "responseTimes": [
+      "2026-11-02T13:25:32.469Z",
+      "2026-11-02T13:25:32.599Z",
+      "2026-11-02T13:25:32.656Z",
+      "2026-11-02T15:39:18.245Z",
+      "2026-11-02T15:39:18.363Z",
+      "2026-11-02T15:39:22.618Z"
+    ]
+  }
+}

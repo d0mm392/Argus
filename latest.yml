@@ -1,21 +1,21 @@
-version: 0.58.29
+version: 0.58.30
 files:
-  - url: Argus-Setup-0.58.29.exe
-    sha512: IM2NSWwPHN6rG3sOk84Juo9/CB914D//bF3UvVoYYPptOfYlLtV33fiTkec9qOtYUJTeNYf5uwrWHnp36yoVoA==
-    size: 93488961
-path: Argus-Setup-0.58.29.exe
-sha512: IM2NSWwPHN6rG3sOk84Juo9/CB914D//bF3UvVoYYPptOfYlLtV33fiTkec9qOtYUJTeNYf5uwrWHnp36yoVoA==
-releaseDate: '2026-11-01T16:25:33.427Z'
-releaseName: "Argus 0.58.29 - Absturzbegrenzung bei Verknüpfungen"
+  - url: Argus-Setup-0.58.30.exe
+    sha512: tbQWIvPeSCODUcCOZu1DG5eZ9UP3RCgNmH2nwIe+SiSvXv4Bc067d/Anh/oHSqifjujK6fbymhbJ2fJUEdPK/w==
+    size: 93490656
+path: Argus-Setup-0.58.30.exe
+sha512: tbQWIvPeSCODUcCOZu1DG5eZ9UP3RCgNmH2nwIe+SiSvXv4Bc067d/Anh/oHSqifjujK6fbymhbJ2fJUEdPK/w==
+releaseDate: '2026-11-02T16:22:26.559Z'
+releaseName: "Argus 0.58.30 – Systemende und Wetter"
 releaseNotes: |
-  # Argus 0.58.29 – Absturzbegrenzung bei Windows-Verknüpfungen
+  # Argus 0.58.30 – Windows-Systemende und Wetterausfälle
   
-  Die native Electron-Funktion `shell.readShortcutLink` läuft jetzt ausschließlich in einem kurzlebigen Helferprozess. Das gilt für die Store-App-Kollisionsprüfung und für die Auflösung von Programmverknüpfungen. Ein nativer Helferabbruch beendet dadurch nicht mehr den Argus-Hauptprozess.
+  - Bestätigtes Windows-Systemende entfernt den Laufmarker auch dann, wenn `will-quit` ausbleibt. Kein Blockieren des Herunterfahrens. Erzwungene Prozessabbrüche bleiben erkennbar, auch ohne Fehlereintrag.
+  - Laufmarker enthalten ein Lebenszeichen. Fehlerkontext wird auf dessen zeitliche Nähe begrenzt und ausdrücklich nicht als nachgewiesene Ursache bezeichnet. Alte Wetterfehler werden nicht einem späteren Abbruch zugeschrieben.
+  - Eine zweite Instanz beendet sich vor der Marker-Verwaltung.
+  - Letzte erfolgreiche Wetterdaten werden separat vom Einstellungsprofil gespeichert. Bei Ausfall erscheinen sie als veraltet mit Zeitstempel, auch nach einem Neustart. Ohne Daten erscheint „Wetterdienst vorübergehend nicht erreichbar“.
+  - Wetterabfragen laufen gemeinsam und ohne Überlappung. Nach Fehlern folgen zwei Wiederholungen nach 30 Sekunden und 2 Minuten, danach der normale 15-Minuten-Takt. Gleichartige Fehler werden während eines Ausfalls nur einmal protokolliert.
+  - Koordinaten und Wetterantworten werden geprüft; fehlende aktuelle Temperaturwerte werden nicht als 0 °C übernommen. Orte und Einstellungen bleiben erhalten.
+  - Der veröffentlichte Startfix 0.58.29 bleibt enthalten. Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.
   
-  Unvollständige Antworten, fehlerhafte Protokolle, Zeitüberschreitungen und ein abnormaler Prozessabschluss werden abgelehnt. Es gibt keine automatische Helfer-Neustartschleife. Bestehende Pfad- und Startschutzprüfungen bleiben erhalten; nach der asynchronen Verknüpfungsauflösung wird die Quelldatei erneut geprüft.
-  
-  **Einschränkung:** Bricht der Helfer ab, kann die Store-App-Erkennung für diese Sitzung ausfallen. Nicht vollständig geprüfte App-IDs werden nicht zum Start freigegeben. Eine betroffene Programmverknüpfung kann ebenfalls nicht über Argus gestartet werden.
-  
-  Die Diagnose .6 wurde auf dem betroffenen Rechner im Modus `full-normal` bestätigt: 60 Sekunden, alle sieben Gruppen, `disableGpu=false`, Argus blieb ohne JS-Fehler aktiv. Der Helfer brach erneut unmittelbar vor dem nativen Zugriff bei Index 38 mit `0xFFFF7003` ab. Das belegt eine erfolgreiche Absturzbegrenzung. **Der native Grundfehler ist weiterhin nicht behoben.** Die 60 Sekunden sind keine Aussage über unbegrenzt lange Laufzeit oder andere Absturzursachen.
-  
-  Avatar-Fix und Namensbereinigung aus 0.58.28 bleiben erhalten. Normale App-ID, Installationskennung, Profile und Updateadresse bleiben kompatibel. Diagnose-Updater und normale Updates bleiben getrennt; Stable wird nicht verändert. Keine Änderung an Treibern oder Schutzfunktionen, keine automatische Dump-Erfassung oder Dump-Uploads.
+  Die beim Kollegen fehlenden Daten sind ohne dessen zugehörige Diagnose nicht eindeutig den beobachteten HTTP-503-Antworten zuzuordnen. Die Behandlung vorübergehender Ausfälle wurde unabhängig davon geprüft.
