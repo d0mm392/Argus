@@ -206,9 +206,9 @@
     { key: "mPool", w: "mPool", name: "POOL 10 MIN", page: "Mining", ang: 0.9, ph: 6.4, get: () => minePool()?.hr?.m10 ?? undefined, txt: (v) => fmtHash(v), tip: () => "Hashrate beim Pool (OCEAN)" },
     { key: "mHp", w: "mHashprice", name: "HASHPRICE", page: "Mining", ang: 1.6, ph: 7.4, get: () => mineData?.net?.hashprice?.[btcCur === "EUR" ? "eur" : "usd"] ?? undefined, txt: (v) => money(v, btcCur === "EUR" ? "EUR" : "USD") + " /PH/Tag" },
     // Wetter am Standort: Symbol und Temperatur, Ort als Name, Einzelheiten im Tooltip
-    { key: "wx", w: "weather", name: "", ang: 1.3, ph: 8.4, get: () => wxData?.data?.cur?.temp, txt: (v) => wmo(wxData.data.cur.code, wxData.data.cur.day)[0] + " " + Math.round(v) + " °C",
+    { key: "wx", w: "weather", name: "", ang: 1.3, ph: 8.4, get: () => wxData?.data?.cur?.temp, txt: (v) => wmo(wxData.data.cur.code, wxData.data.cur.day)[0] + " " + Math.round(v) + " °C" + (wxData?.error ? " (alt)" : ""),
       label: () => (wxData?.loc?.city || "Wetter").toUpperCase().slice(0, 14),
-      tip: () => { const c = wxData?.data?.cur, d = wxData?.data?.days?.[0]; return c ? `${wmo(c.code, c.day)[1]}, gefühlt ${Math.round(c.feels)} °C, Wind ${Math.round(c.wind)} km/h` + (d ? `\nHeute ${Math.round(d.min)} bis ${Math.round(d.max)} °C, Regen ${d.rain ?? 0} %` : "") : ""; } },
+      tip: () => { const c = wxData?.data?.cur, d = wxData?.data?.days?.[0]; return c ? (wxData.error ? `Veraltete Wetterdaten · Stand ${new Date(wxData.ts).toLocaleString("de-DE")}\n` : "") + `${wmo(c.code, c.day)[1]}, gefühlt ${Math.round(c.feels)} °C, Wind ${Math.round(c.wind)} km/h` + (d ? `\nHeute ${Math.round(d.min)} bis ${Math.round(d.max)} °C, Regen ${d.rain ?? 0} %` : "") : ""; } },
     // Wer online ist: Steam-Freunde und Discord-Server; Klick öffnet das Lagebild
     { key: "steam", w: "steam", name: "STEAM", ang: 0.55, ph: 6.1, get: () => market?.steam?.online?.length, txt: (v) => v + " online",
       cycle: () => (market?.steam?.online || []).map((f) => f.name + (f.game ? " · " + f.game : "")),
