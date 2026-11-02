@@ -33,13 +33,22 @@
     if (k === "wellen") for (let i = 0; i < 4 + Math.round(bg.amt * 2); i++) P({ y: 0.25 + i * 0.12, amp: 0.025 + rnd() * 0.03, f: 1 + rnd() * 2, sp: 0.1 + rnd() * 0.15, ph: rnd() * 6.3 });
     if (k === "nebel" || k === "wolken") for (let i = 0; i < Math.max(4, n(k === "nebel" ? 9 : 6)); i++) P({ x: rnd() * bg.w, y: (k === "wolken" ? 0.05 + rnd() * 0.45 : rnd()) * bg.h, r: 120 + rnd() * 220, vx: 4 + rnd() * 8, a: 0.05 + rnd() * 0.07 });
   }
+  // Mindestabstand zweier Hintergrundbilder. Grundsätzlich reichen 30 Bilder/s, in Ruhe weniger.
+  // Bei „Flüssig“ gilt die gewählte Ruhe-Bildrate auch hier, 60 aber nur, wenn sie ausdrücklich gewählt ist. Die sparsame Stufe bleibt wie bisher.
+  // 1 ms Spielraum: Der Abstand liegt sonst genau auf dem Bildschirmtakt, und kleinste Zeitabweichungen ließen einzelne Bilder aus (Haken)
+  function bgMinMs() {
+    if (window.videoBusy?.() || lite) return 66;
+    if (keepsIdleFps()) return 1000 / (fpsIdle > 30 ? Math.min(fpsIdle, fpsMax) : 30) - 1;
+    const idle = performance.now() - lastAct;
+    return (idle > 8000 ? Math.max(1000 / 30, 1000 / Math.min(fpsIdle, idle > 60000 ? 10 : 24)) : 1000 / 30) - 1;
+  }
   function bgFrame(now) {
     bg.raf = 0;
-    const live = bg.mode !== "aus" && expanded && !setOpen && !document.hidden && !(gameMode && sys?.fullscreen);
+    const live = bg.mode !== "aus" && expanded && !setOpen && !document.hidden && presentationState.visible && !(gameMode && sys?.fullscreen);
     bg.cv.classList.toggle("on", live);
     if (!live) return;
     bg.raf = requestAnimationFrame(bgFrame);
-    if (now - bg.last < (window.videoBusy?.() ? 66 : lite ? 66 : performance.now() - lastAct > 8000 ? Math.max(33, 1000 / Math.min(fpsIdle, performance.now() - lastAct > 60000 ? 10 : 24)) : 33)) return; // 30 Bilder pro Sekunde reichen für so ruhige Bewegung, in Ruhe weniger
+    if (now - bg.last < bgMinMs()) return;
     const dt = Math.min(0.1, (now - (bg.last || now)) / 1000); bg.last = now;
     const w = bg.cv.clientWidth, h = bg.cv.clientHeight; if (!w || !h) return;
     if (w !== bg.w || h !== bg.h) { bg.w = bg.cv.width = w; bg.h = bg.cv.height = h; bgBuild(); } // Pixelzahl 1:1, nicht ×DPI: weicher Hintergrund braucht keine Schärfe

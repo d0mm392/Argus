@@ -386,6 +386,8 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) animResume = true; });
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) addEventListener(ev, () => { lastAct = performance.now(); }, { passive: true, capture: true });
   // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
+  // Flüssig: Wer eine höhere Ruhe-Bildrate gewählt hat, behält sie auch nach einer Minute ohne Maus (die gibt es im inaktiven Fenster immer). Die sparsamen Stufen bleiben wie bisher, das hebt die Last nicht pauschal an
+  const keepsIdleFps = () => presentationState.mode === "fluid" && presentationState.visible && fpsIdle > 15;
   let videoWin = false; window.argus.onVideoWin?.((v) => { videoWin = v; });
   window.videoBusy = () => videoWin || !!(window.videoEmbed?.yt || window.videoEmbed?.tw);
   function frame(now, once) {
@@ -399,9 +401,7 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    // Flüssig: Wer eine höhere Ruhe-Bildrate gewählt hat, behält sie auch nach einer Minute ohne Maus (die gibt es im inaktiven Fenster immer). Die sparsamen Stufen bleiben wie bisher, das hebt die Last nicht pauschal an
-    const keepIdleFps = presentationState.mode === "fluid" && presentationState.visible && fpsIdle > 15;
-    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 && !keepIdleFps ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 && !keepsIdleFps() ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
     if (!once && now - lastT < (window.videoBusy() && !drag ? Math.max(minMs, 33) : minMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)
