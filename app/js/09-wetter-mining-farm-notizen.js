@@ -34,7 +34,7 @@
     $("wx").hidden = !wxOn; if (!wxOn) return fitPanel?.();
     const places = wxData?.places || []; wxPg.fit(1 + places.length); wxPg.dots();
     const pl = wxPg.i > 0 ? places[wxPg.i - 1] : null;
-    const w = pl ? { data: pl.data, error: pl.error, loc: { city: pl.name, src: "ort" } } : wxData, c = w?.data?.cur, loc = w?.loc;
+    const w = pl ? { data: pl.data, error: pl.error, ts: pl.ts, loc: { city: pl.name, src: "ort" } } : wxData, c = w?.data?.cur, loc = w?.loc;
     $("wxPlace").textContent = "Wetter" + (loc?.city ? " · " + loc.city : "");
     const src = $("wxSrc"); src.textContent = !loc || loc.src === "ort" ? "" : loc.src === "windows" ? "Ortung" : "über Internet"; src.title = loc?.src === "windows" ? `Windows-Ortung, ± ${loc.acc} m` : "Grob über deinen Internet-Anschluss (mit VPN der VPN-Ort)";
     if (c) {
@@ -48,7 +48,7 @@
       $("wxDays").replaceChildren(...(w.data.days || []).slice(0, 4).map((x, k) => { const d = document.createElement("div"); d.innerHTML = "<span></span><i></i><b></b><em></em>";
         d.children[0].textContent = k === 0 ? "Heute" : DOW[new Date(x.date + "T12:00").getDay()]; d.children[1].textContent = wmo(x.code)[0]; d.children[2].textContent = `${Math.round(x.min)}° / ${Math.round(x.max)}°`; d.children[3].textContent = x.rain >= 20 ? x.rain + " %" : ""; d.title = `Sonne ${x.sunrise}–${x.sunset}`; return d; }));
     } else { $("wxNow").replaceChildren(); $("wxHours").replaceChildren(); $("wxDays").replaceChildren(); }
-    $("wxHint").textContent = !w ? "Suche Standort…" : w.error ? w.error + (w.error.startsWith("Standort") ? ". Windows-Einstellungen → Datenschutz → Standort: Ortung und „Desktop-Apps Zugriff erlauben“ einschalten." : "")
+    $("wxHint").textContent = !w ? "Suche Standort…" : w.error ? (w.data ? "Veraltete Wetterdaten · Stand " + new Date(w.ts).toLocaleString("de-DE") + ". " : "") + w.error + (w.error.startsWith("Standort") ? ". Windows-Einstellungen → Datenschutz → Standort: Ortung und „Desktop-Apps Zugriff erlauben“ einschalten." : "")
       : "";
     fitPanel?.();
   }

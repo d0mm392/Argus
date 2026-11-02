@@ -4,6 +4,7 @@
 const fs = require("fs"), path = require("path"), os = require("os");
 const REPO = "https://github.com/d0mm392/Argus/issues/new";
 let dir = "", file = "", marker = "", errLog = "", hist = "", secrets = () => [];
+let pulse = null, run = null;
 const KEEP_MS = 14 * 864e5; // eigene Berichte bleiben 14 Tage auf diesem PC, danach werden sie gelöscht
 const read = () => { try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return { items: [], ignored: [] }; } };
 const write = (d) => { try { fs.writeFileSync(file, JSON.stringify(d)); } catch {} };
@@ -12,10 +13,16 @@ const sig = (msg) => String(msg || "").replace(/\d+/g, "#").slice(0, 120);
 function init(userData, logFile, getSecrets) {
   dir = userData; file = path.join(dir, "crash-pending.json"); marker = path.join(dir, "running.flag"); hist = path.join(dir, "crash-history.json"); errLog = logFile; secrets = getSecrets || secrets;
   // Lag die Markierung noch da, endete der letzte Lauf nicht sauber (harter Absturz, abgeschossen)
-  let since = 0; try { since = Number(fs.readFileSync(marker, "utf8")) || 1; } catch {}
-  // Ohne Eintrag im Fehlerprotokoll war es meist ein Update, Neustart oder das Beenden von außen: dann nicht melden
-  if (since) { const log = lastLog(since); if (log) add("Unerwartet beendet", "Argus wurde beim letzten Mal nicht normal beendet.", log); }
-  try { fs.writeFileSync(marker, String(Date.now())); } catch {}
+  clearInterval(pulse);
+  let previous = null; try { previous = JSON.parse(fs.readFileSync(marker, "utf8")) || {}; } catch { if (fs.existsSync(marker)) previous = {}; }
+  if (previous && !previous.ended) {
+    const end = previous.heartbeat || 0;
+    const log = end ? lastLog(Math.max(previous.started || 0, end - 15000), end + 15000) : "";
+    add("Unerwartet beendet", "Der vorherige Argus-Lauf wurde ohne bestätigtes reguläres Ende unterbrochen. Die Ursache ist unbekannt.", log ? "Zeitnah protokolliert (kein Nachweis der Ursache):\n" + log : "Keine zeitlich zugehörigen Fehler protokolliert.");
+  }
+  run = { started: Date.now(), heartbeat: Date.now(), pid: process.pid };
+  const beat = () => { run.heartbeat = Date.now(); try { fs.writeFileSync(marker + ".tmp", JSON.stringify(run)); fs.renameSync(marker + ".tmp", marker); } catch {} };
+  beat(); pulse = setInterval(beat, 5000); pulse.unref();
   try { fs.writeFileSync(hist, JSON.stringify(histRead())); } catch {} // Abgelaufenes löschen
 }
 // Eigene Berichte zum Nachlesen: nur lokal, mit dem, was der Nutzer gesehen hat (schon bereinigt), 14 Tage lang
@@ -33,12 +40,22 @@ function archive(title, text, state) {
 const history = () => histRead().map((x) => ({ id: x.id, t: x.t, title: x.title, state: x.state })).reverse();
 const view = (id) => histRead().find((x) => x.id === id) || null;
 function remove(id) { const a = histRead().filter((x) => x.id !== id); try { fs.writeFileSync(hist, JSON.stringify(a)); } catch {} return true; }
-function clean() { try { fs.unlinkSync(marker); } catch {} }
+function clean() {
+  clearInterval(pulse); pulse = null;
+  try { fs.writeFileSync(marker, JSON.stringify({ ...run, ended: Date.now() })); fs.unlinkSync(marker); } catch {}
+}
 // letzte Zeilen des Fehlerprotokolls, mit since nur die aus dem letzten Lauf
-function lastLog(since = 0) {
+function lastLog(since = 0, until = Infinity) {
   try {
     let lines = fs.readFileSync(errLog, "utf8").split("\n").filter(Boolean);
-    if (since) { const i = lines.findIndex((l) => { const t = Date.parse(l.replace(/^\[/, "").slice(0, 24)); return t && t >= since; }); lines = i < 0 ? [] : lines.slice(i); }
+    if (since) {
+      let keep = false;
+      lines = lines.filter((l) => {
+        const stamp = /^\[?(\d{4}-\d{2}-\d{2}T[^\s\]]+)/.exec(l);
+        if (stamp) { const t = Date.parse(stamp[1]); keep = Number.isFinite(t) && t >= since && t <= until; }
+        return keep;
+      });
+    }
     return lines.slice(-25).join("\n");
   } catch { return ""; }
 }

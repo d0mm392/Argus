@@ -33,7 +33,7 @@ const steamdl = require("./steamdl");
 const LOOKS = {"clocks": ["Uhr", [["", "Standard"], ["gross", "Groß, schlicht"], ["analog", "Analog"], ["zifferblatt", "Zifferblatt mit Zahlen"], ["3d", "3D-Uhr"], ["mechanisch", "Mechanisch"], ["futuristisch", "Futuristisch"]]], "wx": ["Wetter", [["", "Standard"], ["gross", "Groß, schlicht"], ["kompakt", "Kompakt (nur jetzt)"], ["glas", "Durchsichtig, weiße Schrift"]]], "notes": ["Notizen", [["", "Standard"], ["schlicht", "Durchsichtig, schlicht"], ["gelb", "Haftnotiz"], ["linien", "Liniertes Papier"]]], "sys": ["Systemwache", [["", "Standard"], ["glas", "Durchsichtig, weiße Schrift"], ["schlank", "Schlank, ohne Rahmen"], ["kachel", "Kacheln"]]]}; // Design-Varianten je Fenster (Namen müssen zu app/js/14i-designs.js und style.css passen)
 let netRx = 0; // aktuelle Empfangsrate des Netzwerks in Byte/s (aus der Systemwache)
 
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!app.requestSingleInstanceLock()) { app.exit(0); return; }
 
 // Fenster kann beim Beenden oder Neuladen schon zerstört sein, während Timer noch laufen
 const alive = () => !!win && !win.isDestroyed();
@@ -1299,6 +1299,8 @@ async function createWindow(port) {
     skipTaskbar: true, alwaysOnTop: config.onTop !== "nie", show: false, title: "Argus", icon: path.join(__dirname, "assets", "icon.png"),
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   });
+  // Vor dem Laden der Oberfläche registrieren: Systemende ist auch während des Starts möglich.
+  win.on("session-end", () => { quitting = true; crash.clean(); });
   applyTop();
   win.setVisibleOnAllWorkspaces(true);
   win.once("ready-to-show", () => {
@@ -1839,7 +1841,7 @@ ipcMain.handle("set-config", (_e, patch) => {
   if ("autostart" in patch) applyAutostart();
   if ("userName" in patch) { config.userName = String(config.userName).trim().slice(0, 40); memory.setUser?.(config.userName); }
   if ("userInfo" in patch) config.userInfo = String(config.userInfo).slice(0, 500);
-  if (("weatherOn" in patch || "wxPlaces" in patch) && config.weatherOn) { wx.locTs = 0; pollWeather(true); }
+  if (("weatherOn" in patch || "wxPlaces" in patch) && config.weatherOn) { weatherService.refresh(); }
   if ("foremanPx" in patch) pollFarm();
   if ("gfxSafe" in patch) restartSoon(800);
   if (["cpuHotC", "gpuHotC", "warnDiskGB", "warnRamPct", "warnCpuPct", "warnInet"].some((k) => k in patch) && watch) watch.limits = { cpu: config.cpuHotC, gpu: config.gpuHotC, diskGB: config.warnDiskGB, ramPct: config.warnRamPct, cpuPct: config.warnCpuPct, inet: config.warnInet }; // Grafikmodus gilt erst nach Neustart
@@ -2040,7 +2042,6 @@ app.whenReady().then(async () => {
   startStep("Autostart", () => applyAutostart());
   startStep("Updater", () => setupUpdater());
   if (config.setupDone) startStep("Sensoren", () => startSensors());
-  win?.on("session-end", () => { quitting = true; }); // Windows fährt herunter: zählt wie Beenden
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
   setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
   strata.init(() => config, (s) => {
@@ -2142,39 +2143,17 @@ function syncBtcHist() { const q = market.coins.BTC, k = q?.usd?.price && q?.eur
 // ---------- Wetter am Standort ----------
 // Standort alle 30 Minuten neu (unterwegs), Wetter alle 15 Minuten. Nach dem Aufwachen aus dem Standby sofort.
 // Dazu bis zu 3 feste Orte (Einstellungen → Mining → Wetter), die Anzeige wechselt zwischen allen.
-const wx = { loc: null, locTs: 0, data: null, ts: 0, error: "", places: [] };
-const geoCache = {};
-let wxBusy = false;
-const wxPlaceNames = () => String(config.wxPlaces || "").split(/[\n;]+/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
-async function pollPlaces() {
-  const out = [];
-  for (const q of wxPlaceNames()) {
-    const prev = wx.places.find((x) => x.q === q), o = { q, name: q, ts: 0, data: null, error: "" };
-    try {
-      if (!(q in geoCache)) geoCache[q] = await weather.geocode(q);
-      const g = geoCache[q];
-      if (!g) { o.error = `Ort „${q}“ nicht gefunden`; delete geoCache[q]; }
-      else { Object.assign(o, { name: g.city, country: g.country }); o.data = await weather.forecast(g.lat, g.lon); o.ts = Date.now(); }
-    } catch (e) { o.error = "Wetter nicht erreichbar"; if (prev?.data) { o.data = prev.data; o.ts = prev.ts; } logError(e); }
-    out.push(o);
-  }
-  wx.places = out;
-}
-async function pollWeather() {
-  if (config.weatherOn === false || wxBusy) return;
-  wxBusy = true;
-  try {
-    await pollPlaces().catch(logError);
-    if (!wx.loc || Date.now() - wx.locTs > 30 * 60e3) { const l = await weather.locate(); if (l) { wx.loc = l; wx.locTs = Date.now(); } }
-    if (!wx.loc) { wx.error = "Standort unbekannt"; return; }
-    wx.data = await weather.forecast(wx.loc.lat, wx.loc.lon); wx.ts = Date.now(); wx.error = "";
-  } catch (e) { wx.error = "Wetter nicht erreichbar"; logError(e); }
-  finally { wxBusy = false; sendUI("weather", wx); }
-}
+const weatherService = require("./weather-service.cjs").create({
+  api: weather, cacheFile: path.join(app.getPath("userData"), "weather-cache.json"),
+  settings: () => config, publish: state => sendUI("weather", state),
+  diagnostic: e => logError(new Error("Wetterabruf fehlgeschlagen: " + (e?.message || e)))
+});
+const wx = weatherService.state;
+const pollWeather = () => weatherService.poll();
 function weatherSummary() {
   const c = wx.data?.cur; if (!c || !wx.loc) return "";
   const d = wx.data.days?.[0], n = wx.data.days?.[1];
-  return `\n\nWetter am aktuellen Standort ${wx.loc.city || "(unbekannter Ort)"}${wx.loc.country ? ", " + wx.loc.country : ""} (Open-Meteo, ${new Date(wx.ts).toLocaleTimeString("de-DE")}): ${c.temp} °C, gefühlt ${c.feels} °C, Wettercode ${c.code}, Wind ${c.wind} km/h, Luftfeuchte ${c.hum} %` +
+  return `\n\nWetter am aktuellen Standort ${wx.loc.city || "(unbekannter Ort)"}${wx.loc.country ? ", " + wx.loc.country : ""} (Open-Meteo, ${wx.error ? "VERALTET, " : ""}${new Date(wx.ts).toLocaleString("de-DE")}): ${c.temp} °C, gefühlt ${c.feels} °C, Wettercode ${c.code}, Wind ${c.wind} km/h, Luftfeuchte ${c.hum} %` +
     (d ? `. Heute ${d.min} bis ${d.max} °C, Regenrisiko ${d.rain} %` : "") + (n ? `. Morgen ${n.min} bis ${n.max} °C, Regenrisiko ${n.rain} %, Code ${n.code}` : "") +
     wx.places.filter((x) => x.data?.cur).map((x) => { const c2 = x.data.cur, d2 = x.data.days?.[0]; return `. In ${x.name}: ${c2.temp} °C, Code ${c2.code}` + (d2 ? `, heute ${d2.min} bis ${d2.max} °C, Regenrisiko ${d2.rain} %` : ""); }).join("") +
     ". (WMO-Codes: 0 klar, 1-3 bewölkt, 45/48 Nebel, 51-67 Regen, 71-77 Schnee, 80-82 Schauer, 95-99 Gewitter)";
@@ -2464,6 +2443,7 @@ function startMedia() {
 function stopMedia() { if (mediaProc) { const p = mediaProc; mediaProc = null; mediaTry = 9; try { p.kill(); } catch {} } }
 ipcMain.on("media-cmd", (_e, c) => { if (["play", "next", "prev"].includes(c) || /^vol:(0(\.\d+)?|1(\.0+)?)$/.test(c)) try { fs.writeFileSync(mediaCmdFile(), c); } catch {} });
 app.on("will-quit", stopMedia);
+app.on("will-quit", () => weatherService.stop());
 app.on("will-quit", () => crash.clean()); // sauber beendet: keine „unerwartet beendet“-Meldung beim nächsten Start
 app.on("child-process-gone", (_e, d) => { if (d?.type === "GPU" && !["clean-exit", "killed"].includes(d.reason)) { crash.add("Grafikprozess abgestürzt", `${d.reason} (Code ${d.exitCode})`); setTimeout(() => sendUI("gpu-reset"), 1500); } });
 ipcMain.on("ui-error", (_e, msg, stack) => crash.add("Fehler in der Oberfläche", String(msg || "").slice(0, 500), String(stack || "").slice(0, 3000)));
@@ -2876,9 +2856,9 @@ function fileIndexInfo() {
 function startMarket() {
   setTimeout(pollSocial, 4000); setInterval(pollSocial, 120e3); setInterval(pollDiscordFast, 30e3);
   pollPrice().then(pollAlerts); setTimeout(pollFeeds, 3000);
-  setTimeout(pollWeather, 5000); setInterval(pollWeather, 15 * 60e3);
+  setTimeout(pollWeather, 5000);
   powerMonitor.on("shutdown", () => crash.clean()); // Windows fährt herunter: kein Absturz
-  powerMonitor.on("resume", () => { wx.locTs = 0; setTimeout(pollWeather, 10e3); }); // nach Standby evtl. woanders
+  powerMonitor.on("resume", () => { setTimeout(() => weatherService.refresh(), 10e3); }); // nach Standby evtl. woanders
   setTimeout(pollFarm, 3000); setInterval(pollFarm, 60e3);
   // Miner-Report vom Vortag: ab der eingestellten Stunde einmal am Tag als Fenster (reportOn, reportHour)
   report.init(app.getPath("userData"), () => config.reportKeep);

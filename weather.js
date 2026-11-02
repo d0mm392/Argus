@@ -12,11 +12,11 @@ async function get(url, ms = 12000) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
   try {
     const r = await fetch(url, { headers: UA, signal: ctl.signal });
-    if (!r.ok) throw new Error(url.split("/")[2] + " antwortet mit " + r.status);
+    if (!r.ok) { const e = new Error(url.split("/")[2] + " antwortet mit " + r.status); e.status = r.status; throw e; }
     return await r.json();
   } finally { clearTimeout(t); }
 }
-const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+const num = (v) => { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
 
 // Windows-Ortungsdienst über .NET (System.Device), wartet höchstens 12 Sekunden auf eine Position
 const PS = `$ErrorActionPreference='Stop'
@@ -62,6 +62,8 @@ async function locate() {
 }
 
 async function forecast(lat, lon) {
+  lat = num(lat); lon = num(lon);
+  if (lat == null || lon == null || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new Error('Ungültige Wetterkoordinaten');
   const q = new URLSearchParams({
     latitude: lat.toFixed(3), longitude: lon.toFixed(3), timezone: "auto", forecast_days: "4", wind_speed_unit: "kmh",
     current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day,precipitation",
@@ -69,6 +71,7 @@ async function forecast(lat, lon) {
     daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset",
   });
   const j = await get(`${METEO}?${q}`);
+  if (!j.current || num(j.current.temperature_2m) == null || num(j.current.weather_code) == null) throw new Error('Wetterantwort enthält keine aktuellen Daten');
   const c = j.current || {}, h = j.hourly || {}, d = j.daily || {};
   // nächste 12 Stunden ab jetzt (Ortszeit des Standorts, utc_offset_seconds)
   const nowLocal = Date.now() + (num(j.utc_offset_seconds) || 0) * 1000, hours = [];
