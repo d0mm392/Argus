@@ -55,6 +55,13 @@ async function run() {
   const capped = await measure(f, 2000);
   check("never above the chosen moving rate", capped.fps < 34, JSON.stringify(capped));
 
+  await f.evaluate(`fpsMax = 60; for (let s = 0; s < 400; s += 0.25) tint(\`hsl(\${bgHue(s)} 95% 58%)\`); true`);
+  const created = await f.evaluate(`new Promise((done) => {
+    let n = 0; const real = document.createElement; document.createElement = function (t, ...r) { if (String(t).toLowerCase() === "canvas") n++; return real.call(this, t, ...r); };
+    setTimeout(() => { document.createElement = real; done(n); }, 3000);
+  })`);
+  check("colourful mode creates no canvases after one colour cycle", created === 0, String(created));
+
   check("renderer has no errors", !f.errors.filter(e => !/willReadFrequently/.test(String(e))).length, JSON.stringify(f.errors).slice(0, 300));
   console.log(`${count} Prüfungen`); app.exit(0);
 }

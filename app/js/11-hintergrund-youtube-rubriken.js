@@ -15,7 +15,7 @@
     if (c === 2 || c === 3) return "wolken"; return day ? "sonne" : "sterne";
   }
   // Farbe des Hintergrunds: Zustandsfarbe, fester Farbton oder wandernder Regenbogen
-  function bgHue(t) { const m = bg.hueMode; if (m === "bunt") return Math.round((t * 14) % 360); if (m === "custom") return bg.hueN; if (m !== "auto") return +m; return Math.round(CORE_HUE); }
+  function bgHue(t) { const m = bg.hueMode; if (m === "bunt") return Math.round((t * 14) % 360 / 4) * 4; if (m === "custom") return bg.hueN; if (m !== "auto") return +m; return Math.round(CORE_HUE); }
   function bgBuild() {
     const k = bgKind(), A = bg.w * bg.h / 1e6, n = (base) => Math.round(Math.min(400, base * A * bg.amt * (lite ? 0.5 : 1)));
     const rnd = Math.random; bg.kind = k; bg.parts = [];
@@ -131,7 +131,7 @@
     let c = tintCache.get(col); if (c) return c;
     c = document.createElement("canvas"); c.width = c.height = 32; const g = c.getContext("2d");
     g.drawImage(dotSprite, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, 32, 32);
-    if (tintCache.size > 40) tintCache.clear(); tintCache.set(col, c); return c;
+    if (tintCache.size > 128) tintCache.clear(); tintCache.set(col, c); return c; // Platz für den ganzen Farbkreis in 4°-Schritten: „bunt“ legt nach einer Runde keine Zeichenflächen mehr an
   }
   // Nach Absturz oder Neustart des Grafikprozesses (Treiber-Reset) sind die Zeichenflächen leer: neu aufsetzen
   window.argus.onGpuReset?.(() => { try { cancelAnimationFrame(bg.raf); } catch {} bg.raf = 0; bg.ctx = bg.cv.getContext("2d"); bg.w = bg.h = 0; bg.parts = []; bgKick(); window.dispatchEvent(new Event("resize")); });
