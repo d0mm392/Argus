@@ -1,0 +1,101 @@
+{
+  "status": "PASS",
+  "version": "0.58.31",
+  "source": "252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf",
+  "build": {
+    "status": "PASS",
+    "version": "0.58.31",
+    "source": "252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf",
+    "productFiles": 92,
+    "manifestFiles": 4824,
+    "installerSHA256": "499d96d1be7814dd7df57d88fb0d47600d466f7e0ee15fd2606039e186735ea1",
+    "cspUnchanged": true,
+    "startfixPreserved": true
+  },
+  "vm": {
+    "status": "PASS",
+    "version": "0.58.31",
+    "installerSHA256": "499d96d1be7814dd7df57d88fb0d47600d466f7e0ee15fd2606039e186735ea1",
+    "manifestFiles": 4824,
+    "systemEnd": [
+      "restart",
+      "shutdown",
+      "logoff"
+    ],
+    "normalQuit": true,
+    "forcedProcessTermination": true,
+    "settingsAndLocationsPreserved": true,
+    "installedRenderer": true,
+    "orbScenario": [
+      "PASS real focus loss reaches the renderer {\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false}",
+      "PASS inactive visible window keeps speed {\"fps\":21.4,\"rad\":0.05,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false},\"hidden\":false}",
+      "PASS inactive visible window keeps 60 FPS setting {\"fps\":21.4,\"rad\":0.05,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false},\"hidden\":false}",
+      "PASS hidden window draws nothing {\"fps\":0,\"rad\":0,\"state\":{\"mode\":\"fluid\",\"visible\":false,\"focused\":false,\"throttled\":true},\"hidden\":false}",
+      "PASS no animation jump after restoring {\"before\":0.7229499999999985,\"after\":0.8281783333333309}",
+      "PASS animation runs again after restoring {\"fps\":21.4,\"rad\":0.0502,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":true,\"throttled\":false},\"hidden\":false}",
+      "PASS covered Mining orb detected",
+      "PASS Mining orb visible after restoring",
+      "PASS other page unchanged",
+      "PASS Mining orb survives page change",
+      "PASS Mining orb survives restart"
+    ],
+    "testHarness": "Interactive Task Scheduler launches Node, which starts Argus through Explorer Shell.Application.",
+    "environmentNote": "VM without GPU acceleration: frame rate about 21 FPS at the 60 FPS setting; rotation speed is the measured property.",
+    "invalidatedAttempts": [
+      "Guest control channel hung (VERR_DUPLICATE); the VM was reset and the run repeated.",
+      "Mining check failed twice in the VM because the test setup had no free layout and then Mining disabled; setup corrected, product code unchanged, full orb scenario repeated.",
+      "The harness logged false PASS lines in its first attempt; the harness was corrected and those lines were discarded."
+    ],
+    "startupFixBaseline": "d376e7df3c4668215e58833454ea73ce53f46e8c"
+  },
+  "nodeTests": {
+    "pass": 91,
+    "fail": 0,
+    "skip": 0
+  },
+  "rendererTests": {
+    "weatherUi": "5/5",
+    "orbVisibility": "21/21",
+    "orbAnimation": "10/10",
+    "menus": "pass",
+    "notesLayout": "pass"
+  },
+  "orbMeasurement": {
+    "setting": "60 FPS idle, Fluid, inactive window, one minute without input",
+    "before": {
+      "fps": 9.3,
+      "radPerSecond": 0.0233
+    },
+    "after": {
+      "fps": 48,
+      "radPerSecond": 0.0502
+    },
+    "expectedRadPerSecond": 0.05
+  },
+  "knownPreexistingTests": [
+    {
+      "suite": "tests/hotfix.test.js",
+      "pass": 14,
+      "fail": 3,
+      "identicalOnBaseline": "6e546e64676b3cfef6ab9b0ff990dfd3679814b9"
+    },
+    {
+      "suite": "tests/classic-theme.test.js",
+      "result": "fails at the stylesheet comparison",
+      "identicalOnBaseline": "6e546e64676b3cfef6ab9b0ff990dfd3679814b9"
+    },
+    {
+      "suite": "tests/ui.test.js",
+      "result": "not run: it starts the real main process, which is not done on the host next to the installed Argus. The installed main process was exercised in the VM instead."
+    }
+  ],
+  "limitations": [
+    "A Windows session end in which Argus receives no message is still reported as an unclean end.",
+    "Forced power loss cannot be distinguished from forced process termination.",
+    "In a focused window the 10 FPS limit after one idle minute still applies at the saving rates.",
+    "Voice activation in a hidden window was not tested with a microphone.",
+    "The optional Apple mode is not part of this source state, so only the classic mode was tested.",
+    "Installer is unsigned."
+  ],
+  "stableUnchanged": "18598e99467d0299657a1e8650d5b6301029a739"
+}

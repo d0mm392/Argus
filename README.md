@@ -1,9 +1,9 @@
-# Argus 0.58.30 – Testkanal
+# Argus 0.58.31 – Testkanal
 
-[Windows-Installer](Argus-Setup-0.58.30.exe) · [Versionshinweise](RELEASE-NOTES-0.58.30.md) · [Prüfbericht](PRUEFBERICHT-0.58.30.json)
+[Windows-Installer](Argus-Setup-0.58.31.exe) · [Versionshinweise](RELEASE-NOTES-0.58.31.md) · [Prüfbericht](PRUEFBERICHT-0.58.31.json)
 
-Windows-Systemende wird getrennt von erzwungenem Prozessabbruch erfasst. Wetterausfälle zeigen gespeicherte Daten mit Zeitstempel als veraltet; begrenzte Wiederholungen erlauben die Erholung. Der Startfix 0.58.29 bleibt enthalten. Stable bleibt unverändert.
+Bestätigte Fehlerberichte erscheinen nicht erneut und nennen die Version zum Ereigniszeitpunkt. Die Kugel dreht im inaktiven Fenster im gleichen Tempo und lässt sich auf Mining wieder sichtbar machen, wenn ein Fenster sie verdeckt. Stable bleibt unverändert.
 
-SHA-256: `044bca10b2795d8b0ca065e95939e81e92c34038c49b2770de70cc527a82ca3a`
+SHA-256: `499d96d1be7814dd7df57d88fb0d47600d466f7e0ee15fd2606039e186735ea1`
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/6e546e64676b3cfef6ab9b0ff990dfd3679814b9) · [Quellarchiv](Argus-Source-0.58.30.zip) · [Prüfsummen](SHA256SUMS.txt)
+[Quellstand](https://github.com/d0mm392/Argus/tree/252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf) · [Quellarchiv](Argus-Source-0.58.31.zip) · [Prüfsummen](SHA256SUMS.txt)

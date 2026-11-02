@@ -1,21 +1,33 @@
-version: 0.58.30
+version: 0.58.31
 files:
-  - url: Argus-Setup-0.58.30.exe
-    sha512: tbQWIvPeSCODUcCOZu1DG5eZ9UP3RCgNmH2nwIe+SiSvXv4Bc067d/Anh/oHSqifjujK6fbymhbJ2fJUEdPK/w==
-    size: 93490656
-path: Argus-Setup-0.58.30.exe
-sha512: tbQWIvPeSCODUcCOZu1DG5eZ9UP3RCgNmH2nwIe+SiSvXv4Bc067d/Anh/oHSqifjujK6fbymhbJ2fJUEdPK/w==
-releaseDate: '2026-11-02T16:22:26.559Z'
-releaseName: "Argus 0.58.30 – Systemende und Wetter"
+  - url: Argus-Setup-0.58.31.exe
+    sha512: TXdvPYxHkpVA9jYGxwwSR03Ly0rGRP4igWCFUs+dT9gGZqG2qmVVeU6TOhjQnm9HXvPEd+MiMp4N8m6fdhEvAQ==
+    size: 93495359
+path: Argus-Setup-0.58.31.exe
+sha512: TXdvPYxHkpVA9jYGxwwSR03Ly0rGRP4igWCFUs+dT9gGZqG2qmVVeU6TOhjQnm9HXvPEd+MiMp4N8m6fdhEvAQ==
+releaseDate: '2026-11-02T17:12:26.469Z'
+releaseName: "Argus 0.58.31 – Fehlerberichte und Kugel"
 releaseNotes: |
-  # Argus 0.58.30 – Windows-Systemende und Wetterausfälle
+  # Argus 0.58.31 – Fehlerberichte und Kugel
   
-  - Bestätigtes Windows-Systemende entfernt den Laufmarker auch dann, wenn `will-quit` ausbleibt. Kein Blockieren des Herunterfahrens. Erzwungene Prozessabbrüche bleiben erkennbar, auch ohne Fehlereintrag.
-  - Laufmarker enthalten ein Lebenszeichen. Fehlerkontext wird auf dessen zeitliche Nähe begrenzt und ausdrücklich nicht als nachgewiesene Ursache bezeichnet. Alte Wetterfehler werden nicht einem späteren Abbruch zugeschrieben.
-  - Eine zweite Instanz beendet sich vor der Marker-Verwaltung.
-  - Letzte erfolgreiche Wetterdaten werden separat vom Einstellungsprofil gespeichert. Bei Ausfall erscheinen sie als veraltet mit Zeitstempel, auch nach einem Neustart. Ohne Daten erscheint „Wetterdienst vorübergehend nicht erreichbar“.
-  - Wetterabfragen laufen gemeinsam und ohne Überlappung. Nach Fehlern folgen zwei Wiederholungen nach 30 Sekunden und 2 Minuten, danach der normale 15-Minuten-Takt. Gleichartige Fehler werden während eines Ausfalls nur einmal protokolliert.
-  - Koordinaten und Wetterantworten werden geprüft; fehlende aktuelle Temperaturwerte werden nicht als 0 °C übernommen. Orte und Einstellungen bleiben erhalten.
-  - Der veröffentlichte Startfix 0.58.29 bleibt enthalten. Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.
+  **Fehlerberichte**
+  - Ein kopierter Bericht gilt jetzt als bestätigt und erscheint nicht bei jedem Start erneut. Bereits in der Historie gespeicherte Berichte werden beim ersten Start einmalig als bestätigt übernommen. Der alte Stand wird vorher gesichert, die Historie bleibt erhalten.
+  - Jeder Bericht nennt die Argus-Version zum Ereigniszeitpunkt getrennt von der aktuellen Version. Bei älteren Berichten steht dort „nicht erfasst“.
+  - Abgefangene Netzfehler, zum Beispiel HTTP 503 von Open-Meteo, werden einem unsauberen Ende nicht mehr beigefügt. Ältere Berichte blenden die damals angehängten Protokollzeilen aus.
+  - Jedes unsaubere Ende wird weiterhin erfasst, auch wenn ein ähnlicher Bericht offen ist oder „nicht mehr melden“ gewählt wurde.
   
-  Die beim Kollegen fehlenden Daten sind ohne dessen zugehörige Diagnose nicht eindeutig den beobachteten HTTP-503-Antworten zuzuordnen. Die Behandlung vorübergehender Ausfälle wurde unabhängig davon geprüft.
+  **Kugel bei inaktivem Fenster**
+  - Die Drehung folgt der verstrichenen Zeit. Ihr Tempo hängt nicht mehr von der Bildrate ab.
+  - „Darstellung im Hintergrund“ ist jetzt mit dem Hauptfenster verbunden. Bei „Flüssig“ bleibt eine gewählte Ruhe-Bildrate über 15 auch im inaktiven Fenster erhalten. Die Stufe 15 läuft wie bisher, die Last steigt dort nicht.
+  - Minimierte und ausgeblendete Fenster zeichnen nichts mehr und laufen danach ohne Sprung weiter.
+  
+  **Kugel auf der Mining-Seite**
+  - Argus erkennt, wenn die Kugel hinter einem undurchsichtigen Fenster liegt, und bietet „Wieder sichtbar machen“ an: als Hinweis, in den Einstellungen und im Rechtsklick-Menü.
+  - Dabei ändert sich nur die Kugel der aktuellen Seite (Position, falls nötig auch Größe). Fenster, Anzeigen und andere Seiten bleiben unverändert. Ohne Klick wird nichts verschoben. Strg+Z nimmt es zurück.
+  
+  **Bekannte Einschränkungen**
+  - Ein Windows-Systemende, bei dem Argus keine Nachricht mehr erhält, wird weiterhin als unsauberes Ende gemeldet.
+  - Bei fokussiertem Fenster gilt nach einer Minute ohne Eingabe bei den sparsamen Stufen weiter die Grenze von 10 Bildern pro Sekunde.
+  - Sprachaktivierung bei ausgeblendetem Fenster wurde ohne Mikrofon nicht geprüft.
+  
+  Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.
