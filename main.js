@@ -64,7 +64,7 @@ crash.init(app.getPath("userData"), path.join(app.getPath("userData"), process.e
   if (typeof config === "undefined" || !config) return [];
   return [config.iobPass, config.iobUser, config.iobUrl, config.steamKey, config.dcBotToken, config.anthropicApiKey, config.aiKey, config.foremanKey, config.steamId, ...(config.foremanAccounts || []).flatMap((a) => [a?.key, a?.client]),
     ...String(config.mineAddr || "").split(/[\s,;=:]+/).filter((w) => w.length > 20)];
-});
+}, require("./package.json").version);
 process.on("uncaughtException", (e) => { logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
 // 0.58.27: auch abgelehnte Promises protokollieren (vorher verschwanden Fehler im Startablauf ohne Spur)
 process.on("unhandledRejection", (e) => { logError(e); try { crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); } catch {} });
@@ -2454,7 +2454,7 @@ ipcMain.handle("crash-get", (_e, manual) => {
 });
 ipcMain.handle("crash-send", (_e, title, text) => { crash.archive(title, text, "gesendet"); shell.openExternal(crash.issueUrl(String(title || "Fehlerbericht"), String(text || ""))); crash.clear(); return true; });
 ipcMain.handle("crash-dismiss", (_e, ignore, title, text) => { if (typeof text === "string" && text.trim()) crash.archive(title, text, "nicht gesendet"); crash.clear(!!ignore); return true; });
-ipcMain.handle("crash-archive", (_e, title, text, state) => crash.archive(String(title || ""), String(text || ""), String(state || "")));
+ipcMain.handle("crash-archive", (_e, title, text, state) => { const id = crash.archive(String(title || ""), String(text || ""), String(state || "")); if (state === "kopiert") crash.clear(); return id; }); // kopiert = bestätigt: nicht bei jedem Start erneut melden
 ipcMain.handle("crash-list", () => crash.history());
 ipcMain.handle("crash-view", (_e, id) => crash.view(String(id || "")));
 ipcMain.handle("crash-del", (_e, id) => crash.remove(String(id || "")));

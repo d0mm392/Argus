@@ -475,7 +475,7 @@
   const fmtT = (t) => new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   function crOpen(title, text, hist) {
     crTitle = title; crHistId = hist?.id || null; crDone = false; $("crText").value = text; $("crIgnore").checked = false;
-    $("crIgnore").parentElement.hidden = !!hist || /Nutzer/.test(title); $("crDel").hidden = !hist; $("crNo").textContent = hist ? "Schließen" : "Nicht senden";
+    $("crIgnore").parentElement.hidden = !!hist || /Nutzer|Unerwartet beendet/.test(title); $("crDel").hidden = !hist; $("crNo").textContent = hist ? "Schließen" : "Nicht senden";
     $("crTitleH").textContent = hist ? "Gespeicherter Bericht" : "Fehlerbericht"; $("crState").hidden = !hist; if (hist) $("crState").textContent = fmtT(hist.t) + " · " + hist.state + " · wird nach 14 Tagen gelöscht";
     $("crashPop").hidden = false;
   }
