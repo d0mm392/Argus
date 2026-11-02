@@ -433,7 +433,7 @@
       friendsBox = { w: 180, h: 0, scale: 1, ...(pf.friendsBox || {}) }; gripSt.f1 = null; gripSt.f2 = null; f2Res = null; applyFriendsBox(); // Größe der Freundeslisten gehört zur Seite
       window.argus.setConfig({ ballOn, statusOn, friendsBox, widgets: { ai: widgets.ai, strata: widgets.strata, friends: widgets.friends } });
       restoreNotesGeometry(n); applyHidden(); applyLayout(); } // erst ausblenden, dann anordnen: sonst springt YouTube kurz in voller Breite auf
-    renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.argus.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff });
+    renderPages(); pageClasses(); renderMOver(); renderMineFx(); window.argus.setConfig({ pages, page, panelLayout: freeLayout || {}, hiddenBlocks: [...hiddenSet], pins, scales, ballOff }); setTimeout(() => window.orbHintSync?.(), 400);
   }
   function applyMiningOn() {
     document.body.classList.toggle("nomining", !miningOn);
@@ -557,7 +557,7 @@
     const cfg = await window.argus.getConfig().catch(() => ({}));
     const ed = e.target.closest?.("textarea, [contenteditable], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color])");
     const opts = { shapes: SHAPES, shape, hue: theme.hue, regions: theme.regions, rim: shapeRim, flat: flat2d, glow: glowK, spin: spinK, flash: flashK, labels: $("setBallLabels").value, bshape: $("setBtnShape").value, blook: $("setBtnLook").value, bshapes: B_SHAPES, blooks: B_LOOKS, pulse: pulseStyle, nodeStyle, aura: auraMode, breath: breathOn, structK: Math.round(structK * 100), nodeK: Math.round(nodeK * 100), edgeK, look3dK: Math.round(look3dK * 100), dens: densK, ringStyles: RING_STYLES, ringStyle: viz.ringStyle || "form", ringSize: scales.rings || 1, ringMono: !!viz.ringMono, tiltX: gTiltX, tiltY: gTiltY };
-    window.argus.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn, trading: page === "Trading", undo: typeof undoStack !== "undefined" ? undoStack.length : 0, pageList: ["Start", ...(miningOn && pagesOn ? ["Mining"] : []), ...(gamingOn ? ["Gaming"] : []), ...(tradeCfg.on ? ["Trading"] : []), ...customPages], page, custom: isCustom(page) }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
+    window.argus.ctxMenu?.({ target, opts, vars, buttons: WIDGET_ROWS.filter(([k]) => pageBtn(k)).map(([k, l]) => [k, l, widgets[k]?.on !== false, btnAvail(k)]), hfans: (widgets.fans?.on === false ? (sys.fans || []) : (sys.fans || []).filter((f) => !visFans().slice(0, 12).includes(f))).map((f) => f.name), flags: { ballCovered: !!window.orbCovered?.(), ball: ballOn, status: statusOn, ai: widgets.ai?.on !== false, strata: widgets.strata?.on !== false, steam: !!cfg.steamOn, discord: !!cfg.discordOn, friends: widgets.friends?.on !== false, mini: miniMore, hole: !!cfg.holeOn, trading: page === "Trading", undo: typeof undoStack !== "undefined" ? undoStack.length : 0, pageList: ["Start", ...(miningOn && pagesOn ? ["Mining"] : []), ...(gamingOn ? ["Gaming"] : []), ...(tradeCfg.on ? ["Trading"] : []), ...customPages], page, custom: isCustom(page) }, edit: !!ed, sel: !!String(getSelection() || "").trim(), arrange: document.body.classList.contains("arrange"), profs: profNames().slice(0, 10), hidden: [...hiddenSet].filter((id) => BLOCK_NAMES[id] && pageHas(id)).map((id) => [id, BLOCK_NAMES[id]]), media: !mediaOn });
   });
   // Gibt es für diese Anzeige gerade Messwerte? Argus erkennt das selbst aus den Live-Daten (Sensor fehlt = nicht anbieten)
   function btnAvail(k) {
@@ -576,8 +576,9 @@
     if (a === "settings") { if ($("settings").hidden) $("settingsBtn").click(); }
     else if (a === "arrange") $("arrangeBtn").click();
     else if (a === "holeplace") holePlace();
+    else if (a === "orbshow") window.orbMakeVisible?.();
     else if (a === "tog") {
-      if (v === "ball") { ballOn = !ballOn; $("setBallOn").checked = ballOn; applyUi(); sv({ ballOn }); }
+      if (v === "ball") { ballOn = !ballOn; $("setBallOn").checked = ballOn; applyUi(); sv({ ballOn }); if (ballOn) window.orbMakeVisible?.(); }
       else if (v === "status") { statusOn = !statusOn; $("setStatusOn").checked = statusOn; applyUi(); sv({ statusOn }); }
       else if (v === "ai" || v === "strata") hideWidget(v, widgets[v]?.on === false);
       else if (v === "mini") { miniMore = !miniMore; $("setMiniMore").checked = miniMore; applyUi(); sv({ miniMore }); }

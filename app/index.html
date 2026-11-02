@@ -210,6 +210,7 @@
       <h4 data-tab="Seiten">Mining-Seite</h4>
       <div class="set-note">Eigene Seite nur fürs Mining, umschalten oben links (Start / Mining) oder mit Strg+1 / Strg+2. Jede Seite merkt sich ihre eigene Anordnung, auch die der Anzeigen.</div>
       <label class="row">Kugel auf der Mining-Seite (zeigt die Miner: grün läuft, gelb heiß, rot offline) <input type="checkbox" id="setMineOrb"></label>
+      <div class="set-actions"><button class="btn" type="button" id="setOrbShow" title="Verschiebt nur die Kugel dieser Seite an eine freie Stelle. Fenster und andere Seiten bleiben, wie sie sind.">Kugel wieder sichtbar machen</button></div>
       <label class="row">Freundesliste auf der Mining-Seite <input type="checkbox" id="setPageFriends"></label>
       <label class="row">Pool-Adressen mit Foreman verschmelzen: eigene Anlage in den Farm-Fenstern und im Überblick (für Anlagen ohne Foreman; aus, wenn die Pool-Adresse zu einer Foreman-Farm gehört) <input type="checkbox" id="setOceanTotal"></label>
       <label class="row">Überblick <select id="setMineView"><option value="kacheln">Kacheln (große Zahlen, Farmen als Karten)</option><option value="balken">Balken (eine Zeile je Farm)</option></select></label>
@@ -458,6 +459,7 @@
 
   <div id="stage">
     <canvas id="brain" aria-label="Animierte Kugel, die die Aktivität der KI zeigt"></canvas>
+    <div class="orb-hint" id="orbHint" role="status" hidden><span>Die Kugel liegt hinter einem Fenster.</span><button class="btn" type="button" id="orbHintShow">Wieder sichtbar machen</button><button class="btn icon" type="button" id="orbHintX" title="Bis zum nächsten Start ausblenden" aria-label="Hinweis schließen">×</button></div>
     <div class="controls">
       <button class="btn icon mic-btn" type="button" aria-pressed="false" aria-label="Mikrofon an oder aus" title="Mikrofon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
@@ -705,6 +707,7 @@
 <script src="js/14c-seiten.js"></script>
 <script src="js/14d-portal.js"></script>
 <script src="js/14e-rueckgaengig.js"></script>
+<script src="js/14o-kugel-sichtbar.js"></script>
 <script src="js/14f-briefing.js"></script>
 <script src="js/14l-foremandash.js"></script>
 <script src="js/14m-formwechsel.js"></script>

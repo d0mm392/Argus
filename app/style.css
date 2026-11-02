@@ -994,3 +994,7 @@ form.ask[data-ws] :is(textarea, .btn:not(.primary)) { background: color-mix(in s
 .iob-rows { display: flex; flex-direction: column; margin-left: 10px; }
 .iob-r { display: flex; justify-content: space-between; gap: 12px; font-size: 0.74rem; padding: 2px 4px; border-radius: 4px; } .iob-r span { color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iob-r.sw { cursor: pointer; } .iob-r.sw:hover { background: rgba(255, 255, 255, 0.06); } .iob-r b.on { color: var(--ok, #6fcf97); } .iob-r b.off { opacity: 0.6; }
+
+/* Hinweis: Die Kugel liegt hinter einem undurchsichtigen Fenster */
+.orb-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 10px; padding: 8px 12px; max-width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 10px; background: rgba(8, 14, 24, 0.94); color: var(--ink); font-size: 12px; pointer-events: auto; }
+.orb-hint[hidden] { display: none; }
