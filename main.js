@@ -1301,6 +1301,8 @@ async function createWindow(port) {
   });
   // Vor dem Laden der Oberfläche registrieren: Systemende ist auch während des Starts möglich.
   win.on("session-end", () => { quitting = true; crash.clean(); });
+  // Einstellung „Darstellung im Hintergrund“: sichtbar und inaktiv weiter animieren, minimiert oder ausgeblendet sparen
+  backgroundPresentationController = require("./app/background-presentation").attach(win, config.backgroundPresentation, (state) => sendUI("background-presentation", state));
   applyTop();
   win.setVisibleOnAllWorkspaces(true);
   win.once("ready-to-show", () => {

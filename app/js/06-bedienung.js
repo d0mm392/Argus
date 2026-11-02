@@ -376,12 +376,22 @@
   let lastT = performance.now(), time = 0, lite = false;
   let lastAct = performance.now(), fpsIdle = 30, fpsMax = 60;
   let presentationState = { mode: "fluid", visible: true, focused: true };
-  window.argus.onBackgroundPresentation?.(s => { presentationState = s; const select = $("setBackgroundPresentation"); if (select) select.value = s.mode; });
+  // Nach dem Wiederherstellen läuft die Animation dort weiter, wo sie stand: Die verdeckte Zeit zählt nicht (kein Sprung)
+  let animResume = false, pausedFrame = 0;
+  window.argus.onBackgroundPresentation?.(s => {
+    const back = s.visible && !presentationState.visible; presentationState = s;
+    const select = $("setBackgroundPresentation"); if (select) select.value = s.mode;
+    if (back) { animResume = true; if (pausedFrame) { clearTimeout(pausedFrame); pausedFrame = 0; requestAnimationFrame(frame); } }
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) animResume = true; });
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) addEventListener(ev, () => { lastAct = performance.now(); }, { passive: true, capture: true });
   // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
   let videoWin = false; window.argus.onVideoWin?.((v) => { videoWin = v; });
   window.videoBusy = () => videoWin || !!(window.videoEmbed?.yt || window.videoEmbed?.tw);
   function frame(now, once) {
+    pausedFrame = 0;
+    // Minimiert oder ausgeblendet: nichts zeichnen. Wiederbelebt wird über onBackgroundPresentation
+    if (!once && !presentationState.visible) { lastT = now; pausedFrame = setTimeout(() => { pausedFrame = 0; requestAnimationFrame(frame); }, 1000); return; }
     if (gameMode && sys?.fullscreen && !once && !drag) { // Spielmodus: läuft ein Programm im Vollbild, nur noch ein Bild pro Sekunde
       if (now - gmLast < 1000) { setTimeout(() => requestAnimationFrame(frame), 1000 - (now - gmLast)); return; }
       gmLast = now;
@@ -389,13 +399,17 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    const calm = !(presentationState.mode === "fluid" && presentationState.visible && !presentationState.focused) && state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    // Flüssig: Wer eine höhere Ruhe-Bildrate gewählt hat, behält sie auch nach einer Minute ohne Maus (die gibt es im inaktiven Fenster immer). Die sparsamen Stufen bleiben wie bisher, das hebt die Last nicht pauschal an
+    const keepIdleFps = presentationState.mode === "fluid" && presentationState.visible && fpsIdle > 15;
+    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 && !keepIdleFps ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
     if (!once && now - lastT < (window.videoBusy() && !drag ? Math.max(minMs, 33) : minMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)
     if (!once && setOpen && now - lastT < 500) { requestAnimationFrame(frame); return; }
     if (!once && !ballOn && !drag && now - lastT < 66) { requestAnimationFrame(frame); return; } // Kugel aus: nur noch Anzeigen nachführen
-    const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; time += dt;
+    // Die Drehung folgt der echten Zeit (rotDt), damit ihr Tempo nicht von der Bildrate abhängt. Das übrige Leben (dt) ist nur gegen große Lücken gedeckelt.
+    const realDt = Math.max(0, (now - lastT) / 1000), resumed = animResume || realDt > 2.5; animResume = false;
+    const dt = resumed ? 1 / 60 : Math.min(0.12, realDt), rotDt = resumed ? 1 / 60 : realDt, inertia = Math.min(60, rotDt * 60); lastT = now; time += dt;
     const speedK = reduceMotion ? 0.3 : 1;
     if (!expanded && W > 0) {
       // Zielgröße kommt vom Hauptprozess; das Fenster springt, die Kugel gleitet
@@ -410,12 +424,12 @@
     if (!dragging) {
       const face = FACING[shape];
       if (face) { // Formen mit Schauseite drehen nicht ganz rum, sondern pendeln und kommen zurück
-        swing += dt * speedK * spinK * (0.22 + (state === "thinking" ? 0.3 : 0));
+        swing += rotDt * speedK * spinK * (0.22 + (state === "thinking" ? 0.3 : 0));
         const TAU = Math.PI * 2, d = ((face.y + face.a * Math.sin(swing) - ay + Math.PI) % TAU + TAU) % TAU - Math.PI;
-        ay += d * Math.min(1, dt * 1.5) + vy * 0.9;
-        ax += (face.x - ax) * Math.min(1, dt * 1.2);
-      } else ay += (0.05 + (state === "thinking" ? 0.08 : 0)) * dt * speedK * spinK + vy * 0.9;
-      vy *= 0.92; vx *= 0.9;
+        ay += d * Math.min(1, rotDt * 1.5) + vy * 0.9 * inertia;
+        ax += (face.x - ax) * Math.min(1, rotDt * 1.2);
+      } else ay += (0.05 + (state === "thinking" ? 0.08 : 0)) * rotDt * speedK * spinK + vy * 0.9 * inertia;
+      vy *= Math.pow(0.92, inertia); vx *= Math.pow(0.9, inertia);
     }
 
     // Leerlauf-Hintergrundaktivität
