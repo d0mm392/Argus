@@ -8,7 +8,7 @@ async function measure(f, ms) {
   return f.evaluate(`new Promise((done) => {
     let frames = 0; const real = ctx.clearRect; ctx.clearRect = function (...a) { frames++; return real.apply(this, a); };
     const y0 = ay, s0 = performance.now(); lastAct = s0 - 70000;
-    const hold = setInterval(() => { lastAct = performance.now() - 70000; }, 200);
+    const hold = setInterval(() => { lastAct = performance.now() - 70000; }, 4); // auch echte Mausbewegungen über dem Testfenster überschreiben
     setTimeout(() => { clearInterval(hold); ctx.clearRect = real; const sec = (performance.now() - s0) / 1000; done({ fps: +(frames / sec).toFixed(1), rad: +((ay - y0) / sec).toFixed(4) }); }, ${ms});
   })`);
 }

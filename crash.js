@@ -63,7 +63,7 @@ function archive(title, text, state) {
 }
 const history = () => histRead().map((x) => ({ id: x.id, t: x.t, title: x.title, state: x.state })).reverse();
 const LEGACY_NOTE = "Hinweis: Dieser Bericht stammt aus einer Version vor 0.58.31. Die Versionsangabe nennt die Version beim Anzeigen, nicht beim Ereignis. Enthaltene Protokollzeilen belegen keine Ursache.\n\n";
-const view = (id) => { const x = histRead().find((e) => e.id === id); return !x ? null : /Ereigniszeitpunkt/.test(x.text) ? x : { ...x, text: LEGACY_NOTE + x.text }; };
+const view = (id) => { const x = histRead().find((e) => e.id === id); return !x ? null : /^### /m.test(x.text) && !/Ereigniszeitpunkt/.test(x.text) ? { ...x, text: LEGACY_NOTE + x.text } : x; };
 function remove(id) { const a = histRead().filter((x) => x.id !== id); try { fs.writeFileSync(hist, JSON.stringify(a)); } catch {} return true; }
 function clean() {
   clearInterval(pulse); pulse = null;
