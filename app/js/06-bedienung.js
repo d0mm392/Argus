@@ -388,6 +388,16 @@
   // Läuft YouTube/Twitch (eingebettet oder eigenes Fenster), teilt sich der Player die Grafikkarte mit Argus: Kugel höchstens 30 Bilder/s
   // Flüssig: Wer eine höhere Ruhe-Bildrate gewählt hat, behält sie auch nach einer Minute ohne Maus (die gibt es im inaktiven Fenster immer). Die sparsamen Stufen bleiben wie bisher, das hebt die Last nicht pauschal an
   const keepsIdleFps = () => presentationState.mode === "fluid" && presentationState.visible && fpsIdle > 15;
+  // Bildtakt nach festem Zeitplan statt „Abstand seit dem letzten Bild“: Der Animationstakt folgt oft dem Hauptbildschirm (z. B. 144 Hz), auch wenn Argus auf einem 60-Hz-Bildschirm liegt.
+  // Mit festem Mindestabstand würde aus 60 dort 48 Bilder/s, also alle fünf Bildwechsel ein doppeltes Bild. So stimmt der Schnitt. 1 ms Spielraum, damit Zeitabweichungen keine Bilder auslassen; nach einer Lücke wird nichts nachgeholt
+  const newPace = () => ({ next: 0, last: 0 });
+  function pace(p, now, ms) {
+    const due = Math.min(p.next, p.last + ms);
+    if (now < due - 1) return false;
+    p.last = now; p.next = Math.max(due + ms, now + ms / 2);
+    return true;
+  }
+  const orbPace = newPace();
   let videoWin = false; window.argus.onVideoWin?.((v) => { videoWin = v; });
   window.videoBusy = () => videoWin || !!(window.videoEmbed?.yt || window.videoEmbed?.tw);
   function frame(now, once) {
@@ -401,8 +411,8 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, minMs = lite ? 33 : calm ? 1000 / (now - lastAct > 60000 && !keepsIdleFps() ? Math.min(fpsIdle, 10) : fpsIdle) - 1 : 1000 / fpsMax - 1; // nach einer Minute Ruhe höchstens 10 Bilder/s
-    if (!once && now - lastT < (window.videoBusy() && !drag ? Math.max(minMs, 33) : minMs)) { requestAnimationFrame(frame); return; }
+    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, frameMs = lite ? 1000 / 30 : calm ? 1000 / (now - lastAct > 60000 && !keepsIdleFps() ? Math.min(fpsIdle, 10) : fpsIdle) : 1000 / fpsMax; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    if (!once && !pace(orbPace, now, window.videoBusy() && !drag ? Math.max(frameMs, 1000 / 30) : frameMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)
     if (!once && setOpen && now - lastT < 500) { requestAnimationFrame(frame); return; }

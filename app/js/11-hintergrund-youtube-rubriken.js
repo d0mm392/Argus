@@ -35,12 +35,12 @@
   }
   // Mindestabstand zweier Hintergrundbilder. Grundsätzlich reichen 30 Bilder/s, in Ruhe weniger.
   // Bei „Flüssig“ gilt die gewählte Ruhe-Bildrate auch hier, 60 aber nur, wenn sie ausdrücklich gewählt ist. Die sparsame Stufe bleibt wie bisher.
-  // 1 ms Spielraum: Der Abstand liegt sonst genau auf dem Bildschirmtakt, und kleinste Zeitabweichungen ließen einzelne Bilder aus (Haken)
-  function bgMinMs() {
-    if (window.videoBusy?.() || lite) return 66;
-    if (keepsIdleFps()) return 1000 / (fpsIdle > 30 ? Math.min(fpsIdle, fpsMax) : 30) - 1;
+  const bgPace = newPace();
+  function bgFrameMs() {
+    if (window.videoBusy?.() || lite) return 1000 / 15;
+    if (keepsIdleFps()) return 1000 / (fpsIdle > 30 ? Math.min(fpsIdle, fpsMax) : 30);
     const idle = performance.now() - lastAct;
-    return (idle > 8000 ? Math.max(1000 / 30, 1000 / Math.min(fpsIdle, idle > 60000 ? 10 : 24)) : 1000 / 30) - 1;
+    return idle > 8000 ? Math.max(1000 / 30, 1000 / Math.min(fpsIdle, idle > 60000 ? 10 : 24)) : 1000 / 30;
   }
   function bgFrame(now) {
     bg.raf = 0;
@@ -48,7 +48,7 @@
     bg.cv.classList.toggle("on", live);
     if (!live) return;
     bg.raf = requestAnimationFrame(bgFrame);
-    if (now - bg.last < bgMinMs()) return;
+    if (!pace(bgPace, now, bgFrameMs())) return;
     const dt = Math.min(0.1, (now - (bg.last || now)) / 1000); bg.last = now;
     const w = bg.cv.clientWidth, h = bg.cv.clientHeight; if (!w || !h) return;
     if (w !== bg.w || h !== bg.h) { bg.w = bg.cv.width = w; bg.h = bg.cv.height = h; bgBuild(); } // Pixelzahl 1:1, nicht ×DPI: weicher Hintergrund braucht keine Schärfe

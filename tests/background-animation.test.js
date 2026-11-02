@@ -25,8 +25,10 @@ async function run() {
 
   await rate(60); send({ mode: "fluid", visible: true, focused: false, throttled: false }); await f.wait(200);
   const fluid60 = await measure(f, 3000);
-  check("fluid 60, inactive, one minute idle: follows the chosen rate", fluid60.fps > 40, JSON.stringify(fluid60));
-  check("fluid 60: even frame spacing", fluid60.p95 < fluid60.median * 1.6, JSON.stringify(fluid60));
+  check("fluid 60, inactive, one minute idle: reaches the chosen rate", fluid60.fps > 54 && fluid60.fps < 64, JSON.stringify(fluid60));
+  check("fluid 60: frames stay close to the schedule", fluid60.p95 < 1000 / 60 * 1.5, JSON.stringify(fluid60));
+  const orbRate = await f.evaluate(`new Promise((done) => { let n = 0; const real = ctx.clearRect; ctx.clearRect = function (...a) { n++; return real.apply(this, a); }; const s = performance.now(); lastAct = s - 70000; const hold = setInterval(() => { lastAct = performance.now() - 70000; }, 4); setTimeout(() => { clearInterval(hold); ctx.clearRect = real; done(+(n / ((performance.now() - s) / 1000)).toFixed(1)); }, 3000); })`);
+  check("fluid 60: the orb reaches the chosen rate too", orbRate > 54 && orbRate < 64, String(orbRate));
   check("fluid 60: particles keep their speed", Math.abs(fluid60.speed - 1) < 0.15, JSON.stringify(fluid60));
 
   await rate(30); await f.wait(200);
@@ -49,7 +51,7 @@ async function run() {
   check("hidden window draws no background", hidden.fps === 0, JSON.stringify(hidden));
   send({ mode: "fluid", visible: true, focused: true, throttled: false }); await f.wait(1300);
   const back = await measure(f, 2000);
-  check("background resumes after restoring", back.fps > 40, JSON.stringify(back));
+  check("background resumes after restoring", back.fps > 54, JSON.stringify(back));
 
   await f.evaluate(`fpsIdle = 60; fpsMax = 30; true`); await f.wait(200);
   const capped = await measure(f, 2000);
