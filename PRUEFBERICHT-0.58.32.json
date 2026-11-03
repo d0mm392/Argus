@@ -1,0 +1,119 @@
+{
+  "status": "PASS",
+  "version": "0.58.32",
+  "source": "395c0d49a5955c26aa98585160d322dca9935565",
+  "build": {
+    "status": "PASS",
+    "version": "0.58.32",
+    "source": "395c0d49a5955c26aa98585160d322dca9935565",
+    "productFiles": 92,
+    "manifestFiles": 4824,
+    "installerSHA256": "5da4b008a1b33ccb85316e454e3b6a157b406c34a53215144eb59febfe127fa7",
+    "cspUnchanged": true,
+    "startfixPreserved": true
+  },
+  "vm": {
+    "status": "PASS",
+    "version": "0.58.32",
+    "installerSHA256": "5da4b008a1b33ccb85316e454e3b6a157b406c34a53215144eb59febfe127fa7",
+    "manifestFiles": 4824,
+    "systemEnd": [
+      "restart",
+      "shutdown",
+      "logoff"
+    ],
+    "normalQuit": true,
+    "forcedProcessTermination": true,
+    "settingsAndLocationsPreserved": true,
+    "installedRenderer": true,
+    "orbScenario": [
+      "PASS real focus loss reaches the renderer {\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false}",
+      "PASS inactive visible window keeps speed {\"fps\":30,\"rad\":0.05,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false},\"hidden\":false}",
+      "PASS inactive visible window keeps 60 FPS setting {\"fps\":30,\"rad\":0.05,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":false,\"throttled\":false},\"hidden\":false}",
+      "PASS hidden window draws nothing {\"fps\":0,\"rad\":0,\"state\":{\"mode\":\"fluid\",\"visible\":false,\"focused\":false,\"throttled\":true},\"hidden\":false}",
+      "PASS no animation jump after restoring {\"before\":0.7037349999998096,\"after\":0.806508333333104}",
+      "PASS animation runs again after restoring {\"fps\":29.9,\"rad\":0.0498,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":true,\"throttled\":false},\"hidden\":false}",
+      "PASS background keeps the chosen rate without input {\"fps\":15,\"state\":{\"mode\":\"fluid\",\"visible\":true,\"focused\":true,\"throttled\":false},\"expanded\":true,\"live\":true}",
+      "PASS covered Mining orb detected",
+      "PASS Mining orb visible after restoring",
+      "PASS other page unchanged",
+      "PASS Mining orb survives page change",
+      "PASS Mining orb survives restart"
+    ],
+    "testHarness": "Interactive Task Scheduler launches Node, which starts Argus through Explorer Shell.Application.",
+    "environmentNote": "VM without GPU acceleration: orb about 30 FPS and expanded background about 15 FPS at the 60 FPS setting. The background check ran with a focused window and only shows that the rate stays above the old 10 FPS limit; the inactive-window rate was measured in the isolated host test.",
+    "invalidatedAttempts": [
+      "First run stopped because the version rename also changed the fixed backup file name expected by the test tool; tool corrected, product unchanged, run repeated.",
+      "Guest control channel stopped responding twice around the restart step; only the VM was reset, polling slowed, and the restart and logoff steps repeated with success."
+    ],
+    "startupFixBaseline": "d376e7df3c4668215e58833454ea73ce53f46e8c"
+  },
+  "nodeTests": {
+    "pass": 91,
+    "fail": 0,
+    "skip": 0
+  },
+  "rendererTests": {
+    "weatherUi": "5/5",
+    "orbVisibility": "21/21",
+    "orbAnimation": "10/10",
+    "backgroundAnimation": "14/14",
+    "menus": "unstable on the host: failed 3 times on this source and once on 0.58.31 while the desktop was in use, then passed 5 of 5 on both; focus dependence is the likely cause, not proven",
+    "notesLayout": "pass"
+  },
+  "frameMeasurement": {
+    "setting": "60 FPS idle and moving, Fluid, inactive window, one minute without input, 144.9 Hz animation clock, isolated 1280x900 test window, two runs each",
+    "before": {
+      "backgroundFps": 9.6,
+      "orbFps": 48,
+      "rendererCorePercent": [
+        22.7,
+        21.9
+      ],
+      "gpuProcessCorePercent": [
+        18.8,
+        18.5
+      ]
+    },
+    "after": {
+      "backgroundFps": 60,
+      "orbFps": 60,
+      "rendererCorePercent": [
+        27.6,
+        25.9
+      ],
+      "gpuProcessCorePercent": [
+        25.7,
+        22.2
+      ]
+    }
+  },
+  "knownPreexistingTests": [
+    {
+      "suite": "tests/hotfix.test.js",
+      "pass": 14,
+      "fail": 3,
+      "identicalOnBaseline": "252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf"
+    },
+    {
+      "suite": "tests/classic-theme.test.js",
+      "result": "fails at the stylesheet comparison",
+      "identicalOnBaseline": "252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf"
+    },
+    {
+      "suite": "tests/ui.test.js",
+      "result": "not run: it starts the real main process, which is not done on the host next to the installed Argus. The installed main process was exercised in the VM instead."
+    }
+  ],
+  "limitations": [
+    "A Windows session end in which Argus receives no message is still reported as an unclean end.",
+    "Forced power loss cannot be distinguished from forced process termination.",
+    "In a focused window the 10 FPS limit after one idle minute still applies at the saving rates.",
+    "The real display output on the 60 Hz monitor was not measured; the measurements cover the frame schedule inside Argus.",
+    "Choosing 60 FPS costs measurably more CPU and GPU than the previous 48/10 FPS.",
+    "Voice activation in a hidden window was not tested with a microphone.",
+    "The optional Apple mode is not part of this source state, so only the classic mode was tested.",
+    "Installer is unsigned."
+  ],
+  "stableUnchanged": "18598e99467d0299657a1e8650d5b6301029a739"
+}

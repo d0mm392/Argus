@@ -1,9 +1,9 @@
-# Argus 0.58.31 – Testkanal
+# Argus 0.58.32 – Testkanal
 
-[Windows-Installer](Argus-Setup-0.58.31.exe) · [Versionshinweise](RELEASE-NOTES-0.58.31.md) · [Prüfbericht](PRUEFBERICHT-0.58.31.json)
+[Windows-Installer](Argus-Setup-0.58.32.exe) · [Versionshinweise](RELEASE-NOTES-0.58.32.md) · [Prüfbericht](PRUEFBERICHT-0.58.32.json)
 
-Bestätigte Fehlerberichte erscheinen nicht erneut und nennen die Version zum Ereigniszeitpunkt. Die Kugel dreht im inaktiven Fenster im gleichen Tempo und lässt sich auf Mining wieder sichtbar machen, wenn ein Fenster sie verdeckt. Stable bleibt unverändert.
+Der bewegte Hintergrund folgt der gewählten Ruhe-Bildrate, und Kugel und Hintergrund erreichen sie auch bei mehreren Bildschirmen mit unterschiedlichem Takt. Stable bleibt unverändert.
 
-SHA-256: `499d96d1be7814dd7df57d88fb0d47600d466f7e0ee15fd2606039e186735ea1`
+SHA-256: `5da4b008a1b33ccb85316e454e3b6a157b406c34a53215144eb59febfe127fa7`
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/252a8f0fc4b1f03252b9313f5a4e9e8adf46d2cf) · [Quellarchiv](Argus-Source-0.58.31.zip) · [Prüfsummen](SHA256SUMS.txt)
+[Quellstand](https://github.com/d0mm392/Argus/tree/395c0d49a5955c26aa98585160d322dca9935565) · [Quellarchiv](Argus-Source-0.58.32.zip) · [Prüfsummen](SHA256SUMS.txt)

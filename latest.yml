@@ -1,33 +1,24 @@
-version: 0.58.31
+version: 0.58.32
 files:
-  - url: Argus-Setup-0.58.31.exe
-    sha512: TXdvPYxHkpVA9jYGxwwSR03Ly0rGRP4igWCFUs+dT9gGZqG2qmVVeU6TOhjQnm9HXvPEd+MiMp4N8m6fdhEvAQ==
-    size: 93495359
-path: Argus-Setup-0.58.31.exe
-sha512: TXdvPYxHkpVA9jYGxwwSR03Ly0rGRP4igWCFUs+dT9gGZqG2qmVVeU6TOhjQnm9HXvPEd+MiMp4N8m6fdhEvAQ==
-releaseDate: '2026-11-02T17:12:26.469Z'
-releaseName: "Argus 0.58.31 – Fehlerberichte und Kugel"
+  - url: Argus-Setup-0.58.32.exe
+    sha512: kXIrfsG3k8j9yMvkAqNn3xlk3mWbIjvmO7F6mJlYJsHFo/cRM4VfJLwVp3a73Buc69VwKTvqsii0L8OE+DoF1w==
+    size: 93495925
+path: Argus-Setup-0.58.32.exe
+sha512: kXIrfsG3k8j9yMvkAqNn3xlk3mWbIjvmO7F6mJlYJsHFo/cRM4VfJLwVp3a73Buc69VwKTvqsii0L8OE+DoF1w==
+releaseDate: '2026-11-02T23:24:31.204Z'
+releaseName: "Argus 0.58.32 – Flüssiger Hintergrund"
 releaseNotes: |
-  # Argus 0.58.31 – Fehlerberichte und Kugel
+  # Argus 0.58.32 – Flüssiger Hintergrund
   
-  **Fehlerberichte**
-  - Ein kopierter Bericht gilt jetzt als bestätigt und erscheint nicht bei jedem Start erneut. Bereits in der Historie gespeicherte Berichte werden beim ersten Start einmalig als bestätigt übernommen. Der alte Stand wird vorher gesichert, die Historie bleibt erhalten.
-  - Jeder Bericht nennt die Argus-Version zum Ereigniszeitpunkt getrennt von der aktuellen Version. Bei älteren Berichten steht dort „nicht erfasst“.
-  - Abgefangene Netzfehler, zum Beispiel HTTP 503 von Open-Meteo, werden einem unsauberen Ende nicht mehr beigefügt. Ältere Berichte blenden die damals angehängten Protokollzeilen aus.
-  - Jedes unsaubere Ende wird weiterhin erfasst, auch wenn ein ähnlicher Bericht offen ist oder „nicht mehr melden“ gewählt wurde.
+  **Bewegter Hintergrund**
+  - „Bildrate in Ruhe“ gilt jetzt wie beschrieben auch für den Hintergrund. Bisher fiel er ohne Eingabe auf 24 und nach einer Minute auf 10 Bilder pro Sekunde, auch bei der Einstellung 60.
+  - Bei „Flüssig“ bleibt die gewählte Rate erhalten: 30 bleibt 30, 60 wird 60. Die Stufe 15 und „Energiesparend“ behalten ihre bisherigen Grenzen.
+  - Im Farbmodus „bunt“ legt der Hintergrund nach einer Farbrunde keine neuen Zeichenflächen mehr an.
   
-  **Kugel bei inaktivem Fenster**
-  - Die Drehung folgt der verstrichenen Zeit. Ihr Tempo hängt nicht mehr von der Bildrate ab.
-  - „Darstellung im Hintergrund“ ist jetzt mit dem Hauptfenster verbunden. Bei „Flüssig“ bleibt eine gewählte Ruhe-Bildrate über 15 auch im inaktiven Fenster erhalten. Die Stufe 15 läuft wie bisher, die Last steigt dort nicht.
-  - Minimierte und ausgeblendete Fenster zeichnen nichts mehr und laufen danach ohne Sprung weiter.
+  **Gleichmäßige Bildrate bei mehreren Bildschirmen**
+  - Der Animationstakt folgt oft dem Hauptbildschirm. Bei 144 Hz wurden aus eingestellten 60 Bildern nur 48, und auf einem 60-Hz-Bildschirm wiederholte sich dadurch alle fünf Bildwechsel ein Bild. Kugel und Hintergrund erreichen jetzt im Schnitt die gewählte Rate.
   
-  **Kugel auf der Mining-Seite**
-  - Argus erkennt, wenn die Kugel hinter einem undurchsichtigen Fenster liegt, und bietet „Wieder sichtbar machen“ an: als Hinweis, in den Einstellungen und im Rechtsklick-Menü.
-  - Dabei ändert sich nur die Kugel der aktuellen Seite (Position, falls nötig auch Größe). Fenster, Anzeigen und andere Seiten bleiben unverändert. Ohne Klick wird nichts verschoben. Strg+Z nimmt es zurück.
-  
-  **Bekannte Einschränkungen**
-  - Ein Windows-Systemende, bei dem Argus keine Nachricht mehr erhält, wird weiterhin als unsauberes Ende gemeldet.
-  - Bei fokussiertem Fenster gilt nach einer Minute ohne Eingabe bei den sparsamen Stufen weiter die Grenze von 10 Bildern pro Sekunde.
-  - Sprachaktivierung bei ausgeblendetem Fenster wurde ohne Mikrofon nicht geprüft.
+  **Auswirkung auf die Last**
+  - Wer 60 gewählt hat, bekommt sie jetzt tatsächlich, das kostet etwas mehr CPU und GPU. Bei hohem Bildschirmtakt steigt die Rate während der Bewegung ebenfalls von rund 48 auf die eingestellten 60. Die Stufe „15 (sparsam)“ bleibt in Ruhe unverändert.
   
   Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.

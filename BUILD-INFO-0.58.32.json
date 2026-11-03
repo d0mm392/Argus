@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "version": "0.58.32",
+  "source": "395c0d49a5955c26aa98585160d322dca9935565",
+  "productFiles": 92,
+  "manifestFiles": 4824,
+  "installerSHA256": "5da4b008a1b33ccb85316e454e3b6a157b406c34a53215144eb59febfe127fa7",
+  "cspUnchanged": true,
+  "startfixPreserved": true,
+  "channel": "updates",
+  "sourceArchiveSHA256": "e9fc1a72ab90a04d362887d66f757f6f9ccfde77dcd4d86c93c44a25ae8d5209"
+}
