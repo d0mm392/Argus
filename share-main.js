@@ -116,6 +116,23 @@ function create({ electron, getConfig, saveConfig, appUrl, icon, log }) {
     const c = getConfig();
     return { stun: c.shareStun, turnUrl: c.shareTurnUrl, turnUser: c.shareTurnUser, turnPass: c.shareTurnPass, relayOnly: !!c.shareRelayOnly, signal: c.shareSignal };
   });
+  // Ausweichweg für die Vermittlung: WebSocket aus dem Hauptprozess (Node), falls das Fenster selbst keine Verbindung bekommt
+  // (z. B. Virenschutz/Firewall-Filter für den Browser-Teil). Nur ws/wss, höchstens 8 gleichzeitig, nur für Übertragungsfenster.
+  const WSLib = require("ws"), socks = new Map(); let sockN = 0;
+  ipcMain.handle("share-ws-open", (e, url, proto) => {
+    if (!fromShare(e) || typeof url !== "string" || !/^wss?:\/\//i.test(url) || socks.size >= 8) return 0;
+    const id = ++sockN, wc = e.sender, emit = (k, v) => { try { if (!wc.isDestroyed()) wc.send("share-ws", id, k, v); } catch {} };
+    let s; try { s = new WSLib(url, proto ? [String(proto)] : undefined, { handshakeTimeout: 9000 }); } catch (err) { setTimeout(() => emit("close", { code: 0, reason: String(err.message || err) }), 0); return id; }
+    socks.set(id, { s, wc });
+    s.on("open", () => emit("open"));
+    s.on("message", (d, isBin) => emit("message", isBin ? new Uint8Array(d) : d.toString()));
+    s.on("error", (err) => emit("error", String(err.message || err).slice(0, 160)));
+    s.on("close", (code, reason) => { socks.delete(id); emit("close", { code, reason: String(reason || "") }); });
+    wc.once("destroyed", () => { try { s.terminate(); } catch {} socks.delete(id); });
+    return id;
+  });
+  ipcMain.on("share-ws-send", (e, id, data) => { const x = socks.get(id); if (x && x.wc === e.sender && x.s.readyState === 1) try { x.s.send(data); } catch {} });
+  ipcMain.on("share-ws-close", (e, id) => { const x = socks.get(id); if (x && x.wc === e.sender) try { x.s.close(); } catch {} });
   ipcMain.on("share-state", (e, s) => { if (fromShare(e)) setState(e.sender.id, s || {}); });
   ipcMain.on("share-pointer", (e, p) => { if (fromShare(e)) pointer(p); });
   ipcMain.on("share-attention", (e, t) => {

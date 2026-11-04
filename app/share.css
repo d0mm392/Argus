@@ -1,5 +1,7 @@
 :root { --bg: #0a111c; --panel: #111b29; --line: #22324a; --text: #e6edf6; --muted: #8fa1b8; --acc: #2fb4e8; --ok: #3fbf7f; --warn: #e0a83a; --bad: #e0525b; color-scheme: dark; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sigtest { margin: 0; padding-left: 18px; font-size: 12px; } .sigtest li[data-k="ok"] { color: var(--ok); } .sigtest li[data-k="bad"] { color: var(--bad); }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
 button, input, select { font: inherit; color: inherit; }
 button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }

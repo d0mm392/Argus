@@ -8,34 +8,14 @@
     iceQ: [], restarted: false, timers: [], stats: { last: null }, connectedOnce: false, pointing: false, paused: false, muted: false, hasAudio: false, peerPointer: false };
   window.__share = S; // für Tests und Fehlersuche
 
-  // ---------- Vermittlung (PeerJS-kompatibles Protokoll; eigener Server möglich) ----------
+  // ---------- Vermittlung: mehrere Server zugleich (share-signal.js), Nachrichten verschlüsselt ----------
   class Signal {
-    constructor(url, id, onMsg, onClose) { this.url = url; this.id = id; this.onMsg = onMsg; this.onClose = onClose; this.ws = null; this.hb = null; this.closed = false; this.chain = Promise.resolve(); }
-    connect() {
-      return new Promise((resolve, reject) => {
-        let base = String(this.url || C.DEFAULT_SIGNAL).trim();
-        if (!/^wss?:\/\//i.test(base)) return reject(new Error("Vermittlungsserver muss mit wss:// beginnen."));
-        const q = (base.includes("?") ? "&" : "?") + (/[?&]key=/.test(base) ? "" : "key=peerjs&") + "id=" + encodeURIComponent(this.id) + "&token=" + C.randId(8) + "&version=1.5.4";
-        let done = false; const t = setTimeout(() => { if (!done) { done = true; try { this.ws.close(); } catch {} reject(new Error("Vermittlungsserver antwortet nicht.")); } }, 12000);
-        try { this.ws = new WebSocket(base + q); } catch (e) { clearTimeout(t); return reject(new Error("Vermittlungsserver-Adresse ungültig.")); }
-        this.ws.onmessage = (ev) => {
-          let m; try { m = JSON.parse(ev.data); } catch { return; }
-          if (!m || typeof m.type !== "string") return;
-          if (!done) {
-            if (m.type === "OPEN") { done = true; clearTimeout(t); this.hb = setInterval(() => this.raw({ type: "HEARTBEAT" }), 5000); return resolve(); }
-            if (m.type === "ID-TAKEN" || m.type === "ERROR") { done = true; clearTimeout(t); return reject(Object.assign(new Error(m.type === "ID-TAKEN" ? "Adresse belegt" : "Vermittlungsserver meldet einen Fehler: " + (m.payload?.msg || "")), { taken: m.type === "ID-TAKEN" })); }
-          }
-          // strikt nacheinander abarbeiten: Annahme, Angebot und Kandidaten müssen in dieser Reihenfolge ankommen
-          this.chain = this.chain.then(() => this.closed ? null : this.onMsg(m)).catch(() => {});
-        };
-        this.ws.onclose = () => { clearInterval(this.hb); if (!done) { done = true; clearTimeout(t); reject(new Error("Vermittlungsserver nicht erreichbar.")); } else if (!this.closed) this.onClose?.(); };
-        this.ws.onerror = () => {};
-      });
-    }
-    raw(o) { try { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify(o)); } catch {} }
-    async send(type, dst, data) { this.raw({ type, dst, payload: await C.seal(S.key, data) }); }
-    close() { this.closed = true; clearInterval(this.hb); try { this.ws?.close(); } catch {} }
+    constructor(urls, id, onMsg, onClose) { this.m = new window.ShareSignal.Multi(C.signalList(urls), id, onMsg, onClose); }
+    async connect() { this.status = await this.m.connect(); return this.status; }
+    async send(type, dst, data) { this.m.send(type, dst, await C.seal(S.key, data)); }
+    close() { this.m.close(); }
   }
+  const sigInfo = () => { const st = S.sig?.status || []; const ok = st.filter((x) => x.ok).map((x) => x.name); return ok.length + " von " + st.length + " Vermittlungsservern erreichbar" + (ok.length < st.length ? " (" + st.filter((x) => !x.ok).map((x) => x.name + ": " + x.err).join(", ") + ")" : ""); };
 
   // ---------- Oberfläche ----------
   const panes = ["pHostSetup", "pHostWait", "pHostAsk", "pViewSetup", "pLive"];
@@ -128,18 +108,18 @@
       const d = await C.derive(C.newCode());
       S.key = d.key; S.myId = d.hostId; $("codeOut").textContent = d.code; S.code = d.code;
       S.sig = new Signal(ice?.signal, S.myId, onHostMsg, () => sigLost());
-      try { await S.sig.connect(); break; } catch (e) { S.sig = null; if (!e.taken || i === 2) { fail(e.message); return; } }
+      try { await S.sig.connect(); break; } catch (e) { S.sig = null; fail(e.message); return; }
     }
     if (S.phase !== "wait") return;
-    stateTxt("hostWaitState", "Bereit. Warte auf die Anfrage deines Gegenübers …", "ok");
+    stateTxt("hostWaitState", "Bereit. Warte auf die Anfrage deines Gegenübers … " + sigInfo() + ".", "ok");
     setStage("Dein Bildschirm wird noch nicht übertragen.");
   }
   async function onHostMsg(m) {
-    if (m.type === "EXPIRE" || m.type === "LEAVE") { if (S.peer && m.src === S.peer.id && S.phase !== "live") end("Dein Gegenüber ist nicht mehr erreichbar."); return; }
     const data = await C.open(S.key, m.payload); if (!data || !m.src) return; // nicht mit diesem Code verschlüsselt: ignorieren
     if (data.k === "hello") {
       if (S.peer && S.peer.id !== m.src) return S.sig.send("OFFER", m.src, { k: "busy", sid: data.sid });
       if (S.phase !== "wait") return;
+      await S.sig.send("OFFER", m.src, { k: "ring", sid: data.sid }); // sofort melden: Code stimmt, Anfrage liegt vor
       S.peer = { id: m.src, name: clean(data.name) || "Unbekannt", sid: String(data.sid || "").slice(0, 32) };
       S.phase = "ask"; show("pHostAsk"); $("askName").textContent = S.peer.name;
       $("askWhat").textContent = "Übertragen wird: " + (S.src.screen ? "Bildschirm " : "Fenster ") + S.src.name + ($("optAudio").checked ? ", mit Ton" : ", ohne Ton") + ".";
@@ -180,16 +160,17 @@
     const ice = await api.ice();
     S.sig = new Signal(ice?.signal, S.myId, onViewMsg, () => sigLost());
     try { await S.sig.connect(); } catch (e) { return fail(e.message); }
+    if (S.phase !== "knock") return;
     await S.sig.send("OFFER", S.peer.id, { k: "hello", name: name || "Unbekannt", sid: S.sid, v: 1 });
-    stateTxt("viewState", "Anfrage gesendet. Dein Gegenüber muss jetzt annehmen …", "ok");
+    stateTxt("viewState", "Anfrage gesendet … " + sigInfo() + ".");
+    timer(() => { if (S.phase === "knock" && !S.rung) fail("Code nicht gefunden. Entweder stimmt er nicht, oder dein Gegenüber hat die Übertragung noch nicht vorbereitet (" + sigInfo() + ")."); }, 15000);
     timer(() => { if (S.phase === "knock") fail("Keine Antwort. Stimmt der Code, und hat dein Gegenüber die Übertragung vorbereitet?"); }, 120000);
   }
   async function onViewMsg(m) {
     if (!S.peer || m.src !== S.peer.id) return;
-    if (m.type === "EXPIRE") { if (S.phase === "knock") fail("Code nicht gefunden. Entweder stimmt er nicht, oder dein Gegenüber hat die Übertragung noch nicht vorbereitet."); return; }
-    if (m.type === "LEAVE") { if (S.phase !== "idle") end("Dein Gegenüber ist nicht mehr erreichbar."); return; }
     const data = await C.open(S.key, m.payload); if (!data || data.sid !== S.sid) return;
-    if (data.k === "accept" && S.phase === "knock") { S.phase = "connecting"; S.hasAudio = !!data.audio; stateTxt("viewState", "Angenommen. Baue die Verbindung auf …", "ok"); await makePc(false); goLive(); }
+    if (data.k === "ring" && S.phase === "knock") { S.rung = true; stateTxt("viewState", "Code stimmt. Dein Gegenüber muss jetzt annehmen …", "ok"); }
+    else if (data.k === "accept" && S.phase === "knock") { S.phase = "connecting"; S.hasAudio = !!data.audio; stateTxt("viewState", "Angenommen. Baue die Verbindung auf …", "ok"); await makePc(false); goLive(); }
     else if (data.k === "reject") fail("Dein Gegenüber hat abgelehnt.");
     else if (data.k === "busy") fail("Dort sieht gerade schon jemand zu.");
     else if (data.k === "sdp" && S.pc && data.sdp?.type === "offer") {
@@ -329,7 +310,7 @@
     try { S.dc?.close(); } catch {} try { S.pc?.close(); } catch {}
     S.stream?.getTracks().forEach((t) => t.stop());
     S.sig?.close();
-    Object.assign(S, { pc: null, dc: null, sig: null, stream: null, peer: null, key: null, iceQ: [], connectedOnce: false, restarted: false, hasAudio: false, stats: { last: null } });
+    Object.assign(S, { rung: false, pc: null, dc: null, sig: null, stream: null, peer: null, key: null, iceQ: [], connectedOnce: false, restarted: false, hasAudio: false, stats: { last: null } });
     $("vid").srcObject = null; setPointing(false); api.state({ active: false });
     lockTabs(false); $("btnJoin").disabled = !C.normCode($("inCode").value);
     setRole(S.role);
@@ -384,6 +365,13 @@
   // Einstellungen-Dialog: ×, Schließen, Esc und Klick daneben schließen ihn
   const dlgOpen = () => { $("dlg").hidden = false; $("cfgName").focus(); };
   const dlgClose = () => { $("dlg").hidden = true; };
+  $("btnSigTest").onclick = async () => {
+    const out = $("sigTest"); out.textContent = "Prüfe …"; $("btnSigTest").disabled = true;
+    const ice = await api.ice().catch(() => null), t = new window.ShareSignal.Multi(C.signalList(ice?.signal), "argus-t-" + C.randId(8), () => {});
+    try { await t.connect(); } catch {}
+    out.replaceChildren(...t.status.map((x) => { const li = document.createElement("li"); li.textContent = x.name + ": " + (x.ok ? "erreichbar" : "nicht erreichbar (" + x.err + ")"); li.dataset.k = x.ok ? "ok" : "bad"; return li; }));
+    t.close(); $("btnSigTest").disabled = false;
+  };
   $("btnSettings").onclick = dlgOpen; $("dlgX").onclick = dlgClose; $("dlgOk").onclick = dlgClose;
   $("dlg").addEventListener("mousedown", (e) => { if (e.target === $("dlg")) dlgClose(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("dlg").hidden) { e.preventDefault(); dlgClose(); } });
@@ -397,7 +385,7 @@
     fillSelect($("optBuffer"), C.BUFFERS, S.cfg.shareBuffer || "normal"); fillSelect($("optBufferLive"), C.BUFFERS, S.cfg.shareBuffer || "normal");
     $("optAudio").checked = S.cfg.shareAudio !== false;
     $("inName").value = S.cfg.shareName || ""; $("cfgName").value = S.cfg.shareName || "";
-    $("cfgSignal").value = S.cfg.shareSignal || ""; $("cfgSignal").placeholder = C.DEFAULT_SIGNAL;
+    $("cfgSignal").value = S.cfg.shareSignal || ""; $("cfgSignal").placeholder = "leer = Standard: " + C.DEFAULT_SIGNAL;
     $("cfgStun").value = S.cfg.shareStun ?? ""; $("cfgStun").placeholder = C.DEFAULT_STUN;
     $("cfgTurnUrl").value = S.cfg.shareTurnUrl || ""; $("cfgTurnUser").value = S.cfg.shareTurnUser || ""; $("cfgTurnPass").placeholder = S.cfg.hasTurnPass ? "gespeichert" : "";
     $("cfgRelayOnly").checked = !!S.cfg.shareRelayOnly; $("vol").value = String(S.cfg.shareVolume ?? 100);

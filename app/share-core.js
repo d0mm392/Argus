@@ -107,7 +107,13 @@
     return out;
   }
   const DEFAULT_STUN = "stun:stun.l.google.com:19302, stun:stun.cloudflare.com:3478";
-  const DEFAULT_SIGNAL = "wss://0.peerjs.com/peerjs";
+  // Mehrere öffentliche Vermittlungen zugleich: fällt eine aus oder ist sie gesperrt, läuft es über die anderen
+  const DEFAULT_SIGNALS = ["wss://0.peerjs.com/peerjs", "mqtt+wss://broker.emqx.io:8084/mqtt", "mqtt+wss://broker.hivemq.com:8884/mqtt"];
+  const DEFAULT_SIGNAL = DEFAULT_SIGNALS.join(", ");
+  function signalList(s) {
+    const l = String(s || "").split(/[\s,]+/).map((x) => x.trim()).filter((x) => /^(mqtt\+)?wss?:\/\/[^\s/]+/i.test(x));
+    return l.length ? l.slice(0, 6) : DEFAULT_SIGNALS.slice();
+  }
 
-  return { ALPHA, newCode, normCode, derive, seal, open, randId, tuneOpus, PRESETS, BUFFERS, pathInfo, PATH_LABEL, fmtRate, iceServers, DEFAULT_STUN, DEFAULT_SIGNAL };
+  return { ALPHA, newCode, normCode, derive, seal, open, randId, tuneOpus, PRESETS, BUFFERS, pathInfo, PATH_LABEL, fmtRate, iceServers, DEFAULT_STUN, DEFAULT_SIGNAL, DEFAULT_SIGNALS, signalList };
 });

@@ -92,7 +92,9 @@
   <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
     <div class="dlg-head"><h2 id="dlgT">Einstellungen</h2><button class="x" id="dlgX" aria-label="Schließen">×</button></div>
     <label class="col">Dein Name <input type="text" id="cfgName" maxlength="32" spellcheck="false"></label>
-    <label class="col">Vermittlungsserver (tauscht nur die Verbindungsdaten aus, kein Bild, kein Ton) <input type="text" id="cfgSignal" spellcheck="false"></label>
+    <label class="col">Vermittlungsserver (tauschen nur verschlüsselte Verbindungsdaten aus, kein Bild, kein Ton). Leer lassen für die Standard-Server. Mehrere mit Komma trennen. <input type="text" id="cfgSignal" spellcheck="false"></label>
+    <div class="actions"><button type="button" id="btnSigTest">Verbindung zu den Servern testen</button></div>
+    <ol class="sigtest" id="sigTest" aria-live="polite"></ol>
     <label class="col">STUN-Server (findet die Direktverbindung) <input type="text" id="cfgStun" spellcheck="false"></label>
     <h3>TURN-Server (optional)</h3>
     <p class="note">Nur nötig, wenn keine Direktverbindung zustande kommt, etwa bei Mobilfunk, Starlink oder Anbietern mit CGNAT. Bild und Ton laufen dann verschlüsselt über diesen Server. Zugangsdaten bekommst du bei deinem TURN-Anbieter oder eigenem Server. Sie bleiben verschlüsselt auf diesem PC.</p>
@@ -105,5 +107,6 @@
   </div>
 </div>
 <script src="share-core.js"></script>
+<script src="share-signal.js"></script>
 <script src="share.js"></script>
 </body></html>
