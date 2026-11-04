@@ -351,7 +351,7 @@
       : [Object.assign(document.createElement("span"), { textContent: "Noch keine Meldungen von Foreman – alles ruhig." })];
     run.replaceChildren(...items); tickSeen = newest;
     // Tempo: Länge der Zeile / Geschwindigkeit, 100 % ≈ 70 px pro Sekunde
-    requestAnimationFrame(() => { const px = run.scrollWidth + el.clientWidth; run.style.setProperty("--mts", Math.max(8, px / (70 * (mineFx.tick || 100) / 100)) + "s"); });
+    requestAnimationFrame(() => { const px = run.scrollWidth + el.clientWidth; const mts = Math.max(8, px / (70 * (mineFx.tick || 100) / 100)); run.style.setProperty("--mts", mts + "s"); run.style.setProperty("--mtsteps", String(Math.round(mts * 8))); }); // 8 Schritte/s, wenn die Sparoptik das Laufband ruhig stellt
   }
   function renderMHeat() {
     const el = $("mHeat"); el.hidden = !farmOn; if (!farmOn || el.classList.contains("gone")) return;

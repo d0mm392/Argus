@@ -411,7 +411,9 @@
     // Höchstens ~60–72 Bilder pro Sekunde: auf 144/165/240-Hz-Bildschirmen sonst das 2–4-Fache an Rechenlast ohne sichtbaren Gewinn
     // Ruhe-Bildrate (fpsIdle): ohne Maus/Tastatur seit 8 s und ohne Sprechen/Denken/Ziehen reichen 30 (oder weniger) Bilder pro Sekunde.
     // Spart GPU-Last von Argus und von Windows (dwm muss das transparente Fenster seltener neu zusammensetzen)
-    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, frameMs = lite ? 1000 / 30 : calm ? 1000 / (now - lastAct > 60000 && !keepsIdleFps() ? Math.min(fpsIdle, 10) : fpsIdle) : 1000 / fpsMax; // nach einer Minute Ruhe höchstens 10 Bilder/s
+    const calm = state === "idle" && !talking && !drag && now - lastAct > 8000, frameMs = lite ? 1000 / 30 : calm ? 1000 / (now - lastAct > 60000 && !keepsIdleFps() ? Math.min(fpsIdle, 10) : fpsIdle) : 1000 / (eco === "immer" ? Math.min(fpsMax, 30) : fpsMax); // nach einer Minute Ruhe höchstens 10 Bilder/s
+    // Sparoptik: im Leerlauf (oder immer) hält die Klasse eco-calm Dauer-Animationen an, siehe style.css. Windows muss das durchsichtige Fenster sonst bei jedem Bildwechsel neu zusammensetzen
+    const ecoNow = eco === "immer" || (eco === "ruhe" && calm); if (ecoNow !== ecoOn) { ecoOn = ecoNow; document.body.classList.toggle("eco-calm", ecoOn); }
     if (!once && !pace(orbPace, now, window.videoBusy() && !drag ? Math.max(frameMs, 1000 / 30) : frameMs)) { requestAnimationFrame(frame); return; }
     // Einstellungen offen: Kugel und Hintergrund liegen verdeckt darunter, nur selten neu zeichnen. Spart Leistung und verhindert,
     // dass Windows bei transparentem Fenster zwischen zwei Bildern kurz den Desktop durchscheinen lässt (Flackern)

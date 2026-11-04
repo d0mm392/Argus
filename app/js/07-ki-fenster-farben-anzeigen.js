@@ -257,6 +257,9 @@
   new MutationObserver(() => { if (!$("settings").hidden) { showRangeValues(); setTimeout(showRangeValues, 300); } }).observe($("settings"), { attributes: true, attributeFilter: ["hidden"] });
   // Sparmodus: halbe Bildrate, ruhigerer Hintergrund, keine teuren Unschärfe- und Schatteneffekte. „automatisch“ greift bei ≤ 4 Kernen oder ≤ 4 GB RAM
   const weakPc = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  function applyEco(v) { eco = v === "aus" || v === "immer" ? v : "ruhe"; ecoOn = false; document.body.classList.remove("eco-calm"); try { resize(); } catch {} }
+  $("setEco").addEventListener("change", (e) => { applyEco(e.target.value); window.argus.setConfig({ ecoLook: eco }); });
+  window.argus.getConfig?.().then((c) => { $("setEco").value = c.ecoLook || "ruhe"; applyEco(c.ecoLook); });
   function applyLite(v) { lite = v === "an" || (v !== "aus" && weakPc); document.body.classList.toggle("lite", lite); bg.w = 0; }
   $("setLite").addEventListener("change", (e) => { applyLite(e.target.value); window.argus.setConfig({ liteMode: e.target.value }); });
   window.argus.getConfig?.().then((c) => { $("setLite").value = c.liteMode || "auto"; applyLite(c.liteMode || "auto"); });

@@ -371,7 +371,7 @@
     if (roam.mode === "dash" && v > S * 2) symAg = Math.min(1.5, symAg + h * 2); // beim Losschnellen wird die Masse unruhiger
   }
   function resize() {
-    dpr = Math.min(devicePixelRatio || 1, 2);
+    dpr = Math.min(devicePixelRatio || 1, eco === "immer" ? 1 : 2);
     W = stage.clientWidth; H = stage.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
     SB = Math.max(60, expanded ? Math.min(W * 0.47, H * (freeLayout ? 0.14 : 0.3)) : Math.min(W, H) * 0.29);

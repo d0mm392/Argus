@@ -998,3 +998,9 @@ form.ask[data-ws] :is(textarea, .btn:not(.primary)) { background: color-mix(in s
 /* Hinweis: Die Kugel liegt hinter einem undurchsichtigen Fenster */
 .orb-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 10px; padding: 8px 12px; max-width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 10px; background: rgba(8, 14, 24, 0.94); color: var(--ink); font-size: 12px; pointer-events: auto; }
 .orb-hint[hidden] { display: none; }
+
+/* Sparoptik (Einstellung ecoLook): im Leerlauf bleiben Dauer-Animationen stehen und das Laufband bewegt sich in Schritten.
+   Sonst setzt Windows das durchsichtige Fenster bei jedem Bildwechsel neu zusammen (Desktopfenster-Manager). */
+body.eco-calm .appf[style*="--ah"], body.eco-calm .who span.busy i, body.eco-calm .mh-grid i.off, body.eco-calm .strata-btn[data-st="lädt"] i { animation-play-state: paused; }
+body.eco-calm .mt-run { animation-timing-function: steps(var(--mtsteps, 480)); }
+body.eco-calm .media .mt.run span { animation-timing-function: steps(60); }
