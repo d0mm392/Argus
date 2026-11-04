@@ -86,3 +86,9 @@ Argus-Source-0.59.0.zip -text
 BUILD-INFO-0.59.0.json -text
 manifest-0.59.0.json -text
 RELEASE-NOTES-0.59.0.md -text
+Argus-Setup-0.59.1.exe -text
+Argus-Setup-0.59.1.exe.blockmap -text
+Argus-Source-0.59.1.zip -text
+BUILD-INFO-0.59.1.json -text
+manifest-0.59.1.json -text
+RELEASE-NOTES-0.59.1.md -text

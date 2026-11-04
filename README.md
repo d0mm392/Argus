@@ -1,9 +1,9 @@
-# Argus 0.59.0 – Testkanal
+# Argus 0.59.1 – Testkanal
 
-[Windows-Installer](Argus-Setup-0.59.0.exe) · [Versionshinweise](RELEASE-NOTES-0.59.0.md) · [Bauinfo](BUILD-INFO-0.59.0.json)
+[Windows-Installer](Argus-Setup-0.59.1.exe) · [Versionshinweise](RELEASE-NOTES-0.59.1.md) · [Bauinfo](BUILD-INFO-0.59.1.json)
 
-Neu: Bildschirm übertragen. Eigener Bildschirm oder ein Fenster samt Ton direkt an ein anderes Argus, per Code und mit ausdrücklichem Annehmen, rote Leiste während der Übertragung, Chat und Zeigen. Nur Ansehen, keine Fernsteuerung. Stable bleibt unverändert.
+Bildschirm übertragen repariert: immer nur der passende Bereich sichtbar, drei Vermittlungsserver gleichzeitig mit Ausweichweg, klare Fehlergründe und Verbindungstest. Stable bleibt unverändert.
 
-SHA-256: `e72c37ee4e52818bf6cba2caff683363946f21328839b640ca67310842450215`
+SHA-256: `3eee678558984f81a97c81af5c117062300b4768f2d2d6f21ecccd929d50d4ea`
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/b0dd75bcf062bf31bc73dec847043d185c75cb62) · [Quellarchiv](Argus-Source-0.59.0.zip) · [Prüfsummen](SHA256SUMS.txt)
+[Quellstand](https://github.com/d0mm392/Argus/tree/1f0b556cc132609e279c49f85930a1e23e9ad6dd) · [Quellarchiv](Argus-Source-0.59.1.zip) · [Prüfsummen](SHA256SUMS.txt)
