@@ -1,21 +1,19 @@
-version: 0.59.1
+version: 0.59.2
 files:
-  - url: Argus-Setup-0.59.1.exe
-    sha512: F26pcX+++fyWl8UhPBYzeA3pvSfrbPtp8K2chFYcGLAK23mp5oEc2MiTv+0N7hMLfaeSMaSSCBiB6jBQpvmsRA==
-    size: 93577683
-path: Argus-Setup-0.59.1.exe
-sha512: F26pcX+++fyWl8UhPBYzeA3pvSfrbPtp8K2chFYcGLAK23mp5oEc2MiTv+0N7hMLfaeSMaSSCBiB6jBQpvmsRA==
-releaseDate: '2026-11-04T18:32:49.286Z'
-releaseName: "Argus 0.59.1 – Übertragung repariert"
+  - url: Argus-Setup-0.59.2.exe
+    sha512: imBavJ72uxpYNtz4D+Pwb2LaOlJT5iNAwrvV5+zzH6XSqCTZu2JEr5emBoveUQ6iOIgrLt76uMHxMs6SSildTQ==
+    size: 93578343
+path: Argus-Setup-0.59.2.exe
+sha512: imBavJ72uxpYNtz4D+Pwb2LaOlJT5iNAwrvV5+zzH6XSqCTZu2JEr5emBoveUQ6iOIgrLt76uMHxMs6SSildTQ==
+releaseDate: '2026-11-04T20:08:17.745Z'
+releaseName: "Argus 0.59.2 – Sparoptik"
 releaseNotes: |
-  # Argus 0.59.1 – Bildschirm übertragen: Fehler behoben
-  
-  **Behoben**
-  - Im Übertragungsfenster waren alle Bereiche gleichzeitig zu sehen, auch „Annehmen und übertragen“, obwohl noch keine Anfrage da war. Ein Klick darauf tat nichts, und „Verbinden“ war gesperrt, solange auf dieser Seite schon ein Code wartete. Jetzt ist immer nur der passende Bereich sichtbar.
-  - „Vermittlungsserver nicht erreichbar“: Argus nutzt jetzt drei Vermittlungsserver gleichzeitig (PeerJS, EMQX, HiveMQ). Ist einer gesperrt oder ausgefallen, läuft der Verbindungsaufbau über die anderen. Bild und Ton gehen weiterhin direkt von PC zu PC, über die Server laufen nur verschlüsselte Verbindungsdaten.
+  # Argus 0.59.2 – Sparoptik gegen Grafiklast im Leerlauf
   
   **Neu**
-  - Beim Zuschauer steht sofort „Code stimmt“, sobald die Anfrage beim Gegenüber angekommen ist. Kommt nach 15 Sekunden nichts, meldet Argus „Code nicht gefunden“.
-  - Übertragungsfenster → Einstellungen → „Verbindung zu den Servern testen“ zeigt, welche Server von diesem PC aus erreichbar sind. Bei einem Fehler nennt Argus jetzt jeden Server mit Grund.
+  - Einstellungen → Sparoptik (Leerlauf): „im Leerlauf“ (Standard), „immer“ oder „aus“. Im Leerlauf bleiben Dauer-Animationen stehen (Schimmern, Pulse), das Mining-Laufband bewegt sich in kleinen Schritten statt 60-mal pro Sekunde. So muss Windows das durchsichtige Argus-Fenster nicht ständig neu zusammensetzen (Desktopfenster-Manager). Das Aussehen bleibt gleich.
+  - „immer“: zusätzlich höchstens 30 Bilder pro Sekunde und Zeichnen ohne erhöhte Pixeldichte. Etwas weicher, spart mehr.
   
-  Beide Seiten brauchen 0.59.1. Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.
+  **Hinweis**
+  - Wie viel das bringt, hängt von Seite, Hintergrund und laufendem YouTube/Twitch ab. Vergleich: Task-Manager → Details, Spalte GPU, vor und nach dem Update.
+  - Veröffentlichung nur im Testkanal `updates`; Stable bleibt unverändert.

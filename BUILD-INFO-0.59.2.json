@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "version": "0.59.2",
+  "source": "918b28fd46ddccf5f3492b0fe648851bd37412a5",
+  "manifestFiles": 4835,
+  "installerSHA256": "14501779b0caf3e35ee935e03f1909e3e948686501a746c2dab1bd8431e8521e",
+  "cspUnchanged": true,
+  "channel": "updates",
+  "sourceArchiveSHA256": "068b6701ea86110bbc728a9b74acf67f070bd9f583c91e66c27ae39155318ac1",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.58.32",
+  "tests": {
+    "unitPlusShareCore": "26/26",
+    "eco": "3/3",
+    "shareEndToEnd": "25/25",
+    "settings": "PASS"
+  },
+  "notTested": "Keine Windows-VM-Prüfung; GPU-Ersparnis nur auf Windows messbar."
+}
