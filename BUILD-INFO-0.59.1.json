@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "version": "0.59.1",
+  "source": "1f0b556cc132609e279c49f85930a1e23e9ad6dd",
+  "manifestFiles": 4835,
+  "installerSHA256": "3eee678558984f81a97c81af5c117062300b4768f2d2d6f21ecccd929d50d4ea",
+  "cspUnchanged": true,
+  "channel": "updates",
+  "sourceArchiveSHA256": "39cb90a221b7b4f69f302048ba28d2168ddff04e5b0115093691b298480130ac",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.58.32",
+  "tests": {
+    "shareCoreUnit": "6/6",
+    "shareEndToEnd": "25/25 (lokales PeerJS-Relay, MQTT-Broker, toter Server); zusätzlich grün gegen echten PeerJS-Server und aedes-MQTT-Broker",
+    "unit": "20/20"
+  },
+  "notTested": "Keine Windows-VM-Prüfung. Systemton, öffentliche Server und Internet-Verbindung nur auf Windows prüfbar."
+}
