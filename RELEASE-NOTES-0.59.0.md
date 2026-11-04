@@ -1,0 +1,24 @@
+# Argus 0.59.0 – Bildschirm übertragen
+
+**Neu: Bildschirm mit Ton direkt an ein anderes Argus**
+- Öffnen: Tray-Menü → „Bildschirm übertragen …“ oder Einstellungen → Gaming und Discord → Bildschirm übertragen.
+- Wer zeigt: Bildschirm oder Fenster wählen, „Ton mitsenden“ an oder aus, Qualität wählen, „Übertragung vorbereiten“. Argus zeigt einen Code wie `K7Q-4MZ-9TX`. Diesen Code gibst du deinem Gegenüber, zum Beispiel über Discord.
+- Wer zusieht: Reiter „Bei jemandem zusehen“, Code eingeben, „Verbinden“.
+- Erst wenn der Zeigende die Anfrage mit „Annehmen und übertragen“ bestätigt, wird aufgenommen und gesendet. Während der Übertragung hängt oben auf dem Bildschirm eine rote Leiste mit „Beenden“. Der Zuschauer sieht diese Leiste nicht.
+- Bild und Ton laufen im selben Stream direkt von PC zu PC (WebRTC, verschlüsselt). WebRTC hält beide synchron. Ton in Stereo mit hoher Bitrate.
+- Qualitätsstufen: Film und Stream (1080p, 30 Bilder), Flüssig (1080p, 60), Hilfe am PC (scharfer Text), Sparsam (720p), Maximal (1440p, 60). Lässt sich während der Übertragung wechseln.
+- Beim Zuschauer: Vollbild (Doppelklick), Lautstärke, Puffer (gering, normal, stabil). Mit „Zeigen“ klickt der Zuschauer ins Bild, beim Zeigenden erscheint an der Stelle ein gelber Ring. Das geht bei ganzen Bildschirmen. Außerdem gibt es einen Chat.
+- Anzeige der Verbindung: direkt oder über TURN-Server, Laufzeit, Datenrate, Bildgröße, Verlust.
+- Nur Ansehen, keine Fernsteuerung.
+
+**Grenzen**
+- Systemton gibt es nur unter Windows und nur bei einem ganzen Bildschirm. Übertragen wird alles, was der PC abspielt, also auch Discord-Stimmen. Damit das Gegenüber sich nicht als Echo hört, Discord auf ein anderes Ausgabegerät legen.
+- Hinter CGNAT (Mobilfunk, Starlink, manche Anbieter) kommt oft keine Direktverbindung zustande. Dann im Übertragungsfenster unter „Einstellungen“ einen eigenen TURN-Server eintragen. Die Zugangsdaten bleiben verschlüsselt auf dem PC.
+- Kopiergeschützte Videos (Netflix, Disney+, Prime) liefert Windows schwarz.
+- Beide Seiten brauchen Argus 0.59.0 oder neuer.
+
+**Datenschutz**
+- Für den Verbindungsaufbau tauschen beide Argus kurz Verbindungsdaten über einen Vermittlungsserver aus. Standard ist der öffentliche PeerJS-Server, ein eigener lässt sich eintragen. Der Server sieht nur eine Hash-Adresse und verschlüsselte Daten, weder den Code noch Namen, Bild oder Ton.
+- Bei einer Direktverbindung sehen beide Seiten gegenseitig ihre IP-Adresse. Mit „Nur über TURN verbinden“ lässt sich das vermeiden.
+
+Veröffentlichung ausschließlich im Testkanal `updates`; Stable bleibt unverändert.

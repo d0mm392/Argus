@@ -239,7 +239,7 @@ function mergeWidgets(w) {
 }
 // Zugangsdaten (API-Keys, Bot-Token, Foreman-Schlüssel) liegen verschlüsselt in der Konfigurationsdatei: Windows-Verschlüsselung (DPAPI),
 // an das Windows-Konto gebunden. Im Speicher stehen sie im Klartext, auf der Platte nur als „enc1:…“. Nichts davon verlässt den PC.
-const ENC = "enc1:", SEALED = ["iobPass", "steamKey", "dcBotToken", "anthropicApiKey", "aiKey", "foremanKey", "finnhubKey"];
+const ENC = "enc1:", SEALED = ["iobPass", "steamKey", "dcBotToken", "anthropicApiKey", "aiKey", "foremanKey", "finnhubKey", "shareTurnPass"];
 const canSeal = () => { try { return safeStorage.isEncryptionAvailable(); } catch { return false; } };
 const seal = (v) => (typeof v === "string" && v && !v.startsWith(ENC) && canSeal() ? ENC + safeStorage.encryptString(v).toString("base64") : v);
 const unseal = (v) => { if (typeof v !== "string" || !v.startsWith(ENC)) return v; try { return safeStorage.decryptString(Buffer.from(v.slice(ENC.length), "base64")); } catch { return ""; } };
@@ -1429,6 +1429,7 @@ function trayMenu() {
     { label: "Ein-/Ausblenden", click: toggleVisible },
     { label: "Fenster zurückholen (mittig, Standardgröße)", click: rescueWindow },
     { label: "Kugel ein-/ausblenden", click: () => alive() && win.webContents.send("ctx-action", { a: "tog", v: "ball" }) },
+    { label: shareMod?.state().active && shareMod.state().sending ? "Bildschirmübertragung beenden" : "Bildschirm übertragen …", click: () => (shareMod?.state().active && shareMod.state().sending ? shareMod.stopAll() : openShare()) },
     { type: "separator" },
     localState.phase === "ready"
       ? { label: "Lokale KI: " + localModel(), enabled: false }
@@ -1745,7 +1746,7 @@ ipcMain.handle("pick-folder", async () => {
 let strataUsed = Date.now(), strataPrev = "aus";
 function unloadOllama() { fetch((config.ollamaUrl || "http://127.0.0.1:11434") + "/api/generate", { method: "POST", body: JSON.stringify({ model: localModel(), keep_alive: 0 }) }).catch(() => {}); }
 // Einstellungen sichern und laden (ohne Schlüssel und Tokens, die bleiben nur auf diesem PC)
-const SECRET_KEYS = ["iobPass", "steamKey", "dcBotToken", "anthropicApiKey", "aiKey", "foremanKey", "finnhubKey"];
+const SECRET_KEYS = ["iobPass", "steamKey", "dcBotToken", "anthropicApiKey", "aiKey", "foremanKey", "finnhubKey", "shareTurnPass"];
 ipcMain.handle("settings-export", async () => {
   const r = await dialog.showSaveDialog(win, { title: "Argus-Einstellungen sichern", defaultPath: path.join(app.getPath("documents"), "Argus-Einstellungen.json"), filters: [{ name: "Argus-Einstellungen", extensions: ["json"] }] });
   if (r.canceled || !r.filePath) return { ok: false };
@@ -2895,6 +2896,16 @@ function openNews() {
   newsWin.on("closed", () => { newsWin = null; });
   newsWin.loadURL(`http://127.0.0.1:${serverPort}/news.html`).catch((e) => logError(e));
 }
+// Bildschirm übertragen (share-main.js, app/share.html): eigenes Fenster, wird erst beim ersten Öffnen geladen, nichts läuft vorher
+let shareMod = null;
+function shareInit() {
+  if (shareMod) return shareMod;
+  shareMod = require("./share-main").create({ electron: require("electron"), getConfig: () => config, saveConfig, appUrl: (f) => `http://127.0.0.1:${serverPort}/${f}`, icon: path.join(__dirname, "assets", "icon.png"), log: logError });
+  shareMod.onState((s) => { try { tray?.setToolTip(s.active && s.sending ? "Argus · überträgt gerade deinen Bildschirm" : "Argus"); tray?.setContextMenu(trayMenu()); } catch {} });
+  return shareMod;
+}
+function openShare() { try { shareInit().open(); } catch (e) { logError(e); } }
+ipcMain.on("share-open", () => openShare());
 function closeNews() { if (newsAlive()) newsWin.close(); }
 // Magnetisch: liegt eine Kante nach dem Verschieben nah an einer Bildschirmkante oder an Argus, rastet sie dort ein
 const SNAP = 24;

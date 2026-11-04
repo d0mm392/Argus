@@ -90,6 +90,7 @@ contextBridge.exposeInMainWorld("argus", {
   onTwEmbed: (cb) => ipcRenderer.on("tw-embed", (_e, d) => cb(d)),
   onTwTitle: (cb) => ipcRenderer.on("tw-title", (_e, t) => cb(t)),
   openTwitch: (q) => ipcRenderer.send("open-twitch", q),
+  openShare: () => ipcRenderer.send("share-open"),
   iobTree: () => ipcRenderer.invoke("iob-tree"), iobGroup: (k) => ipcRenderer.invoke("iob-group", k),
   iobData: () => ipcRenderer.invoke("iob-data"), iobBrowse: (q) => ipcRenderer.invoke("iob-browse", q), iobSet: (id, v) => ipcRenderer.invoke("iob-set", id, v), onIob: (cb) => ipcRenderer.on("iob", (_e, d) => cb(d)),
   fmDashData: () => ipcRenderer.invoke("fmdash-data"),

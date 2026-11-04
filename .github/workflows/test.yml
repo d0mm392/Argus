@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci
-      - run: node --test tests/unit.test.js
+      - run: node --test tests/unit.test.js tests/share-core.test.js
       - name: UI-Tests (Linux, virtueller Bildschirm)
         if: runner.os == 'Linux'
         run: |

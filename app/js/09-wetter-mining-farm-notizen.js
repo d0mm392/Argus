@@ -627,6 +627,7 @@
     if (!e.target.value) { mirrorMatch = ""; window.argus.setConfig({ mirrorMatch }); mirrorSet("kein Fenster gewählt", "warn"); return; }
     mirrorMatch = o.textContent; window.argus.setConfig({ mirrorMatch }); await mirrorStart(e.target.value);
   });
+  $("setShareOpen")?.addEventListener("click", () => window.argus.openShare?.());
   $("setMirrorOn").addEventListener("change", (e) => { mirrorOn = e.target.checked; window.argus.setConfig({ mirrorOn }); mirrorSync(); fitPanel?.(); });
   $("setMirrorQ").addEventListener("change", (e) => { mirrorQ = +e.target.value; window.argus.setConfig({ mirrorQ }); if (mirrorStream) { const id = $("mirrorSel").value; if (id) mirrorStart(id); } });
   $("mirrorSel").addEventListener("mousedown", () => mirrorFind(true)); // Liste beim Aufklappen neu holen (Fenster, die erst jetzt offen sind)

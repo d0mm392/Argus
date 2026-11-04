@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self' wss: ws:">
+<title>Argus · Bildschirm übertragen</title>
+<link rel="stylesheet" href="share.css">
+</head>
+<body>
+<header class="top">
+  <b class="brand">ARGUS</b><span class="ttl">Bildschirm übertragen</span>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button role="tab" data-role="host" aria-selected="true">Meinen Bildschirm zeigen</button>
+    <button role="tab" data-role="view" aria-selected="false">Bei jemandem zusehen</button>
+  </nav>
+  <button class="ghost" id="btnSettings" title="Name, Verbindung, TURN-Server">Einstellungen</button>
+</header>
+
+<main class="wrap">
+  <section class="stage" id="stage">
+    <video id="vid" playsinline autoplay></video>
+    <div class="stage-msg" id="stageMsg">Noch keine Übertragung.</div>
+    <div class="stage-tag" id="stageTag" hidden></div>
+    <div class="ring-local" id="ringLocal" hidden></div>
+    <div class="stage-ctl" id="stageCtl" hidden>
+      <button id="btnFull" title="Vollbild (Doppelklick ins Bild, Esc beendet)">Vollbild</button>
+      <button id="btnPoint" aria-pressed="false" title="Klick ins Bild zeigt deinem Gegenüber die Stelle mit einem Ring">Zeigen</button>
+      <label class="vol" title="Lautstärke">Ton <input type="range" id="vol" min="0" max="100" step="1"></label>
+    </div>
+  </section>
+
+  <aside class="side">
+    <!-- Zeigen: Quelle wählen -->
+    <div class="pane" id="pHostSetup">
+      <h2>Was soll dein Gegenüber sehen?</h2>
+      <div class="src-grid" id="srcGrid"></div>
+      <button class="link" id="btnRefresh">Liste neu laden</button>
+      <label class="row">Ton mitsenden <input type="checkbox" id="optAudio"></label>
+      <p class="note" id="audioNote">Übertragen wird alles, was dein PC abspielt, auch Stimmen aus Discord. Damit dein Gegenüber sich nicht selbst als Echo hört, Discord auf ein anderes Ausgabegerät stellen oder Kopfhörer am zweiten Ausgang nutzen.</p>
+      <label class="row">Qualität <select id="optPreset"></select></label>
+      <button class="primary" id="btnPrepare" disabled>Übertragung vorbereiten</button>
+      <p class="note">Danach bekommst du einen Code. Erst wenn du die Anfrage annimmst, sieht dein Gegenüber etwas.</p>
+    </div>
+
+    <!-- Zeigen: Code anzeigen, warten -->
+    <div class="pane" id="pHostWait" hidden>
+      <h2>Code für dein Gegenüber</h2>
+      <div class="code" id="codeOut" aria-live="polite">···-···-···</div>
+      <div class="actions"><button id="btnCopy">Code kopieren</button><button id="btnCancelHost">Abbrechen</button></div>
+      <p class="note">Gib den Code zum Beispiel über Discord weiter. Er gilt nur für diese eine Übertragung.</p>
+      <p class="state" id="hostWaitState">Verbinde mit dem Vermittlungsserver …</p>
+    </div>
+
+    <!-- Zeigen: Anfrage -->
+    <div class="pane ask" id="pHostAsk" hidden>
+      <h2><span id="askName">Jemand</span> möchte zusehen</h2>
+      <p class="note">Der Name ist selbst angegeben. Nimm nur an, wenn du den Code gerade selbst weitergegeben hast.</p>
+      <p class="note" id="askWhat"></p>
+      <div class="actions"><button class="primary" id="btnAccept">Annehmen und übertragen</button><button id="btnReject">Ablehnen</button></div>
+    </div>
+
+    <!-- Zusehen: Code eingeben -->
+    <div class="pane" id="pViewSetup" hidden>
+      <h2>Code eingeben</h2>
+      <label class="col">Code von deinem Gegenüber <input type="text" id="inCode" maxlength="14" spellcheck="false" autocomplete="off" placeholder="ABC-DEF-GHJ"></label>
+      <label class="col">Dein Name (sieht dein Gegenüber bei der Anfrage) <input type="text" id="inName" maxlength="32" spellcheck="false"></label>
+      <label class="row">Puffer <select id="optBuffer"></select></label>
+      <button class="primary" id="btnJoin" disabled>Verbinden</button>
+      <p class="state" id="viewState"></p>
+    </div>
+
+    <!-- Verbunden (beide Seiten) -->
+    <div class="pane" id="pLive" hidden>
+      <h2 id="liveTitle">Verbunden</h2>
+      <dl class="stats" id="stats"></dl>
+      <div class="actions host-only" id="hostLiveCtl">
+        <button id="btnPause" aria-pressed="false">Bild anhalten</button>
+        <button id="btnMute" aria-pressed="false">Ton aus</button>
+      </div>
+      <label class="row host-only">Qualität <select id="optPresetLive"></select></label>
+      <label class="row view-only">Puffer <select id="optBufferLive"></select></label>
+      <div class="chat">
+        <ol id="chatLog" aria-live="polite"></ol>
+        <form id="chatForm"><input type="text" id="chatIn" maxlength="500" placeholder="Nachricht" autocomplete="off"><button>Senden</button></form>
+      </div>
+      <button class="danger" id="btnEnd">Beenden</button>
+    </div>
+    <p class="err" id="err" hidden></p>
+  </aside>
+</main>
+
+<!-- Einstellungen -->
+<div class="dlg-back" id="dlg" hidden>
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT">
+    <div class="dlg-head"><h2 id="dlgT">Einstellungen</h2><button class="x" id="dlgX" aria-label="Schließen">×</button></div>
+    <label class="col">Dein Name <input type="text" id="cfgName" maxlength="32" spellcheck="false"></label>
+    <label class="col">Vermittlungsserver (tauscht nur die Verbindungsdaten aus, kein Bild, kein Ton) <input type="text" id="cfgSignal" spellcheck="false"></label>
+    <label class="col">STUN-Server (findet die Direktverbindung) <input type="text" id="cfgStun" spellcheck="false"></label>
+    <h3>TURN-Server (optional)</h3>
+    <p class="note">Nur nötig, wenn keine Direktverbindung zustande kommt, etwa bei Mobilfunk, Starlink oder Anbietern mit CGNAT. Bild und Ton laufen dann verschlüsselt über diesen Server. Zugangsdaten bekommst du bei deinem TURN-Anbieter oder eigenem Server. Sie bleiben verschlüsselt auf diesem PC.</p>
+    <label class="col">Adresse, z. B. turn:turn.example.org:3478 <input type="text" id="cfgTurnUrl" spellcheck="false"></label>
+    <label class="col">Benutzer <input type="text" id="cfgTurnUser" spellcheck="false" autocomplete="off"></label>
+    <label class="col">Passwort <input type="password" id="cfgTurnPass" autocomplete="new-password"></label>
+    <label class="row">Nur über TURN verbinden (verbirgt deine IP-Adresse vor dem Gegenüber) <input type="checkbox" id="cfgRelayOnly"></label>
+    <p class="note">Ohne TURN sehen sich beide Seiten gegenseitig die IP-Adresse, so wie bei AnyDesk oder Discord-Direktanrufen.</p>
+    <div class="actions"><button class="primary" id="dlgOk">Schließen</button></div>
+  </div>
+</div>
+<script src="share-core.js"></script>
+<script src="share.js"></script>
+</body></html>

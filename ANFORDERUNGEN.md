@@ -59,3 +59,7 @@ Dokumentversion: 1.4 · gilt ab Argus 0.58.24
 
 - R-START-GUARD: Fehler im Startablauf werden protokolliert (argus-error.log, Fehlerverlauf); Schritte vor/nach dem Fenster einzeln abgesichert, das Fenster erscheint trotzdem; scheitert der Start, Meldung und Beenden statt unsichtbarem Prozess mit Einzelinstanz-Sperre; unhandledRejection protokolliert. Tests: startup-guard, VM-Installation/Update.
 - R-UI-APPLE (zurückgestellt 0.58.27): Apple-Modus entfernt, gesichert (archiv/apple-modus-0.58.26); gespeichertes uiMode apple → klassisch, ui-start.json (Datei) entfernt, sonst Profil unverändert. Tests: ui-apple-removed.
+
+## Erweiterungen ab 0.59.0
+
+- R-SHARE (0.59.0): Bildschirm übertragen zwischen zwei Argus, nur Ansehen, keine Fernsteuerung. Start immer durch den Nutzer: Code erzeugen, Gegenseite fragt an, Aufnahme und Senden erst nach „Annehmen“. Rote Leiste mit „Beenden“ während des Sendens (vom Mitschnitt ausgenommen), Tray-Eintrag zum Beenden. Bild und Systemton (Windows, nur ganzer Bildschirm) im selben WebRTC-Stream. Vermittlung PeerJS-kompatibel, Adresse ist ein Hash des Codes, Nachrichten AES-GCM-verschlüsselt mit Schlüssel aus dem Code; Server sieht weder Code noch Namen noch SDP. TURN optional, Passwort verschlüsselt (SEALED), nie in Exporten. Jede Übertragung neuer Code. Tests: share-core (Unit R-SHARE-1…6), share (Electron Ende zu Ende R-SHARE-10…27, R-DLG-1).
