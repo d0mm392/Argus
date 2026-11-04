@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "version": "0.59.0",
+  "source": "b0dd75bcf062bf31bc73dec847043d185c75cb62",
+  "manifestFiles": 4834,
+  "installerSHA256": "e72c37ee4e52818bf6cba2caff683363946f21328839b640ca67310842450215",
+  "cspUnchanged": true,
+  "channel": "updates",
+  "sourceArchiveSHA256": "12698c90ad9e86efda9137ea7045af8435e12af604e1644d460a04649ca341b0",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.58.32 übernommen",
+  "tests": {
+    "shareCoreUnit": "6/6",
+    "shareEndToEnd": "20/20 (lokaler Testserver und echter PeerJS-Server)",
+    "unit": "20/20",
+    "regressionUnit": "28/28",
+    "settings": "PASS",
+    "friendsSettings": "PASS",
+    "ui": "38/41, dieselben 3 Fehler wie unverändertes 0.58.32 (R-OPT-7 YouTube-Transparenz)"
+  },
+  "notTested": "Keine Windows-VM-Prüfung. Systemton und echte Verbindung über das Internet nur auf Windows prüfbar."
+}
