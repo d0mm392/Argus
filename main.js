@@ -880,6 +880,9 @@ let sensorState = "aus";
 const readTxt = (p) => { try { return fs.readFileSync(p, "utf8").trim(); } catch { return null; } };
 function sensorsInstalled() { const v = readTxt(path.join(SENSOR_SRC, "version.txt")); return !!v && v === readTxt(path.join(SENSOR_DST, "version.txt")); }
 function sensorPush() { sendUI("sensor-status", sensorState); }
+// Ohne Treiber-Setup und Messbibliothek kann setup.ps1 nichts einrichten (Fehler bis 0.59.2): dann gar nicht erst nach Admin-Rechten fragen
+const SENSOR_NEED = ["setup.ps1", "sensors.ps1", "version.txt", "PawnIO_setup.exe", "LibreHardwareMonitorLib.dll"];
+const sensorFilesMissing = () => SENSOR_NEED.filter((f) => !fs.existsSync(path.join(SENSOR_SRC, f)));
 function startSensors() {
   if (process.platform !== "win32" || !fs.existsSync(SENSOR_SRC)) return;
   setSensorFile(sensorOut());
@@ -888,12 +891,17 @@ function startSensors() {
     execFile("schtasks", ["/Run", "/TN", "Jarvis Sensoren"], { windowsHide: true }, (e) => { sensorState = e ? "fehler: Messdienst startet nicht, bitte neu einrichten" : "laeuft"; sensorPush(); });
     return;
   }
-  // Neue Version des Messdiensts mit dem Update: einmal neu einrichten (eine Admin-Abfrage), ohne dass der Nutzer klicken muss
+  // Neue Version des Messdiensts mit dem Update: einmal neu einrichten (eine Admin-Abfrage), ohne dass der Nutzer klicken muss.
+  // Das gilt nur, wenn der Nutzer die Messung früher schon eingerichtet hat. Beim ersten Start installiert Argus den Treiber
+  // nicht von selbst, sondern erst nach einem Klick auf „Einrichten“ (Einstellungen oder Hinweis unter den Messbalken).
   const oldVer = readTxt(path.join(SENSOR_DST, "version.txt"));
-  if (!config.sensorsAsked || oldVer) { config.sensorsAsked = true; saveConfig(); setupSensors(); } else { sensorState = "bereit"; sensorPush(); }
+  if (!config.sensorsAsked) { config.sensorsAsked = true; saveConfig(); }
+  if (oldVer) setupSensors(); else { sensorState = "bereit"; sensorPush(); }
 }
 function setupSensors() {
   if (process.platform !== "win32" || sensorState === "einrichten") return;
+  const miss = sensorFilesMissing();
+  if (miss.length) { sensorState = `fehler: Sensor-Dateien fehlen (${miss.join(", ")}), bitte Argus neu installieren`; sensorPush(); return; }
   const log = sensorOut() + ".setup.log"; try { fs.unlinkSync(log); } catch {}
   sensorState = "einrichten"; sensorPush();
   const q = (p) => p.replace(/'/g, "''");

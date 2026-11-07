@@ -194,7 +194,7 @@
     hint.textContent = !miss ? "" : sensState === "laeuft" ? `Keine ${what}-Temperatur: Messdienst läuft, liefert aber keinen Wert für diese Hardware.`
       : sensState === "einrichten" ? "Temperaturmessung wird eingerichtet … Windows-Abfrage mit Ja bestätigen."
       : sensState.startsWith("fehler") ? `Keine ${what}-Temperatur (${sensState.replace(/^fehler: /, "")}). Klick: nochmal einrichten.`
-      : `Keine ${what}-Temperatur. Klick: Messung einrichten (einmal Admin-Abfrage).`;
+      : `Keine ${what}-Temperatur. Klick: Messung einrichten (installiert den PawnIO-Messtreiber, einmal Admin-Abfrage).`;
   }
   // Eigene Temperaturmessung
   let sensState = "aus";
