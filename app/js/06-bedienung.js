@@ -267,7 +267,7 @@
     g.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; e.stopPropagation(); e.preventDefault(); st = { x: e.clientX, w: media.offsetWidth, s: scales.media || 1 }; });
     window.addEventListener("pointermove", (e) => { if (!st) return; scales.media = Math.max(0.6, Math.min(3, st.s * (st.w + e.clientX - st.x) / st.w)); }, true);
     window.addEventListener("pointerup", () => { if (!st) return; st = null; noClick = media; setTimeout(() => { if (noClick === media) noClick = null; }, 50); window.argus.setConfig({ scales }); }, true); }
-  { const x = document.createElement("button"); x.type = "button"; x.className = "blk-x"; x.textContent = "×"; x.title = "Musik-Player ausblenden (wieder an: Einstellungen › Musik)";
+  { const x = document.createElement("button"); x.type = "button"; x.className = "blk-x"; x.textContent = "×"; x.title = "Musik-Player ausblenden (wieder an: Einstellungen › Kugel › Auslastung in der Kugel)";
     x.addEventListener("pointerdown", (e) => e.stopPropagation()); // sonst fängt der Musik-Player den Zeiger ein und der Klick kommt nie an
     x.addEventListener("click", (e) => { e.stopPropagation(); mediaOn = false; renderMedia(); $("setMedia").checked = false; window.argus.setConfig({ mediaOn }); }); media.append(x); }
   for (const b of media.querySelectorAll("button:not(.blk-x)")) {

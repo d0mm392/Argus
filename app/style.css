@@ -1004,3 +1004,7 @@ form.ask[data-ws] :is(textarea, .btn:not(.primary)) { background: color-mix(in s
 body.eco-calm .appf[style*="--ah"], body.eco-calm .who span.busy i, body.eco-calm .mh-grid i.off, body.eco-calm .strata-btn[data-st="lädt"] i { animation-play-state: paused; }
 body.eco-calm .mt-run { animation-timing-function: steps(var(--mtsteps, 480)); }
 body.eco-calm .media .mt.run span { animation-timing-function: steps(60); }
+/* Leere Freundesliste: was fehlt, mit Knopf in die Einstellung */
+.friends .fr-setup { padding: 4px 6px 8px; }
+.friends .fr-setup p { margin: 2px 0 6px; color: #b8cde2; font-size: calc(11px * var(--fs, 1)); line-height: 1.35; }
+.friends .fr-setup .btn { pointer-events: auto; margin-bottom: 6px; font-size: calc(11px * var(--fs, 1)); }

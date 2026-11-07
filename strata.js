@@ -36,7 +36,7 @@ async function start() {
   if (state === "an" || state === "lädt") return snapshot();
   if (await up()) { await readModel(); set("an", "Strata bereit"); return snapshot(); }
   const dir = findDir();
-  if (!dir) { set("fehlt", "Strata nicht gefunden. Ordner unter Einstellungen → KI eintragen."); return snapshot(); }
+  if (!dir) { set("fehlt", "Strata nicht gefunden. Ordner unter Einstellungen › KI und Stimme › Lokale KI (Strata) eintragen."); return snapshot(); }
   // kalibrierter Start (z. B. run-iq3_xxs.bat mit den für diesen PC gemessenen Werten) geht vor START-HERE.bat
   let bat = "START-HERE.bat", args = String(C().strataArgs || "--no-browser").split(/\s+/).filter(Boolean);
   try { const runs = fs.readdirSync(dir).filter((f) => /^run-.*\.bat$/i.test(f)).map((f) => [f, fs.statSync(path.join(dir, f)).mtimeMs]).sort((x, y) => y[1] - x[1]); if (runs.length) { bat = runs[0][0]; args = C().strataArgs && C().strataArgs.trim() !== "--no-browser" ? args : []; } } catch {}

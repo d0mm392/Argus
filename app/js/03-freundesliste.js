@@ -3,6 +3,9 @@
   let ballLabels = "aktiv", bgShoot = 1, friendsSplit = false, friendsHold = 3, strataHas = false, friendsStill = true, dcJoinBot = true, micId = "", spkId = "", friendsEl2 = null, holdHinted = false;
   let friendsEl = null, friendsSig = "", live = { auth: false, ch: {} }, friendsFold = {}, myDc = "", extraVoice = [], bot = { status: "aus", guilds: [] }, dcIcons = true;
   let dcSocial = {status:"disconnected",account:null,friends:[]};
+  // Ob Steam/Discord eingeschaltet sind (für den Hinweis bei leerer Liste)
+  const friendsCfg = { steamOn: true, discordOn: true };
+  window.argus.getConfig?.().then((c) => { friendsCfg.steamOn = c.steamOn !== false; friendsCfg.discordOn = c.discordOn !== false; friendsSig = ""; }).catch(() => {});
   const normDc = (n) => String(n || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
   function buildFriends() {
     if (!friendsEl) {
@@ -117,7 +120,7 @@
       parts.push(ch5);
       // Klick auf eine Person: ihr Profil in Discord öffnen, dort direkt „Nachricht“. Mit StreamKit: echte Namen, wer spricht, leuchtet grün
       const dm = (av, id) => { const x = id || /\/avatars\/(\d{15,22})\//.exec(av || "")?.[1]; return x ? `discord://-/users/${x}` : null; };
-      const noId = (e) => { e.stopPropagation(); if (!noClick) notice("Für den Chat braucht Argus die Discord-ID dieser Person: eigenen Discord-Bot eintragen (Einstellungen, Freunde)."); };
+      const noId = (e) => { e.stopPropagation(); if (!noClick) notice("Für den Chat braucht Argus die Discord-ID dieser Person: eigenen Discord-Bot eintragen (Einstellungen › Freunde und Medien › Discord)."); };
       if (lm?.length) for (const m of lm) {
         const bp = (botPeople.get(vid) || []).find((p) => p.name === m.name || p.user === m.name);
         const me = isMe(m.name) || (bp && isMe(bp.name, bp.user));
@@ -172,11 +175,31 @@
     const fold = (list) => { let skip = false; return list.filter((el) => { if (el.tagName === "H5") { skip = !!friendsFold[el.dataset.sec]; return true; } return el.classList.contains("skauth") || !skip; }); };
     const additional=window.argusDiscordList.additionalFriends(seenPeople,dcSocial.friends,{enabled:dcSocial.status==="connected"&&dcAlsoOnline,markedOnly:dcOnlyMarked,marked:dcMarked});
     if(additional.length){parts.push(head("ONLINE-FREUNDE",additional.length));for(const friend of additional)parts.push(row({...friend,voice:""},({0:"Online",3:"Abwesend",4:"Beschäftigt"})[friend.status],"https://discord.com/users/"+friend.id));}
+    // Leere Liste: statt nichts zu zeigen sagen, was fehlt, mit Knopf direkt in die passende Einstellung
+    const setupHint = (which) => {
+      const box = document.createElement("div"); box.className = "fr-setup";
+      const need = [];
+      if (which !== "discord" && friendsCfg.steamOn && (!st || st.error)) need.push([st?.error || "Steam ist noch nicht eingerichtet: API-Schlüssel und Profil fehlen.", "Steam einrichten", "Steam"]);
+      if (which !== "steam" && friendsCfg.discordOn && !servers.length && !bot.guilds.length && dcSocial.status !== "connected") need.push(["Discord ist noch nicht eingerichtet: Konto verbinden, Server-ID oder eigenen Bot eintragen.", "Discord einrichten", "Discord"]);
+      if (!need.length && !friendsCfg.steamOn && !friendsCfg.discordOn) need.push(["Steam und Discord sind ausgeschaltet.", "Freunde einrichten", "Steam"]);
+      if (!need.length) { box.append(Object.assign(document.createElement("div"), { className: "none", textContent: "Gerade ist niemand online." })); return box; }
+      for (const [text, label, sec] of need) {
+        const p = document.createElement("p"); p.textContent = text;
+        const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = label;
+        b.addEventListener("pointerdown", (e) => e.stopPropagation());
+        b.addEventListener("click", async (e) => { e.stopPropagation(); if (noClick) return; await openSettingsPanel(); window.argusSettingsAt?.(sec); });
+        box.append(p, b);
+      }
+      return box;
+    };
     if (friendsSplit) { // Steam und Discord je ein eigenes Fenster
       const a = parts.slice(0, steamEnd), b = parts.slice(steamEnd);
+      if (!a.length && friendsCfg.steamOn) a.push(setupHint("steam"));
+      if (!b.length && friendsCfg.discordOn) b.push(setupHint("discord"));
       friendsEl.replaceChildren(...fold(a), frX(0)); friendsEl.dataset.empty = a.length ? "" : "1";
       friendsEl2.replaceChildren(...fold(b), frX(1)); friendsEl2.dataset.empty = b.length ? "" : "1";
     } else {
+      if (!parts.length) parts.push(setupHint("both"));
       friendsEl.replaceChildren(...fold(parts), frX(0)); friendsEl.dataset.empty = parts.length ? "" : "1";
       friendsEl2.replaceChildren(); friendsEl2.dataset.empty = "1";
     }
@@ -186,7 +209,7 @@
   const frXel = [null, null];
   function frX(i = 0) {
     if (frXel[i]) return frXel[i];
-    const b = frXel[i] = document.createElement("button"); b.type = "button"; b.className = "fr-x"; b.textContent = "×"; b.title = "Freundesliste ausblenden (wieder an: Einstellungen › Freunde)";
+    const b = frXel[i] = document.createElement("button"); b.type = "button"; b.className = "fr-x"; b.textContent = "×"; b.title = "Freundesliste ausblenden (wieder an: Einstellungen › Freunde und Medien › Freundesliste)";
     b.addEventListener("pointerdown", (e) => e.stopPropagation());
     b.addEventListener("click", (e) => { e.stopPropagation(); setFriendsOn(false); });
     return b;

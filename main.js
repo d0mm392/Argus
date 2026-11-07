@@ -1502,7 +1502,7 @@ function openSubMenu(sid, y, keyboard = false) {
 function openDonate() {
   const u = String(config.donateUrl || "").trim();
   if (/^https:\/\/[^\s]+$/i.test(u)) shell.openExternal(u).catch(() => {});
-  else if (alive()) win.webContents.send("notice", "Noch kein Spendenlink hinterlegt: Einstellungen → System → Spenden.");
+  else if (alive()) win.webContents.send("notice", "Noch kein Spendenlink hinterlegt: Einstellungen › Allgemein › Sprache und Unterstützung.");
 }
 ipcMain.on("open-donate", () => openDonate());
 // Tagesbriefing (briefing.js): Text aus den schon geladenen Daten, Karte und Sprache im Panel
@@ -3072,7 +3072,7 @@ ipcMain.handle("mirror-sources", async (_e, self) => {
 ipcMain.on("open-steam", (_e, id) => { if (/^\d{17}$/.test(String(id))) shell.openExternal("steam://friends/message/" + id).catch(() => {}); }); // Chat mit einem Steam-Freund im Steam-Programm
 ipcMain.on("open-url", (_e, url) => { if (/^https:\/\//i.test(String(url))) shell.openExternal(url); });
 ipcMain.on("news-refresh", () => { pollPrice(); pollHist(); pollFeeds(); pollAlerts(); });
-ipcMain.on("news-close", () => { config.newsOn = false; saveConfig(); closeNews(); sendUI("notice", "News & Uhren geschlossen. Wieder an: Einstellungen → News."); });
+ipcMain.on("news-close", () => { config.newsOn = false; saveConfig(); closeNews(); sendUI("notice", "News & Uhren geschlossen. Wieder an: Einstellungen › Seiten und Panel › News & Uhren."); });
 
 // Claude Desktop bekommt Argus' Gedächtnis und Dateisuche als MCP-Server (gleiche argus-mcp.js, ohne laufenden Argus nutzbar).
 // Trägt sich nur ein, wenn Claude Desktop installiert ist; andere Einträge bleiben unangetastet, vorher einmal gesichert.

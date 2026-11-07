@@ -1,13 +1,7 @@
 "use strict";
+// Reiter der Einstellungen. Jeder Abschnitt (h4) trägt seinen Reiter in data-tab; die Reihenfolge der Abschnitte steht in index.html.
+// Neue Einstellungen: in den passenden Abschnitt schreiben, nicht einen neuen Reiter anlegen.
 window.argusSettingsCategories = {
-  order: ["Allgemein", "Aussehen", "KI", "Gaming und Discord", "Mining", "Integrationen", "Datenschutz", "Erweitert"],
-  section(title, former) {
-    if (["Updates", "Über dich", "Sprache und Unterstützung", "Seiten", "Eigene Seiten", "Notizblock", "Wie gemeldet wird"].includes(title)) return "Allgemein";
-    if (["Gedächtnis und Dateien", "Fehlerberichte", "Meine Berichte", "Einstellungen sichern"].includes(title)) return "Datenschutz";
-    if (["Aussparung (Popups anderer Programme)", "Temperaturmessung", "Ruhiges Design (Test)", "System"].includes(title)) return "Erweitert";
-    if (title === "Grafik") return "Aussehen";
-    if (["Steam", "Discord", "Freundesliste neben der Kugel", "Gaming-Seite", "Bildschirm übertragen"].includes(title)) return "Gaming und Discord";
-    if (["Mining-Seite", "Täglicher Miner-Report", "Warnschwellen", "Was gemeldet wird"].includes(title)) return "Mining";
-    return ({ "Kugel und Farbe": "Aussehen", "Aussehen": "Aussehen", "Panel und Medien": "Integrationen", "Seiten": "Allgemein", "Freunde": "Gaming und Discord", "Mining": "Mining", "Smart Home": "Integrationen", "Stimme und KI": "KI", "Benachrichtigungen": "Allgemein", "System": "Erweitert", "Design-Test": "Erweitert", "Fehlerberichte": "Datenschutz", "Trading": "Integrationen" })[former] || former || "Erweitert";
-  }
+  order: ["Allgemein", "Seiten und Panel", "Kugel", "Aussehen", "KI und Stimme", "Freunde und Medien", "Mining", "Trading und Smart Home", "System"],
+  section(title, tab) { return this.order.includes(tab) ? tab : "System"; }
 };

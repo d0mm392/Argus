@@ -33,7 +33,7 @@
     $("setMemory").checked = c.memoryOn !== false; $("setDesktopLink").checked = c.claudeDesktopLink !== false;
     $("memNote").textContent = "Alle Gespräche und „Merk dir“-Notizen liegen in " + (c.memoryDir || "Argus-Gedaechtnis") + ". Claude in Argus und in der Claude-Desktop-App kann sie durchsuchen und Dateien auf allen Laufwerken finden und lesen, aber nichts ändern. Claude Desktop danach einmal neu starten.";
     $("setAlerts").checked = !!c.systemAlertsVoice; $("setAuto").checked = !!c.autostart;
-    widgets = c.widgets || widgets; buildWidgetRows(); buildAppRows(); buildOpRows();
+    widgets = c.widgets || widgets; buildWidgetRows(); buildAppRows(); buildOpRows(); try { renderBlockRows(); } catch {}
     $("settings").hidden = false;
   }
   $("settingsBtn").addEventListener("click", () => { if (!$("settings").hidden) { $("settings").hidden = true; return; } openSettingsPanel(); });
@@ -242,8 +242,8 @@
   $("setOnTop").addEventListener("change", (e) => window.argus.setConfig({ onTop: e.target.value }));
   $("setWakeFront").addEventListener("change", (e) => window.argus.setConfig({ wakeFront: e.target.checked }));
   $("setAutoOpen").addEventListener("change", (e) => { autoOpen = e.target.checked; window.argus.setConfig({ autoOpen }); });
-  $("setSteamOn").addEventListener("change", (e) => window.argus.setConfig({ steamOn: e.target.checked }));
-  $("setDiscordOn").addEventListener("change", (e) => window.argus.setConfig({ discordOn: e.target.checked }));
+  $("setSteamOn").addEventListener("change", (e) => { window.argus.setConfig({ steamOn: e.target.checked }); friendsCfg.steamOn = e.target.checked; friendsSig = ""; });
+  $("setDiscordOn").addEventListener("change", (e) => { window.argus.setConfig({ discordOn: e.target.checked }); friendsCfg.discordOn = e.target.checked; friendsSig = ""; });
   $("setDcMarked").addEventListener("change", (e) => { dcOnlyMarked = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ dcOnlyMarked }); });
   $("setDcOnline").addEventListener("change", (e) => { dcAlsoOnline = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ discordAlsoOnline: dcAlsoOnline }); });
   $("setDcVoice").addEventListener("change", (e) => { dcVoiceOnly = e.target.checked; friendsSig = ""; buildFriends(); window.argus.setConfig({ discordVoiceOnly: dcVoiceOnly }); });

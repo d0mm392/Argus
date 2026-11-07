@@ -11,7 +11,7 @@ const IOB_CRIT = /alarm|lock|door|garage|window|siren/i;
 function iobRender(d) {
   iobLast = d; const b = $("iobBody"), st = $("iobState"); if (!b) return;
   const out = [], dim = (t) => { const m = document.createElement("div"); m.className = "t-dim"; m.textContent = t; return m; };
-  if (!d || d.state === "off") { out.push(dim("Aus. Einschalten unter Einstellungen, Smart Home.")); st.textContent = ""; }
+  if (!d || d.state === "off") { out.push(dim("Aus. Einschalten unter Einstellungen › Seiten und Panel › Seiten.")); st.textContent = ""; }
   else if (d.state === "nohost" || d.state === "login" || d.state === "err" || (d.state === "wait" && !d.items?.length)) {
     out.push(dim(d.state === "wait" ? "Verbinde …" : d.err || "Keine Verbindung.")); st.textContent = d.state === "wait" ? "verbindet" : d.state === "login" ? "Anmeldung" : "keine Verbindung"; st.dataset.health = d.state === "wait" ? "ok" : "warn";
   } else {

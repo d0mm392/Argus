@@ -255,17 +255,23 @@
     const shown = (id) => BLOCK_NAMES[id] && (miningOn || !MINE_IDS.includes(id));
     const hid = [...hiddenSet].filter(shown), sel = $("arrAdd");
     sel.replaceChildren(new Option(hid.length ? `Einblenden (${hid.length})…` : "Alle Fenster sichtbar", ""), ...hid.map((id) => new Option(BLOCK_NAMES[id], id))); sel.disabled = !hid.length;
-    $("blockRows").replaceChildren(...Object.entries(BLOCK_NAMES).filter(([id]) => shown(id)).map(([id, n]) => { const l = document.createElement("label"), c = document.createElement("input");
-      l.className = "row"; l.append(n + " "); c.type = "checkbox"; c.checked = !hiddenSet.has(id); c.addEventListener("change", () => setHidden(id, !c.checked)); l.append(c); return l; }));
-    // „Claude“, „Lokal“ an der Kugel: gleiche Schalter wie unter Einstellungen, Anzeigen
-    $("blockRows").append(...[["aiClaude", "Claude-Anzeige"], ["aiLocal", "Lokal-Anzeige"]].map(([k, n]) => { const l = document.createElement("label"), c = document.createElement("input");
-      l.className = "row"; l.append(n + " "); c.type = "checkbox"; c.checked = widgets[k]?.on !== false;
-      c.addEventListener("change", () => { widgets[k] = { ...widgets[k], on: c.checked }; window.argus.setConfig({ widgets: { [k]: widgets[k] } }); try { buildWidgetRows(); } catch {} });
-      l.append(c); return l; }));
+    renderBlockRows();
     try { renderMineFx(); renderMOver(); } catch {} // gerade eingeblendet: gleich füllen
     try { mirrorSync(); } catch {}
     fitPanel?.(); placeOverlays();
   }
+  // Liste „Fenster im Panel“: ein Haken je Fenster. Hat das Fenster einen eigenen Ein-Schalter (Notizblock, Wetter …), schaltet der Haken ihn mit ein,
+  // damit es nicht zwei Schalter mit verschiedener Wirkung gibt. Aus = nur auf dieser Seite ausblenden, Inhalt und Einstellungen bleiben.
+  const BLOCK_FEATURE = { notes: "setNotesOn", quick: "setQuickOn", mirror: "setMirrorOn", aiLog: "setAiLog", mine: "setMineOn", farm: "setFmOn", wx: "setWxOn", clocks: "setClocksOn", portal: "setPortalOn", iob: "setIobOn" };
+  function renderBlockRows() {
+    const shown = (id) => BLOCK_NAMES[id] && (miningOn || !MINE_IDS.includes(id)) && (id !== "strataBtn" || hiddenSet.has(id)); // Strata-Knopf steht unter „Anzeigen an der Kugel“
+    $("blockRows").replaceChildren(...Object.entries(BLOCK_NAMES).filter(([id]) => shown(id)).map(([id, n]) => { const l = document.createElement("label"), c = document.createElement("input");
+      const f = BLOCK_FEATURE[id] && $(BLOCK_FEATURE[id]);
+      l.className = "row"; l.append(n + " "); c.type = "checkbox"; c.checked = !hiddenSet.has(id) && (!f || f.checked);
+      c.addEventListener("change", () => { if (c.checked && f && !f.checked) { f.checked = true; f.dispatchEvent(new Event("change")); } setHidden(id, !c.checked); });
+      l.append(c); return l; }));
+  }
+  for (const fid of Object.values(BLOCK_FEATURE)) $(fid)?.addEventListener("change", () => setTimeout(renderBlockRows, 0));
   function setHidden(id, hide) { if (hide) hiddenSet.add(id); else hiddenSet.delete(id); applyHidden(); window.argus.setConfig({ hiddenBlocks: [...hiddenSet] }); }
   $("arrAdd").addEventListener("change", (e) => { if (e.target.value) setHidden(e.target.value, false); });
   window.argus.getConfig?.().then((c) => { hiddenSet = new Set(Array.isArray(c.hiddenBlocks) ? c.hiddenBlocks : []); applyHidden(); });
@@ -584,7 +590,7 @@
       else if (v === "mini") { miniMore = !miniMore; $("setMiniMore").checked = miniMore; applyUi(); sv({ miniMore }); }
       else if (v === "steam" || v === "discord") { // aus der gespeicherten Einstellung umschalten (das Häkchen in den Einstellungen kann veraltet sein); Einschalten holt auch die Freundesliste zurück
         const k = v === "steam" ? "steamOn" : "discordOn", box = $(v === "steam" ? "setSteamOn" : "setDiscordOn");
-        window.argus.getConfig().then((c) => { const nv = c[k] === false; box.checked = nv; window.argus.setConfig({ [k]: nv }); if (nv && widgets.friends?.on === false) setFriendsOn(true); });
+        window.argus.getConfig().then((c) => { const nv = c[k] === false; box.checked = nv; window.argus.setConfig({ [k]: nv }); friendsCfg[k] = nv; friendsSig = ""; if (nv && widgets.friends?.on === false) setFriendsOn(true); try { buildFriends(); placeFriends(); } catch {} });
       }
       else if (v === "friends") setFriendsOn(widgets.friends?.on === false);
     }

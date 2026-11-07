@@ -4,7 +4,7 @@ const { app } = require("electron"), { setup } = require("./renderer-fixture");
 async function run() {
   const { window, errors, evaluate, evaluateWithValue, screenshot, profile, wait } = await setup();
   assert.deepEqual(await evaluate('[...document.querySelectorAll("#setTabs button")].map(b=>b.textContent)'),
-    ["Allgemein", "Aussehen", "KI", "Gaming und Discord", "Mining", "Integrationen", "Datenschutz", "Erweitert"]);
+    ["Allgemein", "Seiten und Panel", "Kugel", "Aussehen", "KI und Stimme", "Freunde und Medien", "Mining", "Trading und Smart Home", "System"]);
   await evaluate('document.getElementById("settings").hidden=false;true');
   const inventory = await evaluate(`(() => {
     let section = '', category = ''; const controls = [];
@@ -26,15 +26,15 @@ async function run() {
   assert.equal(await evaluate('document.getElementById("setDcOnline").closest("label").classList.contains("tab-hidden")'), false);
   await screenshot("settings-search");
   await evaluate(`document.querySelector('#setTabs button').focus();document.getElementById('setTabs').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));true`);
-  assert.equal(await evaluate('document.activeElement.dataset.tab'), "Aussehen");
-  await evaluate(`const heading=[...document.querySelectorAll('.set-body h4')].find(h=>h.textContent==='Leistung');heading.focus();if(heading.getAttribute('aria-expanded')!=='true')heading.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));true`);
+  assert.equal(await evaluate('document.activeElement.dataset.tab'), "Seiten und Panel");
+  await evaluate(`document.querySelector('#setTabs [data-tab="System"]').click();const heading=[...document.querySelectorAll('.set-body h4')].find(h=>h.textContent==='Leistung');heading.focus();if(heading.getAttribute('aria-expanded')!=='true')heading.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));true`);
   assert.equal(await evaluate(`document.activeElement.getAttribute('aria-expanded')`), "true");
   await screenshot("settings-keyboard");
   window.setSize(800, 700); await wait(80); await screenshot("settings-800");
   window.webContents.setZoomFactor(1.25); await wait(80); await screenshot("settings-zoom125");
   assert.equal(await evaluate('document.querySelector(".settings").scrollWidth <= document.querySelector(".settings").clientWidth + 1'), true);
   assert.deepEqual(errors, []);
-  console.log("PASS settings: eight categories, full control inventory, unique IDs, search, keyboard tabs/sections, 800px and 125% zoom, no renderer errors");
+  console.log("PASS settings: nine categories, full control inventory, unique IDs, search, keyboard tabs/sections, 800px and 125% zoom, no renderer errors");
   app.exit(0);
 }
 run().catch(error => { console.error(error.stack); app.exit(1); });

@@ -254,9 +254,9 @@
     const body = document.querySelector(".set-body"), names = [], secs = [];
     let cur = null, sec = null;
     for (const el of [...body.children]) {
-      if (el.tagName === "H4") { cur = window.argusSettingsCategories.section(el.textContent, el.dataset.tab || cur); sec = { h: el, key: el.textContent, items: [], tab: cur || "Kugel und Farbe" }; secs.push(sec); }
+      if (el.tagName === "H4") { cur = window.argusSettingsCategories.section(el.textContent, el.dataset.tab || cur); sec = { h: el, key: el.textContent, items: [], tab: cur }; secs.push(sec); }
       else if (sec) sec.items.push(el);
-      el.dataset.in = cur || "Kugel und Farbe";
+      el.dataset.in = cur || "Allgemein";
       if (!names.includes(el.dataset.in)) names.push(el.dataset.in);
       if (el.classList.contains("set-note") && !el.id) { el.classList.add("clamp"); el.title = "Klick: ganzen Hinweis zeigen"; el.addEventListener("click", () => el.classList.toggle("open")); }
     }
@@ -287,13 +287,19 @@
     });
     $("setFind").addEventListener("input", (e) => { q = e.target.value; render(); body.scrollTop = 0; });
     $("setTabs").replaceChildren(...names.map((n) => { const b = document.createElement("button"); b.type = "button"; b.role = "tab"; b.textContent = n; b.dataset.tab = n; b.addEventListener("click", () => show(n)); return b; }));
-    // Schalter „Mining in Argus anzeigen“: alles Mining in den Einstellungen verschwindet, nur der Schalter selbst bleibt
-    const master = $("setMiningOn").parentElement, firstMine = secs.find((x) => x.tab === "Mining");
-    for (const x of secs) {
-      if (x.key === "Täglicher Miner-Report" || x.key === "Mining-Seite" || (x.tab === "Mining" && x !== firstMine)) { x.h.classList.add("mn-off"); x.items.forEach((el) => el.classList.add("mn-off")); }
-      else if (x === firstMine) x.items.forEach((el) => { if (el !== master) el.classList.add("mn-off"); });
+    // Schalter „Mining in Argus anzeigen“ (erster Abschnitt im Reiter Mining): aus = alles Mining in den Einstellungen verschwindet, nur der Schalter selbst bleibt
+    const master = $("setMiningOn").closest(".set-body > *");
+    for (const x of secs) if (x.tab === "Mining") {
+      if (x.items.includes(master)) x.items.forEach((el) => { if (el !== master) el.classList.add("mn-off"); });
+      else { x.h.classList.add("mn-off"); x.items.forEach((el) => el.classList.add("mn-off")); }
     }
-    for (const b of $("setTabs").children) if (b.dataset.tab === "Report") b.classList.add("mn-off"); // ohne Mining kein Report-Reiter
+    $("setPagesOn")?.closest(".set-body > *")?.classList.add("mn-off"); // Mining-Seite ohne Mining ergibt keinen Sinn
+    // Von außen (z. B. leere Freundesliste): Einstellungen an einem Abschnitt öffnen
+    window.argusSettingsAt = (title) => {
+      const x = secs.find((s) => s.key === title); if (!x) return false;
+      open[x.key] = true; try { localStorage.setItem("jarvisSetOpen", JSON.stringify(open)); } catch {}
+      show(x.tab); requestAnimationFrame(() => x.h.scrollIntoView({ block: "start" })); return true;
+    };
     for (const x of secs) if (x.key === "Temperaturmessung") { x.h.classList.add("win-only"); x.items.forEach((el) => el.classList.add("win-only")); }
     show(sel);
   })();
