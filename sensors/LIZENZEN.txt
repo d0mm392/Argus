@@ -1,4 +1,8 @@
-LibreHardwareMonitorLib und Abhaengigkeiten: unveraendert aus dem offiziellen Release von
-https://github.com/LibreHardwareMonitor/LibreHardwareMonitor (Mozilla Public License 2.0).
+LibreHardwareMonitorLib 0.9.6 und Abhaengigkeiten: unveraendert aus den offiziellen NuGet-Paketen
+(LibreHardwareMonitorLib, DiskInfoToolkit, RAMSPDToolkit-NDD, BlackSharp.Core, HidSharp, System.*/Microsoft.Bcl.*, jeweils .NET Framework 4.7.2/4.6.2).
+Quelle LibreHardwareMonitor: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor (Mozilla Public License 2.0).
+DiskInfoToolkit, RAMSPDToolkit-NDD, BlackSharp.Core: https://github.com/blacktempel (Mozilla Public License 2.0).
 HidSharp: Apache License 2.0. System.*/Microsoft.Bcl.*: MIT (Microsoft).
-PawnIO_setup.exe: unveraendert von https://github.com/namazso/PawnIO.Setup (signierter Treiber von namazso).
+PawnIO_setup.exe 2.2.0: unveraendert von https://github.com/namazso/PawnIO.Setup (signierter Treiber von namazso,
+Quellcode des Treibers: https://github.com/namazso/PawnIO, GPL-2.0).
+Pruefsummen aller Dateien: SHA256SUMS.txt (setup.ps1 prueft sie vor der Einrichtung).
