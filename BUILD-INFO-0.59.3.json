@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "version": "0.59.3",
+  "source": "6d69767561a685736b35c830f4fb2c19a48de65b",
+  "manifestFiles": 4856,
+  "installerSHA256": "730726af16563455f5a0dadf41b182a3305ccbdfcdd64a5472bf7470562054a5",
+  "channel": "updates",
+  "sourceArchiveSHA256": "33c979979ed1ed14bfd8e20c62d38dec52af1c137258d59904a00f6c6f4d526a",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.59.2",
+  "tests": {
+    "unitPlusSensors": "25/25",
+    "ui": "65/65",
+    "eco": "3/3",
+    "settings": "PASS",
+    "friendsSetupHint": "PASS"
+  },
+  "sensorFilesInInstaller": ["resources/app/sensors/PawnIO_setup.exe", "resources/app/sensors/LibreHardwareMonitorLib.dll"],
+  "notTested": "Keine Windows-VM-Prüfung; Temperaturmessung und Einstellungsoberfläche nur auf Windows endgültig prüfbar."
+}
