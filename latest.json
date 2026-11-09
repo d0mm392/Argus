@@ -1,7 +1,7 @@
 {
- "version": "1.4.0",
+ "version": "1.4.1",
  "file": "Argus-Mining.exe",
- "size": 87267328,
- "sha256": "dd858a80b10adf24d888173bf50f5f49ab949f856ddbbdc65f28f215ae2f0fa3",
- "notes": "Pool-Report (Änderungen und Pool-Wechsel) und Report über frei gewählten Zeitraum von–bis"
+ "size": 87268864,
+ "sha256": "f940de7c6f36fa934e9d93be3785c01cc4e70725237e7a2b8d4a7384538bad37",
+ "notes": "Verbrauch plausibel (falsch gelesene Watt werden ersetzt), Ø Leistung in kW im Report, schnellere Update-Prüfung"
 }
