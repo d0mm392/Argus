@@ -4,7 +4,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
 const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), pools = require("./pools"), PAGE = require("./page");
 
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
@@ -108,11 +108,11 @@ const isExe = /\.exe$/i.test(process.execPath) && !/(^|[\\/])node\.exe$/i.test(p
 let upd = { state: "idle", latest: "", notes: "", err: "", ts: 0, pct: 0 };
 const newer = (a, b) => { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; } return false; };
 // Laden über http/https (folgt Weiterleitungen), mit Fortschritt
-function getBuf(url, ms, onPart, hops = 0) {
+function getBuf(url, ms, onPart, hops = 0, hdr = {}) {
   return new Promise((ok, fail) => {
     const mod = url.startsWith("https:") ? require("https") : http;
-    const rq = mod.get(url, { headers: { "Cache-Control": "no-cache", "User-Agent": "Argus-Mining/" + VERSION } }, (r) => {
-      if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location && hops < 5) { r.resume(); return getBuf(new URL(r.headers.location, url).href, ms, onPart, hops + 1).then(ok, fail); }
+    const rq = mod.get(url, { headers: { "Cache-Control": "no-cache", "User-Agent": "Argus-Mining/" + VERSION, ...hdr } }, (r) => {
+      if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location && hops < 5) { r.resume(); return getBuf(new URL(r.headers.location, url).href, ms, onPart, hops + 1, hdr).then(ok, fail); }
       if (r.statusCode !== 200) { r.resume(); return fail(new Error("Server antwortet mit " + r.statusCode)); }
       const parts = [], total = Number(r.headers["content-length"]) || 0; let got = 0;
       r.on("data", (c) => { parts.push(c); got += c.length; onPart?.(got, total); }); r.on("end", () => ok(Buffer.concat(parts))); r.on("error", fail);
@@ -123,7 +123,11 @@ function getBuf(url, ms, onPart, hops = 0) {
 async function checkUpdate(auto = false) {
   if (upd.state === "download") return upd;
   try {
-    const j = JSON.parse(String(await getBuf(`${UPDATE_BASE}/latest.json?t=${Date.now()}`, 15000))); upd.ts = Date.now(); upd.err = "";
+    // Zuerst direkt über die GitHub-Schnittstelle (ohne die 5 Minuten Zwischenspeicher von raw.githubusercontent), sonst wie bisher
+    let txt = null;
+    if (!process.env.AM_UPDATE_URL) txt = await getBuf("https://api.github.com/repos/d0mm392/Argus/contents/latest.json?ref=argus-mining", 15000, null, 0, { Accept: "application/vnd.github.raw" }).then(String).catch(() => null);
+    if (!txt || !/"version"/.test(txt)) txt = String(await getBuf(`${UPDATE_BASE}/latest.json?t=${Date.now()}`, 15000));
+    const j = JSON.parse(txt); upd.ts = Date.now(); upd.err = "";
     if (!/^\d+\.\d+\.\d+$/.test(j.version || "") || !/^[0-9a-f]{64}$/i.test(j.sha256 || "")) throw new Error("Update-Angaben unvollständig");
     upd.latest = j.version; upd.notes = String(j.notes || "").slice(0, 2000); upd.info = j;
     upd.state = newer(j.version, VERSION) ? "available" : "current";

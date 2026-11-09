@@ -115,3 +115,11 @@ test("Report über frei gewählten Zeitraum", () => {
   assert.equal(report.buildMonth("2026-11").days, 3);
   assert.match(report.csv("2026-11-01", "2026-11-02"), /2 von 2/);
 });
+
+test("Verbrauch bleibt plausibel: falsch gelesene Watt werden durch Schätzung ersetzt", () => {
+  const sum = (ghs, power) => ({ SUMMARY: [{ "GHS 5s": ghs, Elapsed: 1000, ...(power != null ? { Power: power } : {}) }] });
+  const st = { STATS: [{ Type: "Antminer T21" }, { total_rateideal: 190000 }] };
+  assert.equal(lan.read("10.0.0.1", sum(190000, 3610), st, null, null, null).watt, 3610); // echter Wert bleibt
+  const bad = lan.read("10.0.0.1", sum(190000, 9000), st, null, null, null); assert.equal(bad.wattEst, true); assert.equal(bad.watt, 3610); // 9 kW unplausibel
+  assert.ok(lan.read("10.0.0.1", sum(900000, null), st, null, null, null).watt <= 190 * 1.3 * 19 + 1); // Hashrate-Ausreißer gedeckelt
+});

@@ -56,7 +56,7 @@ function record(miners, noNet = false, now = Date.now(), force = false) {
   save(); return ev;
 }
 
-const minerRow = (id, x) => ({ id, name: x.name, type: x.type, samples: x.n, on: x.on, uptime: x.n ? x.on / x.n : null, kwh: x.wh / 1000, kwhEst: x.est / 1000, avgTh: x.on ? x.hr / x.on / 1e12 : 0, reboots: x.rb || 0, restarts: x.rs || 0, devUp: x.lu ?? null, hashUp: x.lh ?? null, serial: x.sn || "", mac: x.mac || "", pools: (x.pl || []).map(([url, user]) => ({ url, user })) });
+const minerRow = (id, x) => ({ id, name: x.name, type: x.type, samples: x.n, on: x.on, uptime: x.n ? x.on / x.n : null, kwh: x.wh / 1000, kwhEst: x.est / 1000, avgTh: x.on ? x.hr / x.on / 1e12 : 0, avgKw: x.n ? x.wh / 1000 / (x.n * 5 / 60) : 0, reboots: x.rb || 0, restarts: x.rs || 0, devUp: x.lu ?? null, hashUp: x.lh ?? null, serial: x.sn || "", mac: x.mac || "", pools: (x.pl || []).map(([url, user]) => ({ url, user })) });
 const sortRows = (ms) => ms.sort((a, b) => (a.uptime ?? 2) - (b.uptime ?? 2) || String(a.name).localeCompare(String(b.name), "de", { numeric: true }));
 function totals(ms) {
   const tot = ms.reduce((a, m) => a + m.samples, 0), up = ms.reduce((a, m) => a + (m.on || 0), 0);
@@ -111,10 +111,10 @@ const de = (v, n = 1) => (v == null ? "" : Number(v).toFixed(n).replace(".", ","
 // CSV für Excel (Semikolon, Komma als Dezimaltrenner); k = Tag (JJJJ-MM-TT) oder Monat (JJJJ-MM)
 function csv(k, to) {
   const month = !!to || /^\d{4}-\d{2}$/.test(String(k || "")), r = to ? buildRange(k, to) : month ? buildMonth(k) : build(k); if (!r) return "";
-  const rows = [["Miner", "IP", "Seriennummer", "MAC", "Modell", "Pool 1", "Worker 1", "Pool 2", "Worker 2", "Pool 3", "Worker 3", "Uptime %", "Verbrauch kWh", "davon geschätzt kWh", "Ø TH/s", "Neustarts Gerät", "Neustarts Mining", ...(month ? ["Tage mit Daten"] : ["Geräte-Laufzeit", "Mining-Laufzeit"]), "Stichproben"]];
+  const rows = [["Miner", "IP", "Seriennummer", "MAC", "Modell", "Pool 1", "Worker 1", "Pool 2", "Worker 2", "Pool 3", "Worker 3", "Uptime %", "Verbrauch kWh", "Ø Leistung kW", "davon geschätzt kWh", "Ø TH/s", "Neustarts Gerät", "Neustarts Mining", ...(month ? ["Tage mit Daten"] : ["Geräte-Laufzeit", "Mining-Laufzeit"]), "Stichproben"]];
   const pc = (m) => [0, 1, 2].flatMap((i) => [m.pools[i]?.url || "", m.pools[i]?.user || ""]);
-  for (const m of r.miners) rows.push([m.name, m.id, m.serial, m.mac, m.type, ...pc(m), de(m.uptime * 100, 2), de(m.kwh, 2), de(m.kwhEst, 2), de(m.avgTh, 1), m.reboots, m.restarts, ...(month ? [m.days] : [fmtDur(m.devUp), fmtDur(m.hashUp)]), m.samples]);
-  rows.push([]); rows.push(["Gesamt", "", "", "", `${r.total} Miner`, "", "", "", "", "", "", de((r.uptime ?? 0) * 100, 2), de(r.kwh, 2), de(r.kwhEst, 2), "", "", "", ...(month ? [`${r.days} von ${r.daysInMonth}`] : ["", ""]), r.samples]);
+  for (const m of r.miners) rows.push([m.name, m.id, m.serial, m.mac, m.type, ...pc(m), de(m.uptime * 100, 2), de(m.kwh, 2), de(m.avgKw, 2), de(m.kwhEst, 2), de(m.avgTh, 1), m.reboots, m.restarts, ...(month ? [m.days] : [fmtDur(m.devUp), fmtDur(m.hashUp)]), m.samples]);
+  rows.push([]); rows.push(["Gesamt", "", "", "", `${r.total} Miner`, "", "", "", "", "", "", de((r.uptime ?? 0) * 100, 2), de(r.kwh, 2), "", de(r.kwhEst, 2), "", "", "", ...(month ? [`${r.days} von ${r.daysInMonth}`] : ["", ""]), r.samples]);
   return "﻿" + rows.map((l) => l.map((c) => { const s = String(c ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(";")).join("\r\n");
 }
 const days = () => { try { return fs.readdirSync(dir).map((f) => f.replace(/\.json$/, "")).filter(okKey).concat(curKey && !fs.existsSync(fileOf(curKey)) ? [curKey] : []).sort(); } catch { return []; } };

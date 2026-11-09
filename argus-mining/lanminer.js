@@ -129,7 +129,12 @@ function read(ip, sum, stats, pools, dev, vn, opt = {}) {
   let up = num(S.Uptime ?? S.uptime ?? V["system.uptime"] ?? V.uptime);
   if (up == null && typeof V["system.uptime"] === "string") { const m = /(\d+)\s*d.*?(\d+)\s*h.*?(\d+)\s*m/i.exec(V["system.uptime"]); if (m) up = +m[1] * 86400 + +m[2] * 3600 + +m[3] * 60; }
   const on = hr != null ? hr > 0 : hup != null ? hup > 0 : true;
-  if (watt == null) { const j = Number(opt.jth) > 0 ? Number(opt.jth) : jthOf(type); if (j && hr != null) { watt = Math.round((hr / 1e12) * j); est = true; } }
+  // Plausibel halten: Schätzung aus J/TH × Hashrate (Hashrate höchstens 1,3 × Nennwert). Gemeldete Watt, die mehr als 40 % darüber
+  // oder unter 40 % davon liegen, sind falsch gelesen (andere Einheit, Summe mehrerer Felder) und werden durch die Schätzung ersetzt.
+  const j = Number(opt.jth) > 0 ? Number(opt.jth) : jthOf(type), hrE = hr != null && nom ? Math.min(hr, nom * 1.3) : hr;
+  const estW = j && hrE != null ? Math.round((hrE / 1e12) * j) : null;
+  if (watt != null && estW && hrE > 0 && (watt > estW * 1.4 + 300 || watt < estW * 0.4)) watt = null;
+  if (watt == null && estW != null) { watt = estW; est = true; }
   if (!on && watt != null) watt = 0;
   // Name: Worker aus dem Pool (Teil nach dem letzten Punkt), sonst Rechnername, sonst die Adresse
   const user = String(pools?.POOLS?.find((p) => /alive/i.test(p.Status || "") && p.User)?.User || pools?.POOLS?.[0]?.User || "");
