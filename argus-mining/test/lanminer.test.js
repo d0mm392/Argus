@@ -47,6 +47,10 @@ test("Suche und Abfrage: Antminer, Whatsminer, VNISH", async () => {
   assert.equal(a.serial, "JYZZB1234567"); assert.equal(a.mac, "02:AA:BB:CC:DD:EE");
   assert.equal(w.serial, "HTM3XS12345"); assert.equal(w.mac, "C4:11:22:33:44:55");
   const v = by["127.0.0.4"]; assert.equal(v.serial, "VN-SER-42"); assert.equal(v.mac, "AA:BB:CC:00:11:22"); assert.equal(v.on, false); assert.equal(v.watt, 0); assert.equal(v.up, 123456); assert.match(v.type, /VNISH|vnish/);
+  // Detailansicht: Sensoren, Lüfter, Pools mit Shares
+  const d = await lan.detail("127.0.0.2", {}); assert.ok(d.sensors.some((x) => x.label.startsWith("Board 1 Chip") && x.v === 77)); assert.equal(d.fans.length, 2); assert.equal(d.poolsAll.length, 4); assert.equal(d.serial, "JYZZB1234567");
+  // Verlauf 24 h
+  const hist = require("../hist"); hist.init(dir); hist.record(s.miners, Date.now(), true); hist.init(dir); assert.equal(hist.get("127.0.0.3")[0][1], 112);
   // Miner fällt weg: zählt als offline
   servers[0].close(); servers.at(-1).close(); await new Promise((r) => setTimeout(r, 100));
   const s2 = await lan.poll(); const a2 = s2.miners.find((m) => m.ip === "127.0.0.2"); assert.equal(a2.on, false); assert.equal(a2.name, "miner01");

@@ -21,7 +21,18 @@ input,select,textarea,button.b{background:var(--panel);color:var(--text);border:
 button.b{cursor:pointer}button.b.p{background:var(--acc);border-color:var(--acc);color:#04111f}
 textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
 .form{display:grid;grid-template-columns:220px 1fr;gap:12px 16px;max-width:900px;align-items:start}.form label{color:var(--mute);padding-top:6px}
-.note{color:var(--mute);font-size:12px;margin-top:4px}.wrap{overflow:auto;max-height:calc(100vh - 230px)}
+.note{color:var(--mute);font-size:12px;margin-top:4px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}.card h3{margin:0 0 10px;font-size:14px;font-weight:500;color:var(--mute)}
+.dh{display:flex;align-items:center;gap:12px;margin-bottom:12px}.dh h2{margin:0;font-size:22px;font-weight:500}.badge{border-radius:999px;padding:2px 10px;font-size:12px;border:1px solid}
+.badge.ok{color:var(--ok);border-color:var(--ok)}.badge.bad{color:var(--bad);border-color:var(--bad)}.badge.warn{color:var(--warn);border-color:var(--warn)}.badge.acc{color:var(--acc);border-color:var(--acc)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 18px}.kv div{overflow-wrap:anywhere}.kv b{color:var(--mute);font-weight:500;margin-right:6px}
+.dgrid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px}@media(max-width:900px){.dgrid{grid-template-columns:1fr}}
+.rng button{background:none;border:0;color:var(--mute);cursor:pointer;font:inherit;padding:2px 8px}.rng button.on{color:var(--text);text-decoration:underline}
+.act{max-height:300px;overflow:auto;margin:0;padding:0;list-style:none}.act li{padding:6px 0;border-bottom:1px solid var(--line)}.act time{display:block;color:var(--mute);font-size:12px}
+.comps{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}.comp{border:1px solid var(--line);border-radius:6px;padding:8px 10px}.comp i{display:block;font-style:normal;color:var(--mute);font-size:12px}
+.meter{height:5px;background:var(--line);border-radius:3px;margin:6px 0 2px}.meter span{display:block;height:100%;border-radius:3px;background:var(--ok)}
+.pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}.pool{border:1px solid var(--line);border-radius:6px;padding:10px 12px}.pool .u{font-family:Consolas,monospace;font-size:12px;background:var(--bg);border-radius:4px;padding:3px 6px;overflow-wrap:anywhere;margin:4px 0 8px}
+.pool table td{border:0;padding:2px 0}#chart{width:100%;height:240px;display:block}#chartTip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap}.wrap{overflow:auto;max-height:calc(100vh - 230px)}
 </style></head><body>
 <header><b>ARGUS MINING</b><span class=mute id=ver></span><nav><button data-t="ov" class="on">Miner</button><button data-t="rp">Report</button><button data-t="log">Protokoll</button><button data-t="set">Einstellungen</button></nav><span class="st" id="st">Lade…</span><span id="upd" hidden></span></header>
 <main>
@@ -38,6 +49,18 @@ textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
 <section id="log" hidden>
  <div class="bar"><select id="logDay"></select><input id="lq" placeholder="Filtern (z. B. Offline, Seriennr., IP)" style="width:260px"><button class="b" id="logDl">Als Text speichern</button><span class="mute" id="logInfo"></span></div>
  <div class="wrap"><table><tbody id="logTb"></tbody></table></div>
+</section>
+<section id="det" hidden>
+ <div class="dh"><button class="b" id="dBack">← Zurück</button><h2 id="dName"></h2><span id="dBadge" class="badge"></span><span class="mute" id="dLive" style="margin-left:auto"></span><a class="b" id="dWeb" target="_blank" rel="noopener" style="text-decoration:none">Weboberfläche öffnen</a></div>
+ <div class="card"><h3>Miner-Details</h3><div class="kv" id="dKv"></div></div>
+ <div class="dgrid">
+  <div class="card" style="position:relative"><div class="tiles" id="dTiles" style="margin-bottom:6px"></div><svg id="chart" viewBox="0 0 1000 240" preserveAspectRatio="none"></svg><div id="chartTip"></div>
+   <div class="bar" style="margin:6px 0 0"><span class="rng" id="dRng"><button data-r="1d" class="on">24 h</button><button data-r="7d">7 Tage</button><button data-r="30d">30 Tage</button><button data-r="90d">90 Tage</button></span><span class="mute" id="dAvg" style="margin-left:auto"></span></div></div>
+  <div class="card"><h3>Aktivität <span class="mute" id="dActN"></span></h3><ul class="act" id="dAct"></ul></div>
+ </div>
+ <div class="card"><h3>Hashboards</h3><div class="comps" id="dBoards"></div></div>
+ <div class="card"><h3>Temperatursensoren und Lüfter</h3><div class="comps" id="dComps"></div></div>
+ <div class="card"><h3>Pools</h3><div class="pools" id="dPools"></div></div>
 </section>
 <section id="set" hidden>
  <div class="form">
@@ -63,7 +86,7 @@ const pw=(w)=>w==null?"–":w>=1e6?nf(w/1e6,2)+" MW":w>=1e3?nf(w/1e3,1)+" kW":nf
 const dur=(s)=>{if(s==null)return"–";s=Math.round(s);const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?d+"d "+h+"h":h?h+"h "+m+"m":m+"m"};
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let S=null, sortK="on", sortD=1;
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","log","set"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="log")loadLogDays();if(b.dataset.t==="set")loadCfg();});
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","log","set","det"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="log")loadLogDays();if(b.dataset.t==="set")loadCfg();});
 const w1=(m)=>(m.pools&&m.pools[0]&&m.pools[0].user)||"";
 let openIp="";
 const det=(m,n)=>"<tr class=det><td colspan="+n+">"+[0,1,2].map(i=>{const p=(m.pools||[])[i];return "<b>Pool "+(i+1)+":</b> "+(p?esc(p.url||"–")+" · "+esc(p.user||"–")+(p.st?" · "+esc(p.st):""):"–");}).join("<br>")+"<br><b>MAC:</b> "+esc(m.mac||"–")+" · <b>Seriennr.:</b> "+esc(m.serial||"nicht lesbar")+(m.fw?" · <b>Firmware:</b> "+esc(m.fw):"")+"</td></tr>";
@@ -81,10 +104,46 @@ function render(){
  const models=[...new Set(ms.map(m=>m.type||"").filter(Boolean))].sort();if($("fm").options.length-1!==models.length){const c=fm;$("fm").innerHTML="<option value=''>Alle Modelle</option>"+models.map(t=>"<option>"+esc(t)+"</option>").join("");$("fm").value=models.includes(c)?c:"";}
  const val=(m,k)=>k==="w1"?w1(m):m[k];
  const l=ms.filter(m=>(!terms.length||terms.some(t=>hay(m,qf).includes(t)))&&(!fs||(fs==="on"?m.on!==false:fs==="off"?m.on===false:fs==="bad"?bad(m):!m.serial))&&(!fm||m.type===fm)).sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);if(sortK==="on")return((a.on===false)-(b.on===false))*-sortD||String(a.name).localeCompare(b.name,"de",{numeric:true});if(typeof x==="number"||typeof y==="number")return((x??-1)-(y??-1))*sortD;return String(x??"").localeCompare(String(y??""),"de",{numeric:true})*sortD;});
- $("tb").innerHTML=l.slice(0,3000).map(m=>"<tr data-ip='"+esc(m.ip)+"' class="+(m.on===false?"off":bad(m)?"weak":"ok")+" title='Klick: Pools 1–3, MAC'><td>"+esc(m.name)+"</td><td><a href='http://"+esc(m.ip)+"/' target=_blank rel=noopener>"+esc(m.ip)+"</a></td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td>"+(m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft")+"</td><td class=n>"+th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")+"</td><td class=n>"+(m.temp!=null?Math.round(m.temp)+" °C":"–")+"</td><td class=n>"+(m.fan?nf(m.fan)+" rpm":"–")+"</td><td class='n"+(m.wattEst?" est":"")+"' title='"+(m.wattEst?"geschätzt aus Hashrate × J/TH":"vom Miner gemeldet")+"'>"+pw(m.watt)+"</td><td class=n>"+dur(m.up)+"</td><td class=n>"+dur(m.hup)+"</td></tr>"+(openIp===m.ip?det(m,12):"")).join("")||"<tr><td colspan=12 class=mute>"+(S.ips?"Noch keine Miner gefunden.":"Trag unter Einstellungen die Adressbereiche ein.")+"</td></tr>";
+ $("tb").innerHTML=l.slice(0,3000).map(m=>"<tr data-ip='"+esc(m.ip)+"' class="+(m.on===false?"off":bad(m)?"weak":"ok")+" title='Klick: Details'><td>"+esc(m.name)+"</td><td><a href='http://"+esc(m.ip)+"/' target=_blank rel=noopener>"+esc(m.ip)+"</a></td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td>"+(m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft")+"</td><td class=n>"+th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")+"</td><td class=n>"+(m.temp!=null?Math.round(m.temp)+" °C":"–")+"</td><td class=n>"+(m.fan?nf(m.fan)+" rpm":"–")+"</td><td class='n"+(m.wattEst?" est":"")+"' title='"+(m.wattEst?"geschätzt aus Hashrate × J/TH":"vom Miner gemeldet")+"'>"+pw(m.watt)+"</td><td class=n>"+dur(m.up)+"</td><td class=n>"+dur(m.hup)+"</td></tr>"+(openIp===m.ip?det(m,12):"")).join("")||"<tr><td colspan=12 class=mute>"+(S.ips?"Noch keine Miner gefunden.":"Trag unter Einstellungen die Adressbereiche ein.")+"</td></tr>";
 }
 document.querySelectorAll("#ov th").forEach(h=>h.onclick=()=>{const k=h.dataset.k;sortD=sortK===k?-sortD:(["hr","temp","fan","watt","up","hup"].includes(k)?-1:1);sortK=k;render();});
-$("tb").onclick=(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-ip]");if(!tr)return;openIp=openIp===tr.dataset.ip?"":tr.dataset.ip;render();};
+$("tb").onclick=(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-ip]");if(tr)openDetail(tr.dataset.ip);};
+// ---------- Detailansicht ----------
+let dIp="",dR="1d",dT=null,dHist=null,dData=null;
+const show=(id)=>{for(const s of ["ov","rp","log","set","det"])$(s).hidden=s!==id;};
+function openDetail(ip){dIp=ip;dR="1d";document.querySelectorAll("#dRng button").forEach(b=>b.classList.toggle("on",b.dataset.r==="1d"));show("det");window.scrollTo(0,0);$("dName").textContent=ip;$("dKv").innerHTML="<div class=mute>Frage den Miner ab…</div>";
+ ["dBoards","dComps","dPools","dAct"].forEach(i=>$(i).innerHTML="");loadDetail();loadHist();loadAct();clearInterval(dT);dT=setInterval(()=>{if($("det").hidden){clearInterval(dT);return;}loadDetail();},30000);try{history.replaceState(null,"","#miner="+ip);}catch{}}
+$("dBack").onclick=()=>{clearInterval(dT);show("ov");try{history.replaceState(null,"","#");}catch{}};
+async function loadDetail(){const d=await api("/api/miner?ip="+encodeURIComponent(dIp)).catch(()=>null);if(!d||d.error){$("dKv").innerHTML="<div class=mute>"+esc(d?.error||"Keine Antwort")+"</div>";return;}dData=d;
+ $("dName").textContent=d.name;const st=d.on===false?["bad",d.live?"steht":"keine Antwort"]:bad(d)?["warn","auffällig"]:["ok","läuft"];$("dBadge").className="badge "+st[0];$("dBadge").textContent=st[1];
+ $("dLive").textContent=d.live?"live abgefragt "+new Date(d.ts).toLocaleTimeString("de-DE"):"Miner antwortet nicht, letzter bekannter Stand";$("dWeb").href="http://"+d.ip+"/";
+ const kv=[["Modell",d.type||"–"],["IP",d.ip],["MAC",d.mac||"–"],["Seriennummer",d.serial||"nicht lesbar"],["Firmware",d.fw||"–"],["Worker",w1(d)||"–"],["Geräte-Laufzeit",dur(d.up)],["Mining-Laufzeit",dur(d.hup)],["Verbrauch",pw(d.watt)+(d.wattEst?" (geschätzt)":"")],["Nennwert",d.nom?th(d.nom):"–"]];
+ $("dKv").innerHTML=kv.map(([k,v])=>"<div><b>"+k+"</b>"+esc(v)+"</div>").join("");
+ $("dTiles").innerHTML=[["Hashrate",th(d.hr)+(d.nom&&d.hr?" <small class=mute>"+Math.round(d.hr/d.nom*100)+" %</small>":"")],["Höchste Temperatur",d.temp!=null?Math.round(d.temp)+" °C":"–"],["Schnellster Lüfter",d.fan?nf(d.fan)+" rpm":"–"],["Pools",String((d.poolsAll||[]).length)]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
+ const tcol=(v)=>v>=90?"var(--bad)":v>=80?"var(--warn)":"var(--ok)";
+ $("dBoards").innerHTML=(d.boards||[]).map(b=>"<div class=comp><b>Board "+b.n+"</b><i>Hashrate</i>"+(b.th!=null?nf(b.th,2)+" TH/s":"–")+"<i>Chips</i>"+(b.chips??"–")+(b.bad?" <span style='color:var(--bad)'>("+b.bad+" defekt)</span>":"")+(b.freq?"<i>Frequenz</i>"+nf(b.freq)+" MHz":"")+(b.temp?"<i>Chip max.</i>"+Math.round(b.temp)+" °C":"")+"</div>").join("")||"<span class=mute>"+(d.live?"Der Miner meldet keine Werte je Hashboard.":"Nur live verfügbar.")+"</span>";
+ $("dComps").innerHTML=[...(d.sensors||[]).map(x=>"<div class=comp><i>"+esc(x.label)+"</i>"+Math.round(x.v)+" °C<div class=meter><span style='width:"+Math.min(100,x.v/110*100)+"%;background:"+tcol(x.v)+"'></span></div></div>"),...(d.fans||[]).map(x=>"<div class=comp><i>"+esc(x.label)+"</i>"+nf(x.v)+" rpm<div class=meter><span style='width:"+Math.min(100,x.v/7000*100)+"%;background:var(--acc)'></span></div></div>")].join("")||"<span class=mute>"+(d.live?"Keine Sensoren gemeldet.":"Nur live verfügbar.")+"</span>";
+ $("dPools").innerHTML=(d.poolsAll||[]).map((p,i)=>{const alive=/alive/i.test(p.st||"");return "<div class=pool><b>Pool "+(i+1)+"</b> <span class=mute>"+esc(p.url||"–")+"</span><div class=u>"+esc(p.user||"–")+"</div><span class='badge "+(alive?"ok":"bad")+"'>"+(alive?"Online":esc(p.st||"unbekannt"))+"</span> "+(p.active?"<span class='badge acc'>Aktiv</span>":"")+(/devfee/i.test(p.user+p.url)?" <span class='badge warn'>Dev-Fee</span>":"")+
+  "<table style='margin-top:8px;width:100%'>"+[["Angenommen",p.acc],["Abgelehnt",p.rej],["Veraltet (stale)",p.stale],["Diff. angenommen",p.dacc],["Diff. abgelehnt",p.drej],["Letzte Share-Diff.",p.last]].map(([k,v])=>"<tr><td class=mute>"+k+"</td><td class=n>"+(v==null?"–":nf(v))+"</td></tr>").join("")+"</table></div>";}).join("")||"<span class=mute>Keine Pools gemeldet.</span>";}
+async function loadHist(){dHist=await api("/api/miner/history?ip="+encodeURIComponent(dIp)+"&range="+dR).catch(()=>null);drawChart();}
+document.querySelectorAll("#dRng button").forEach(b=>b.onclick=()=>{dR=b.dataset.r;document.querySelectorAll("#dRng button").forEach(x=>x.classList.toggle("on",x===b));loadHist();});
+function drawChart(){const svg=$("chart"),P=(dHist&&dHist.points)||[],W=1000,H=240,L=46,B=22;
+ if(P.length<2){svg.innerHTML="<text x=500 y=120 text-anchor=middle fill='#8b949e' font-size=14>"+(dR==="1d"?"Verlauf entsteht ab jetzt, alle 5 Minuten ein Punkt.":"Noch zu wenige Tage gespeichert.")+"</text>";$("dAvg").textContent="";return;}
+ const t0=P[0][0],t1=P[P.length-1][0],vals=P.map(p=>p[1]||0),nom=dHist.nom,mx=Math.max(...vals,nom||0)*1.12||1;
+ const X=(t)=>L+(t-t0)/(t1-t0||1)*(W-L-8),Y=(v)=>H-B-(v/mx)*(H-B-10);
+ let g="";for(let i=0;i<=4;i++){const v=mx*i/4,y=Y(v);g+="<line x1="+L+" x2="+W+" y1="+y+" y2="+y+" stroke='#2a3340'/><text x="+(L-6)+" y="+(y+4)+" text-anchor=end fill='#8b949e' font-size=11>"+nf(v,0)+"</text>";}
+ for(let i=0;i<=5;i++){const t=t0+(t1-t0)*i/5,x=X(t),d=new Date(t);g+="<text x="+x+" y="+(H-5)+" text-anchor="+(i===0?"start":i===5?"end":"middle")+" fill='#8b949e' font-size=11>"+(dR==="1d"?d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})+(dR==="7d"?" "+d.getHours()+"h":""))+"</text>";}
+ if(nom)g+="<line x1="+L+" x2="+W+" y1="+Y(nom)+" y2="+Y(nom)+" stroke='#d29922' stroke-dasharray='6 5'/>";
+ const pts=P.map(p=>X(p[0]).toFixed(1)+","+Y(p[1]||0).toFixed(1)).join(" ");
+ g+="<polyline points='"+pts+"' fill=none stroke='#3fb950' stroke-width=2 vector-effect=non-scaling-stroke />";
+ g+="<line id=cx y1=10 y2="+(H-B)+" stroke='#8b949e' visibility=hidden />";svg.innerHTML=g;
+ const avg=vals.reduce((a,b)=>a+b,0)/vals.length,up=P.filter(p=>p[2]!=null);$("dAvg").textContent="Ø "+nf(avg,2)+" TH/s"+(nom?" · Nennwert "+nf(nom,0)+" TH/s (gestrichelt)":"")+(up.length&&dR!=="7d"?" · Uptime "+nf(up.reduce((a,p)=>a+p[2],0)/up.length*100,1)+" %":"");
+ svg.onmousemove=(e)=>{const r=svg.getBoundingClientRect(),xv=(e.clientX-r.left)/r.width*W,t=t0+(xv-L)/(W-L-8)*(t1-t0);let best=P[0];for(const p of P)if(Math.abs(p[0]-t)<Math.abs(best[0]-t))best=p;const cx=svg.querySelector("#cx");cx.setAttribute("x1",X(best[0]));cx.setAttribute("x2",X(best[0]));cx.setAttribute("visibility","visible");
+  const tip=$("chartTip");tip.style.display="block";tip.textContent=new Date(best[0]).toLocaleString("de-DE",dR==="1d"||dR==="7d"?{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}:{day:"2-digit",month:"2-digit",year:"numeric"})+": "+nf(best[1],2)+" TH/s"+(best[3]?" · "+best[3]+" °C":"")+(best[2]!=null&&dR!=="1d"?" · Uptime "+nf(best[2]*100,1)+" %":"");tip.style.left=Math.min(e.clientX-r.left+20,r.width-200)+"px";tip.style.top="40px";};
+ svg.onmouseleave=()=>{$("chartTip").style.display="none";const cx=svg.querySelector("#cx");if(cx)cx.setAttribute("visibility","hidden");};}
+async function loadAct(){const l=await api("/api/miner/activity?ip="+encodeURIComponent(dIp)).catch(()=>[]);$("dActN").textContent=l.length?"("+l.length+(l.length>=300?"+":"")+", 30 Tage)":"";
+ $("dAct").innerHTML=l.map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<li><span style='color:"+(/^(Offline|Heiß|Niedrige)/.test(m[2])?"var(--bad)":/neu gestartet/.test(m[2])?"var(--warn)":"var(--ok)")+"'>"+esc(m[2].replace(/ \\(.*?\\)/,""))+"</span><time>"+esc(m[1])+"</time></li>";}).join("")||"<li class=mute>Keine Ereignisse in den letzten 30 Tagen.</li>";}
+if(/^#miner=/.test(location.hash))setTimeout(()=>openDetail(decodeURIComponent(location.hash.slice(7))),300);
 for(const id of ["q"])$(id).oninput=render;for(const id of ["qf","fs","fm"])$(id).onchange=render;
 $("scan").onclick=()=>post("/api/scan").then(()=>setTimeout(load,800));
 async function load(){try{S=await api("/api/status");$("ver").textContent=S.version;render();}catch{$("st").textContent="Argus Mining antwortet nicht. Läuft das Programm noch?";}}

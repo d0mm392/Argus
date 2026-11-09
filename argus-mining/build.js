@@ -2,7 +2,7 @@
 // Aufruf: node build.js <Pfad zu node.exe für Windows x64>   (gleiche Node-Version wie die, mit der gebaut wird)
 const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
 const out = path.join(__dirname, "dist"); fs.mkdirSync(out, { recursive: true });
-const mods = ["lanminer", "report", "page"];
+const mods = ["lanminer", "report", "hist", "page"];
 let src = "const __m = {}, __c = {};\nconst __req = (n) => { const k = n.replace(/^\\.\\//, ''); if (__m[k]) { if (!__c[k]) { const module = { exports: {} }; __c[k] = module; __m[k](module, module.exports, __req); } return __c[k].exports; } return require(n); };\n";
 for (const m of mods) src += `__m[${JSON.stringify(m)}] = function (module, exports, require) {\n${fs.readFileSync(path.join(__dirname, m + ".js"), "utf8")}\n};\n`;
 src += `(function (require) {\n${fs.readFileSync(path.join(__dirname, "main.js"), "utf8")}\n})(__req);\n`;

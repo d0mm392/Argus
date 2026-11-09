@@ -33,6 +33,10 @@ Seriennummer und MAC werden bei jeder Suche (alle 30 Minuten) gelesen, nicht jed
 
 Das schwarze Fenster offen lassen (minimieren reicht). Schließen beendet das Programm.
 
+## Detailansicht je Miner
+
+Klick auf einen Miner öffnet seine Seite: Modell, IP, MAC, Seriennummer, Firmware, Worker, Laufzeiten, Verbrauch; Hashrate-Verlauf (24 h alle 5 Minuten, 7 Tage stündlich, 30 und 90 Tage täglich, Nennwert gestrichelt); Aktivität der letzten 30 Tage (offline, zurück, Neustart, niedrige Hashrate, heiß); Hashboards (Hashrate, Chips, defekte Chips, Frequenz, Temperatur); alle Temperatursensoren und Lüfter; alle Pools mit angenommenen, abgelehnten und veralteten Shares. Sensoren, Hashboards und Shares werden beim Öffnen live gefragt und alle 30 Sekunden erneuert.
+
 ## Filter
 
 Über der Minerliste: worin gesucht wird (alle Felder, Seriennummer, Worker/Pool, IP, MAC, Name), Suchtext (mehrere Werte mit Komma, z. B. eine Liste von Seriennummern), Zustand (läuft, offline, auffällig, ohne Seriennummer) und Modell.

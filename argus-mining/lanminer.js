@@ -189,6 +189,55 @@ async function queryOne(ip, opt = {}) {
   return read(ip, sum, stats, pools, dev, vn, opt);
 }
 
+// ---------- Detailansicht: einmal live fragen, alles Einzelne zurückgeben (Sensoren, Lüfter, Hashboards, Pools mit Shares) ----------
+const label = (k) => {
+  const b = k.split(".").pop(), n = (re) => (re.exec(b) || [])[1];
+  let m;
+  if ((m = /^temp_pcb(\d+)$/i.exec(b))) return `Board ${m[1]} PCB`;
+  if ((m = /^temp_chip(\d+)$/i.exec(b))) return `Board ${m[1]} Chip`;
+  if ((m = /^temp2_(\d+)$/i.exec(b))) return `Board ${m[1]} Chip`;
+  if ((m = /^temp3_(\d+)$/i.exec(b))) return `Board ${m[1]} Einlass`;
+  if ((m = /^temp(\d+)$/i.exec(b))) return `Board ${m[1]}`;
+  if ((m = /^fan(\d+)$/i.exec(b))) return `Lüfter ${m[1]}`;
+  if (/fan speed in/i.test(b)) return "Lüfter Einlass"; if (/fan speed out/i.test(b)) return "Lüfter Auslass";
+  return b.replace(/_/g, " ");
+};
+async function detail(ip, opt = {}) {
+  const sum = await cmd(ip, "summary"); if (!sum || (!sum.SUMMARY && !sum.Msg)) return null;
+  const [stats, pools, devs] = await Promise.all([cmd(ip, "stats"), cmd(ip, "pools"), cmd(ip, "devs")]);
+  const dev = stats?.STATS?.some((x) => x.Type) ? null : await cmd(ip, "devdetails");
+  const looksVnish = /vnish/i.test(JSON.stringify(stats?.STATS?.[0] || {}));
+  const vn = opt.http !== false && (looksVnish || opt.vnishPass) ? await vnish(ip, opt.vnishPass) : null;
+  const m = read(ip, sum, stats, pools, dev, vn, opt);
+  const T = flat({ s: stats?.STATS || [] }), sensors = [], fans = [];
+  for (const [k, v] of Object.entries(T)) {
+    const b = k.split(".").pop().toLowerCase();
+    if (/temp/.test(b) && !/num|limit|target|threshold|alarm|protect|max|min|avg|offset/.test(b)) { const vs = nums(v).filter((x) => x > 0 && x < 150); vs.forEach((x, i) => sensors.push({ label: label(k) + (vs.length > 1 ? ` · ${i + 1}` : ""), v: x })); }
+    if (/^fan\d+$/.test(b) && num(v) > 0) fans.push({ label: label(k), v: num(v) });
+  }
+  const S = flat(sum?.SUMMARY?.[0] || sum?.Msg || {});
+  for (const [k, v] of Object.entries(S)) { if (/fan speed (in|out)/i.test(k) && num(v) > 0) fans.push({ label: label(k), v: num(v) }); if (/^(temperature|env temp|chip temp max)$/i.test(k) && num(v) > 0) sensors.push({ label: k, v: num(v) }); }
+  // Hashboards: Antminer/VNISH chain_rate/chain_acn je Kette, Whatsminer über „devs“
+  const boards = [];
+  for (let i = 1; i <= 16; i++) {
+    const g = (re) => { const k = Object.keys(T).find((k2) => re.test(k2.split(".").pop().toLowerCase())); return k ? T[k] : null; };
+    const rate = num(g(new RegExp(`^chain_rate${i}$`))), chips = num(g(new RegExp(`^chain_acn${i}$`))), st = g(new RegExp(`^chain_acs${i}$`)), freq = num(g(new RegExp(`^freq_avg${i}$`)));
+    if (rate == null && chips == null) continue;
+    const t = [...nums(g(new RegExp(`^temp_chip${i}$`)) ?? []), ...nums(g(new RegExp(`^temp2_${i}$`)) ?? [])].filter((x) => x > 0 && x < 150);
+    boards.push({ n: i, th: rate != null ? Math.round(rate / 10) / 100 : null, chips, bad: typeof st === "string" ? (st.match(/x/gi) || []).length : null, freq, temp: t.length ? Math.max(...t) : null });
+  }
+  for (const d of devs?.DEVS || []) if (d["MHS av"] != null || d["GHS av"] != null) {
+    const th = d["MHS av"] != null ? num(d["MHS av"]) / 1e6 : num(d["GHS av"]) / 1e3;
+    if (!boards.some((b) => b.n === (num(d.ASC ?? d.Slot ?? d.ID) ?? boards.length) + 1)) boards.push({ n: (num(d.Slot ?? d.ASC ?? d.ID) ?? boards.length) + 1, th: Math.round(th * 100) / 100, chips: num(d["Effective Chips"]), bad: null, freq: num(d.Frequency), temp: num(d["Chip Temp Max"] ?? d.Temperature) });
+  }
+  const pl = (pools?.POOLS || []).slice().sort((a, b) => (num(a.POOL) ?? 0) - (num(b.POOL) ?? 0)).map((p) => ({
+    url: String(p.URL || "").slice(0, 160), user: String(p.User || "").slice(0, 160), st: String(p.Status || ""), active: p["Stratum Active"] === true || /true/i.test(String(p["Stratum Active"] ?? "")), prio: num(p.Priority),
+    acc: num(p.Accepted), rej: num(p.Rejected), stale: num(p.Stale), dacc: num(p["Difficulty Accepted"]), drej: num(p["Difficulty Rejected"]), dstale: num(p["Difficulty Stale"]), last: num(p["Last Share Difficulty"]), lastTime: p["Last Share Time"] ?? null,
+  }));
+  const k = known[ip] || {};
+  return { ...m, serial: k.serial || m.serial, mac: k.mac || m.mac, sensors: sensors.slice(0, 64), fans, boards, poolsAll: pl, ts: Date.now() };
+}
+
 // Viele Aufgaben mit begrenzter Parallelität
 async function pool(items, n, fn) {
   const out = new Array(items.length); let i = 0;
@@ -255,4 +304,4 @@ function stop() { clearInterval(timer); clearInterval(scanT); timer = scanT = nu
 const snapshot = () => ({ ...snap, known: Object.keys(known).length });
 function reset() { known = {}; last.clear(); snap = { ...snap, ts: 0, miners: [], found: 0 }; save(); }
 
-module.exports = { parseRanges, parseApi, read, queryOne, ident, digestGet, jthOf, init, scan, poll, start, stop, snapshot, reset };
+module.exports = { opts: () => opts(), parseRanges, parseApi, read, queryOne, ident, digestGet, detail, jthOf, init, scan, poll, start, stop, snapshot, reset };

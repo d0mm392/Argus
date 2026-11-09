@@ -2,9 +2,9 @@
 // (Hashrate, Temperatur, Lüfter, Verbrauch, Geräte- und Mining-Laufzeit) und schreibt daraus einen Tagesreport je Miner.
 // Bedienung im Browser unter http://localhost:8420 (nur auf diesem PC, außer der Fernzugriff wird ausdrücklich eingeschaltet).
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
-const lan = require("./lanminer"), report = require("./report"), PAGE = require("./page");
+const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), PAGE = require("./page");
 
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
@@ -43,7 +43,7 @@ function log(t) {
 }
 try { fs.renameSync(path.join(DIR, "log.txt"), path.join(LOGDIR, "alt-vor-1.2.txt")); } catch {}
 
-report.init(DIR, cfg.keepDays);
+report.init(DIR, cfg.keepDays); hist.init(DIR);
 lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass, antUser: cfg.antUser, antPass: cfg.antPass }));
 
 // Nach jeder Abfrage eine Report-Stichprobe (der Report nimmt selbst nur alle 5 Minuten eine)
@@ -59,14 +59,23 @@ async function tick() {
     const goneOff = [], back = [];
     for (const m of s.miners) {
       const p = seen.get(m.ip), off = m.on === false;
-      if (!p) { seen.set(m.ip, { off, n: 0 }); continue; }
+      if (!p) { seen.set(m.ip, { off, n: 0, ln: 0 }); continue; }
       if (off && !p.off) { if (++p.n >= 2) { p.off = true; p.n = 0; goneOff.push(`${m.name} (${id(m)})${m.err ? ": " + m.err : ""}`); } }
       else if (!off && p.off) { p.off = false; p.n = 0; back.push(`${m.name} (${id(m)})`); }
       else p.n = 0;
+      // niedrige Hashrate (unter 80 % vom Nennwert, zwei Abfragen) und heiß (ab 90 °C), mit Entwarnung
+      if (!off) {
+        const low = m.nom > 0 && m.hr != null && m.hr < m.nom * 0.8, ok = !m.nom || m.hr >= m.nom * 0.9;
+        if (low && !p.low) { if (++p.ln >= 2) { p.low = true; p.ln = 0; log(`Niedrige Hashrate: ${m.name} (${id(m)}) ${Math.round(m.hr / 1e12)} von ${Math.round(m.nom / 1e12)} TH/s`); } } else p.ln = 0;
+        if (p.low && ok) { p.low = false; log(`Hashrate wieder normal: ${m.name} (${id(m)})`); }
+        const hot = m.temp >= 90;
+        if (hot && !p.hot) { p.hot = true; log(`Heiß: ${m.name} (${id(m)}) ${Math.round(m.temp)} °C`); } else if (p.hot && m.temp != null && m.temp < 85) { p.hot = false; log(`Temperatur wieder normal: ${m.name} (${id(m)}) ${Math.round(m.temp)} °C`); }
+      }
     }
     for (const t of goneOff) log("Offline: " + t);
     for (const t of back) log("Wieder online: " + t);
   }
+  if (!noNet) hist.record(s.miners);
   const ev = report.record(s.miners, noNet);
   for (const [m, t] of ev || []) log(`${t}: ${m.name} (${m.ip}${m.serial ? ", SN " + m.serial : ""})`);
 }
@@ -161,6 +170,23 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/days") return json(res, 200, report.days());
     if (p === "/api/months") return json(res, 200, report.months());
     if (p === "/api/month") return json(res, 200, report.buildMonth(u.searchParams.get("month") || report.dayKey().slice(0, 7)));
+    // Detailansicht eines Miners: nur bekannte Adressen (keine beliebigen Ziele über diese Schnittstelle)
+    if (p.startsWith("/api/miner")) {
+      const ip = u.searchParams.get("ip") || "", snapM = (lan.snapshot().miners || []).find((m) => m.ip === ip);
+      if (!snapM) return json(res, 404, { error: "Miner nicht bekannt" });
+      if (p === "/api/miner") { const d = await lan.detail(ip, lan.opts()).catch(() => null); return json(res, 200, d ? { live: true, ...d } : { live: false, ...snapM, sensors: [], fans: [], boards: [], poolsAll: (snapM.pools || []) }); }
+      if (p === "/api/miner/history") { const r = u.searchParams.get("range") || "1d"; return json(res, 200, { range: r, nom: snapM.nom ? Math.round(snapM.nom / 1e10) / 100 : null, points: r === "1d" ? hist.get(ip).map(([t, th, tp, on]) => [t, on ? th : 0, on, tp]) : report.history(ip, r) }); }
+      if (p === "/api/miner/activity") {
+        const keys = [`(${ip},`, `(${ip})`, snapM.serial ? "SN " + snapM.serial : null].filter(Boolean), out = [];
+        for (const k of logDays().slice(-30).reverse()) {
+          let txt = ""; try { txt = fs.readFileSync(path.join(LOGDIR, k + ".txt"), "utf8"); } catch {}
+          for (const l of txt.split("\n").reverse()) if (l && keys.some((x) => l.includes(x))) { out.push(l); if (out.length >= 300) break; }
+          if (out.length >= 300) break;
+        }
+        return json(res, 200, out);
+      }
+      return json(res, 404, { error: "nicht gefunden" });
+    }
     if (p === "/api/logdays") return json(res, 200, logDays());
     if (p === "/api/log" || p === "/api/log.txt") {
       const k = u.searchParams.get("day") || report.dayKey(); if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return json(res, 400, { error: "Tag fehlt" });

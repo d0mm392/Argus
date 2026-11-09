@@ -42,6 +42,9 @@ function record(miners, noNet = false, now = Date.now(), force = false) {
     const id = m.ip || m.name, x = (day.m[id] ||= { name: m.name, type: m.type || "", n: 0, on: 0, wh: 0, est: 0, meas: 0, rb: 0, hr: 0 });
     x.name = m.name; if (m.type) x.type = m.type; if (m.serial) x.sn = m.serial; if (m.mac) x.mac = m.mac; if (m.pools?.length) x.pl = m.pools.map((p) => [p.url, p.user]); x.n++;
     if (m.on !== false) { x.on++; on++; x.hr += m.hr || 0; }
+    // stündlicher Verlauf für die 7-Tage-Ansicht: Summe TH/s, Anzahl Stichproben, höchste Temperatur
+    const h = new Date(now).getHours(); x.hh ||= Array(24).fill(0); x.hc ||= Array(24).fill(0); x.ht ||= Array(24).fill(0);
+    x.hh[h] += m.on !== false ? Math.round((m.hr || 0) / 1e10) / 100 : 0; x.hc[h]++; if (m.temp != null) x.ht[h] = Math.max(x.ht[h], Math.round(m.temp));
     if (m.watt != null) { const wh = (m.on === false ? 0 : m.watt) * dt / 36e5; x.wh += wh; if (m.wattEst) x.est += wh; else x.meas += wh; }
     // Neustart erkennen: Laufzeit des Geräts oder des Mining-Programms ist kleiner geworden
     const reb = m.up != null && x.lu != null && m.up + 120 < x.lu;
@@ -86,6 +89,17 @@ function buildMonth(mk) {
   const [y, mo] = mk.split("-").map(Number), dim = new Date(y, mo, 0).getDate();
   return { kind: "month", month: mk, days: ks.length, daysInMonth: dim, samples, noNet, hours: Math.round(samples * 5 / 6) / 10, median: medians.length ? medians.sort((a, b) => a - b)[Math.floor(medians.length / 2)] : null, ...totals(ms), miners: ms };
 }
+// Verlauf eines Miners (über die IP): „7d“ stündlich, „30d“/„90d“ täglich. Punkte [Zeit, Ø TH/s, Uptime 0–1, max. Temp]
+function history(ip, range = "7d") {
+  const n = range === "90d" ? 90 : range === "30d" ? 30 : 7, ks = days().slice(-n), out = [];
+  for (const k of ks) {
+    const x = load(k)?.m?.[ip]; const [y, mo, d] = k.split("-").map(Number);
+    if (!x) continue;
+    if (n === 7 && x.hc) { for (let h = 0; h < 24; h++) if (x.hc[h]) out.push([new Date(y, mo - 1, d, h, 30).getTime(), Math.round(x.hh[h] / x.hc[h] * 100) / 100, null, x.ht[h] || null]); }
+    else out.push([new Date(y, mo - 1, d, 12).getTime(), x.n ? Math.round(x.hr / x.n / 1e10) / 100 : 0, x.n ? x.on / x.n : null, x.ht ? Math.max(...x.ht) || null : null]);
+  }
+  return out;
+}
 const fmtDur = (s) => { if (s == null) return ""; s = Math.round(s); const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
 const de = (v, n = 1) => (v == null ? "" : Number(v).toFixed(n).replace(".", ","));
 // CSV für Excel (Semikolon, Komma als Dezimaltrenner); k = Tag (JJJJ-MM-TT) oder Monat (JJJJ-MM)
@@ -99,4 +113,4 @@ function csv(k) {
 }
 const days = () => { try { return fs.readdirSync(dir).map((f) => f.replace(/\.json$/, "")).filter(okKey).concat(curKey && !fs.existsSync(fileOf(curKey)) ? [curKey] : []).sort(); } catch { return []; } };
 const months = () => [...new Set(days().map((k) => k.slice(0, 7)))];
-module.exports = { init, record, build, buildMonth, csv, days, months, dayKey, fmtDur, flush: () => save(true) };
+module.exports = { init, record, build, buildMonth, history, csv, days, months, dayKey, fmtDur, flush: () => save(true) };
