@@ -23,17 +23,21 @@ textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
 .form{display:grid;grid-template-columns:220px 1fr;gap:12px 16px;max-width:900px;align-items:start}.form label{color:var(--mute);padding-top:6px}
 .note{color:var(--mute);font-size:12px;margin-top:4px}.wrap{overflow:auto;max-height:calc(100vh - 230px)}
 </style></head><body>
-<header><b>ARGUS MINING</b><span class=mute id=ver></span><nav><button data-t="ov" class="on">Miner</button><button data-t="rp">Tagesreport</button><button data-t="set">Einstellungen</button></nav><span class="st" id="st">Lade…</span><span id="upd" hidden></span></header>
+<header><b>ARGUS MINING</b><span class=mute id=ver></span><nav><button data-t="ov" class="on">Miner</button><button data-t="rp">Report</button><button data-t="log">Protokoll</button><button data-t="set">Einstellungen</button></nav><span class="st" id="st">Lade…</span><span id="upd" hidden></span></header>
 <main>
 <section id="ov">
  <div class="tiles" id="tiles"></div>
- <div class="bar"><input id="q" placeholder="Suchen (Name, IP, Seriennr., MAC, Worker)"><label><input type="checkbox" id="onlyBad"> nur auffällige</label><button class="b" id="scan">Jetzt nach Minern suchen</button><span class="mute" id="scanInfo"></span></div>
+ <div class="bar"><select id="qf" title="Worin suchen"><option value="">Alle Felder</option><option value="serial">Seriennummer</option><option value="worker">Worker / Pool</option><option value="ip">IP</option><option value="mac">MAC</option><option value="name">Name</option></select><input id="q" placeholder="Suchen, mehrere mit Komma" style="width:260px"><select id="fs" title="Status"><option value="">Alle Zustände</option><option value="on">läuft</option><option value="off">offline / steht</option><option value="bad">auffällig</option><option value="nosn">ohne Seriennummer</option></select><select id="fm" title="Modell"><option value="">Alle Modelle</option></select><span class="mute" id="fCount"></span><button class="b" id="scan">Jetzt nach Minern suchen</button><span class="mute" id="scanInfo"></span></div>
  <div class="wrap"><table><thead><tr><th data-k="name">Miner</th><th data-k="ip">IP</th><th data-k="serial">Seriennr.</th><th data-k="type">Modell</th><th data-k="w1">Worker (Pool 1)</th><th data-k="on">Status</th><th class="n" data-k="hr">Hashrate</th><th class="n" data-k="temp">Temp.</th><th class="n" data-k="fan">Lüfter</th><th class="n" data-k="watt">Verbrauch</th><th class="n" data-k="up">Geräte-Laufzeit</th><th class="n" data-k="hup">Mining-Laufzeit</th></tr></thead><tbody id="tb"></tbody></table></div>
 </section>
 <section id="rp" hidden>
- <div class="bar"><select id="day"></select><button class="b" id="csv">Als CSV speichern (Excel)</button><span class="mute" id="rpInfo"></span></div>
+ <div class="bar"><select id="rpKind"><option value="day">Tag</option><option value="month">Monat</option></select><select id="day"></select><button class="b" id="csv">Als CSV speichern (Excel)</button><input id="rq" placeholder="Filtern (Name, IP, Seriennr., Worker)" style="width:240px"><span class="mute" id="rpInfo"></span></div>
  <div class="tiles" id="rpTiles"></div>
- <div class="wrap"><table><thead><tr><th>Miner</th><th>IP</th><th>Seriennr.</th><th>Modell</th><th>Worker (Pool 1)</th><th class="n">Uptime</th><th class="n">Verbrauch</th><th class="n">Ø Hashrate</th><th class="n">Neustarts</th><th class="n">Geräte-Laufzeit</th><th class="n">Mining-Laufzeit</th></tr></thead><tbody id="rpTb"></tbody></table></div>
+ <div class="wrap"><table><thead><tr id="rpHead"></tr></thead><tbody id="rpTb"></tbody></table></div>
+</section>
+<section id="log" hidden>
+ <div class="bar"><select id="logDay"></select><input id="lq" placeholder="Filtern (z. B. Offline, Seriennr., IP)" style="width:260px"><button class="b" id="logDl">Als Text speichern</button><span class="mute" id="logInfo"></span></div>
+ <div class="wrap"><table><tbody id="logTb"></tbody></table></div>
 </section>
 <section id="set" hidden>
  <div class="form">
@@ -59,38 +63,56 @@ const pw=(w)=>w==null?"–":w>=1e6?nf(w/1e6,2)+" MW":w>=1e3?nf(w/1e3,1)+" kW":nf
 const dur=(s)=>{if(s==null)return"–";s=Math.round(s);const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?d+"d "+h+"h":h?h+"h "+m+"m":m+"m"};
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let S=null, sortK="on", sortD=1;
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","set"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="set")loadCfg();});
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","log","set"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="log")loadLogDays();if(b.dataset.t==="set")loadCfg();});
 const w1=(m)=>(m.pools&&m.pools[0]&&m.pools[0].user)||"";
 let openIp="";
 const det=(m,n)=>"<tr class=det><td colspan="+n+">"+[0,1,2].map(i=>{const p=(m.pools||[])[i];return "<b>Pool "+(i+1)+":</b> "+(p?esc(p.url||"–")+" · "+esc(p.user||"–")+(p.st?" · "+esc(p.st):""):"–");}).join("<br>")+"<br><b>MAC:</b> "+esc(m.mac||"–")+" · <b>Seriennr.:</b> "+esc(m.serial||"nicht lesbar")+(m.fw?" · <b>Firmware:</b> "+esc(m.fw):"")+"</td></tr>";
+const hay=(m,f)=>(f==="serial"?m.serial||"":f==="worker"?(m.pools||[]).map(p=>p.user+" "+p.url).join(" "):f==="ip"?m.ip:f==="mac"?m.mac||"":f==="name"?m.name:m.name+" "+m.ip+" "+m.type+" "+(m.serial||"")+" "+(m.mac||"")+" "+(m.pools||[]).map(p=>p.user+" "+p.url).join(" ")).toLowerCase();
 const bad=(m)=>m.on===false||m.temp>=85||(m.nom&&m.hr<m.nom*0.8);
 function updBar(){const u=S.update||{},el=$("upd");el.hidden=!["available","download","restart"].includes(u.state);
  el.innerHTML=u.state==="available"?"Update "+esc(u.latest)+" verfügbar"+(u.canInstall?" <button class='b p' id=updGo>Installieren</button>":"")+(u.err?" <span class=mute>"+esc(u.err)+"</span>":""):u.state==="download"?"Update wird geladen… "+(u.pct||0)+" %":u.state==="restart"?"Startet neu…":"";
  const g=$("updGo");if(g)g.onclick=()=>post("/api/update/install").then(()=>setTimeout(load,1000));}
 function render(){
- if(!S)return; updBar(); const ms=S.miners||[], on=ms.filter(m=>m.on!==false), hr=on.reduce((a,m)=>a+(m.hr||0),0), w=ms.reduce((a,m)=>a+(m.on!==false&&m.watt!=null?m.watt:0),0), est=ms.some(m=>m.on!==false&&m.wattEst), ts=on.map(m=>m.temp).filter(v=>v!=null);
+ if(!S)return; updBar(); setTimeout(()=>{$("fCount").textContent=$("tb").querySelectorAll("tr[data-ip]").length+" von "+(S.miners||[]).length;},0); const ms=S.miners||[], on=ms.filter(m=>m.on!==false), hr=on.reduce((a,m)=>a+(m.hr||0),0), w=ms.reduce((a,m)=>a+(m.on!==false&&m.watt!=null?m.watt:0),0), est=ms.some(m=>m.on!==false&&m.wattEst), ts=on.map(m=>m.temp).filter(v=>v!=null);
  $("st").textContent=S.name+" · "+(S.noNet?"keine Verbindung zu den Minern":S.ts?"Stand "+new Date(S.ts).toLocaleTimeString("de-DE"):S.ips?"Suche läuft…":"Bitte Adressbereiche eintragen");
  $("tiles").innerHTML=[["Miner online",on.length+" / "+ms.length],["Hashrate",th(hr)],["Verbrauch jetzt",pw(w)+(est?" (teils geschätzt)":"")],["Temperatur Ø / max",ts.length?Math.round(ts.reduce((a,b)=>a+b,0)/ts.length)+" / "+Math.round(Math.max(...ts))+" °C":"–"],["Offline",String(ms.length-on.length)]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
  $("scanInfo").textContent=S.scanning?"Suche: "+S.scanned+" von "+S.ips+" Adressen geprüft":S.scanTs?"Letzte Suche "+new Date(S.scanTs).toLocaleTimeString("de-DE")+", "+S.found+" Miner bekannt":"";
- const q=$("q").value.trim().toLowerCase(), ob=$("onlyBad").checked;
+ const terms=$("q").value.toLowerCase().split(/[,;\\n]+/).map(x=>x.trim()).filter(Boolean), qf=$("qf").value, fs=$("fs").value, fm=$("fm").value;
+ const models=[...new Set(ms.map(m=>m.type||"").filter(Boolean))].sort();if($("fm").options.length-1!==models.length){const c=fm;$("fm").innerHTML="<option value=''>Alle Modelle</option>"+models.map(t=>"<option>"+esc(t)+"</option>").join("");$("fm").value=models.includes(c)?c:"";}
  const val=(m,k)=>k==="w1"?w1(m):m[k];
- const l=ms.filter(m=>(!q||(m.name+" "+m.ip+" "+m.type+" "+(m.serial||"")+" "+(m.mac||"")+" "+(m.pools||[]).map(p=>p.user+" "+p.url).join(" ")).toLowerCase().includes(q))&&(!ob||bad(m))).sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);if(sortK==="on")return((a.on===false)-(b.on===false))*-sortD||String(a.name).localeCompare(b.name,"de",{numeric:true});if(typeof x==="number"||typeof y==="number")return((x??-1)-(y??-1))*sortD;return String(x??"").localeCompare(String(y??""),"de",{numeric:true})*sortD;});
+ const l=ms.filter(m=>(!terms.length||terms.some(t=>hay(m,qf).includes(t)))&&(!fs||(fs==="on"?m.on!==false:fs==="off"?m.on===false:fs==="bad"?bad(m):!m.serial))&&(!fm||m.type===fm)).sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);if(sortK==="on")return((a.on===false)-(b.on===false))*-sortD||String(a.name).localeCompare(b.name,"de",{numeric:true});if(typeof x==="number"||typeof y==="number")return((x??-1)-(y??-1))*sortD;return String(x??"").localeCompare(String(y??""),"de",{numeric:true})*sortD;});
  $("tb").innerHTML=l.slice(0,3000).map(m=>"<tr data-ip='"+esc(m.ip)+"' class="+(m.on===false?"off":bad(m)?"weak":"ok")+" title='Klick: Pools 1–3, MAC'><td>"+esc(m.name)+"</td><td><a href='http://"+esc(m.ip)+"/' target=_blank rel=noopener>"+esc(m.ip)+"</a></td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td>"+(m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft")+"</td><td class=n>"+th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")+"</td><td class=n>"+(m.temp!=null?Math.round(m.temp)+" °C":"–")+"</td><td class=n>"+(m.fan?nf(m.fan)+" rpm":"–")+"</td><td class='n"+(m.wattEst?" est":"")+"' title='"+(m.wattEst?"geschätzt aus Hashrate × J/TH":"vom Miner gemeldet")+"'>"+pw(m.watt)+"</td><td class=n>"+dur(m.up)+"</td><td class=n>"+dur(m.hup)+"</td></tr>"+(openIp===m.ip?det(m,12):"")).join("")||"<tr><td colspan=12 class=mute>"+(S.ips?"Noch keine Miner gefunden.":"Trag unter Einstellungen die Adressbereiche ein.")+"</td></tr>";
 }
 document.querySelectorAll("#ov th").forEach(h=>h.onclick=()=>{const k=h.dataset.k;sortD=sortK===k?-sortD:(["hr","temp","fan","watt","up","hup"].includes(k)?-1:1);sortK=k;render();});
 $("tb").onclick=(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-ip]");if(!tr)return;openIp=openIp===tr.dataset.ip?"":tr.dataset.ip;render();};
-$("q").oninput=render;$("onlyBad").onchange=render;
+for(const id of ["q"])$(id).oninput=render;for(const id of ["qf","fs","fm"])$(id).onchange=render;
 $("scan").onclick=()=>post("/api/scan").then(()=>setTimeout(load,800));
 async function load(){try{S=await api("/api/status");$("ver").textContent=S.version;render();}catch{$("st").textContent="Argus Mining antwortet nicht. Läuft das Programm noch?";}}
 load();setInterval(load,15000);
 // Report
-async function loadDays(){const ds=await api("/api/days");const cur=$("day").value;$("day").innerHTML=ds.slice().reverse().map(k=>"<option value="+k+">"+k.split("-").reverse().join(".")+(k===ds[ds.length-1]?" (heute, läuft noch)":"")+"</option>").join("");if(cur&&ds.includes(cur))$("day").value=cur;else if(ds.length>1)$("day").value=ds[ds.length-2];loadReport();}
-async function loadReport(){const k=$("day").value;if(!k){$("rpInfo").textContent="Noch keine Daten. Der Report zählt ab jetzt alle 5 Minuten mit.";$("rpTb").innerHTML="";$("rpTiles").innerHTML="";return;}
- const r=await api("/api/report?day="+k);if(!r)return;
- $("rpInfo").textContent=r.hours+" h gemessen"+(r.noNet?", "+Math.round(r.noNet*5)+" min ohne Verbindung zu den Minern":"")+(r.hours<23.5?". Lücken (PC aus) zählen nicht mit.":"");
- $("rpTiles").innerHTML=[["Bestand",r.total+" Miner"],["Typisch online",r.median==null?"–":r.median+" / "+r.total],["Uptime",r.uptime==null?"–":nf(r.uptime*100,2)+" %"],["Verbrauch",nf(r.kwh,1)+" kWh"+(r.kwhEst>0?" <small class=mute>(davon "+nf(r.kwhEst,1)+" geschätzt)</small>":"")],["Dauerhaft / zeitweise weg",r.down+" / "+r.partly]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
- $("rpTb").innerHTML=r.miners.map(m=>"<tr class="+(m.uptime<0.2?"off":m.uptime<0.98?"weak":"ok")+"><td>"+esc(m.name)+"</td><td>"+esc(m.id)+"</td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td class=n>"+nf(m.uptime*100,2)+" %</td><td class='n"+(m.kwhEst>m.kwh/2?" est":"")+"'>"+nf(m.kwh,2)+" kWh</td><td class=n>"+nf(m.avgTh,1)+" TH/s</td><td class=n>"+(m.reboots+m.restarts||"–")+"</td><td class=n>"+dur(m.devUp)+"</td><td class=n>"+dur(m.hashUp)+"</td></tr>").join("");}
-$("day").onchange=loadReport;$("updCheck").onclick=async()=>{$("sUpd").textContent="Prüfe…";await post("/api/update/check");await load();loadCfg();};$("csv").onclick=()=>{if($("day").value)location.href="/api/report.csv?day="+$("day").value;};
+let rpR=null;
+async function loadDays(){const month=$("rpKind").value==="month",ds=await api(month?"/api/months":"/api/days"),cur=$("day").value,today=ds[ds.length-1];
+ $("day").innerHTML=ds.slice().reverse().map(k=>"<option value="+k+">"+(month?new Date(k+"-15").toLocaleDateString("de-DE",{month:"long",year:"numeric"}):k.split("-").reverse().join("."))+(k===today?" (läuft noch)":"")+"</option>").join("");
+ if(cur&&ds.includes(cur))$("day").value=cur;else if(ds.length>1&&!month)$("day").value=ds[ds.length-2];loadReport();}
+async function loadReport(){const k=$("day").value,month=$("rpKind").value==="month";if(!k){$("rpInfo").textContent="Noch keine Daten. Der Report zählt ab jetzt alle 5 Minuten mit.";$("rpTb").innerHTML="";$("rpTiles").innerHTML="";return;}
+ rpR=await api(month?"/api/month?month="+k:"/api/report?day="+k);drawReport();}
+function drawReport(){const r=rpR;if(!r)return;const month=r.kind==="month";
+ $("rpInfo").textContent=month?r.days+" von "+r.daysInMonth+" Tagen mit Daten, "+nf(r.hours,0)+" h gemessen. Lücken (PC aus) zählen nicht mit.":r.hours+" h gemessen"+(r.noNet?", "+Math.round(r.noNet*5)+" min ohne Verbindung zu den Minern":"")+(r.hours<23.5?". Lücken (PC aus) zählen nicht mit.":"");
+ $("rpTiles").innerHTML=[["Bestand",r.total+" Miner"],[month?"Typisch online (Median der Tage)":"Typisch online",r.median==null?"–":r.median+" / "+r.total],["Uptime",r.uptime==null?"–":nf(r.uptime*100,2)+" %"],["Verbrauch",(r.kwh>=1e4?nf(r.kwh/1000,2)+" MWh":nf(r.kwh,1)+" kWh")+(r.kwhEst>0?" <small class=mute>(davon "+nf(r.kwhEst,1)+" kWh geschätzt)</small>":"")],["Dauerhaft / zeitweise weg",r.down+" / "+r.partly]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
+ $("rpHead").innerHTML="<th>Miner</th><th>IP</th><th>Seriennr.</th><th>Modell</th><th>Worker (Pool 1)</th><th class=n>Uptime</th><th class=n>Verbrauch</th><th class=n>Ø Hashrate</th><th class=n>Neustarts</th>"+(month?"<th class=n>Tage</th>":"<th class=n>Geräte-Laufzeit</th><th class=n>Mining-Laufzeit</th>");
+ const terms=$("rq").value.toLowerCase().split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
+ const l=r.miners.filter(m=>!terms.length||terms.some(t=>(m.name+" "+m.id+" "+m.serial+" "+m.mac+" "+m.type+" "+(m.pools||[]).map(p=>p.user+" "+p.url).join(" ")).toLowerCase().includes(t)));
+ $("rpTb").innerHTML=l.map(m=>"<tr class="+(m.uptime<0.2?"off":m.uptime<0.98?"weak":"ok")+"><td>"+esc(m.name)+"</td><td>"+esc(m.id)+"</td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td class=n>"+nf(m.uptime*100,2)+" %</td><td class='n"+(m.kwhEst>m.kwh/2?" est":"")+"'>"+nf(m.kwh,m.kwh>=100?0:2)+" kWh</td><td class=n>"+nf(m.avgTh,1)+" TH/s</td><td class=n>"+(m.reboots+m.restarts||"–")+"</td>"+(month?"<td class=n>"+m.days+"</td>":"<td class=n>"+dur(m.devUp)+"</td><td class=n>"+dur(m.hashUp)+"</td>")+"</tr>").join("");}
+$("rpKind").onchange=()=>{$("day").value="";loadDays();};$("rq").oninput=drawReport;
+// Protokoll
+let logL=[];
+async function loadLogDays(){const ds=await api("/api/logdays"),cur=$("logDay").value;$("logDay").innerHTML=ds.slice().reverse().map(k=>"<option value="+k+">"+k.split("-").reverse().join(".")+"</option>").join("");if(cur&&ds.includes(cur))$("logDay").value=cur;loadLog();}
+async function loadLog(){const k=$("logDay").value;if(!k){logL=[];drawLog();return;}const r=await api("/api/log?day="+k);logL=r.lines||[];drawLog();}
+function drawLog(){const terms=$("lq").value.toLowerCase().split(/[,;]+/).map(x=>x.trim()).filter(Boolean),l=logL.filter(x=>!terms.length||terms.some(t=>x.toLowerCase().includes(t))).reverse();
+ $("logInfo").textContent=l.length+" Einträge, neueste oben. Aufbewahrt 90 Tage.";
+ $("logTb").innerHTML=l.slice(0,3000).map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<tr class="+(/^Offline|antwortet mehr|fehlgeschlagen|Fehler/.test(m[2])?"off":/neu gestartet/.test(m[2])?"weak":"ok")+"><td class=mute style='width:170px'>"+esc(m[1])+"</td><td style='white-space:normal'>"+esc(m[2])+"</td></tr>";}).join("")||"<tr><td class=mute>Keine Einträge.</td></tr>";}
+$("logDay").onchange=loadLog;$("lq").oninput=drawLog;$("logDl").onclick=()=>{if($("logDay").value)location.href="/api/log.txt?day="+$("logDay").value;};
+$("day").onchange=loadReport;$("updCheck").onclick=async()=>{$("sUpd").textContent="Prüfe…";await post("/api/update/check");await load();loadCfg();};$("csv").onclick=()=>{if($("day").value)location.href="/api/report.csv?"+($("rpKind").value==="month"?"month=":"day=")+$("day").value;};
 // Einstellungen
 async function loadCfg(){const c=await api("/api/config");$("sName").value=c.name;$("sRanges").value=c.ranges;$("sJth").value=c.jth||0;$("sAuto").checked=c.autostart;$("sAu").value=c.antUser||"root";$("sApHas").textContent=c.hasAntPass?"Ein Passwort ist gespeichert.":"";$("sAutoUpd").checked=c.autoUpdate!==false;
  const u=S&&S.update||{};$("sUpd").textContent="Version "+(S?S.version:"")+(u.state==="current"?", aktuell":u.state==="available"?", Update "+u.latest+" verfügbar":"")+(u.err?". "+u.err:"")+(u.canInstall===false?". Selbst-Update nur in der exe.":"");$("sRemote").checked=c.remote;$("sVnHas").textContent=c.hasVnishPass?"Ein Passwort ist gespeichert.":"";

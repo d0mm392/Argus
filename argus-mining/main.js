@@ -4,7 +4,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
 const lan = require("./lanminer"), report = require("./report"), PAGE = require("./page");
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
@@ -21,14 +21,27 @@ if (RI > 0) {
 const DIR = process.env.AM_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), ".config"), "Argus Mining");
 fs.mkdirSync(DIR, { recursive: true });
 const CFG = path.join(DIR, "config.json");
-const DEF = { name: "Farm", ranges: "", jth: 0, vnishPass: "", antUser: "root", antPass: "root", port: 8420, remote: false, token: "", keepDays: 30, autoUpdate: true };
+const DEF = { name: "Farm", ranges: "", jth: 0, vnishPass: "", antUser: "root", antPass: "root", port: 8420, remote: false, token: "", keepDays: 90, autoUpdate: true };
 let cfg = { ...DEF };
 try { cfg = { ...DEF, ...JSON.parse(fs.readFileSync(CFG, "utf8")) }; } catch {}
+if (cfg.keepDays < 90) cfg.keepDays = 90; // seit 1.2.0: Report und Protokoll 90 Tage
 if (!cfg.token) cfg.token = crypto.randomBytes(16).toString("hex");
 const saveCfg = () => { try { fs.writeFileSync(CFG, JSON.stringify(cfg, null, 1)); } catch (e) { log("Einstellungen nicht gespeichert: " + e.message); } };
 saveCfg();
-const LOG = path.join(DIR, "log.txt");
-function log(t) { const l = `[${new Date().toLocaleString("de-DE")}] ${t}`; try { console.log(l); } catch {} try { fs.appendFileSync(LOG, l + "\n"); if (fs.statSync(LOG).size > 2e6) fs.writeFileSync(LOG, ""); } catch {} }
+// Protokoll: je Tag eine Datei logs/JJJJ-MM-TT.txt, aufbewahrt so lange wie der Report (Standard 90 Tage)
+const LOGDIR = path.join(DIR, "logs"); fs.mkdirSync(LOGDIR, { recursive: true });
+const logDays = () => { try { return fs.readdirSync(LOGDIR).map((f) => f.replace(/\.txt$/, "")).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort(); } catch { return []; } };
+let logDay = "";
+function log(t) {
+  const now = new Date(), l = `[${now.toLocaleString("de-DE")}] ${t}`; try { console.log(l); } catch {}
+  const k = report.dayKey(now.getTime());
+  try {
+    const f = path.join(LOGDIR, k + ".txt");
+    if (k !== logDay) { logDay = k; for (const d of logDays().slice(0, -Math.max(2, cfg?.keepDays || 90))) try { fs.unlinkSync(path.join(LOGDIR, d + ".txt")); } catch {} }
+    if (!fs.existsSync(f) || fs.statSync(f).size < 20e6) fs.appendFileSync(f, l + "\n");
+  } catch {}
+}
+try { fs.renameSync(path.join(DIR, "log.txt"), path.join(LOGDIR, "alt-vor-1.2.txt")); } catch {}
 
 report.init(DIR, cfg.keepDays);
 lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass, antUser: cfg.antUser, antPass: cfg.antPass }));
@@ -40,8 +53,24 @@ async function tick() {
   if (!s?.miners?.length) return;
   const noNet = s.miners.length >= 3 && !s.miners.some((m) => m.err !== "keine Antwort");
   if (noNet !== lastNoNet) log(noNet ? "Kein Miner antwortet mehr. Netzwerk des PCs prüfen." : "Miner antworten wieder."); lastNoNet = noNet;
-  report.record(s.miners, noNet);
+  // Ereignisse je Miner: offline erst nach zwei Abfragen ohne Hashrate (gegen Fehlalarm), zurück sofort
+  if (!noNet) {
+    const id = (m) => [m.ip, m.serial && "SN " + m.serial, m.pools?.[0]?.user].filter(Boolean).join(", ");
+    const goneOff = [], back = [];
+    for (const m of s.miners) {
+      const p = seen.get(m.ip), off = m.on === false;
+      if (!p) { seen.set(m.ip, { off, n: 0 }); continue; }
+      if (off && !p.off) { if (++p.n >= 2) { p.off = true; p.n = 0; goneOff.push(`${m.name} (${id(m)})${m.err ? ": " + m.err : ""}`); } }
+      else if (!off && p.off) { p.off = false; p.n = 0; back.push(`${m.name} (${id(m)})`); }
+      else p.n = 0;
+    }
+    for (const t of goneOff) log("Offline: " + t);
+    for (const t of back) log("Wieder online: " + t);
+  }
+  const ev = report.record(s.miners, noNet);
+  for (const [m, t] of ev || []) log(`${t}: ${m.name} (${m.ip}${m.serial ? ", SN " + m.serial : ""})`);
 }
+const seen = new Map();
 let pollT = null, scanT = null;
 function startLoops() {
   clearInterval(pollT); clearInterval(scanT);
@@ -130,8 +159,17 @@ const server = http.createServer(async (req, res) => {
     if (p === "/" || p === "/index.html") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }); return res.end(PAGE); }
     if (p === "/api/status") return json(res, 200, status());
     if (p === "/api/days") return json(res, 200, report.days());
+    if (p === "/api/months") return json(res, 200, report.months());
+    if (p === "/api/month") return json(res, 200, report.buildMonth(u.searchParams.get("month") || report.dayKey().slice(0, 7)));
+    if (p === "/api/logdays") return json(res, 200, logDays());
+    if (p === "/api/log" || p === "/api/log.txt") {
+      const k = u.searchParams.get("day") || report.dayKey(); if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return json(res, 400, { error: "Tag fehlt" });
+      let txt = ""; try { txt = fs.readFileSync(path.join(LOGDIR, k + ".txt"), "utf8"); } catch {}
+      if (p === "/api/log.txt") { res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-protokoll-${k}.txt"` }); return res.end(txt); }
+      return json(res, 200, { day: k, lines: txt.split("\n").filter(Boolean).slice(-5000) });
+    }
     if (p === "/api/report") return json(res, 200, report.build(u.searchParams.get("day") || report.dayKey()));
-    if (p === "/api/report.csv") { const k = u.searchParams.get("day") || report.dayKey(); res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-${k}.csv"` }); return res.end(report.csv(k)); }
+    if (p === "/api/report.csv") { const k = u.searchParams.get("month") || u.searchParams.get("day") || report.dayKey(); res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-${k}.csv"` }); return res.end(report.csv(k)); }
     if (p === "/api/config" && req.method === "GET") return json(res, 200, { ...cfg, vnishPass: "", antPass: "", hasAntPass: !!cfg.antPass, hasVnishPass: !!cfg.vnishPass, autostart: autostartOn(), dir: DIR, lanIps: lanIps() });
     if (p === "/api/config" && req.method === "POST") {
       const b = await body(req), old = cfg.ranges;

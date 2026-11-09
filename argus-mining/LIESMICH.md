@@ -33,9 +33,17 @@ Seriennummer und MAC werden bei jeder Suche (alle 30 Minuten) gelesen, nicht jed
 
 Das schwarze Fenster offen lassen (minimieren reicht). Schließen beendet das Programm.
 
-## Tagesreport
+## Filter
 
-Reiter **Tagesreport**: je Miner Seriennummer, Worker, Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei. Lücken (PC aus) zählen nicht mit. Daten bleiben 30 Tage in `%APPDATA%\Argus Mining`.
+Über der Minerliste: worin gesucht wird (alle Felder, Seriennummer, Worker/Pool, IP, MAC, Name), Suchtext (mehrere Werte mit Komma, z. B. eine Liste von Seriennummern), Zustand (läuft, offline, auffällig, ohne Seriennummer) und Modell.
+
+## Report (Tag und Monat)
+
+Reiter **Report**, oben Tag oder Monat wählen: je Miner Seriennummer, Worker, Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei. Lücken (PC aus) zählen nicht mit. Der Monatsreport fasst alle Tage des Monats je Miner zusammen; Miner mit Seriennummer bleiben ein Eintrag, auch wenn sie die IP wechseln. Daten bleiben 90 Tage in `%APPDATA%\Argus Mining\report`.
+
+## Protokoll
+
+Reiter **Protokoll**: je Tag, was passiert ist (Miner offline nach zwei Abfragen ohne Hashrate, wieder online, Gerät oder Mining neu gestartet, Verbindung zu den Minern weg, Suche, Updates). Filterbar und als Text speicherbar. 90 Tage aufbewahrt in `%APPDATA%\Argus Mining\logs`.
 
 ## Updates
 

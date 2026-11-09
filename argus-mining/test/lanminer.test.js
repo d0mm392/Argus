@@ -63,3 +63,20 @@ test("Tagesreport je Miner mit Uptime, Verbrauch und Neustarts", () => {
   assert.equal(B.reboots, 1);
   assert.match(report.csv("2026-11-09"), /^﻿Miner;IP;Seriennummer;MAC;Modell;Pool 1;Worker 1;Pool 2;Worker 2;Pool 3;Worker 3;Uptime %/);
 });
+
+test("Monatsreport: Tage zusammen, Zuordnung über Seriennummer, alte report.json wird übernommen", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "am-"));
+  fs.writeFileSync(path.join(dir, "report.json"), JSON.stringify({ "2026-10-31": { n: 1, nonet: 0, hist: { 1: 1 }, m: { "9": { name: "Alt", n: 1, on: 1, wh: 100, est: 0, hr: 1e14 } } } }));
+  report.init(dir, 90);
+  assert.ok(fs.existsSync(path.join(dir, "report", "2026-10-31.json")));
+  for (let d = 1; d <= 3; d++) {
+    const t0 = new Date(2026, 10, d, 1, 0).getTime();
+    // Miner mit SN zieht am 3. Tag auf eine andere IP um; bleibt ein Eintrag
+    for (let i = 0; i < 10; i++) report.record([{ ip: d < 3 ? "10.0.0.5" : "10.0.0.9", name: "X", serial: "SN1", on: i < 8, hr: 100e12, watt: 3000 }, { ip: "10.0.0.6", name: "Y", on: true, hr: 90e12, watt: 3000, wattEst: true }], false, t0 + i * 300e3);
+  }
+  const m = report.buildMonth("2026-11");
+  assert.equal(m.days, 3); assert.equal(m.total, 2); assert.equal(m.daysInMonth, 30);
+  const X = m.miners.find((x) => x.serial === "SN1"); assert.equal(X.samples, 30); assert.equal(Math.round(X.uptime * 100), 80); assert.equal(X.days, 3); assert.match(X.id, /10\.0\.0\.5.*10\.0\.0\.9|10\.0\.0\.9.*10\.0\.0\.5/);
+  assert.deepEqual(report.months(), ["2026-10", "2026-11"]);
+  assert.match(report.csv("2026-11"), /Tage mit Daten/);
+});
