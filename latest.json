@@ -1,7 +1,7 @@
 {
- "version": "1.3.0",
+ "version": "1.4.0",
  "file": "Argus-Mining.exe",
- "size": 87251456,
- "sha256": "ec0cf5728ad3b668c96471be4174703499f098d8e74e47ef795487ad3ec1544d",
- "notes": "Detailansicht je Miner: Verlauf, Aktivität, Hashboards, Sensoren, Pools mit Shares"
+ "size": 87267328,
+ "sha256": "dd858a80b10adf24d888173bf50f5f49ab949f856ddbbdc65f28f215ae2f0fa3",
+ "notes": "Pool-Report (Änderungen und Pool-Wechsel) und Report über frei gewählten Zeitraum von–bis"
 }
