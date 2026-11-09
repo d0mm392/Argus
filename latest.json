@@ -1,7 +1,7 @@
 {
- "version": "1.4.1",
+ "version": "1.4.2",
  "file": "Argus-Mining.exe",
- "size": 87268864,
- "sha256": "f940de7c6f36fa934e9d93be3785c01cc4e70725237e7a2b8d4a7384538bad37",
- "notes": "Verbrauch plausibel (falsch gelesene Watt werden ersetzt), Ø Leistung in kW im Report, schnellere Update-Prüfung"
+ "size": 87270912,
+ "sha256": "1f42a70bb8fa41b186deb1d82e1353de31990b6d82afe6d4e3897471dce5412b",
+ "notes": "Minerliste: Spalten selbst auswählen, volle Fensterbreite. Dazu aus 1.4.1: Verbrauch plausibel, Ø Leistung kW im Report"
 }
