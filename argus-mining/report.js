@@ -70,10 +70,11 @@ function build(k = dayKey()) {
   let acc = 0, median = null; for (const [v, c] of vals) { acc += c; if (median == null && acc >= day.n / 2) median = v; }
   return { kind: "day", day: k, samples: day.n, noNet: day.nonet, hours: Math.round(day.n * 5 / 6) / 10, median, min: vals.length ? vals[0][0] : null, max: vals.length ? vals[vals.length - 1][0] : null, ...totals(ms), miners: ms };
 }
-// Monat (JJJJ-MM): je Miner über alle Tage summiert. Zugeordnet über die Seriennummer, sonst die IP (Miner, die umziehen, bleiben so ein Eintrag)
-function buildMonth(mk) {
-  if (!/^\d{4}-\d{2}$/.test(String(mk || ""))) return null;
-  const ks = days().filter((k) => k.startsWith(mk + "-")); if (!ks.length) return null;
+// Zeitraum von–bis (je einschließlich, ganze Tage): je Miner über alle Tage summiert. Zugeordnet über die Seriennummer, sonst die IP (Miner, die umziehen, bleiben so ein Eintrag)
+const spanDays = (a, b) => { const [y1, m1, d1] = a.split("-").map(Number), [y2, m2, d2] = b.split("-").map(Number); return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 864e5) + 1; };
+function buildRange(from, to) {
+  if (!okKey(from) || !okKey(to)) return null; if (from > to) [from, to] = [to, from];
+  const ks = days().filter((k) => k >= from && k <= to); if (!ks.length) return null;
   const by = new Map(); let samples = 0, noNet = 0, medians = [];
   for (const k of ks) {
     const day = load(k); if (!day) continue; samples += day.n; noNet += day.nonet || 0;
@@ -86,8 +87,13 @@ function buildMonth(mk) {
     }
   }
   const ms = sortRows([...by.values()].map((m) => ({ ...minerRow([...m.ips].join(", "), m), days: m.days })));
-  const [y, mo] = mk.split("-").map(Number), dim = new Date(y, mo, 0).getDate();
-  return { kind: "month", month: mk, days: ks.length, daysInMonth: dim, samples, noNet, hours: Math.round(samples * 5 / 6) / 10, median: medians.length ? medians.sort((a, b) => a - b)[Math.floor(medians.length / 2)] : null, ...totals(ms), miners: ms };
+  return { kind: "range", from, to, firstData: ks[0], lastData: ks[ks.length - 1], days: ks.length, daysInMonth: spanDays(from, to), samples, noNet, hours: Math.round(samples * 5 / 6) / 10, median: medians.length ? medians.sort((a, b) => a - b)[Math.floor(medians.length / 2)] : null, ...totals(ms), miners: ms };
+}
+// Monat (JJJJ-MM) = Zeitraum vom 1. bis zum letzten Tag des Monats
+function buildMonth(mk) {
+  if (!/^\d{4}-\d{2}$/.test(String(mk || ""))) return null;
+  const [y, mo] = mk.split("-").map(Number), r = buildRange(mk + "-01", mk + "-" + String(new Date(y, mo, 0).getDate()).padStart(2, "0"));
+  return r && { ...r, kind: "month", month: mk };
 }
 // Verlauf eines Miners (über die IP): „7d“ stündlich, „30d“/„90d“ täglich. Punkte [Zeit, Ø TH/s, Uptime 0–1, max. Temp]
 function history(ip, range = "7d") {
@@ -103,8 +109,8 @@ function history(ip, range = "7d") {
 const fmtDur = (s) => { if (s == null) return ""; s = Math.round(s); const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; };
 const de = (v, n = 1) => (v == null ? "" : Number(v).toFixed(n).replace(".", ","));
 // CSV für Excel (Semikolon, Komma als Dezimaltrenner); k = Tag (JJJJ-MM-TT) oder Monat (JJJJ-MM)
-function csv(k) {
-  const month = /^\d{4}-\d{2}$/.test(String(k || "")), r = month ? buildMonth(k) : build(k); if (!r) return "";
+function csv(k, to) {
+  const month = !!to || /^\d{4}-\d{2}$/.test(String(k || "")), r = to ? buildRange(k, to) : month ? buildMonth(k) : build(k); if (!r) return "";
   const rows = [["Miner", "IP", "Seriennummer", "MAC", "Modell", "Pool 1", "Worker 1", "Pool 2", "Worker 2", "Pool 3", "Worker 3", "Uptime %", "Verbrauch kWh", "davon geschätzt kWh", "Ø TH/s", "Neustarts Gerät", "Neustarts Mining", ...(month ? ["Tage mit Daten"] : ["Geräte-Laufzeit", "Mining-Laufzeit"]), "Stichproben"]];
   const pc = (m) => [0, 1, 2].flatMap((i) => [m.pools[i]?.url || "", m.pools[i]?.user || ""]);
   for (const m of r.miners) rows.push([m.name, m.id, m.serial, m.mac, m.type, ...pc(m), de(m.uptime * 100, 2), de(m.kwh, 2), de(m.kwhEst, 2), de(m.avgTh, 1), m.reboots, m.restarts, ...(month ? [m.days] : [fmtDur(m.devUp), fmtDur(m.hashUp)]), m.samples]);
@@ -113,4 +119,4 @@ function csv(k) {
 }
 const days = () => { try { return fs.readdirSync(dir).map((f) => f.replace(/\.json$/, "")).filter(okKey).concat(curKey && !fs.existsSync(fileOf(curKey)) ? [curKey] : []).sort(); } catch { return []; } };
 const months = () => [...new Set(days().map((k) => k.slice(0, 7)))];
-module.exports = { init, record, build, buildMonth, history, csv, days, months, dayKey, fmtDur, flush: () => save(true) };
+module.exports = { init, record, build, buildMonth, buildRange, history, csv, days, months, dayKey, fmtDur, flush: () => save(true) };

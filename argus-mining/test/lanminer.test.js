@@ -84,3 +84,34 @@ test("Monatsreport: Tage zusammen, Zuordnung über Seriennummer, alte report.jso
   assert.deepEqual(report.months(), ["2026-10", "2026-11"]);
   assert.match(report.csv("2026-11"), /Tage mit Daten/);
 });
+
+test("Pool-Report erkennt Änderung und Wechsel, ignoriert Flackern und Offline", () => {
+  const os = require("os"), fs = require("fs"), path = require("path"), pools = require("../pools");
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "amp-")); pools.init(d, 90);
+  const P = (a, b, act = 1) => [{ url: "stratum+tcp://a:3333", user: a, st: "Alive", act: act === 1 }, { url: "stratum+tcp://b:3333", user: b, st: "Alive", act: act === 2 }, { url: "", user: "", st: "", act: false }];
+  const m = (pl, extra = {}) => ({ ip: "10.0.0.5", name: "S19", serial: "SN1", type: "S19", err: "", on: true, pools: pl, ...extra });
+  const t0 = Date.parse("2026-11-09T10:00:00");
+  assert.equal(pools.record([m(P("w.1", "w.1"))], t0).length, 0); // erster Stand: kein Ereignis
+  let e = pools.record([m(P("x.1", "w.1"))], t0 + 60e3); assert.equal(e.length, 1); assert.equal(e[0].kind, "geändert"); assert.equal(e[0].what, "Worker"); assert.equal(e[0].from.user, "w.1"); assert.equal(e[0].pool, "1");
+  assert.equal(pools.record([m(P("x.1", "w.1", 2))], t0 + 120e3).length, 0); // einmal anders: noch kein Wechsel
+  assert.equal(pools.record([m(P("x.1", "w.1", 1))], t0 + 180e3).length, 0); // zurück: Flackern ignoriert
+  pools.record([m(P("x.1", "w.1", 2))], t0 + 240e3); e = pools.record([m(P("x.1", "w.1", 2))], t0 + 300e3);
+  assert.equal(e.length, 1); assert.equal(e[0].kind, "Wechsel"); assert.equal(e[0].fromPool, 1); assert.equal(e[0].pool, 2);
+  assert.equal(pools.record([m(P("zz", "zz"), { err: "keine Antwort", on: false })], t0 + 360e3).length, 0); // offline: alte Daten nicht vergleichen
+  pools.init(d, 90); e = pools.record([m(P("y.1", "w.1", 2))], t0 + 420e3); assert.equal(e.length, 1); // Stand überlebt Neustart
+  assert.equal(pools.events("2026-11-09", "2026-11-09").length, 3);
+  assert.match(pools.csv("2026-11-09", "2026-11-09"), /Pool 1 geändert/);
+  const c = pools.current([m(P("y.1", "w.1", 2))]); assert.equal(c.find((x) => x.url === "stratum+tcp://b:3333").active, 1); assert.equal(c[0].users, 1);
+});
+
+test("Report über frei gewählten Zeitraum", () => {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "amr-")); report.init(d, 90);
+  const mk = (on) => [{ name: "A", ip: "10.0.0.1", serial: "S1", on, hr: on ? 100e12 : 0, watt: 3000, up: 1000, hup: 1000, pools: [] }];
+  for (const [day, on] of [["2026-11-01", true], ["2026-11-02", false], ["2026-11-03", true]]) report.record(mk(on), false, Date.parse(day + "T12:00:00"), true);
+  report.flush();
+  const r = report.buildRange("2026-11-02", "2026-11-03"); assert.equal(r.days, 2); assert.equal(r.miners[0].uptime, 0.5);
+  assert.equal(report.buildRange("2026-11-03", "2026-11-01").days, 3); // vertauscht geht auch
+  assert.equal(report.buildRange("2026-10-01", "2026-10-05"), null);
+  assert.equal(report.buildMonth("2026-11").days, 3);
+  assert.match(report.csv("2026-11-01", "2026-11-02"), /2 von 2/);
+});

@@ -41,9 +41,17 @@ Klick auf einen Miner öffnet seine Seite: Modell, IP, MAC, Seriennummer, Firmwa
 
 Über der Minerliste: worin gesucht wird (alle Felder, Seriennummer, Worker/Pool, IP, MAC, Name), Suchtext (mehrere Werte mit Komma, z. B. eine Liste von Seriennummern), Zustand (läuft, offline, auffällig, ohne Seriennummer) und Modell.
 
-## Report (Tag und Monat)
+## Report (Tag, Monat oder Zeitraum)
 
-Reiter **Report**, oben Tag oder Monat wählen: je Miner Seriennummer, Worker, Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei. Lücken (PC aus) zählen nicht mit. Der Monatsreport fasst alle Tage des Monats je Miner zusammen; Miner mit Seriennummer bleiben ein Eintrag, auch wenn sie die IP wechseln. Daten bleiben 90 Tage in `%APPDATA%\Argus Mining\report`.
+Reiter **Report**, oben Tag, Monat oder **Zeitraum von – bis** wählen. Beim Zeitraum zwei Daten eintragen (beide Tage zählen mit) oder die Schnellwahl nehmen (letzte 7/14/30/90 Tage, letzte Woche Mo–So, letzter Monat). Je Miner Seriennummer, Worker, Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei, auch für den gewählten Zeitraum. Lücken (PC aus) zählen nicht mit. Monat und Zeitraum fassen alle Tage je Miner zusammen; Miner mit Seriennummer bleiben ein Eintrag, auch wenn sie die IP wechseln. Kleinste Einheit ist ein ganzer Tag. Daten bleiben 90 Tage in `%APPDATA%\Argus Mining\report`.
+
+## Pool-Report
+
+Reiter **Pools**. Jede Minute wird je Miner verglichen, was als Pool 1–3 eingetragen ist und welcher Pool gerade aktiv ist. Ereignisse:
+- **Geändert**: Adresse und/oder Worker eines Pools anders (auch neu eingetragen oder gelöscht), mit Vorher und Nachher.
+- **Aktiver Pool gewechselt**: der Miner mint auf einem anderen Pool, z. B. Ausweichen auf Pool 2, weil Pool 1 ausgefallen ist. Zählt erst, wenn es zwei Abfragen hintereinander so ist (kurzes Flackern wird ignoriert).
+
+Oben steht, welche Pool-Adressen gerade eingetragen sind (als Pool 1/2/3, auf wie vielen Minern aktiv). Filter nach Zeitraum, Art und Text (Pool, Worker, Seriennummer, IP); **Als CSV speichern** für Excel. Klick auf eine Zeile öffnet den Miner. Pool-Ereignisse stehen auch im Protokoll und in der Aktivität des Miners. Miner, die gerade nicht antworten, werden nicht verglichen. Ein Miner wird über die Seriennummer erkannt, sonst über die IP. Daten bleiben 90 Tage in `%APPDATA%\Argus Mining\pools`. Aufgezeichnet wird ab Version 1.4.0, ältere Änderungen kennt das Programm nicht.
 
 ## Protokoll
 

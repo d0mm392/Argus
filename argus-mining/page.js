@@ -34,7 +34,7 @@ textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
 .pools{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}.pool{border:1px solid var(--line);border-radius:6px;padding:10px 12px}.pool .u{font-family:Consolas,monospace;font-size:12px;background:var(--bg);border-radius:4px;padding:3px 6px;overflow-wrap:anywhere;margin:4px 0 8px}
 .pool table td{border:0;padding:2px 0}#chart{width:100%;height:240px;display:block}#chartTip{position:absolute;pointer-events:none;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap}.wrap{overflow:auto;max-height:calc(100vh - 230px)}
 </style></head><body>
-<header><b>ARGUS MINING</b><span class=mute id=ver></span><nav><button data-t="ov" class="on">Miner</button><button data-t="rp">Report</button><button data-t="log">Protokoll</button><button data-t="set">Einstellungen</button></nav><span class="st" id="st">Lade…</span><span id="upd" hidden></span></header>
+<header><b>ARGUS MINING</b><span class=mute id=ver></span><nav><button data-t="ov" class="on">Miner</button><button data-t="rp">Report</button><button data-t="pl">Pools</button><button data-t="log">Protokoll</button><button data-t="set">Einstellungen</button></nav><span class="st" id="st">Lade…</span><span id="upd" hidden></span></header>
 <main>
 <section id="ov">
  <div class="tiles" id="tiles"></div>
@@ -42,9 +42,15 @@ textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
  <div class="wrap"><table><thead><tr><th data-k="name">Miner</th><th data-k="ip">IP</th><th data-k="serial">Seriennr.</th><th data-k="type">Modell</th><th data-k="w1">Worker (Pool 1)</th><th data-k="on">Status</th><th class="n" data-k="hr">Hashrate</th><th class="n" data-k="temp">Temp.</th><th class="n" data-k="fan">Lüfter</th><th class="n" data-k="watt">Verbrauch</th><th class="n" data-k="up">Geräte-Laufzeit</th><th class="n" data-k="hup">Mining-Laufzeit</th></tr></thead><tbody id="tb"></tbody></table></div>
 </section>
 <section id="rp" hidden>
- <div class="bar"><select id="rpKind"><option value="day">Tag</option><option value="month">Monat</option></select><select id="day"></select><button class="b" id="csv">Als CSV speichern (Excel)</button><input id="rq" placeholder="Filtern (Name, IP, Seriennr., Worker)" style="width:240px"><span class="mute" id="rpInfo"></span></div>
+ <div class="bar"><select id="rpKind"><option value="day">Tag</option><option value="month">Monat</option><option value="range">Zeitraum von – bis</option></select><select id="day"></select><span id="rngBox" hidden><input type="date" id="rFrom" title="von"> bis <input type="date" id="rTo" title="bis (einschließlich)"> <select id="rQuick" title="Schnellwahl"><option value="">Schnellwahl…</option><option value="7">Letzte 7 Tage</option><option value="14">Letzte 14 Tage</option><option value="30">Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option><option value="lw">Letzte Woche (Mo–So)</option><option value="lm">Letzter Monat</option></select></span><button class="b" id="csv">Als CSV speichern (Excel)</button><input id="rq" placeholder="Filtern (Name, IP, Seriennr., Worker)" style="width:240px"><span class="mute" id="rpInfo"></span></div>
  <div class="tiles" id="rpTiles"></div>
  <div class="wrap"><table><thead><tr id="rpHead"></tr></thead><tbody id="rpTb"></tbody></table></div>
+</section>
+<section id="pl" hidden>
+ <div class="bar"><select id="plR"><option value="1">Heute</option><option value="7">Letzte 7 Tage</option><option value="30" selected>Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select><select id="plK"><option value="">Alle Ereignisse</option><option value="geändert">Nur Änderungen (Adresse / Worker)</option><option value="Wechsel">Nur Wechsel des aktiven Pools</option></select><input id="plQ" placeholder="Filtern (Pool, Worker, Seriennr., IP)" style="width:260px"><button class="b" id="plCsv">Als CSV speichern (Excel)</button><span class="mute" id="plInfo"></span></div>
+ <div class="tiles" id="plTiles"></div>
+ <div class="card"><h3>Was gerade eingetragen ist</h3><div class="wrap" style="max-height:260px"><table><thead><tr><th>Pool-Adresse</th><th>Worker</th><th class=n>als Pool 1</th><th class=n>als Pool 2</th><th class=n>als Pool 3</th><th class=n>gerade aktiv auf</th></tr></thead><tbody id="plCur"></tbody></table></div></div>
+ <div class="card"><h3>Änderungen und Wechsel <span class="mute" id="plN"></span></h3><div class="wrap"><table><thead><tr><th>Zeit</th><th>Art</th><th>Miner</th><th>IP</th><th>Seriennr.</th><th>Pool</th><th>Vorher</th><th>Nachher</th></tr></thead><tbody id="plTb"></tbody></table></div></div>
 </section>
 <section id="log" hidden>
  <div class="bar"><select id="logDay"></select><input id="lq" placeholder="Filtern (z. B. Offline, Seriennr., IP)" style="width:260px"><button class="b" id="logDl">Als Text speichern</button><span class="mute" id="logInfo"></span></div>
@@ -86,7 +92,7 @@ const pw=(w)=>w==null?"–":w>=1e6?nf(w/1e6,2)+" MW":w>=1e3?nf(w/1e3,1)+" kW":nf
 const dur=(s)=>{if(s==null)return"–";s=Math.round(s);const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return d?d+"d "+h+"h":h?h+"h "+m+"m":m+"m"};
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let S=null, sortK="on", sortD=1;
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","log","set","det"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="log")loadLogDays();if(b.dataset.t==="set")loadCfg();});
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));for(const s of ["ov","rp","pl","log","set","det"])$(s).hidden=s!==b.dataset.t;if(b.dataset.t==="rp")loadDays();if(b.dataset.t==="log")loadLogDays();if(b.dataset.t==="pl")loadPools();if(b.dataset.t==="set")loadCfg();});
 const w1=(m)=>(m.pools&&m.pools[0]&&m.pools[0].user)||"";
 let openIp="";
 const det=(m,n)=>"<tr class=det><td colspan="+n+">"+[0,1,2].map(i=>{const p=(m.pools||[])[i];return "<b>Pool "+(i+1)+":</b> "+(p?esc(p.url||"–")+" · "+esc(p.user||"–")+(p.st?" · "+esc(p.st):""):"–");}).join("<br>")+"<br><b>MAC:</b> "+esc(m.mac||"–")+" · <b>Seriennr.:</b> "+esc(m.serial||"nicht lesbar")+(m.fw?" · <b>Firmware:</b> "+esc(m.fw):"")+"</td></tr>";
@@ -110,10 +116,10 @@ document.querySelectorAll("#ov th").forEach(h=>h.onclick=()=>{const k=h.dataset.
 $("tb").onclick=(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-ip]");if(tr)openDetail(tr.dataset.ip);};
 // ---------- Detailansicht ----------
 let dIp="",dR="1d",dT=null,dHist=null,dData=null;
-const show=(id)=>{for(const s of ["ov","rp","log","set","det"])$(s).hidden=s!==id;};
+const show=(id)=>{for(const s of ["ov","rp","pl","log","set","det"])$(s).hidden=s!==id;};
 function openDetail(ip){dIp=ip;dR="1d";document.querySelectorAll("#dRng button").forEach(b=>b.classList.toggle("on",b.dataset.r==="1d"));show("det");window.scrollTo(0,0);$("dName").textContent=ip;$("dKv").innerHTML="<div class=mute>Frage den Miner ab…</div>";
  ["dBoards","dComps","dPools","dAct"].forEach(i=>$(i).innerHTML="");loadDetail();loadHist();loadAct();clearInterval(dT);dT=setInterval(()=>{if($("det").hidden){clearInterval(dT);return;}loadDetail();},30000);try{history.replaceState(null,"","#miner="+ip);}catch{}}
-$("dBack").onclick=()=>{clearInterval(dT);show("ov");try{history.replaceState(null,"","#");}catch{}};
+$("dBack").onclick=()=>{clearInterval(dT);show((document.querySelector("nav button.on")||{}).dataset?.t||"ov");try{history.replaceState(null,"","#");}catch{}};
 async function loadDetail(){const d=await api("/api/miner?ip="+encodeURIComponent(dIp)).catch(()=>null);if(!d||d.error){$("dKv").innerHTML="<div class=mute>"+esc(d?.error||"Keine Antwort")+"</div>";return;}dData=d;
  $("dName").textContent=d.name;const st=d.on===false?["bad",d.live?"steht":"keine Antwort"]:bad(d)?["warn","auffällig"]:["ok","läuft"];$("dBadge").className="badge "+st[0];$("dBadge").textContent=st[1];
  $("dLive").textContent=d.live?"live abgefragt "+new Date(d.ts).toLocaleTimeString("de-DE"):"Miner antwortet nicht, letzter bekannter Stand";$("dWeb").href="http://"+d.ip+"/";
@@ -142,7 +148,7 @@ function drawChart(){const svg=$("chart"),P=(dHist&&dHist.points)||[],W=1000,H=2
   const tip=$("chartTip");tip.style.display="block";tip.textContent=new Date(best[0]).toLocaleString("de-DE",dR==="1d"||dR==="7d"?{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}:{day:"2-digit",month:"2-digit",year:"numeric"})+": "+nf(best[1],2)+" TH/s"+(best[3]?" · "+best[3]+" °C":"")+(best[2]!=null&&dR!=="1d"?" · Uptime "+nf(best[2]*100,1)+" %":"");tip.style.left=Math.min(e.clientX-r.left+20,r.width-200)+"px";tip.style.top="40px";};
  svg.onmouseleave=()=>{$("chartTip").style.display="none";const cx=svg.querySelector("#cx");if(cx)cx.setAttribute("visibility","hidden");};}
 async function loadAct(){const l=await api("/api/miner/activity?ip="+encodeURIComponent(dIp)).catch(()=>[]);$("dActN").textContent=l.length?"("+l.length+(l.length>=300?"+":"")+", 30 Tage)":"";
- $("dAct").innerHTML=l.map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<li><span style='color:"+(/^(Offline|Heiß|Niedrige)/.test(m[2])?"var(--bad)":/neu gestartet/.test(m[2])?"var(--warn)":"var(--ok)")+"'>"+esc(m[2].replace(/ \\(.*?\\)/,""))+"</span><time>"+esc(m[1])+"</time></li>";}).join("")||"<li class=mute>Keine Ereignisse in den letzten 30 Tagen.</li>";}
+ $("dAct").innerHTML=l.map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<li><span style='color:"+(/^(Offline|Heiß|Niedrige)/.test(m[2])?"var(--bad)":/neu gestartet/.test(m[2])?"var(--warn)":/^Pool/.test(m[2])?"var(--acc)":"var(--ok)")+"'>"+esc(m[2].replace(/ \\(.*?\\)/,""))+"</span><time>"+esc(m[1])+"</time></li>";}).join("")||"<li class=mute>Keine Ereignisse in den letzten 30 Tagen.</li>";}
 if(/^#miner=/.test(location.hash))setTimeout(()=>openDetail(decodeURIComponent(location.hash.slice(7))),300);
 for(const id of ["q"])$(id).oninput=render;for(const id of ["qf","fs","fm"])$(id).onchange=render;
 $("scan").onclick=()=>post("/api/scan").then(()=>setTimeout(load,800));
@@ -150,19 +156,40 @@ async function load(){try{S=await api("/api/status");$("ver").textContent=S.vers
 load();setInterval(load,15000);
 // Report
 let rpR=null;
-async function loadDays(){const month=$("rpKind").value==="month",ds=await api(month?"/api/months":"/api/days"),cur=$("day").value,today=ds[ds.length-1];
+const dkey=(d)=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function quick(v){const t=new Date();t.setHours(12,0,0,0);let a,b=new Date(t);if(/^\\d+$/.test(v)){a=new Date(t);a.setDate(a.getDate()-(+v-1));}else if(v==="lw"){b=new Date(t);b.setDate(b.getDate()-((b.getDay()+6)%7)-1);a=new Date(b);a.setDate(a.getDate()-6);}else if(v==="lm"){a=new Date(t.getFullYear(),t.getMonth()-1,1,12);b=new Date(t.getFullYear(),t.getMonth(),0,12);}else return;$("rFrom").value=dkey(a);$("rTo").value=dkey(b);loadReport();}
+async function loadDays(){const range=$("rpKind").value==="range";$("rngBox").hidden=!range;$("day").hidden=range;
+ if(range){const ds=await api("/api/days");if(ds.length){$("rFrom").min=$("rTo").min=ds[0];$("rFrom").max=$("rTo").max=ds[ds.length-1];}if(!$("rFrom").value){quick("7");return;}return loadReport();}
+ const month=$("rpKind").value==="month",ds=await api(month?"/api/months":"/api/days"),cur=$("day").value,today=ds[ds.length-1];
  $("day").innerHTML=ds.slice().reverse().map(k=>"<option value="+k+">"+(month?new Date(k+"-15").toLocaleDateString("de-DE",{month:"long",year:"numeric"}):k.split("-").reverse().join("."))+(k===today?" (läuft noch)":"")+"</option>").join("");
  if(cur&&ds.includes(cur))$("day").value=cur;else if(ds.length>1&&!month)$("day").value=ds[ds.length-2];loadReport();}
-async function loadReport(){const k=$("day").value,month=$("rpKind").value==="month";if(!k){$("rpInfo").textContent="Noch keine Daten. Der Report zählt ab jetzt alle 5 Minuten mit.";$("rpTb").innerHTML="";$("rpTiles").innerHTML="";return;}
+async function loadReport(){const range=$("rpKind").value==="range";
+ if(range){const a=$("rFrom").value,b=$("rTo").value;if(!a||!b)return;rpR=await api("/api/range?from="+a+"&to="+b);if(!rpR){$("rpInfo").textContent="Für diesen Zeitraum gibt es keine Daten.";$("rpTb").innerHTML="";$("rpTiles").innerHTML="";return;}return drawReport();}
+ const k=$("day").value,month=$("rpKind").value==="month";if(!k){$("rpInfo").textContent="Noch keine Daten. Der Report zählt ab jetzt alle 5 Minuten mit.";$("rpTb").innerHTML="";$("rpTiles").innerHTML="";return;}
  rpR=await api(month?"/api/month?month="+k:"/api/report?day="+k);drawReport();}
-function drawReport(){const r=rpR;if(!r)return;const month=r.kind==="month";
- $("rpInfo").textContent=month?r.days+" von "+r.daysInMonth+" Tagen mit Daten, "+nf(r.hours,0)+" h gemessen. Lücken (PC aus) zählen nicht mit.":r.hours+" h gemessen"+(r.noNet?", "+Math.round(r.noNet*5)+" min ohne Verbindung zu den Minern":"")+(r.hours<23.5?". Lücken (PC aus) zählen nicht mit.":"");
+function drawReport(){const r=rpR;if(!r)return;const month=r.kind!=="day",fd=(k)=>k.split("-").reverse().join(".");
+ $("rpInfo").textContent=(r.kind==="range"?fd(r.from)+" bis "+fd(r.to)+": ":"")+(month?r.days+" von "+r.daysInMonth+" Tagen mit Daten, "+nf(r.hours,0)+" h gemessen. Lücken (PC aus) zählen nicht mit.":r.hours+" h gemessen"+(r.noNet?", "+Math.round(r.noNet*5)+" min ohne Verbindung zu den Minern":"")+(r.hours<23.5?". Lücken (PC aus) zählen nicht mit.":""));
  $("rpTiles").innerHTML=[["Bestand",r.total+" Miner"],[month?"Typisch online (Median der Tage)":"Typisch online",r.median==null?"–":r.median+" / "+r.total],["Uptime",r.uptime==null?"–":nf(r.uptime*100,2)+" %"],["Verbrauch",(r.kwh>=1e4?nf(r.kwh/1000,2)+" MWh":nf(r.kwh,1)+" kWh")+(r.kwhEst>0?" <small class=mute>(davon "+nf(r.kwhEst,1)+" kWh geschätzt)</small>":"")],["Dauerhaft / zeitweise weg",r.down+" / "+r.partly]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
  $("rpHead").innerHTML="<th>Miner</th><th>IP</th><th>Seriennr.</th><th>Modell</th><th>Worker (Pool 1)</th><th class=n>Uptime</th><th class=n>Verbrauch</th><th class=n>Ø Hashrate</th><th class=n>Neustarts</th>"+(month?"<th class=n>Tage</th>":"<th class=n>Geräte-Laufzeit</th><th class=n>Mining-Laufzeit</th>");
  const terms=$("rq").value.toLowerCase().split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
  const l=r.miners.filter(m=>!terms.length||terms.some(t=>(m.name+" "+m.id+" "+m.serial+" "+m.mac+" "+m.type+" "+(m.pools||[]).map(p=>p.user+" "+p.url).join(" ")).toLowerCase().includes(t)));
  $("rpTb").innerHTML=l.map(m=>"<tr class="+(m.uptime<0.2?"off":m.uptime<0.98?"weak":"ok")+"><td>"+esc(m.name)+"</td><td>"+esc(m.id)+"</td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td class=n>"+nf(m.uptime*100,2)+" %</td><td class='n"+(m.kwhEst>m.kwh/2?" est":"")+"'>"+nf(m.kwh,m.kwh>=100?0:2)+" kWh</td><td class=n>"+nf(m.avgTh,1)+" TH/s</td><td class=n>"+(m.reboots+m.restarts||"–")+"</td>"+(month?"<td class=n>"+m.days+"</td>":"<td class=n>"+dur(m.devUp)+"</td><td class=n>"+dur(m.hashUp)+"</td>")+"</tr>").join("");}
 $("rpKind").onchange=()=>{$("day").value="";loadDays();};$("rq").oninput=drawReport;
+// Pools
+let plD=null;const dk=(t)=>{const d=new Date(t);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const pfmt=(p)=>p&&(p.url||p.user)?esc(p.url||"?")+"<br><span class=mute>"+esc(p.user||"?")+"</span>":"<span class=mute>leer</span>";
+function plRange(){const n=+$("plR").value;return {from:dk(Date.now()-(n-1)*864e5),to:dk(Date.now())};}
+async function loadPools(){const r=plRange();plD=await api("/api/pools?from="+r.from+"&to="+r.to).catch(()=>null);drawPools();}
+function drawPools(){const d=plD;if(!d)return;const k=$("plK").value,terms=$("plQ").value.toLowerCase().split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
+ const l=d.events.filter(e=>(!k||e.kind===k)&&(!terms.length||terms.some(t=>(e.name+" "+e.ip+" "+e.serial+" "+e.type+" "+e.text).toLowerCase().includes(t))));
+ const ch=d.events.filter(e=>e.kind==="geändert"),sw=d.events.filter(e=>e.kind==="Wechsel"),aff=new Set(d.events.map(e=>e.serial||e.ip));
+ $("plTiles").innerHTML=[["Änderungen (Adresse / Worker)",ch.length],["Wechsel des aktiven Pools",sw.length],["Betroffene Miner",aff.size],["Verschiedene Pool-Adressen",d.current.length]].map(([i,v])=>"<div class=tile><i>"+i+"</i><span>"+v+"</span></div>").join("");
+ $("plInfo").textContent=d.first?"Aufgezeichnet seit "+d.first.split("-").reverse().join(".")+". Aufbewahrt 90 Tage.":"Noch keine Pool-Änderung erkannt. Aufgezeichnet wird ab jetzt.";
+ $("plCur").innerHTML=d.current.map(c=>"<tr><td>"+esc(c.url||"–")+"</td><td style='white-space:normal'>"+(c.users===1?esc(c.user||"–"):c.users+" verschiedene <span class=mute>("+c.topUsers.map(x=>esc(x.u.split(".")[0])).filter((v,i,a)=>a.indexOf(v)===i).join(", ")+(c.users>3?", …":"")+")</span>")+"</td>"+c.slots.map(n=>"<td class=n>"+(n||"–")+"</td>").join("")+"<td class=n>"+(c.active?c.active+" Miner":"<span class=mute>–</span>")+"</td></tr>").join("")||"<tr><td class=mute colspan=6>Noch keine Pools gemeldet.</td></tr>";
+ $("plN").textContent="("+l.length+", neueste oben)";
+ $("plTb").innerHTML=l.slice(0,3000).map(e=>"<tr data-ip='"+esc(e.ip)+"' class="+(e.kind==="geändert"?"weak":"ok")+"><td>"+new Date(e.t).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})+"</td><td><span class='badge "+(e.kind==="geändert"?"warn":"acc")+"'>"+(e.kind==="geändert"?(/Adresse/.test(e.what)&&/Worker/.test(e.what)?"Adresse + Worker":/Adresse/.test(e.what)?"Adresse":"Worker")+" geändert":"Aktiver Pool gewechselt")+"</span></td><td>"+esc(e.name)+"</td><td>"+esc(e.ip)+"</td><td>"+esc(e.serial||"–")+"</td><td>"+(e.kind==="Wechsel"?(e.fromPool?"Pool "+e.fromPool+" → ":"")+"Pool "+e.pool:"Pool "+esc(e.pool))+"</td><td style='white-space:normal'>"+(e.kind==="Wechsel"?(e.fromPool?"Pool "+e.fromPool:"–"):(e.changes||[e]).map(c=>"<div>"+((e.changes||[]).length>1?"<b>"+c.pool+":</b> ":"")+pfmt(c.from)+"</div>").join(""))+"</td><td style='white-space:normal'>"+(e.kind==="Wechsel"?pfmt(e.to):(e.changes||[e]).map(c=>"<div>"+((e.changes||[]).length>1?"<b>"+c.pool+":</b> ":"")+pfmt(c.to)+"</div>").join(""))+"</td></tr>").join("")||"<tr><td class=mute colspan=8>Keine Änderungen in diesem Zeitraum.</td></tr>";}
+$("plR").onchange=loadPools;$("plK").onchange=drawPools;$("plQ").oninput=drawPools;$("plCsv").onclick=()=>{const r=plRange();location.href="/api/pools.csv?from="+r.from+"&to="+r.to;};
+$("plTb").onclick=(e)=>{const tr=e.target.closest("tr[data-ip]");if(tr&&S&&(S.miners||[]).some(m=>m.ip===tr.dataset.ip))openDetail(tr.dataset.ip);};
 // Protokoll
 let logL=[];
 async function loadLogDays(){const ds=await api("/api/logdays"),cur=$("logDay").value;$("logDay").innerHTML=ds.slice().reverse().map(k=>"<option value="+k+">"+k.split("-").reverse().join(".")+"</option>").join("");if(cur&&ds.includes(cur))$("logDay").value=cur;loadLog();}
@@ -171,7 +198,8 @@ function drawLog(){const terms=$("lq").value.toLowerCase().split(/[,;]+/).map(x=
  $("logInfo").textContent=l.length+" Einträge, neueste oben. Aufbewahrt 90 Tage.";
  $("logTb").innerHTML=l.slice(0,3000).map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<tr class="+(/^Offline|antwortet mehr|fehlgeschlagen|Fehler/.test(m[2])?"off":/neu gestartet/.test(m[2])?"weak":"ok")+"><td class=mute style='width:170px'>"+esc(m[1])+"</td><td style='white-space:normal'>"+esc(m[2])+"</td></tr>";}).join("")||"<tr><td class=mute>Keine Einträge.</td></tr>";}
 $("logDay").onchange=loadLog;$("lq").oninput=drawLog;$("logDl").onclick=()=>{if($("logDay").value)location.href="/api/log.txt?day="+$("logDay").value;};
-$("day").onchange=loadReport;$("updCheck").onclick=async()=>{$("sUpd").textContent="Prüfe…";await post("/api/update/check");await load();loadCfg();};$("csv").onclick=()=>{if($("day").value)location.href="/api/report.csv?"+($("rpKind").value==="month"?"month=":"day=")+$("day").value;};
+$("day").onchange=loadReport;$("updCheck").onclick=async()=>{$("sUpd").textContent="Prüfe…";await post("/api/update/check");await load();loadCfg();};$("csv").onclick=()=>{if($("rpKind").value==="range"){if($("rFrom").value&&$("rTo").value)location.href="/api/report.csv?from="+$("rFrom").value+"&to="+$("rTo").value;return;}if($("day").value)location.href="/api/report.csv?"+($("rpKind").value==="month"?"month=":"day=")+$("day").value;};
+$("rFrom").onchange=$("rTo").onchange=()=>{$("rQuick").value="";loadReport();};$("rQuick").onchange=()=>quick($("rQuick").value);
 // Einstellungen
 async function loadCfg(){const c=await api("/api/config");$("sName").value=c.name;$("sRanges").value=c.ranges;$("sJth").value=c.jth||0;$("sAuto").checked=c.autostart;$("sAu").value=c.antUser||"root";$("sApHas").textContent=c.hasAntPass?"Ein Passwort ist gespeichert.":"";$("sAutoUpd").checked=c.autoUpdate!==false;
  const u=S&&S.update||{};$("sUpd").textContent="Version "+(S?S.version:"")+(u.state==="current"?", aktuell":u.state==="available"?", Update "+u.latest+" verfügbar":"")+(u.err?". "+u.err:"")+(u.canInstall===false?". Selbst-Update nur in der exe.":"");$("sRemote").checked=c.remote;$("sVnHas").textContent=c.hasVnishPass?"Ein Passwort ist gespeichert.":"";

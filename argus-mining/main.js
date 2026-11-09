@@ -2,9 +2,9 @@
 // (Hashrate, Temperatur, Lüfter, Verbrauch, Geräte- und Mining-Laufzeit) und schreibt daraus einen Tagesreport je Miner.
 // Bedienung im Browser unter http://localhost:8420 (nur auf diesem PC, außer der Fernzugriff wird ausdrücklich eingeschaltet).
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
-const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), PAGE = require("./page");
+const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), pools = require("./pools"), PAGE = require("./page");
 
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
@@ -43,7 +43,7 @@ function log(t) {
 }
 try { fs.renameSync(path.join(DIR, "log.txt"), path.join(LOGDIR, "alt-vor-1.2.txt")); } catch {}
 
-report.init(DIR, cfg.keepDays); hist.init(DIR);
+report.init(DIR, cfg.keepDays); hist.init(DIR); pools.init(DIR, cfg.keepDays);
 lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass, antUser: cfg.antUser, antPass: cfg.antPass }));
 
 // Nach jeder Abfrage eine Report-Stichprobe (der Report nimmt selbst nur alle 5 Minuten eine)
@@ -75,7 +75,11 @@ async function tick() {
     for (const t of goneOff) log("Offline: " + t);
     for (const t of back) log("Wieder online: " + t);
   }
-  if (!noNet) hist.record(s.miners);
+  if (!noNet) {
+    hist.record(s.miners);
+    const idp = (m) => [m.ip, m.serial && "SN " + m.serial].filter(Boolean).join(", ");
+    for (const e of pools.record(s.miners)) log(e.kind === "Wechsel" ? `Pool-Wechsel: ${e.name} (${idp(e)}) ${e.text.replace(/^Aktiver Pool gewechselt: /, "")}` : `Pool geändert: ${e.name} (${idp(e)}) ${e.text}`);
+  }
   const ev = report.record(s.miners, noNet);
   for (const [m, t] of ev || []) log(`${t}: ${m.name} (${m.ip}${m.serial ? ", SN " + m.serial : ""})`);
 }
@@ -169,6 +173,7 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/status") return json(res, 200, status());
     if (p === "/api/days") return json(res, 200, report.days());
     if (p === "/api/months") return json(res, 200, report.months());
+    if (p === "/api/range") return json(res, 200, report.buildRange(u.searchParams.get("from") || "", u.searchParams.get("to") || ""));
     if (p === "/api/month") return json(res, 200, report.buildMonth(u.searchParams.get("month") || report.dayKey().slice(0, 7)));
     // Detailansicht eines Miners: nur bekannte Adressen (keine beliebigen Ziele über diese Schnittstelle)
     if (p.startsWith("/api/miner")) {
@@ -188,6 +193,13 @@ const server = http.createServer(async (req, res) => {
       return json(res, 404, { error: "nicht gefunden" });
     }
     if (p === "/api/logdays") return json(res, 200, logDays());
+    // Pool-Report: Änderungen und Wechsel in einem Zeitraum (Standard: letzte 30 Tage) und der aktuelle Stand je Pool
+    if (p === "/api/pools" || p === "/api/pools.csv") {
+      const day = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x || "") ? x : null), today = pools.dayKey();
+      const to = day(u.searchParams.get("to")) || today, from = day(u.searchParams.get("from")) || pools.dayKey(Date.now() - 29 * 864e5);
+      if (p === "/api/pools.csv") { res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-pools-${from}-bis-${to}.csv"` }); return res.end(pools.csv(from, to)); }
+      return json(res, 200, { from, to, first: pools.days()[0] || null, events: pools.events(from, to).slice(0, 5000), current: pools.current(lan.snapshot().miners || []) });
+    }
     if (p === "/api/log" || p === "/api/log.txt") {
       const k = u.searchParams.get("day") || report.dayKey(); if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return json(res, 400, { error: "Tag fehlt" });
       let txt = ""; try { txt = fs.readFileSync(path.join(LOGDIR, k + ".txt"), "utf8"); } catch {}
@@ -195,7 +207,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { day: k, lines: txt.split("\n").filter(Boolean).slice(-5000) });
     }
     if (p === "/api/report") return json(res, 200, report.build(u.searchParams.get("day") || report.dayKey()));
-    if (p === "/api/report.csv") { const k = u.searchParams.get("month") || u.searchParams.get("day") || report.dayKey(); res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-${k}.csv"` }); return res.end(report.csv(k)); }
+    if (p === "/api/report.csv") { const to = u.searchParams.get("to") || "", k = u.searchParams.get("from") || u.searchParams.get("month") || u.searchParams.get("day") || report.dayKey(); res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-${k}${to ? "-bis-" + to : ""}.csv"` }); return res.end(report.csv(k, to || undefined)); }
     if (p === "/api/config" && req.method === "GET") return json(res, 200, { ...cfg, vnishPass: "", antPass: "", hasAntPass: !!cfg.antPass, hasVnishPass: !!cfg.vnishPass, autostart: autostartOn(), dir: DIR, lanIps: lanIps() });
     if (p === "/api/config" && req.method === "POST") {
       const b = await body(req), old = cfg.ranges;
