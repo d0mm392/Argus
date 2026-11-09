@@ -2,7 +2,7 @@
 // Nur lesend über die Miner-Schnittstelle auf Port 4028 (cgminer/bmminer/btminer: Antminer Stock, VNISH, Whatsminer),
 // bei VNISH zusätzlich die Web-Schnittstelle (/api/v1/summary) für Verbrauch und Laufzeit.
 // Es werden nur private Adressbereiche (10.x, 172.16–31.x, 192.168.x) abgefragt, die der Nutzer selbst einträgt.
-const net = require("net"), fs = require("fs"), path = require("path");
+const net = require("net"), fs = require("fs"), path = require("path"), crypto = require("crypto"), { execFile } = require("child_process");
 
 const PORT = Number(process.env.AM_TEST_PORT) || 4028; // Umgebungsvariablen nur für Tests
 const HTTP_PORT = Number(process.env.AM_TEST_HTTP) || 80;
@@ -136,9 +136,49 @@ function read(ip, sum, stats, pools, dev, vn, opt = {}) {
   const worker = user.includes(".") ? user.split(".").pop() : "";
   const host = String(V["network.hostname"] || V["system.network_status.hostname"] || first(/hostname/, V) || "");
   const name = (worker && !/^(x|\d+)$/i.test(worker) ? worker : host || ip).slice(0, 40);
-  return { id: null, ip, name, on, hr, nom, type: type.slice(0, 60), fw, temp: temps.length ? Math.max(...temps) : null, fan: fans.length ? Math.max(...fans) : null, watt, wattEst: est, up, hup, err: "", pool: user ? user.split(".")[0].slice(0, 60) : "" };
+  // Pools 1–3 wie im Miner eingetragen (Adresse, Worker, Zustand), für die eindeutige Zuordnung
+  const pl = (pools?.POOLS || []).slice().sort((a, b) => (num(a.POOL) ?? 0) - (num(b.POOL) ?? 0)).slice(0, 3).map((p) => ({ url: String(p.URL || p.url || "").slice(0, 120), user: String(p.User || p.user || "").slice(0, 120), st: String(p.Status || p.status || "").slice(0, 20), act: p["Stratum Active"] === true || /true/i.test(String(p["Stratum Active"] ?? "")) }));
+  return { id: null, ip, name, on, hr, nom, type: type.slice(0, 60), fw, temp: temps.length ? Math.max(...temps) : null, fan: fans.length ? Math.max(...fans) : null, watt, wattEst: est, up, hup, err: "", pool: user ? user.split(".")[0].slice(0, 60) : "", pools: pl, serial: "", mac: "" };
 }
 
+// ---------- Seriennummer und MAC (einmal je Suche, nicht bei jeder Abfrage) ----------
+// Antminer Stock: /cgi-bin/get_system_info.cgi mit Digest-Anmeldung (Werkszugang root/root, in den Einstellungen änderbar)
+const md5 = (s) => crypto.createHash("md5").update(s).digest("hex");
+async function digestGet(ip, p, user, pass, ms = 4000) {
+  const url = `http://${ip}${HTTP_PORT === 80 ? "" : ":" + HTTP_PORT}${p}`, ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try {
+    let r = await fetch(url, { signal: ctl.signal });
+    if (r.status === 401) {
+      const h = r.headers.get("www-authenticate") || ""; if (!/digest/i.test(h)) return null;
+      const g = (k) => (new RegExp(k + '="?([^",]+)"?', "i").exec(h) || [])[1] || "";
+      const realm = g("realm"), nonce = g("nonce"), qop = /auth/.test(g("qop")) ? "auth" : "", nc = "00000001", cn = crypto.randomBytes(8).toString("hex");
+      const ha1 = md5(`${user}:${realm}:${pass}`), ha2 = md5(`GET:${p}`), resp = qop ? md5(`${ha1}:${nonce}:${nc}:${cn}:${qop}:${ha2}`) : md5(`${ha1}:${nonce}:${ha2}`);
+      const auth = `Digest username="${user}", realm="${realm}", nonce="${nonce}", uri="${p}", response="${resp}"` + (qop ? `, qop=${qop}, nc=${nc}, cnonce="${cn}"` : "") + (g("opaque") ? `, opaque="${g("opaque")}"` : "");
+      r = await fetch(url, { signal: ctl.signal, headers: { Authorization: auth } });
+    }
+    if (!r.ok) return null;
+    const txt = await r.text(); try { return JSON.parse(txt); } catch { return null; }
+  } catch { return null; } finally { clearTimeout(t); }
+}
+const SER = /(^|\.)(serinum|serial|serial_?no|serial_?number|sn|minersn|miner_sn|machine_sn)$/i, MAC = /(^|\.)(mac|macaddr|mac_?address|hwaddr)$/i;
+const findKey = (o, re) => { const f = flat(o || {}); const k = Object.keys(f).find((k2) => re.test(k2) && f[k2] != null && String(f[k2]).trim() && !/^(null|none|0+)$/i.test(String(f[k2]).trim())); return k ? String(f[k]).trim().slice(0, 64) : ""; };
+async function ident(ip, fw, opt = {}) {
+  const out = { serial: "", mac: "" }, take = (o) => { if (!o) return; out.serial ||= findKey(o, SER); out.mac ||= findKey(o, MAC).toUpperCase(); };
+  if (fw === "Whatsminer") { take((await rawCmd(ip, { cmd: "get_miner_info", info: "ip,mac,hostname,minersn,powersn" }))?.Msg); }
+  if (fw === "VNISH") { const r = await http(ip, "/api/v1/info", tokens.has(ip) ? { headers: { Authorization: "Bearer " + tokens.get(ip) } } : {}); take(r?.json); if (!out.serial) take(await vnish(ip, opt.vnishPass)); }
+  if (!out.serial && opt.http !== false && fw !== "Whatsminer") take(await digestGet(ip, "/cgi-bin/get_system_info.cgi", opt.antUser || "root", opt.antPass || "root"));
+  return out;
+}
+// MAC-Adressen aus der ARP-Tabelle von Windows (nur Miner im selben Netzsegment wie der PC)
+function arpTable() {
+  return new Promise((res) => {
+    if (process.platform !== "win32") return res({});
+    execFile("arp", ["-a"], { windowsHide: true, timeout: 10000 }, (e, so) => {
+      const m = {}; for (const l of String(so || "").split(/\r?\n/)) { const x = /^\s*(\d+\.\d+\.\d+\.\d+)\s+([0-9a-f]{2}(?:-[0-9a-f]{2}){5})/i.exec(l); if (x) m[x[1]] = x[2].replace(/-/g, ":").toUpperCase(); }
+      res(m);
+    });
+  });
+}
 async function queryOne(ip, opt = {}) {
   const sum = await cmd(ip, "summary"); if (!sum || (!sum.SUMMARY && !sum.Msg)) return null;
   const [stats, pools] = await Promise.all([cmd(ip, "stats"), cmd(ip, "pools")]);
@@ -169,7 +209,14 @@ async function scan() {
     await pool(ips, 256, async (ip) => { if (await probe(ip)) hits.push(ip); snap.scanned++; });
     const now = Date.now(), inRange = new Set(ips);
     for (const ip of Object.keys(known)) if (!inRange.has(ip)) delete known[ip]; // Bereich entfernt: Miner vergessen
-    for (const ip of hits) { const m = await queryOne(ip, o); if (m) { known[ip] = { ...(known[ip] || {}), name: m.name, type: m.type, seen: now }; last.set(ip, { ...m, ts: now }); } }
+    await pool(hits, 32, async (ip) => {
+      const m = await queryOne(ip, o).catch(() => null); if (!m) return;
+      const k = known[ip] || {};
+      // Seriennummer neu lesen, wenn sie fehlt oder der Miner ein anderer ist (anderes Modell an der Adresse)
+      if (!k.serial || k.type !== m.type || now - (k.idTs || 0) > 7 * 864e5) { const id = await ident(ip, m.fw, o).catch(() => ({})); if (id.serial) k.serial = id.serial; else if (k.type !== m.type) k.serial = ""; if (id.mac) k.mac = id.mac; k.idTs = now; }
+      known[ip] = { ...k, name: m.name, type: m.type, seen: now }; last.set(ip, { ...m, ts: now });
+    });
+    const arp = await arpTable(); for (const [ip, mac] of Object.entries(arp)) if (known[ip] && !known[ip].mac) known[ip].mac = mac;
     // seit über 3 Tagen ohne Antwort: kein Miner mehr dort
     for (const [ip, k] of Object.entries(known)) if (now - (k.seen || 0) > 3 * 864e5) delete known[ip];
     snap.found = Object.keys(known).length; snap.scanTs = now; snap.error = ips.length ? "" : "Keine gültigen Adressbereiche eingetragen."; save();
@@ -185,8 +232,9 @@ async function poll() {
     const res = await pool(ips, 64, (ip) => queryOne(ip, o).catch(() => null));
     const miners = ips.map((ip, i) => {
       const m = res[i];
-      if (m) { known[ip] = { ...known[ip], name: m.name, type: m.type, seen: now }; last.set(ip, { ...m, ts: now }); return m; }
-      const k = known[ip] || {}; return { id: null, ip, name: k.name || ip, on: false, hr: 0, nom: null, type: k.type || "", temp: null, fan: null, watt: 0, wattEst: true, up: null, hup: null, err: "keine Antwort" };
+      const k = known[ip] || {};
+      if (m) { known[ip] = { ...k, name: m.name, type: m.type, seen: now, pools: m.pools }; m.serial = k.serial || ""; m.mac = k.mac || ""; last.set(ip, { ...m, ts: now }); return m; }
+      return { id: null, ip, name: k.name || ip, on: false, hr: 0, nom: null, type: k.type || "", temp: null, fan: null, watt: 0, wattEst: true, up: null, hup: null, err: "keine Antwort", serial: k.serial || "", mac: k.mac || "", pools: k.pools || [] };
     });
     // doppelte Namen eindeutig machen (gleicher Worker auf zwei Geräten)
     const cnt = {}; for (const m of miners) cnt[m.name] = (cnt[m.name] || 0) + 1;
@@ -207,4 +255,4 @@ function stop() { clearInterval(timer); clearInterval(scanT); timer = scanT = nu
 const snapshot = () => ({ ...snap, known: Object.keys(known).length });
 function reset() { known = {}; last.clear(); snap = { ...snap, ts: 0, miners: [], found: 0 }; save(); }
 
-module.exports = { parseRanges, parseApi, read, queryOne, jthOf, init, scan, poll, start, stop, snapshot, reset };
+module.exports = { parseRanges, parseApi, read, queryOne, ident, digestGet, jthOf, init, scan, poll, start, stop, snapshot, reset };

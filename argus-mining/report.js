@@ -20,7 +20,7 @@ function record(miners, noNet = false, now = Date.now(), force = false) {
   day.n++; let on = 0;
   for (const m of miners) {
     const id = m.ip || m.name, x = (day.m[id] ||= { name: m.name, type: m.type || "", n: 0, on: 0, wh: 0, est: 0, meas: 0, rb: 0, hr: 0 });
-    x.name = m.name; if (m.type) x.type = m.type; x.n++;
+    x.name = m.name; if (m.type) x.type = m.type; if (m.serial) x.sn = m.serial; if (m.mac) x.mac = m.mac; if (m.pools?.length) x.pl = m.pools.map((p) => [p.url, p.user]); x.n++;
     if (m.on !== false) { x.on++; on++; x.hr += m.hr || 0; }
     if (m.watt != null) { const wh = (m.on === false ? 0 : m.watt) * dt / 36e5; x.wh += wh; if (m.wattEst) x.est += wh; else x.meas += wh; }
     // Neustart erkennen: Laufzeit des Geräts oder des Mining-Programms ist kleiner geworden
@@ -34,7 +34,7 @@ function record(miners, noNet = false, now = Date.now(), force = false) {
 
 function build(k = dayKey()) {
   const day = load()[k]; if (!day) return null;
-  const ms = Object.entries(day.m).map(([id, x]) => ({ id, name: x.name, type: x.type, samples: x.n, uptime: x.n ? x.on / x.n : null, kwh: x.wh / 1000, kwhEst: x.est / 1000, avgTh: x.on ? x.hr / x.on / 1e12 : 0, reboots: x.rb || 0, restarts: x.rs || 0, devUp: x.lu ?? null, hashUp: x.lh ?? null }))
+  const ms = Object.entries(day.m).map(([id, x]) => ({ id, name: x.name, type: x.type, samples: x.n, uptime: x.n ? x.on / x.n : null, kwh: x.wh / 1000, kwhEst: x.est / 1000, avgTh: x.on ? x.hr / x.on / 1e12 : 0, reboots: x.rb || 0, restarts: x.rs || 0, devUp: x.lu ?? null, hashUp: x.lh ?? null, serial: x.sn || "", mac: x.mac || "", pools: (x.pl || []).map(([url, user]) => ({ url, user })) }))
     .sort((a, b) => (a.uptime ?? 2) - (b.uptime ?? 2) || a.name.localeCompare(b.name, "de", { numeric: true }));
   const vals = Object.entries(day.hist).map(([v, c]) => [Number(v), c]).sort((a, b) => a[0] - b[0]);
   let acc = 0, median = null; for (const [v, c] of vals) { acc += c; if (median == null && acc >= day.n / 2) median = v; }
@@ -49,9 +49,10 @@ const de = (v, n = 1) => (v == null ? "" : Number(v).toFixed(n).replace(".", ","
 // CSV für Excel (Semikolon, Komma als Dezimaltrenner)
 function csv(k) {
   const r = build(k); if (!r) return "";
-  const rows = [["Miner", "IP", "Modell", "Uptime %", "Verbrauch kWh", "davon geschätzt kWh", "Ø TH/s", "Neustarts Gerät", "Neustarts Mining", "Geräte-Laufzeit", "Mining-Laufzeit", "Stichproben"]];
-  for (const m of r.miners) rows.push([m.name, m.id, m.type, de(m.uptime * 100, 2), de(m.kwh, 2), de(m.kwhEst, 2), de(m.avgTh, 1), m.reboots, m.restarts, fmtDur(m.devUp), fmtDur(m.hashUp), m.samples]);
-  rows.push([]); rows.push(["Gesamt", "", `${r.total} Miner`, de((r.uptime ?? 0) * 100, 2), de(r.kwh, 2), de(r.kwhEst, 2), "", "", "", "", "", r.samples]);
+  const rows = [["Miner", "IP", "Seriennummer", "MAC", "Modell", "Pool 1", "Worker 1", "Pool 2", "Worker 2", "Pool 3", "Worker 3", "Uptime %", "Verbrauch kWh", "davon geschätzt kWh", "Ø TH/s", "Neustarts Gerät", "Neustarts Mining", "Geräte-Laufzeit", "Mining-Laufzeit", "Stichproben"]];
+  const pc = (m) => [0, 1, 2].flatMap((i) => [m.pools[i]?.url || "", m.pools[i]?.user || ""]);
+  for (const m of r.miners) rows.push([m.name, m.id, m.serial, m.mac, m.type, ...pc(m), de(m.uptime * 100, 2), de(m.kwh, 2), de(m.kwhEst, 2), de(m.avgTh, 1), m.reboots, m.restarts, fmtDur(m.devUp), fmtDur(m.hashUp), m.samples]);
+  rows.push([]); rows.push(["Gesamt", "", "", "", `${r.total} Miner`, "", "", "", "", "", "", de((r.uptime ?? 0) * 100, 2), de(r.kwh, 2), de(r.kwhEst, 2), "", "", "", "", "", r.samples]);
   return "﻿" + rows.map((l) => l.map((c) => { const s = String(c ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(";")).join("\r\n");
 }
 const days = () => Object.keys(load()).sort();

@@ -14,6 +14,16 @@ Kleines eigenständiges Programm für den PC vor Ort. Ersetzt Foreman/Pickaxe f�
 
 Geschätzte Werte stehen grau da und sind im Report getrennt ausgewiesen.
 
+Zur eindeutigen Zuordnung je Miner außerdem:
+
+| Wert | Antminer Stock | VNISH | Whatsminer |
+|---|---|---|---|
+| Pools 1–3 (Adresse, Worker, Zustand) | ja | ja | ja |
+| Seriennummer | über die Weboberfläche (Login root/root, änderbar), nur neuere Firmware | wenn die Web-Schnittstelle sie meldet | ja (`get_miner_info`) |
+| MAC | Weboberfläche oder ARP-Tabelle | Web-Schnittstelle oder ARP | ja |
+
+Seriennummer und MAC werden bei jeder Suche (alle 30 Minuten) gelesen, nicht jede Minute. Klick auf eine Zeile zeigt Pools 1–3 und MAC.
+
 ## Einrichten
 
 1. `Argus-Mining.exe` irgendwo ablegen (z. B. `C:\Argus Mining`) und starten. Windows fragt beim ersten Start evtl. nach der Firewall: „Privates Netzwerk“ erlauben.
@@ -25,7 +35,11 @@ Das schwarze Fenster offen lassen (minimieren reicht). Schließen beendet das Pr
 
 ## Tagesreport
 
-Reiter **Tagesreport**: je Miner Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei. Lücken (PC aus) zählen nicht mit. Daten bleiben 30 Tage in `%APPDATA%\Argus Mining`.
+Reiter **Tagesreport**: je Miner Seriennummer, Worker, Uptime (Anteil der Stichproben mit Hashrate, wie Foreman), Verbrauch in kWh, Ø Hashrate, Neustarts, Laufzeiten. **Als CSV speichern** gibt eine Excel-Datei. Lücken (PC aus) zählen nicht mit. Daten bleiben 30 Tage in `%APPDATA%\Argus Mining`.
+
+## Updates
+
+Argus Mining prüft beim Start und alle 6 Stunden, ob es eine neue Version gibt, und installiert sie automatisch (abschaltbar unter Einstellungen). Die neue exe wird nur übernommen, wenn ihre Prüfsumme stimmt. Danach startet das Programm von selbst neu, Einstellungen und Report bleiben.
 
 ## Fernzugriff (optional, aus)
 

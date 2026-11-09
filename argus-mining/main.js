@@ -1,24 +1,37 @@
 // Argus Mining: kleines eigenständiges Programm für den PC vor Ort. Fragt die Miner im eigenen Netz ab
 // (Hashrate, Temperatur, Lüfter, Verbrauch, Geräte- und Mining-Laufzeit) und schreibt daraus einen Tagesreport je Miner.
 // Bedienung im Browser unter http://localhost:8420 (nur auf diesem PC, außer der Fernzugriff wird ausdrücklich eingeschaltet).
-const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec } = require("child_process");
+const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
 const lan = require("./lanminer"), report = require("./report"), PAGE = require("./page");
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
+// Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
+const RI = process.argv.indexOf("--replace");
+if (RI > 0) {
+  const target = process.argv[RI + 1], pid = Number(process.argv[process.argv.indexOf("--pid") + 1]) || 0, t0 = Date.now();
+  const alive = () => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  const done = (ok) => { try { spawn(ok ? target : process.execPath, ["--no-browser"], { detached: true, stdio: "ignore" }).unref(); } catch {} setTimeout(() => process.exit(0), 500); };
+  const step = () => {
+    if (pid && alive() && Date.now() - t0 < 60e3) return setTimeout(step, 500);
+    try { fs.copyFileSync(process.execPath, target); done(true); } catch { if (Date.now() - t0 < 90e3) setTimeout(step, 1000); else done(false); }
+  };
+  setTimeout(step, 800);
+  return;
+}
 const DIR = process.env.AM_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), ".config"), "Argus Mining");
 fs.mkdirSync(DIR, { recursive: true });
 const CFG = path.join(DIR, "config.json");
-const DEF = { name: "Farm", ranges: "", jth: 0, vnishPass: "", port: 8420, remote: false, token: "", keepDays: 30 };
+const DEF = { name: "Farm", ranges: "", jth: 0, vnishPass: "", antUser: "root", antPass: "root", port: 8420, remote: false, token: "", keepDays: 30, autoUpdate: true };
 let cfg = { ...DEF };
 try { cfg = { ...DEF, ...JSON.parse(fs.readFileSync(CFG, "utf8")) }; } catch {}
 if (!cfg.token) cfg.token = crypto.randomBytes(16).toString("hex");
 const saveCfg = () => { try { fs.writeFileSync(CFG, JSON.stringify(cfg, null, 1)); } catch (e) { log("Einstellungen nicht gespeichert: " + e.message); } };
 saveCfg();
 const LOG = path.join(DIR, "log.txt");
-function log(t) { const l = `[${new Date().toLocaleString("de-DE")}] ${t}`; console.log(l); try { fs.appendFileSync(LOG, l + "\n"); if (fs.statSync(LOG).size > 2e6) fs.writeFileSync(LOG, ""); } catch {} }
+function log(t) { const l = `[${new Date().toLocaleString("de-DE")}] ${t}`; try { console.log(l); } catch {} try { fs.appendFileSync(LOG, l + "\n"); if (fs.statSync(LOG).size > 2e6) fs.writeFileSync(LOG, ""); } catch {} }
 
 report.init(DIR, cfg.keepDays);
-lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass }));
+lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass, antUser: cfg.antUser, antPass: cfg.antPass }));
 
 // Nach jeder Abfrage eine Report-Stichprobe (der Report nimmt selbst nur alle 5 Minuten eine)
 let lastNoNet = false;
@@ -47,11 +60,63 @@ function setAutostart(on) {
   return autostartOn();
 }
 
+// ---------- Update: neue exe vom Update-Zweig holen, Prüfsumme prüfen, austauschen, neu starten ----------
+const UPDATE_BASE = process.env.AM_UPDATE_URL || "https://raw.githubusercontent.com/d0mm392/Argus/argus-mining";
+const isExe = /\.exe$/i.test(process.execPath) && !/(^|[\\/])node\.exe$/i.test(process.execPath); // nur die gebaute exe kann sich selbst austauschen (nicht „node main.js“)
+let upd = { state: "idle", latest: "", notes: "", err: "", ts: 0, pct: 0 };
+const newer = (a, b) => { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; } return false; };
+// Laden über http/https (folgt Weiterleitungen), mit Fortschritt
+function getBuf(url, ms, onPart, hops = 0) {
+  return new Promise((ok, fail) => {
+    const mod = url.startsWith("https:") ? require("https") : http;
+    const rq = mod.get(url, { headers: { "Cache-Control": "no-cache", "User-Agent": "Argus-Mining/" + VERSION } }, (r) => {
+      if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location && hops < 5) { r.resume(); return getBuf(new URL(r.headers.location, url).href, ms, onPart, hops + 1).then(ok, fail); }
+      if (r.statusCode !== 200) { r.resume(); return fail(new Error("Server antwortet mit " + r.statusCode)); }
+      const parts = [], total = Number(r.headers["content-length"]) || 0; let got = 0;
+      r.on("data", (c) => { parts.push(c); got += c.length; onPart?.(got, total); }); r.on("end", () => ok(Buffer.concat(parts))); r.on("error", fail);
+    });
+    rq.setTimeout(ms, () => rq.destroy(new Error("Zeitüberschreitung"))); rq.on("error", fail);
+  });
+}
+async function checkUpdate(auto = false) {
+  if (upd.state === "download") return upd;
+  try {
+    const j = JSON.parse(String(await getBuf(`${UPDATE_BASE}/latest.json?t=${Date.now()}`, 15000))); upd.ts = Date.now(); upd.err = "";
+    if (!/^\d+\.\d+\.\d+$/.test(j.version || "") || !/^[0-9a-f]{64}$/i.test(j.sha256 || "")) throw new Error("Update-Angaben unvollständig");
+    upd.latest = j.version; upd.notes = String(j.notes || "").slice(0, 2000); upd.info = j;
+    upd.state = newer(j.version, VERSION) ? "available" : "current";
+    if (upd.state === "available") { log(`Update ${j.version} verfügbar`); if (auto && cfg.autoUpdate && isExe) installUpdate().catch(() => {}); }
+  } catch (e) { upd.err = String(e.message || e).slice(0, 160); upd.state = upd.state === "available" ? "available" : "idle"; }
+  return upd;
+}
+async function installUpdate() {
+  if (!isExe) throw new Error("Nur die Argus-Mining.exe kann sich selbst aktualisieren.");
+  if (upd.state !== "available" || !upd.info) await checkUpdate();
+  if (upd.state !== "available") return upd;
+  const j = upd.info; upd.state = "download"; upd.pct = 0; upd.err = "";
+  try {
+    const url = /^https:\/\//.test(j.url || "") ? j.url : `${UPDATE_BASE}/${encodeURIComponent(j.file || "Argus-Mining.exe")}`;
+    const buf = await getBuf(url, 15 * 60e3, (got, total) => { total ||= j.size || 0; if (total) upd.pct = Math.round(got / total * 100); });
+    if (crypto.createHash("sha256").update(buf).digest("hex").toLowerCase() !== j.sha256.toLowerCase()) throw new Error("Prüfsumme stimmt nicht, Update verworfen");
+    const dir = path.join(DIR, "update"); fs.mkdirSync(dir, { recursive: true });
+    const nexe = path.join(dir, `Argus-Mining-${j.version}.exe`); fs.writeFileSync(nexe, buf);
+    // Austausch: die neue exe übernimmt (siehe --replace oben), diese hier beendet sich
+    log(`Update ${j.version} geladen, Argus Mining startet neu`); report.flush();
+    for (const f of fs.readdirSync(dir)) if (f !== path.basename(nexe)) try { fs.unlinkSync(path.join(dir, f)); } catch {}
+    spawn(nexe, ["--replace", process.execPath, "--pid", String(process.pid)], { detached: true, stdio: "ignore" }).unref();
+    upd.state = "restart"; setTimeout(() => process.exit(0), 800);
+  } catch (e) { upd.state = "available"; upd.err = String(e.message || e).slice(0, 160); log("Update fehlgeschlagen: " + upd.err); }
+  return upd;
+}
+// übrig gebliebene Update-Dateien vom letzten Austausch aufräumen
+setTimeout(() => { const d = path.join(DIR, "update"); try { for (const f of fs.readdirSync(d)) fs.unlinkSync(path.join(d, f)); } catch {} }, 15e3);
+setTimeout(() => checkUpdate(true), 20e3); setInterval(() => checkUpdate(true), 6 * 3600e3).unref?.();
+
 // ---------- Webserver ----------
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }); res.end(JSON.stringify(obj)); };
 const body = (req) => new Promise((ok) => { let b = ""; req.on("data", (d) => { b += d; if (b.length > 1e5) req.destroy(); }); req.on("end", () => { try { ok(JSON.parse(b || "{}")); } catch { ok({}); } }); });
 const isLocal = (req) => /^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || "");
-const status = () => { const s = lan.snapshot(); return { version: VERSION, name: cfg.name, ts: s.ts, scanning: s.scanning, scanTs: s.scanTs, scanned: s.scanned, ips: lan.parseRanges(cfg.ranges).ips.length, found: s.known, bad: s.bad, error: s.error, noNet: lastNoNet, miners: s.miners }; };
+const status = () => { const s = lan.snapshot(); return { version: VERSION, name: cfg.name, ts: s.ts, scanning: s.scanning, scanTs: s.scanTs, scanned: s.scanned, ips: lan.parseRanges(cfg.ranges).ips.length, found: s.known, bad: s.bad, error: s.error, noNet: lastNoNet, update: { state: upd.state, latest: upd.latest, notes: upd.notes, err: upd.err, pct: upd.pct, canInstall: isExe }, miners: s.miners }; };
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname;
   // Fernzugriff (nur wenn eingeschaltet): nur lesende Daten und nur mit Schlüssel
@@ -67,7 +132,7 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/days") return json(res, 200, report.days());
     if (p === "/api/report") return json(res, 200, report.build(u.searchParams.get("day") || report.dayKey()));
     if (p === "/api/report.csv") { const k = u.searchParams.get("day") || report.dayKey(); res.writeHead(200, { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="argus-mining-${k}.csv"` }); return res.end(report.csv(k)); }
-    if (p === "/api/config" && req.method === "GET") return json(res, 200, { ...cfg, vnishPass: "", hasVnishPass: !!cfg.vnishPass, autostart: autostartOn(), dir: DIR, lanIps: lanIps() });
+    if (p === "/api/config" && req.method === "GET") return json(res, 200, { ...cfg, vnishPass: "", antPass: "", hasAntPass: !!cfg.antPass, hasVnishPass: !!cfg.vnishPass, autostart: autostartOn(), dir: DIR, lanIps: lanIps() });
     if (p === "/api/config" && req.method === "POST") {
       const b = await body(req), old = cfg.ranges;
       if (typeof b.name === "string") cfg.name = b.name.trim().slice(0, 40) || "Farm";
@@ -75,6 +140,9 @@ const server = http.createServer(async (req, res) => {
       if (b.jth != null) cfg.jth = Math.max(0, Math.min(200, Number(b.jth) || 0));
       if (typeof b.vnishPass === "string" && b.vnishPass) cfg.vnishPass = b.vnishPass.slice(0, 100);
       if (b.clearVnishPass) cfg.vnishPass = "";
+      if (typeof b.antUser === "string" && b.antUser.trim()) cfg.antUser = b.antUser.trim().slice(0, 40);
+      if (typeof b.antPass === "string" && b.antPass) cfg.antPass = b.antPass.slice(0, 100);
+      if (typeof b.autoUpdate === "boolean") cfg.autoUpdate = b.autoUpdate;
       if (typeof b.remote === "boolean") cfg.remote = b.remote;
       if (b.newToken) cfg.token = crypto.randomBytes(16).toString("hex");
       if (typeof b.autostart === "boolean") setAutostart(b.autostart);
@@ -85,6 +153,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, ips: r.ips.length, bad: r.bad });
     }
     if (p === "/api/scan" && req.method === "POST") { lan.scan().then(() => { log(`Suche fertig: ${lan.snapshot().found} Miner gefunden`); return tick(); }).catch(() => {}); return json(res, 200, { ok: true }); }
+    if (p === "/api/update/check" && req.method === "POST") return json(res, 200, await checkUpdate(false));
+    if (p === "/api/update/install" && req.method === "POST") { installUpdate().catch(() => {}); return json(res, 200, { ok: true }); }
     if (p === "/api/forget" && req.method === "POST") { lan.reset(); lan.scan().then(tick).catch(() => {}); return json(res, 200, { ok: true }); }
     json(res, 404, { error: "nicht gefunden" });
   } catch (e) { log("Fehler: " + e.message); json(res, 500, { error: e.message }); }
@@ -103,5 +173,7 @@ server.on("error", (e) => { if (e.code === "EADDRINUSE") { log(`Port ${cfg.port}
 listen();
 startLoops();
 for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { report.flush(); process.exit(0); });
-process.on("uncaughtException", (e) => log("Unerwarteter Fehler: " + (e.stack || e.message)));
-console.log("Dieses Fenster offen lassen (minimieren reicht). Schließen beendet Argus Mining.");
+// ohne Konsole (z. B. versteckt gestartet) schlägt das Schreiben fehl: still ignorieren statt Fehler-Schleife
+for (const st of [process.stdout, process.stderr]) st?.on?.("error", () => {});
+process.on("uncaughtException", (e) => { if (/EBADF|EPIPE/.test(e.code || e.message)) return; log("Unerwarteter Fehler: " + (e.stack || e.message)); });
+try { console.log("Dieses Fenster offen lassen (minimieren reicht). Schließen beendet Argus Mining."); } catch {}
