@@ -9,7 +9,7 @@ header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:
 header b{font-size:16px;letter-spacing:.06em}#upd{display:flex;gap:8px;align-items:center;color:var(--warn)}tr.det td{background:var(--panel);white-space:normal;color:var(--mute)}tr.det b{color:var(--text);font-weight:500}tbody tr[data-ip]{cursor:pointer}header .st{color:var(--mute);margin-left:auto}
 nav{display:flex;gap:4px}nav button{background:none;border:0;color:var(--mute);padding:6px 12px;cursor:pointer;font:inherit;border-bottom:2px solid transparent}
 nav button.on{color:var(--text);border-color:var(--acc)}
-main{padding:16px 20px;max-width:1400px}section[hidden]{display:none}
+main{padding:16px 20px}td.cut{max-width:320px;overflow:hidden;text-overflow:ellipsis}#colBox{position:relative}#colPanel{position:absolute;z-index:5;top:110%;right:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-width:220px;box-shadow:0 8px 24px #0008}#colPanel label{display:flex;gap:8px;align-items:center;padding:3px 0;white-space:nowrap;cursor:pointer}#colPanel .bar{margin:8px 0 0}section[hidden]{display:none}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.tile i{display:block;font-style:normal;color:var(--mute);font-size:12px}.tile span{font-size:20px;font-variant-numeric:tabular-nums}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -38,8 +38,8 @@ textarea{width:100%;min-height:180px;font-family:Consolas,monospace}
 <main>
 <section id="ov">
  <div class="tiles" id="tiles"></div>
- <div class="bar"><select id="qf" title="Worin suchen"><option value="">Alle Felder</option><option value="serial">Seriennummer</option><option value="worker">Worker / Pool</option><option value="ip">IP</option><option value="mac">MAC</option><option value="name">Name</option></select><input id="q" placeholder="Suchen, mehrere mit Komma" style="width:260px"><select id="fs" title="Status"><option value="">Alle Zustände</option><option value="on">läuft</option><option value="off">offline / steht</option><option value="bad">auffällig</option><option value="nosn">ohne Seriennummer</option></select><select id="fm" title="Modell"><option value="">Alle Modelle</option></select><span class="mute" id="fCount"></span><button class="b" id="scan">Jetzt nach Minern suchen</button><span class="mute" id="scanInfo"></span></div>
- <div class="wrap"><table><thead><tr><th data-k="name">Miner</th><th data-k="ip">IP</th><th data-k="serial">Seriennr.</th><th data-k="type">Modell</th><th data-k="w1">Worker (Pool 1)</th><th data-k="on">Status</th><th class="n" data-k="hr">Hashrate</th><th class="n" data-k="temp">Temp.</th><th class="n" data-k="fan">Lüfter</th><th class="n" data-k="watt">Verbrauch</th><th class="n" data-k="up">Geräte-Laufzeit</th><th class="n" data-k="hup">Mining-Laufzeit</th></tr></thead><tbody id="tb"></tbody></table></div>
+ <div class="bar"><select id="qf" title="Worin suchen"><option value="">Alle Felder</option><option value="serial">Seriennummer</option><option value="worker">Worker / Pool</option><option value="ip">IP</option><option value="mac">MAC</option><option value="name">Name</option></select><input id="q" placeholder="Suchen, mehrere mit Komma" style="width:260px"><select id="fs" title="Status"><option value="">Alle Zustände</option><option value="on">läuft</option><option value="off">offline / steht</option><option value="bad">auffällig</option><option value="nosn">ohne Seriennummer</option></select><select id="fm" title="Modell"><option value="">Alle Modelle</option></select><span class="mute" id="fCount"></span><span id="colBox"><button class="b" id="colBtn" title="Welche Spalten angezeigt werden">Spalten ▾</button><div id="colPanel" hidden></div></span><button class="b" id="scan">Jetzt nach Minern suchen</button><span class="mute" id="scanInfo"></span></div>
+ <div class="wrap"><table><thead><tr id="ovHead"></tr></thead><tbody id="tb"></tbody></table></div>
 </section>
 <section id="rp" hidden>
  <div class="bar"><select id="rpKind"><option value="day">Tag</option><option value="month">Monat</option><option value="range">Zeitraum von – bis</option></select><select id="day"></select><span id="rngBox" hidden><input type="date" id="rFrom" title="von"> bis <input type="date" id="rTo" title="bis (einschließlich)"> <select id="rQuick" title="Schnellwahl"><option value="">Schnellwahl…</option><option value="7">Letzte 7 Tage</option><option value="14">Letzte 14 Tage</option><option value="30">Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option><option value="lw">Letzte Woche (Mo–So)</option><option value="lm">Letzter Monat</option></select></span><button class="b" id="csv">Als CSV speichern (Excel)</button><input id="rq" placeholder="Filtern (Name, IP, Seriennr., Worker)" style="width:240px"><span class="mute" id="rpInfo"></span></div>
@@ -101,6 +101,32 @@ const bad=(m)=>m.on===false||m.temp>=85||(m.nom&&m.hr<m.nom*0.8);
 function updBar(){const u=S.update||{},el=$("upd");el.hidden=!["available","download","restart"].includes(u.state);
  el.innerHTML=u.state==="available"?"Update "+esc(u.latest)+" verfügbar"+(u.canInstall?" <button class='b p' id=updGo>Installieren</button>":"")+(u.err?" <span class=mute>"+esc(u.err)+"</span>":""):u.state==="download"?"Update wird geladen… "+(u.pct||0)+" %":u.state==="restart"?"Startet neu…":"";
  const g=$("updGo");if(g)g.onclick=()=>post("/api/update/install").then(()=>setTimeout(load,1000));}
+// Spalten der Minerliste: Auswahl merkt sich der Browser dieses PCs
+const COLS=[
+ {k:"name",l:"Miner",c:m=>esc(m.name)},
+ {k:"ip",l:"IP",c:m=>"<a href='http://"+esc(m.ip)+"/' target=_blank rel=noopener>"+esc(m.ip)+"</a>"},
+ {k:"serial",l:"Seriennr.",c:m=>esc(m.serial||"–")},
+ {k:"mac",l:"MAC",off:1,c:m=>esc(m.mac||"–")},
+ {k:"type",l:"Modell",c:m=>esc(m.type||"–")},
+ {k:"fw",l:"Firmware",off:1,c:m=>esc(m.fw||"–")},
+ {k:"w1",l:"Worker (Pool 1)",cut:1,c:m=>esc(w1(m)||"–")},
+ {k:"p1",l:"Pool 1 Adresse",off:1,cut:1,c:m=>esc((m.pools||[])[0]?.url||"–")},
+ {k:"pa",l:"Aktiver Pool",off:1,c:m=>{const i=(m.pools||[]).findIndex(p=>p.act);return i<0?"–":"Pool "+(i+1);}},
+ {k:"on",l:"Status",c:m=>m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft"},
+ {k:"hr",l:"Hashrate",n:1,c:m=>th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")},
+ {k:"nom",l:"Nennwert",n:1,off:1,c:m=>m.nom?th(m.nom):"–"},
+ {k:"temp",l:"Temp.",n:1,c:m=>m.temp!=null?Math.round(m.temp)+" °C":"–"},
+ {k:"fan",l:"Lüfter",n:1,c:m=>m.fan?nf(m.fan)+" rpm":"–"},
+ {k:"watt",l:"Verbrauch",n:1,cls:m=>m.wattEst?" est":"",tt:m=>m.wattEst?"geschätzt aus Hashrate × J/TH":"vom Miner gemeldet",c:m=>pw(m.watt)},
+ {k:"up",l:"Geräte-Laufzeit",n:1,c:m=>dur(m.up)},
+ {k:"hup",l:"Mining-Laufzeit",n:1,c:m=>dur(m.hup)}];
+let colOn={};try{colOn=JSON.parse(localStorage.getItem("am.cols")||"{}")||{};}catch{}
+const shown=()=>COLS.filter(c=>colOn[c.k]!=null?colOn[c.k]:!c.off);
+function drawHead(){const cs=shown();$("ovHead").innerHTML=cs.map(c=>"<th data-k='"+c.k+"'"+(c.n?" class=n":"")+">"+c.l+(sortK===c.k?(sortD>0?" ▲":" ▼"):"")+"</th>").join("");
+ $("colPanel").innerHTML=COLS.map(c=>"<label><input type=checkbox data-c='"+c.k+"'"+(cs.includes(c)?" checked":"")+(c.k==="name"?" disabled":"")+"> "+c.l+"</label>").join("")+"<div class=bar><button class=b id=colStd>Standard</button><button class=b id=colAll>Alle</button></div>";}
+$("colBtn").onclick=(e)=>{e.stopPropagation();$("colPanel").hidden=!$("colPanel").hidden;};
+document.addEventListener("click",(e)=>{if(!e.target.closest("#colBox"))$("colPanel").hidden=true;});
+$("colPanel").onclick=(e)=>{e.stopPropagation();const id=e.target.id;if(id==="colStd")colOn={};else if(id==="colAll")COLS.forEach(c=>colOn[c.k]=true);else{const k=e.target.dataset?.c;if(!k)return;colOn[k]=e.target.checked;}try{localStorage.setItem("am.cols",JSON.stringify(colOn));}catch{}render();};
 function render(){
  if(!S)return; updBar(); setTimeout(()=>{$("fCount").textContent=$("tb").querySelectorAll("tr[data-ip]").length+" von "+(S.miners||[]).length;},0); const ms=S.miners||[], on=ms.filter(m=>m.on!==false), hr=on.reduce((a,m)=>a+(m.hr||0),0), w=ms.reduce((a,m)=>a+(m.on!==false&&m.watt!=null?m.watt:0),0), est=ms.some(m=>m.on!==false&&m.wattEst), ts=on.map(m=>m.temp).filter(v=>v!=null);
  $("st").textContent=S.name+" · "+(S.noNet?"keine Verbindung zu den Minern":S.ts?"Stand "+new Date(S.ts).toLocaleTimeString("de-DE"):S.ips?"Suche läuft…":"Bitte Adressbereiche eintragen");
@@ -108,11 +134,12 @@ function render(){
  $("scanInfo").textContent=S.scanning?"Suche: "+S.scanned+" von "+S.ips+" Adressen geprüft":S.scanTs?"Letzte Suche "+new Date(S.scanTs).toLocaleTimeString("de-DE")+", "+S.found+" Miner bekannt":"";
  const terms=$("q").value.toLowerCase().split(/[,;\\n]+/).map(x=>x.trim()).filter(Boolean), qf=$("qf").value, fs=$("fs").value, fm=$("fm").value;
  const models=[...new Set(ms.map(m=>m.type||"").filter(Boolean))].sort();if($("fm").options.length-1!==models.length){const c=fm;$("fm").innerHTML="<option value=''>Alle Modelle</option>"+models.map(t=>"<option>"+esc(t)+"</option>").join("");$("fm").value=models.includes(c)?c:"";}
- const val=(m,k)=>k==="w1"?w1(m):m[k];
+ const val=(m,k)=>k==="w1"?w1(m):k==="p1"?(m.pools||[])[0]?.url:k==="pa"?(m.pools||[]).findIndex(p=>p.act):m[k];
  const l=ms.filter(m=>(!terms.length||terms.some(t=>hay(m,qf).includes(t)))&&(!fs||(fs==="on"?m.on!==false:fs==="off"?m.on===false:fs==="bad"?bad(m):!m.serial))&&(!fm||m.type===fm)).sort((a,b)=>{const x=val(a,sortK),y=val(b,sortK);if(sortK==="on")return((a.on===false)-(b.on===false))*-sortD||String(a.name).localeCompare(b.name,"de",{numeric:true});if(typeof x==="number"||typeof y==="number")return((x??-1)-(y??-1))*sortD;return String(x??"").localeCompare(String(y??""),"de",{numeric:true})*sortD;});
- $("tb").innerHTML=l.slice(0,3000).map(m=>"<tr data-ip='"+esc(m.ip)+"' class="+(m.on===false?"off":bad(m)?"weak":"ok")+" title='Klick: Details'><td>"+esc(m.name)+"</td><td><a href='http://"+esc(m.ip)+"/' target=_blank rel=noopener>"+esc(m.ip)+"</a></td><td>"+esc(m.serial||"–")+"</td><td>"+esc(m.type||"–")+"</td><td>"+esc(w1(m)||"–")+"</td><td>"+(m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft")+"</td><td class=n>"+th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")+"</td><td class=n>"+(m.temp!=null?Math.round(m.temp)+" °C":"–")+"</td><td class=n>"+(m.fan?nf(m.fan)+" rpm":"–")+"</td><td class='n"+(m.wattEst?" est":"")+"' title='"+(m.wattEst?"geschätzt aus Hashrate × J/TH":"vom Miner gemeldet")+"'>"+pw(m.watt)+"</td><td class=n>"+dur(m.up)+"</td><td class=n>"+dur(m.hup)+"</td></tr>"+(openIp===m.ip?det(m,12):"")).join("")||"<tr><td colspan=12 class=mute>"+(S.ips?"Noch keine Miner gefunden.":"Trag unter Einstellungen die Adressbereiche ein.")+"</td></tr>";
+ drawHead();const cs=shown();
+ $("tb").innerHTML=l.slice(0,3000).map(m=>"<tr data-ip='"+esc(m.ip)+"' class="+(m.on===false?"off":bad(m)?"weak":"ok")+" title='Klick: Details'>"+cs.map(c=>{const v=c.c(m);return "<td class='"+(c.n?"n":"")+(c.cut?" cut":"")+(c.cls?c.cls(m):"")+"'"+(c.tt?" title='"+c.tt(m)+"'":c.cut?" title='"+v.replace(/'/g,"&#39;")+"'":"")+">"+v+"</td>";}).join("")+"</tr>"+(openIp===m.ip?det(m,cs.length):"")).join("")||"<tr><td colspan="+cs.length+" class=mute>"+(S.ips?"Noch keine Miner gefunden.":"Trag unter Einstellungen die Adressbereiche ein.")+"</td></tr>";
 }
-document.querySelectorAll("#ov th").forEach(h=>h.onclick=()=>{const k=h.dataset.k;sortD=sortK===k?-sortD:(["hr","temp","fan","watt","up","hup"].includes(k)?-1:1);sortK=k;render();});
+$("ovHead").onclick=(e)=>{const h=e.target.closest("th[data-k]");if(!h)return;const k=h.dataset.k;sortD=sortK===k?-sortD:(["hr","temp","fan","watt","up","hup"].includes(k)?-1:1);sortK=k;render();};
 $("tb").onclick=(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-ip]");if(tr)openDetail(tr.dataset.ip);};
 // ---------- Detailansicht ----------
 let dIp="",dR="1d",dT=null,dHist=null,dData=null;

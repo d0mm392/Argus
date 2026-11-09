@@ -39,6 +39,8 @@ Klick auf einen Miner öffnet seine Seite: Modell, IP, MAC, Seriennummer, Firmwa
 
 ## Filter
 
+**Spalten ▾** über der Minerliste: selbst auswählen, welche Spalten zu sehen sind (z. B. Status aus, MAC, Firmware, Pool-1-Adresse, aktiver Pool oder Nennwert an). Die Auswahl merkt sich der Browser, **Standard** stellt sie zurück. Die Liste nutzt die ganze Fensterbreite; lange Worker werden gekürzt, der volle Text steht beim Drüberfahren.
+
 Über der Minerliste: worin gesucht wird (alle Felder, Seriennummer, Worker/Pool, IP, MAC, Name), Suchtext (mehrere Werte mit Komma, z. B. eine Liste von Seriennummern), Zustand (läuft, offline, auffällig, ohne Seriennummer) und Modell.
 
 ## Report (Tag, Monat oder Zeitraum)

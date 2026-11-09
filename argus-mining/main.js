@@ -4,7 +4,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
 const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), pools = require("./pools"), PAGE = require("./page");
 
-const VERSION = "1.4.1";
+const VERSION = "1.4.2";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
