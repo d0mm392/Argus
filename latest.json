@@ -1,7 +1,7 @@
 {
- "version": "1.4.2",
+ "version": "1.4.3",
  "file": "Argus-Mining.exe",
- "size": 87270912,
- "sha256": "1f42a70bb8fa41b186deb1d82e1353de31990b6d82afe6d4e3897471dce5412b",
- "notes": "Minerliste: Spalten selbst auswählen, volle Fensterbreite. Dazu aus 1.4.1: Verbrauch plausibel, Ø Leistung kW im Report"
+ "size": 87275520,
+ "sha256": "e77cd461d969e6bea0993c5428d6a065587a24502160b27ff7b464e01951f22c",
+ "notes": "Protokoll zeigt jetzt: wann und warum das Programm aus war, Standby des PCs, Internet weg und wieder da"
 }
