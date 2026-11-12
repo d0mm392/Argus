@@ -76,3 +76,13 @@ Eingeschaltet können andere Geräte die Daten lesen: `http://<PC-IP>:8420/api/s
 ## Bauen
 
 `node build.js <node.exe für Windows x64>` (gleiche Node-Version wie die bauende, getestet mit 22.23.4; Signatur vorher mit `osslsigncode remove-signature` entfernen). Tests: `node --test test/`.
+
+## Ausfälle im Protokoll (seit 1.4.3)
+
+Argus Mining schreibt selbst ins Protokoll, warum Daten fehlen:
+- **Programm war aus** (beim nächsten Start): von wann bis wann und, soweit erkennbar, warum. Möglich sind: Windows neu gestartet (PC war aus, Stromausfall oder Update), Konsolenfenster geschlossen, Update, Strg+C oder von außen beendet, sonst Absturz. Dafür schreibt das Programm alle 30 Sekunden einen Herzschlag in `herzschlag.json`.
+- **PC war im Standby** oder angehalten: von wann bis wann.
+- **Kein Internet** und **Internet wieder da** mit Dauer. Geprüft wird jede Minute eine Verbindung zu 1.1.1.1, 8.8.8.8 und 9.9.9.9. Gemeldet wird erst nach zwei Fehlschlägen hintereinander. Solange das Internet weg ist, steht oben rechts rot „KEIN INTERNET“.
+- **Kein Miner antwortet mehr** und **Miner antworten wieder** (lokales Netz zu den Minern weg).
+
+Damit es gar nicht erst ausfällt: Unter Einstellungen „Mit Windows starten“ anhaken, in den Windows-Energieoptionen Standby auf „Nie“ stellen (auch beim Zuklappen) und das schwarze Fenster nur minimieren, nicht schließen.

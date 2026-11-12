@@ -123,3 +123,20 @@ test("Verbrauch bleibt plausibel: falsch gelesene Watt werden durch Schätzung e
   const bad = lan.read("10.0.0.1", sum(190000, 9000), st, null, null, null); assert.equal(bad.wattEst, true); assert.equal(bad.watt, 3610); // 9 kW unplausibel
   assert.ok(lan.read("10.0.0.1", sum(900000, null), st, null, null, null).watt <= 190 * 1.3 * 19 + 1); // Hashrate-Ausreißer gedeckelt
 });
+
+test("Wächter: Programm-Lücke beim Start und Internet weg/zurück im Protokoll", async () => {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "amw-"));
+  fs.writeFileSync(path.join(d, "herzschlag.json"), JSON.stringify({ t: Date.now() - 5 * 3600e3, stop: "Konsolenfenster geschlossen (bitte nur minimieren)" }));
+  const srv = net.createServer((c) => c.end()); await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const port = srv.address().port; process.env.AM_INET_HOSTS = "127.0.0.1:" + port;
+  delete require.cache[require.resolve("../watch")]; const w = require("../watch"), L = [];
+  w.init(d, (t) => L.push(t));
+  assert.match(L[0], /war aus: .* \(5 h 0 min\)\. Grund: Konsolenfenster geschlossen/);
+  await w.checkInet(); assert.equal(w.state().internet, true);
+  await new Promise((r) => srv.close(r));
+  await w.checkInet(); assert.equal(w.state().internet, true); // ein Fehlschlag reicht nicht
+  await w.checkInet(); assert.equal(w.state().internet, false); assert.ok(L.some((t) => /Kein Internet seit/.test(t)));
+  const srv2 = net.createServer((c) => c.end()); await new Promise((r) => srv2.listen(port, "127.0.0.1", r));
+  await w.checkInet(); assert.ok(L.some((t) => /Internet wieder da/.test(t))); srv2.close();
+  assert.ok(JSON.parse(fs.readFileSync(path.join(d, "herzschlag.json"), "utf8")).t > Date.now() - 60e3);
+});

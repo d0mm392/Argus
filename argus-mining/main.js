@@ -2,9 +2,9 @@
 // (Hashrate, Temperatur, Lüfter, Verbrauch, Geräte- und Mining-Laufzeit) und schreibt daraus einen Tagesreport je Miner.
 // Bedienung im Browser unter http://localhost:8420 (nur auf diesem PC, außer der Fernzugriff wird ausdrücklich eingeschaltet).
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os"), crypto = require("crypto"), { exec, spawn } = require("child_process");
-const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), pools = require("./pools"), PAGE = require("./page");
+const lan = require("./lanminer"), report = require("./report"), hist = require("./hist"), pools = require("./pools"), watch = require("./watch"), PAGE = require("./page");
 
-const VERSION = "1.4.2";
+const VERSION = "1.4.3";
 // Update Schritt 2: die neue exe wird mit --replace gestartet, wartet bis die alte beendet ist, kopiert sich an ihren Platz und startet sie dort neu
 const RI = process.argv.indexOf("--replace");
 if (RI > 0) {
@@ -43,7 +43,7 @@ function log(t) {
 }
 try { fs.renameSync(path.join(DIR, "log.txt"), path.join(LOGDIR, "alt-vor-1.2.txt")); } catch {}
 
-report.init(DIR, cfg.keepDays); hist.init(DIR); pools.init(DIR, cfg.keepDays);
+report.init(DIR, cfg.keepDays); hist.init(DIR); pools.init(DIR, cfg.keepDays); watch.init(DIR, log);
 lan.init(DIR, () => ({ on: true, ranges: cfg.ranges, jth: cfg.jth, vnishPass: cfg.vnishPass, antUser: cfg.antUser, antPass: cfg.antPass }));
 
 // Nach jeder Abfrage eine Report-Stichprobe (der Report nimmt selbst nur alle 5 Minuten eine)
@@ -150,7 +150,7 @@ async function installUpdate() {
     log(`Update ${j.version} geladen, Argus Mining startet neu`); report.flush();
     for (const f of fs.readdirSync(dir)) if (f !== path.basename(nexe)) try { fs.unlinkSync(path.join(dir, f)); } catch {}
     spawn(nexe, ["--replace", process.execPath, "--pid", String(process.pid)], { detached: true, stdio: "ignore" }).unref();
-    upd.state = "restart"; setTimeout(() => process.exit(0), 800);
+    upd.state = "restart"; watch.mark("Update wird installiert, Neustart"); setTimeout(() => process.exit(0), 800);
   } catch (e) { upd.state = "available"; upd.err = String(e.message || e).slice(0, 160); log("Update fehlgeschlagen: " + upd.err); }
   return upd;
 }
@@ -162,7 +162,7 @@ setTimeout(() => checkUpdate(true), 20e3); setInterval(() => checkUpdate(true), 
 const json = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }); res.end(JSON.stringify(obj)); };
 const body = (req) => new Promise((ok) => { let b = ""; req.on("data", (d) => { b += d; if (b.length > 1e5) req.destroy(); }); req.on("end", () => { try { ok(JSON.parse(b || "{}")); } catch { ok({}); } }); });
 const isLocal = (req) => /^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || "");
-const status = () => { const s = lan.snapshot(); return { version: VERSION, name: cfg.name, ts: s.ts, scanning: s.scanning, scanTs: s.scanTs, scanned: s.scanned, ips: lan.parseRanges(cfg.ranges).ips.length, found: s.known, bad: s.bad, error: s.error, noNet: lastNoNet, update: { state: upd.state, latest: upd.latest, notes: upd.notes, err: upd.err, pct: upd.pct, canInstall: isExe }, miners: s.miners }; };
+const status = () => { const s = lan.snapshot(); return { version: VERSION, name: cfg.name, ts: s.ts, scanning: s.scanning, scanTs: s.scanTs, scanned: s.scanned, ips: lan.parseRanges(cfg.ranges).ips.length, found: s.known, bad: s.bad, error: s.error, noNet: lastNoNet, net: watch.state(), update: { state: upd.state, latest: upd.latest, notes: upd.notes, err: upd.err, pct: upd.pct, canInstall: isExe }, miners: s.miners }; };
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname;
   // Fernzugriff (nur wenn eingeschaltet): nur lesende Daten und nur mit Schlüssel
@@ -252,7 +252,10 @@ let opened = false;
 server.on("error", (e) => { if (e.code === "EADDRINUSE") { log(`Port ${cfg.port} ist belegt. Läuft Argus Mining schon? Dann im Browser http://localhost:${cfg.port} öffnen.`); if (process.platform === "win32" && !process.argv.includes("--no-browser")) exec(`start "" "http://localhost:${cfg.port}"`); setTimeout(() => process.exit(1), 4000); } else log("Server: " + e.message); });
 listen();
 startLoops();
-for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { report.flush(); process.exit(0); });
+// Grund fürs Beenden merken: SIGHUP = Konsolenfenster mit X geschlossen (Windows), SIGINT = Strg+C, SIGTERM = von außen beendet
+for (const [s, why] of [["SIGINT", "mit Strg+C beendet"], ["SIGTERM", "von außen beendet (z. B. Task-Manager oder Herunterfahren)"], ["SIGHUP", "Konsolenfenster geschlossen (bitte nur minimieren)"], ["SIGBREAK", "mit Strg+Pause beendet"]]) {
+  try { process.on(s, () => { try { watch.mark(why); log("Argus Mining wird beendet: " + why); } catch {} report.flush(); process.exit(0); }); } catch {}
+}
 // ohne Konsole (z. B. versteckt gestartet) schlägt das Schreiben fehl: still ignorieren statt Fehler-Schleife
 for (const st of [process.stdout, process.stderr]) st?.on?.("error", () => {});
 process.on("uncaughtException", (e) => { if (/EBADF|EPIPE/.test(e.code || e.message)) return; log("Unerwarteter Fehler: " + (e.stack || e.message)); });
