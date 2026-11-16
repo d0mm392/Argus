@@ -1,7 +1,7 @@
 {
- "version": "1.4.3",
+ "version": "1.5.0",
  "file": "Argus-Mining.exe",
- "size": 87275520,
- "sha256": "e77cd461d969e6bea0993c5428d6a065587a24502160b27ff7b464e01951f22c",
- "notes": "Protokoll zeigt jetzt: wann und warum das Programm aus war, Standby des PCs, Internet weg und wieder da"
+ "size": 87284224,
+ "sha256": "eda50c7bf894f0a6e9a02485f41e0f3a5bb99a0f51b8e995fe700760e2bc8900",
+ "notes": "Eigenes Fenster und Symbol neben der Uhr statt Konsole; Miner mit neuer IP werden zusammengeführt (0 TH bei laufenden Minern behoben); Grund bei fehlender Antwort"
 }
