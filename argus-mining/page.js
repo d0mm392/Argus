@@ -112,7 +112,7 @@ const COLS=[
  {k:"w1",l:"Worker (Pool 1)",cut:1,c:m=>esc(w1(m)||"–")},
  {k:"p1",l:"Pool 1 Adresse",off:1,cut:1,c:m=>esc((m.pools||[])[0]?.url||"–")},
  {k:"pa",l:"Aktiver Pool",off:1,c:m=>{const i=(m.pools||[]).findIndex(p=>p.act);return i<0?"–":"Pool "+(i+1);}},
- {k:"on",l:"Status",c:m=>m.on===false?(m.err==="keine Antwort"?"keine Antwort":"steht"):"läuft"},
+ {k:"on",l:"Status",tt:m=>m.why?esc(m.why)+(m.lastSeen?" · zuletzt gesehen "+new Date(m.lastSeen).toLocaleString("de-DE"):""):"",c:m=>m.on===false?(m.err==="keine Antwort"?"keine Antwort"+(m.why?" <span class=mute>("+esc(/abgelehnt/.test(m.why)?"Port zu":/Zeit/.test(m.why)?"Zeitüberschreitung":/verbunden/.test(m.why)?"stumm":"weg")+")</span>":""):"steht"):"läuft"},
  {k:"hr",l:"Hashrate",n:1,c:m=>th(m.hr)+(m.nom&&m.hr?" <span class=mute>"+Math.round(m.hr/m.nom*100)+" %</span>":"")},
  {k:"nom",l:"Nennwert",n:1,off:1,c:m=>m.nom?th(m.nom):"–"},
  {k:"temp",l:"Temp.",n:1,c:m=>m.temp!=null?Math.round(m.temp)+" °C":"–"},
@@ -176,7 +176,7 @@ function drawChart(){const svg=$("chart"),P=(dHist&&dHist.points)||[],W=1000,H=2
  svg.onmouseleave=()=>{$("chartTip").style.display="none";const cx=svg.querySelector("#cx");if(cx)cx.setAttribute("visibility","hidden");};}
 async function loadAct(){const l=await api("/api/miner/activity?ip="+encodeURIComponent(dIp)).catch(()=>[]);$("dActN").textContent=l.length?"("+l.length+(l.length>=300?"+":"")+", 30 Tage)":"";
  $("dAct").innerHTML=l.map(x=>{const m=/^\\[([^\\]]+)\\] (.*)$/.exec(x)||[,"",x];return "<li><span style='color:"+(/^(Offline|Heiß|Niedrige)/.test(m[2])?"var(--bad)":/neu gestartet/.test(m[2])?"var(--warn)":/^Pool/.test(m[2])?"var(--acc)":"var(--ok)")+"'>"+esc(m[2].replace(/ \\(.*?\\)/,""))+"</span><time>"+esc(m[1])+"</time></li>";}).join("")||"<li class=mute>Keine Ereignisse in den letzten 30 Tagen.</li>";}
-if(/^#miner=/.test(location.hash))setTimeout(()=>openDetail(decodeURIComponent(location.hash.slice(7))),300);
+if(location.hash==="#tab=log")setTimeout(()=>document.querySelector("nav button[data-t=log]").click(),200);if(/^#miner=/.test(location.hash))setTimeout(()=>openDetail(decodeURIComponent(location.hash.slice(7))),300);
 for(const id of ["q"])$(id).oninput=render;for(const id of ["qf","fs","fm"])$(id).onchange=render;
 $("scan").onclick=()=>post("/api/scan").then(()=>setTimeout(load,800));
 async function load(){try{S=await api("/api/status");$("ver").textContent=S.version;render();}catch{$("st").textContent="Argus Mining antwortet nicht. Läuft das Programm noch?";}}

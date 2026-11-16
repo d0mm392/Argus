@@ -2,6 +2,22 @@
 
 Kleines eigenständiges Programm für den PC vor Ort. Ersetzt Foreman/Pickaxe für die Überwachung: fragt die Miner im eigenen Netz direkt ab und schreibt einen Tagesreport je Miner. Kein Argus, keine Kugel, kein Konto, keine Cloud.
 
+## Installation (seit 1.5.0)
+
+`Argus-Mining-Setup-1.5.0.exe` ausführen, ohne Administratorrechte. Das Setup
+- beendet ein laufendes Argus Mining, auch eine ältere Version aus dem ZIP,
+- installiert nach `%LOCALAPPDATA%\Programs\Argus Mining`,
+- legt Verknüpfungen im Startmenü und auf dem Desktop an und auf Wunsch den Autostart mit Windows (empfohlen),
+- trägt sich unter Windows → Apps zum Deinstallieren ein.
+
+Einstellungen, Report, Pools und Protokoll liegen weiter in `%APPDATA%\Argus Mining` und werden übernommen. Beim Deinstallieren bleiben sie erhalten. Eine alte `Argus-Mining.exe` vom Desktop kann nach der Installation gelöscht werden.
+
+Bedienung: Argus Mining öffnet sich als **eigenes Fenster**, ohne Browser-Leiste und ohne schwarzes Konsolenfenster. Neben der Uhr sitzt ein **Symbol**: Ein Klick öffnet das Fenster, Rechtsklick zeigt „Protokoll öffnen“ und „Beenden“. **Das Fenster zu schließen beendet die Überwachung nicht.** Beendet wird nur über das Symbol → Beenden, mit Rückfrage. Das Fenster ist ein Edge-Fenster im App-Modus mit eigenem Profil. Ohne Edge öffnet sich der Standardbrowser.
+
+Updates kommen wie bisher in der App selbst: oben erscheint „Update … verfügbar“ mit dem Knopf „Installieren“, unter Einstellungen gibt es „Jetzt prüfen“, automatisch alle 6 Stunden (abschaltbar).
+
+Verbindungen nach außen: nur die Update-Prüfung bei GitHub (`latest.json` und die exe, nur herunterladen) und die Internet-Prüfung (eine Verbindung zu 1.1.1.1, 8.8.8.8 und 9.9.9.9 auf Port 443 ohne Daten). Es gibt keine API-Schlüssel, kein Konto und keine Cloud. Miner-Daten verlassen den PC nicht.
+
 ## Was es liest (nur lesend, Port 4028)
 
 | Wert | Antminer Stock | VNISH | Whatsminer |
@@ -85,4 +101,8 @@ Argus Mining schreibt selbst ins Protokoll, warum Daten fehlen:
 - **Kein Internet** und **Internet wieder da** mit Dauer. Geprüft wird jede Minute eine Verbindung zu 1.1.1.1, 8.8.8.8 und 9.9.9.9. Gemeldet wird erst nach zwei Fehlschlägen hintereinander. Solange das Internet weg ist, steht oben rechts rot „KEIN INTERNET“.
 - **Kein Miner antwortet mehr** und **Miner antworten wieder** (lokales Netz zu den Minern weg).
 
-Damit es gar nicht erst ausfällt: Unter Einstellungen „Mit Windows starten“ anhaken, in den Windows-Energieoptionen Standby auf „Nie“ stellen (auch beim Zuklappen) und das schwarze Fenster nur minimieren, nicht schließen.
+Damit es gar nicht erst ausfällt: Unter Einstellungen „Mit Windows starten“ anhaken und in den Windows-Energieoptionen Standby auf „Nie“ stellen, auch beim Zuklappen.
+
+## Miner mit 0 TH, obwohl sie laufen (seit 1.5.0)
+
+Bekommt ein Miner per DHCP eine neue IP, zum Beispiel nach einem Stromausfall, stand bisher die alte Adresse bis zu 3 Tage als „offline“ in der Liste. Jetzt führt jede Suche Einträge mit gleicher Seriennummer oder MAC zusammen. Das Protokoll zeigt „IP gewechselt: … von … nach …“. Einträge ohne Seriennummer und MAC verschwinden nach 12 Stunden ohne Antwort. „N/A“ zählt nicht als Seriennummer. Solange über 10 % der Miner nicht antworten, wird alle 10 statt alle 30 Minuten gesucht. Miner ohne Antwort werden ein zweites Mal langsamer gefragt. In der Spalte Status steht der Grund: Port zu, Zeitüberschreitung, stumm oder weg. Beim Drüberfahren steht er ausführlich, mit „zuletzt gesehen“.

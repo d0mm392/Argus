@@ -37,15 +37,18 @@ function parseApi(s) {
   try { return JSON.parse(s); } catch {}
   try { return JSON.parse(s.replace(/}\s*{/g, "},{").replace(/,\s*([}\]])/g, "$1")); } catch { return null; }
 }
+// Warum ein Miner nicht antwortet (für die Anzeige): abgelehnt = Port 4028 zu (API aus oder gesperrt), Zeitüberschreitung = Gerät weg oder überlastet
+const why = new Map();
+const WHY = { ECONNREFUSED: "Port 4028 abgelehnt (API aus oder gesperrt)", ETIMEDOUT: "Zeitüberschreitung", EHOSTUNREACH: "Gerät nicht erreichbar", ENETUNREACH: "Netz nicht erreichbar", ECONNRESET: "Verbindung abgebrochen", timeout: "Zeitüberschreitung", empty: "leere Antwort" };
 function rawCmd(ip, payload, ms = 3000) {
   return new Promise((res) => {
-    let buf = "", done = false; const sock = net.connect({ host: ip, port: PORT });
+    let buf = "", done = false, connected = false; const sock = net.connect({ host: ip, port: PORT });
     const end = (v) => { if (done) return; done = true; clearTimeout(t); try { sock.destroy(); } catch {} res(v); };
-    const t = setTimeout(() => end(buf ? parseApi(buf) : null), ms);
+    const t = setTimeout(() => { if (!buf) why.set(ip, connected ? "Miner antwortet nicht (verbunden, aber keine Daten)" : WHY.timeout); end(buf ? parseApi(buf) : null); }, ms);
     sock.setEncoding("utf8");
-    sock.on("connect", () => sock.write(JSON.stringify(payload)));
+    sock.on("connect", () => { connected = true; sock.write(JSON.stringify(payload)); });
     sock.on("data", (d) => { buf += d; if (buf.length > 2e6) end(null); if (buf.includes("\0")) end(parseApi(buf)); });
-    sock.on("end", () => end(parseApi(buf))); sock.on("close", () => end(parseApi(buf))); sock.on("error", () => end(null));
+    sock.on("end", () => end(parseApi(buf))); sock.on("close", () => end(parseApi(buf))); sock.on("error", (e) => { why.set(ip, WHY[e.code] || e.code || "Fehler"); end(null); });
   });
 }
 // Antminer/VNISH verstehen „command“, neuere Whatsminer zum Teil nur „cmd“
@@ -53,6 +56,7 @@ async function cmd(ip, c, ms) {
   const j = await rawCmd(ip, { command: c }, ms);
   const st = j?.STATUS; const bad = !j || (Array.isArray(st) ? st[0]?.STATUS === "E" : st === "E" || (typeof st === "object" && st?.STATUS === "E"));
   if (!bad) return j;
+  if (!j && why.get(ip) && !/keine Daten|leere/.test(why.get(ip))) return null; // gar keine Verbindung: zweiter Versuch mit „cmd“ bringt nichts
   const j2 = await rawCmd(ip, { cmd: c }, ms);
   return j2 || j;
 }
@@ -172,6 +176,7 @@ async function ident(ip, fw, opt = {}) {
   if (fw === "Whatsminer") { take((await rawCmd(ip, { cmd: "get_miner_info", info: "ip,mac,hostname,minersn,powersn" }))?.Msg); }
   if (fw === "VNISH") { const r = await http(ip, "/api/v1/info", tokens.has(ip) ? { headers: { Authorization: "Bearer " + tokens.get(ip) } } : {}); take(r?.json); if (!out.serial) take(await vnish(ip, opt.vnishPass)); }
   if (!out.serial && opt.http !== false && fw !== "Whatsminer") take(await digestGet(ip, "/cgi-bin/get_system_info.cgi", opt.antUser || "root", opt.antPass || "root"));
+  if (/^(n\/?a|none|null|unknown|-+|0+)$/i.test(out.serial.trim())) out.serial = ""; // „N/A“ ist keine Seriennummer
   return out;
 }
 // MAC-Adressen aus der ARP-Tabelle von Windows (nur Miner im selben Netzsegment wie der PC)
@@ -185,8 +190,10 @@ function arpTable() {
   });
 }
 async function queryOne(ip, opt = {}) {
-  const sum = await cmd(ip, "summary"); if (!sum || (!sum.SUMMARY && !sum.Msg)) return null;
-  const [stats, pools] = await Promise.all([cmd(ip, "stats"), cmd(ip, "pools")]);
+  why.delete(ip);
+  const sum = await cmd(ip, "summary", opt.ms); if (!sum || (!sum.SUMMARY && !sum.Msg)) { if (sum) why.set(ip, WHY.empty); return null; }
+  // nacheinander, nicht gleichzeitig: die Schnittstelle vieler Antminer bedient nur eine Verbindung auf einmal
+  const stats = await cmd(ip, "stats", opt.ms), pools = await cmd(ip, "pools", opt.ms);
   const dev = stats?.STATS?.some((s) => s.Type) ? null : await cmd(ip, "devdetails");
   let vn = null;
   const looksVnish = /vnish/i.test(JSON.stringify(stats?.STATS?.[0] || {}) + JSON.stringify(sum?.STATUS || ""));
@@ -251,7 +258,7 @@ async function pool(items, n, fn) {
 }
 
 // ---------- Zustand: bekannte Miner, Suche, Abfrage ----------
-let file = "", known = {}, last = new Map(), snap = { ts: 0, miners: [], scanning: false, scanTs: 0, scanned: 0, found: 0, bad: [], error: "" }, opts = () => ({}), timer = null, scanT = null, busy = false, saveT = null;
+let file = "", known = {}, last = new Map(), snap = { ts: 0, miners: [], scanning: false, scanTs: 0, scanned: 0, found: 0, bad: [], error: "", moved: [] }, opts = () => ({}), timer = null, scanT = null, busy = false, saveT = null;
 function init(dir, getOpts) { file = path.join(dir, "lan-miner.json"); opts = getOpts || opts; try { known = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch { known = {}; } }
 function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { fs.writeFileSync(file, JSON.stringify(known)); } catch {} }, 3000); }
 // Suche: alle Adressen der Bereiche auf Port 4028 prüfen, Antwortende als Miner merken
@@ -270,7 +277,17 @@ async function scan() {
       if (!k.serial || k.type !== m.type || now - (k.idTs || 0) > 7 * 864e5) { const id = await ident(ip, m.fw, o).catch(() => ({})); if (id.serial) k.serial = id.serial; else if (k.type !== m.type) k.serial = ""; if (id.mac) k.mac = id.mac; k.idTs = now; }
       known[ip] = { ...k, name: m.name, type: m.type, seen: now }; last.set(ip, { ...m, ts: now });
     });
-    const arp = await arpTable(); for (const [ip, mac] of Object.entries(arp)) if (known[ip] && !known[ip].mac) known[ip].mac = mac;
+    const arp = await arpTable(); for (const [ip, mac] of Object.entries(arp)) if (known[ip] && known[ip].seen === now) known[ip].mac = mac;
+    // IP gewechselt (DHCP, z. B. nach Stromausfall): gleiche Seriennummer oder MAC jetzt unter anderer Adresse → alten Eintrag entfernen
+    const live = new Map(); for (const [ip, k] of Object.entries(known)) if (k.seen === now) { if (k.serial) live.set("s:" + k.serial, ip); if (k.mac) live.set("m:" + k.mac, ip); }
+    snap.moved = [];
+    for (const [ip, k] of Object.entries(known)) {
+      if (k.seen === now) continue;
+      const to = (k.serial && live.get("s:" + k.serial)) || (k.mac && live.get("m:" + k.mac));
+      if (to && to !== ip) { snap.moved.push([ip, to, k.serial || k.mac]); delete known[ip]; last.delete(ip); continue; }
+      // ohne Seriennummer und MAC lässt sich ein Umzug nicht erkennen: nach 12 Stunden ohne Antwort und ohne offenen Port vergessen
+      if (!k.serial && !k.mac && now - (k.seen || 0) > 12 * 3600e3) { delete known[ip]; last.delete(ip); }
+    }
     // seit über 3 Tagen ohne Antwort: kein Miner mehr dort
     for (const [ip, k] of Object.entries(known)) if (now - (k.seen || 0) > 3 * 864e5) delete known[ip];
     snap.found = Object.keys(known).length; snap.scanTs = now; snap.error = ips.length ? "" : "Keine gültigen Adressbereiche eingetragen."; save();
@@ -284,11 +301,15 @@ async function poll() {
   try {
     const o = opts(), ips = Object.keys(known), now = Date.now();
     const res = await pool(ips, 64, (ip) => queryOne(ip, o).catch(() => null));
+    // zweiter Versuch für alle ohne Antwort: weniger gleichzeitig und mit längerer Wartezeit (träge oder ausgelastete Miner)
+    const miss = ips.map((ip, i) => (res[i] ? -1 : i)).filter((i) => i >= 0);
+    const slow = miss.filter((i) => !/abgelehnt|nicht erreichbar/.test(why.get(ips[i]) || "")); // Port zu oder Gerät weg: Wiederholen bringt nichts
+    if (slow.length) await pool(slow, 32, async (i) => { res[i] = await queryOne(ips[i], { ...o, ms: 6000 }).catch(() => null); });
     const miners = ips.map((ip, i) => {
       const m = res[i];
       const k = known[ip] || {};
       if (m) { known[ip] = { ...k, name: m.name, type: m.type, seen: now, pools: m.pools }; m.serial = k.serial || ""; m.mac = k.mac || ""; last.set(ip, { ...m, ts: now }); return m; }
-      return { id: null, ip, name: k.name || ip, on: false, hr: 0, nom: null, type: k.type || "", temp: null, fan: null, watt: 0, wattEst: true, up: null, hup: null, err: "keine Antwort", serial: k.serial || "", mac: k.mac || "", pools: k.pools || [] };
+      return { id: null, ip, name: k.name || ip, on: false, hr: 0, nom: null, type: k.type || "", temp: null, fan: null, watt: 0, wattEst: true, up: null, hup: null, err: "keine Antwort", why: why.get(ip) || "", lastSeen: k.seen || 0, serial: k.serial || "", mac: k.mac || "", pools: k.pools || [] };
     });
     // doppelte Namen eindeutig machen (gleicher Worker auf zwei Geräten)
     const cnt = {}; for (const m of miners) cnt[m.name] = (cnt[m.name] || 0) + 1;
@@ -303,7 +324,8 @@ function start() {
   const first = Object.keys(known).length ? poll() : Promise.resolve();
   first.then(() => scan()).then(() => poll()).catch(() => {});
   timer = setInterval(() => poll().catch(() => {}), 60e3); timer.unref?.();
-  scanT = setInterval(() => scan().then(() => poll()).catch(() => {}), 30 * 60e3); scanT.unref?.(); // neue Miner alle 30 Minuten finden
+  // neue Miner und neue Adressen alle 30 Minuten finden, alle 10 Minuten, solange über 10 % nicht antworten
+  scanT = setInterval(() => { const ms = snap.miners, off = ms.filter((m) => m.err).length, due = Date.now() - (snap.scanTs || 0) > (ms.length && off / ms.length > 0.1 ? 10 : 30) * 60e3; if (due) scan().then(() => poll()).catch(() => {}); }, 60e3); scanT.unref?.();
 }
 function stop() { clearInterval(timer); clearInterval(scanT); timer = scanT = null; }
 const snapshot = () => ({ ...snap, known: Object.keys(known).length });

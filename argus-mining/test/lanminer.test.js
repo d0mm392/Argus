@@ -36,8 +36,11 @@ test("kaputtes JSON von Antminer wird geflickt", () => { assert.equal(lan.parseA
 
 test("Suche und Abfrage: Antminer, Whatsminer, VNISH", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "am-"));
+  // alte Einträge: derselbe Miner (Seriennummer) früher unter .5, und ein Eintrag ohne Kennung seit 13 h stumm
+  fs.writeFileSync(path.join(dir, "lan-miner.json"), JSON.stringify({ "127.0.0.5": { name: "miner01", serial: "JYZZB1234567", seen: Date.now() - 864e5 }, "127.0.0.6": { name: "x", serial: "", seen: Date.now() - 13 * 3600e3 } }));
   lan.init(dir, () => ({ on: true, ranges: "127.0.0.1-6", jth: 0 }));
   await lan.scan(); const s = await lan.poll();
+  assert.deepEqual(lan.snapshot().moved.map((x) => x.slice(0, 2)), [["127.0.0.5", "127.0.0.2"]]);
   const by = Object.fromEntries(s.miners.map((m) => [m.ip, m]));
   assert.equal(s.miners.length, 3);
   const a = by["127.0.0.2"]; assert.equal(a.name, "miner01"); assert.equal(a.type, "Antminer S19j Pro"); assert.equal(Math.round(a.hr / 1e12), 104); assert.equal(a.temp, 77); assert.equal(a.fan, 5460);
@@ -53,7 +56,7 @@ test("Suche und Abfrage: Antminer, Whatsminer, VNISH", async () => {
   const hist = require("../hist"); hist.init(dir); hist.record(s.miners, Date.now(), true); hist.init(dir); assert.equal(hist.get("127.0.0.3")[0][1], 112);
   // Miner fällt weg: zählt als offline
   servers[0].close(); servers.at(-1).close(); await new Promise((r) => setTimeout(r, 100));
-  const s2 = await lan.poll(); const a2 = s2.miners.find((m) => m.ip === "127.0.0.2"); assert.equal(a2.on, false); assert.equal(a2.name, "miner01");
+  const s2 = await lan.poll(); const a2 = s2.miners.find((m) => m.ip === "127.0.0.2"); assert.equal(a2.on, false); assert.equal(a2.name, "miner01"); assert.match(a2.why, /abgelehnt|Zeit/);
 });
 
 test("Tagesreport je Miner mit Uptime, Verbrauch und Neustarts", () => {
