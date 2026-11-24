@@ -33,3 +33,15 @@ test("diagnostic bundle contains logs, system info and is redacted", () => {
   for (const e of zip.getEntries()) assert.doesNotMatch(e.getData().toString("utf8"), /GEHEIM123/);
   assert.equal(JSON.parse(zip.readAsText("system.json")).argus, "0.59.5");
 });
+test("crash dumps are packed into the bundle (0.59.5 left them out)", () => {
+  const d = tmp(); diag.init(d); const dd = path.join(d, "Crashpad", "reports"); fs.mkdirSync(dd, { recursive: true });
+  fs.writeFileSync(path.join(dd, "a.dmp"), Buffer.from([1, 2, 3]));
+  const out = path.join(d, "x.zip"); diag.bundle({ outFile: out, dumpDir: path.join(d, "Crashpad") });
+  const zip = new (require("adm-zip"))(out), dm = zip.getEntries().filter((e) => e.entryName.startsWith("absturz-abbilder/"));
+  assert.equal(dm.length, 1); assert.deepEqual([...dm[0].getData()], [1, 2, 3]);
+  assert.equal(JSON.parse(zip.readAsText("system.json")).abbilderImPaket[0].datei, "a.dmp");
+});
+test("chromium log of the previous run is kept", () => {
+  const d = tmp(); fs.writeFileSync(path.join(d, "chromium.log"), "Check failed: x\n");
+  assert.equal(diag.init(d), path.join(d, "chromium.log")); assert.match(fs.readFileSync(path.join(d, "chromium.prev.log"), "utf8"), /Check failed/);
+});

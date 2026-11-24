@@ -68,7 +68,9 @@ crash.init(app.getPath("userData"), path.join(app.getPath("userData"), process.e
   return [config.iobPass, config.iobUser, config.iobUrl, config.steamKey, config.dcBotToken, config.anthropicApiKey, config.aiKey, config.foremanKey, config.steamId, ...(config.foremanAccounts || []).flatMap((a) => [a?.key, a?.client]),
     ...String(config.mineAddr || "").split(/[\s,;=:]+/).filter((w) => w.length > 20)];
 }, require("./package.json").version);
-diag.init(app.getPath("userData"));
+{ const chromiumLog = diag.init(app.getPath("userData"));
+  // 0.59.6: Chromium schreibt Warnungen und Fehler in eine Datei; bei einem harten Absturz steht dort oft die letzte Meldung
+  try { app.commandLine.appendSwitch("enable-logging", "file"); app.commandLine.appendSwitch("log-file", chromiumLog); app.commandLine.appendSwitch("log-level", "1"); } catch {} }
 // Sicherheitsstart: zweimal hintereinander unerwartet beendet → ohne Grafikbeschleunigung und ohne YouTube/Twitch starten
 const safeBoot = diag.safeStart(crash.lastRunUnclean());
 if (safeBoot.safe) try { app.disableHardwareAcceleration(); } catch {}
@@ -1828,7 +1830,7 @@ ipcMain.on("notes-flush", (event, snapshot) => {
   catch (error) { console.warn("Notizen-Abschluss fehlgeschlagen:", error.code || "write"); }
 });
 ipcMain.handle("set-config", (_e, patch) => {
-  if (process.uptime() > 20) try { diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
+  try { if (process.uptime() > 20) diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
   if (patch && typeof patch.updateUrl === "string" && patch.updateUrl.trim() && !/^https:\/\//i.test(patch.updateUrl.trim())) delete patch.updateUrl; // Update-Adresse nur verschlüsselt (https)
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -2768,6 +2770,16 @@ function ytViewMake() {
   wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); sendUI("notice", "Dieser externe Link wird nicht als YouTube-Popup geoeffnet."); } });
   wc.on("page-title-updated", (_e, t) => sendUI("yt-title", t.replace(/ - YouTube$/, "")));
   wc.on("did-navigate", (_e, u) => ytArm(wc, u));
+  // 0.59.6: mehr Spuren in der Blackbox, damit nach einem harten Absturz der letzte Schritt sichtbar ist
+  const ytWhere = (u) => { try { const x = new URL(u); return ytGuard.key(u) || (x.hostname + x.pathname).slice(0, 80); } catch { return ""; } };
+  wc.on("did-start-navigation", (d) => { if (d?.isMainFrame) diag.note("youtube", "navigiert", ytWhere(d.url), d.isSameDocument ? "(in Seite)" : ""); });
+  wc.on("did-fail-load", (_e, code, desc, u, main) => { if (main && code !== -3) diag.note("youtube", "Laden fehlgeschlagen", code, desc, ytWhere(u)); });
+  wc.on("media-started-playing", () => diag.note("youtube", "Wiedergabe startet"));
+  wc.on("media-paused", () => diag.note("youtube", "Wiedergabe pausiert"));
+  wc.on("enter-html-full-screen", () => diag.note("youtube", "Vollbild an"));
+  wc.on("leave-html-full-screen", () => diag.note("youtube", "Vollbild aus"));
+  wc.on("unresponsive", () => diag.note("youtube", "reagiert nicht"));
+  wc.on("responsive", () => diag.note("youtube", "reagiert wieder"));
   wc.on("did-navigate-in-page", (_e, u, main) => { if (main) ytArm(wc, u); });
   // Seitenprozess von YouTube abgestürzt: Video merken, auf die Startseite statt in dieselbe Absturzschleife; zweimal in einer Minute → schließen
   wc.on("render-process-gone", (_e, d) => {
