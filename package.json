@@ -1,14 +1,14 @@
 {
   "name": "argus-desktop",
-  "version": "0.59.3",
+  "version": "0.59.4",
   "description": "Argus: Neuronen-Kugel als Desktop-Widget mit Wake-Word und Claude",
   "main": "boot.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis --x64",
-    "test": "node --test tests/unit.test.js tests/sensors-files.test.js && xvfb-run -a electron --no-sandbox tests/ui.test.js && xvfb-run -a electron --no-sandbox tests/eco.test.js && xvfb-run -a electron --no-sandbox tests/settings.test.js && xvfb-run -a electron --no-sandbox tests/friends-setup-hint.test.js",
+    "test": "node --test tests/unit.test.js tests/sensors-files.test.js tests/youtube-guard.test.js && xvfb-run -a electron --no-sandbox tests/ui.test.js && xvfb-run -a electron --no-sandbox tests/eco.test.js && xvfb-run -a electron --no-sandbox tests/settings.test.js && xvfb-run -a electron --no-sandbox tests/friends-setup-hint.test.js && xvfb-run -a electron --no-sandbox tests/youtube-crash.test.js",
     "test:portal-download": "electron tests/portal-download.test.js",
-    "test:regression:unit": "node --test tests/notes-store.test.js tests/background-presentation.test.js tests/youtube-settings.test.js tests/discord-social.test.js tests/discord-additional.test.js tests/discord-social-guard.test.js",
+    "test:regression:unit": "node --test tests/notes-store.test.js tests/background-presentation.test.js tests/youtube-settings.test.js tests/youtube-guard.test.js tests/discord-social.test.js tests/discord-additional.test.js tests/discord-social-guard.test.js",
     "test:menus": "electron tests/menus.test.js",
     "test:notes": "electron tests/notes-layout.test.js",
     "test:classic": "electron tests/classic-theme.test.js",

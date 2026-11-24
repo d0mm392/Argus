@@ -4,7 +4,7 @@
 const fs = require("fs"), path = require("path"), os = require("os");
 const REPO = "https://github.com/d0mm392/Argus/issues/new";
 let dir = "", file = "", marker = "", errLog = "", hist = "", secrets = () => [];
-let pulse = null, run = null, appVersion = "", shown = null;
+let pulse = null, run = null, appVersion = "", shown = null, unclean = false;
 const UNCLEAN = "Unerwartet beendet", LEGACY_UNCLEAN = "Argus wurde beim letzten Mal nicht normal beendet.";
 // Abgefangene Netzfehler (Wetter, Kurse, Feeds) beenden Argus nicht und gehören nicht in einen Bericht über ein unsauberes Ende
 const NET_ERROR = /antwortet mit \d{3}|fetch failed|ETIMEDOUT|ENOTFOUND|ECONNRESET|ECONNREFUSED|EAI_AGAIN|UND_ERR|socket hang up/i;
@@ -21,6 +21,7 @@ function init(userData, logFile, getSecrets, version) {
   clearInterval(pulse);
   settleAcknowledged();
   let previous = null; try { previous = JSON.parse(fs.readFileSync(marker, "utf8")) || {}; } catch { if (fs.existsSync(marker)) previous = {}; }
+  unclean = !!(previous && !previous.ended);
   if (previous && !previous.ended) {
     const end = previous.heartbeat || 0;
     const log = end ? lastLog(Math.max(previous.started || 0, end - 15000), end + 15000, true) : "";
@@ -137,4 +138,6 @@ function clear(ignore = false) {
   d.items = d.items.filter((x) => !done.includes(x)); write(d);
 }
 
-module.exports = { archive, history, view, remove, init, clean, add, pending, build, issueUrl, clear, redact, lastLog };
+// Endete der vorige Lauf ohne reguläres Beenden (Absturz, abgeschossen)? Für Start-Schutz, z. B. YouTube
+const lastRunUnclean = () => unclean;
+module.exports = { lastRunUnclean, archive, history, view, remove, init, clean, add, pending, build, issueUrl, clear, redact, lastLog };
