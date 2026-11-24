@@ -9,7 +9,7 @@ async function setupYoutube({live=false}={}){
  const begin=source.indexOf("const ytPrefs ="),end=source.indexOf("// ---------- Twitch",begin);
  if(begin<0||end<begin)throw Error("YouTube source boundaries changed");
  const sourceRequire=Module.createRequire(path.join(root,"package.json"));
- const context={app,WebContentsView,ipcMain,session,path,fs,URL,fetch,setTimeout,setInterval,clearInterval,clearTimeout,console,config,crash:{add(){}},
+ const context={app,WebContentsView,ipcMain,session,path,fs,URL,fetch,setTimeout,setInterval,clearInterval,clearTimeout,console,config,crash:{add(){}},diag:{note(){}},
    win:window,expanded:true,quitting:false,__dirname:root,actions:{hooks:{}},
    require:name=>name.startsWith(".")?sourceRequire(name):name==="@ghostery/adblocker-electron"?require(path.resolve(process.env.ARGUS_TEST_NODE_MODULES||".validation/0.58.24/build/node_modules",name)):sourceRequire(name),
    alive:()=>!window.isDestroyed(),setExpanded:()=>{},logError:error=>fixture.errors.push(String(error.code||error.name)),

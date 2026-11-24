@@ -1,5 +1,5 @@
 // Argus Desktop: kleines, immer sichtbares Fenster mit der Neuronen-Kugel.
-const { app, desktopCapturer, BrowserWindow, WebContentsView, Tray, Menu, ipcMain, screen, globalShortcut, session, nativeImage, shell, Notification, powerMonitor, dialog, safeStorage } = require("electron");
+const { app, crashReporter, desktopCapturer, BrowserWindow, WebContentsView, Tray, Menu, ipcMain, screen, globalShortcut, session, nativeImage, shell, Notification, powerMonitor, dialog, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 // Linux als AppImage: ohne setuid-Helfer startet der Chromium-Sandbox-Prozess oft nicht (Ubuntu 24.04 und neuer sperren ihn); darum dort ohne ihn.
@@ -59,13 +59,21 @@ function logError(e) {
   try { fs.appendFileSync(path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), `${new Date().toISOString()} ${e?.stack || e}\n`); } catch {}
 }
 const crash = require("./crash");
+const diag = require("./diag"); // 0.59.5: Blackbox, Sicherheitsstart, Diagnose-Paket (nur lokal)
+// Absturz-Abbilder von Electron nur lokal sammeln (Ordner Crashpad), nie hochladen
+try { crashReporter.start({ uploadToServer: false, compress: true }); } catch {}
 // Fehlerberichte (siehe crash.js): bleiben lokal, bis der Nutzer selbst einen Bericht sendet. Geheimnisse werden vorher entfernt.
 crash.init(app.getPath("userData"), path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), () => {
   if (typeof config === "undefined" || !config) return [];
   return [config.iobPass, config.iobUser, config.iobUrl, config.steamKey, config.dcBotToken, config.anthropicApiKey, config.aiKey, config.foremanKey, config.steamId, ...(config.foremanAccounts || []).flatMap((a) => [a?.key, a?.client]),
     ...String(config.mineAddr || "").split(/[\s,;=:]+/).filter((w) => w.length > 20)];
 }, require("./package.json").version);
-process.on("uncaughtException", (e) => { logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
+diag.init(app.getPath("userData"));
+// Sicherheitsstart: zweimal hintereinander unerwartet beendet → ohne Grafikbeschleunigung und ohne YouTube/Twitch starten
+const safeBoot = diag.safeStart(crash.lastRunUnclean());
+if (safeBoot.safe) try { app.disableHardwareAcceleration(); } catch {}
+diag.note("start", "Argus " + require("./package.json").version, "Electron " + process.versions.electron, crash.lastRunUnclean() ? "voriger Lauf unerwartet beendet" : "voriger Lauf regulär", safeBoot.safe ? "SICHERHEITSSTART (" + safeBoot.fails + " Abstürze in Folge)" : "");
+process.on("uncaughtException", (e) => { diag.note("fehler", e?.message || e); logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
 // 0.58.27: auch abgelehnte Promises protokollieren (vorher verschwanden Fehler im Startablauf ohne Spur)
 process.on("unhandledRejection", (e) => { logError(e); try { crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); } catch {} });
 
@@ -1369,6 +1377,7 @@ async function createWindow(port) {
   // Oberfläche abgestürzt: für den Fehlerbericht merken und neu laden
   win.webContents.on("render-process-gone", (_e, d) => {
     if (d?.reason === "clean-exit") return;
+    diag.note("oberfl", "abgestürzt", d?.reason, d?.exitCode);
     crash.add("Oberfläche abgestürzt", `${d?.reason} (Code ${d?.exitCode})`);
     setTimeout(() => { if (alive()) win.webContents.reload(); }, 1500);
   });
@@ -1819,6 +1828,7 @@ ipcMain.on("notes-flush", (event, snapshot) => {
   catch (error) { console.warn("Notizen-Abschluss fehlgeschlagen:", error.code || "write"); }
 });
 ipcMain.handle("set-config", (_e, patch) => {
+  if (process.uptime() > 20) try { diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
   if (patch && typeof patch.updateUrl === "string" && patch.updateUrl.trim() && !/^https:\/\//i.test(patch.updateUrl.trim())) delete patch.updateUrl; // Update-Adresse nur verschlüsselt (https)
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -2063,9 +2073,16 @@ app.whenReady().then(async () => {
   startStep("Tray", () => buildTray());
   startStep("Autostart", () => applyAutostart());
   startStep("Updater", () => setupUpdater());
+  setTimeout(() => { diag.stable(); diag.note("start", "läuft stabil"); }, 90e3);
+  app.getGPUInfo("basic").then((g) => { const d = (g?.gpuDevice || []).map((x) => `${x.vendorId}:${x.deviceId}${x.active ? "*" : ""} ${x.driverVersion || ""}`).join(", "); diag.note("grafik", d, "Grafikbeschleunigung " + (safeBoot.safe || config.gfxSafe ? "aus" : "an"), config.ytHwDecode === false ? "Video-Dekodierung Software" : ""); }).catch(() => {});
   if (config.setupDone) startStep("Sensoren", () => startSensors());
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
   setTimeout(() => { try {
+    if (safeBoot.safe) {
+      sendUI("notice", `Sicherheitsstart: Argus ist ${safeBoot.fails}-mal hintereinander abgestürzt. Diesmal ohne Grafikbeschleunigung und ohne YouTube/Twitch. Unter Einstellungen › System › Fehlerberichte kannst du eine Diagnose speichern.`);
+      if (config.ytOpen || config.twOpen) { config.ytOpen = ""; config.twOpen = ""; saveConfig(); }
+      return;
+    }
     if (ytStartNote?.reason === "video") sendUI("notice", "Argus ist zuletzt beim Laden eines YouTube-Videos abgestürzt. Das Video wird nicht mehr automatisch geöffnet, YouTube startet auf der Startseite.");
     else if (ytStartNote?.reason === "unclean") sendUI("notice", "Argus wurde zuletzt nicht normal beendet. YouTube öffnet sich diesmal nicht von selbst und startet auf der Startseite.");
     if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
@@ -2470,6 +2487,7 @@ ipcMain.on("media-cmd", (_e, c) => { if (["play", "next", "prev"].includes(c) ||
 app.on("will-quit", stopMedia);
 app.on("will-quit", () => weatherService.stop());
 app.on("will-quit", () => crash.clean()); // sauber beendet: keine „unerwartet beendet“-Meldung beim nächsten Start
+app.on("child-process-gone", (_e, d) => diag.note("prozess", d?.type, d?.name || d?.serviceName || "", d?.reason, d?.exitCode));
 app.on("child-process-gone", (_e, d) => { if (d?.type === "GPU" && !["clean-exit", "killed"].includes(d.reason)) { crash.add("Grafikprozess abgestürzt", `${d.reason} (Code ${d.exitCode})`, config.ytLoading?.url ? "Während YouTube-Video: " + config.ytLoading.url.slice(0, 200) : ""); ytGpuCrash(); setTimeout(() => sendUI("gpu-reset"), 1500); } });
 // 0.59.4: Stürzt der Grafikprozess ab, während ein YouTube-Video lädt, liegt es meist an der Hardware-Videodekodierung des Treibers.
 // Video merken, YouTube auf die Startseite, und ab dem nächsten Start ohne Hardware-Dekodierung (in den Einstellungen wieder einschaltbar)
@@ -2482,6 +2500,23 @@ function ytGpuCrash() {
   setTimeout(() => { const wc = ytView?.webContents; if (wc && !wc.isDestroyed()) wc.loadURL(ytGuard.HOME).catch(() => {}); }, 1500);
 }
 ipcMain.on("ui-error", (_e, msg, stack) => crash.add("Fehler in der Oberfläche", String(msg || "").slice(0, 500), String(stack || "").slice(0, 3000)));
+// Diagnose-Paket auf dem Desktop speichern (bereinigt), Ordner danach zeigen
+ipcMain.handle("diag-save", async () => {
+  try {
+    const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16);
+    let outDir = app.getPath("desktop"); try { fs.accessSync(outDir, fs.constants.W_OK); } catch { outDir = app.getPath("userData"); }
+    const outFile = path.join(outDir, `Argus-Diagnose-${stamp}.zip`);
+    let gpu = null; try { gpu = await app.getGPUInfo("basic"); } catch {}
+    const info = { argus: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, kanal: config.updateChannel,
+      sicherheitsstart: safeBoot, grafikbeschleunigung: !(safeBoot.safe || config.gfxSafe), kompatibilitaetsmodus: !!config.gfxSafe, videoHardwareDekodierung: config.ytHwDecode !== false,
+      grafikStatus: app.getGPUFeatureStatus?.(), grafik: gpu?.gpuDevice || null, grafikName: watch?.data?.gpuName || "",
+      youtube: { offen: config.ytOpen, gesperrteVideos: (config.ytBad || []).length, laedt: ytGuard.key(config.ytLoading?.url) || null } };
+    const r = diag.bundle({ outFile, redact: crash.redact, info, logFile: path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), dumpDir: app.getPath("crashDumps") });
+    diag.note("diagnose", "gespeichert", path.basename(outFile));
+    shell.showItemInFolder(outFile);
+    return { ok: true, file: outFile, name: path.basename(outFile), dumps: r.dumps };
+  } catch (e) { logError(e); return { ok: false, error: e?.message || String(e) }; }
+});
 ipcMain.handle("crash-get", (_e, manual) => {
   if (manual) crash.add("Bericht vom Nutzer", "Manuell erstellter Bericht. Beschreibe kurz, was passiert ist:", crash.lastLog());
   else if (config.crashReport === false) return null;
@@ -2705,10 +2740,12 @@ function ytArm(wc, url) {
   if (!k) { if (config.ytLoading) { clearTimeout(ytArmT); config.ytLoading = null; saveConfig(); } return; }
   if (ytGuard.key(config.ytLoading?.url) === k) return;
   config.ytLoading = { url: String(url).slice(0, 300), at: Date.now() };
+  diag.note("youtube", "lädt Video", k);
   try { writeConfigNow(); } catch {}
   clearTimeout(ytArmT);
   ytArmT = setTimeout(() => {
     if (wc.isDestroyed() || ytGuard.key(config.ytLoading?.url) !== k) return;
+    diag.note("youtube", "Video läuft stabil", k);
     config.ytLoading = null; config.ytBad = ytGuard.release(config, url); saveConfig();
   }, ytGuard.STABLE_MS);
 }
@@ -2736,6 +2773,7 @@ function ytViewMake() {
   wc.on("render-process-gone", (_e, d) => {
     if (d?.reason === "clean-exit") return;
     const u = config.ytLoading?.url || config.ytLast?.url || "";
+    diag.note("youtube", "Ansicht abgestürzt", d?.reason, d?.exitCode, ytGuard.key(u) || u);
     crash.add("YouTube-Ansicht abgestürzt", `${d?.reason} (Code ${d?.exitCode})`, u ? "Video: " + u.slice(0, 200) : "");
     ytMarkBad(u);
     ytViewCrashes = [...ytViewCrashes.filter((t) => Date.now() - t < 60e3), Date.now()];
@@ -2752,6 +2790,7 @@ async function ytEmbedShow(query) {
   if (!expanded) setExpanded(true);
   const v = ytViewMake();
   const ytTarget = require("./app/youtube-settings").target(query, ytResumeUrl());
+  diag.note("youtube", "öffnen", query ? "Suche/Link" : "fortsetzen", ytGuard.key(ytTarget) || new URL(ytTarget).pathname);
   if (query || !v.webContents.getURL()) { ytArm(v.webContents, ytTarget); v.webContents.loadURL(ytTarget).catch((e) => { if (e.errno !== -3) sendUI("notice", "YouTube konnte nicht geladen werden (" + (e.code || "Netzwerk") + ")."); }); }
   sendUI("yt-embed", { on: true });
   if (config.ytOpen !== "panel") { config.ytOpen = "panel"; saveConfig(); }
@@ -2760,7 +2799,7 @@ function ytEmbedClose() {
   if (!ytView) return;
   ytTrackNow(ytView.webContents);
   try { win?.contentView.removeChildView(ytView); } catch {}
-  ytView.webContents.close(); ytView = null; ytRect = null; ytShown = null;
+  ytView.webContents.close(); ytView = null; ytRect = null; ytShown = null; diag.note("youtube", "geschlossen");
   clearTimeout(ytArmT); if (config.ytLoading) { config.ytLoading = null; saveConfig(); }
   if (!quitting && config.ytOpen === "panel") { config.ytOpen = ""; saveConfig(); }
   sendUI("yt-embed", { on: false });
@@ -2863,6 +2902,7 @@ function twSetup(wc) {
   wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
 }
 function openTwitch(q) {
+  diag.note("twitch", "Fenster öffnen");
   const url = twUrl(q);
   if (twAlive()) { if (q) twWin.loadURL(url); twWin.show(); twWin.focus(); return; }
   const wa = screen.getPrimaryDisplay().workArea;
@@ -2929,7 +2969,8 @@ function startMarket() {
   setTimeout(pollSocial, 4000); setInterval(pollSocial, 120e3); setInterval(pollDiscordFast, 30e3);
   pollPrice().then(pollAlerts); setTimeout(pollFeeds, 3000);
   setTimeout(pollWeather, 5000);
-  powerMonitor.on("shutdown", () => crash.clean()); // Windows fährt herunter: kein Absturz
+  powerMonitor.on("shutdown", () => { diag.note("ende", "Windows fährt herunter"); crash.clean(); }); // Windows fährt herunter: kein Absturz
+  powerMonitor.on("suspend", () => diag.note("strom", "Standby")); powerMonitor.on("resume", () => diag.note("strom", "aufgewacht"));
   powerMonitor.on("resume", () => { setTimeout(() => weatherService.refresh(), 10e3); }); // nach Standby evtl. woanders
   setTimeout(pollFarm, 3000); setInterval(pollFarm, 60e3);
   // Miner-Report vom Vortag: ab der eingestellten Stunde einmal am Tag als Fenster (reportOn, reportHour)
@@ -3175,7 +3216,7 @@ function linkClaudeDesktop() {
 app.on("second-instance", () => { win?.showInactive(); setExpanded(true); });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 let quitting = false; // beim Beenden geschlossenes YouTube nicht als „zu“ merken, damit es beim nächsten Start wiederkommt
-app.on("before-quit", () => { quitting = true; config.ytLoading = null; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
+app.on("before-quit", () => { quitting = true; diag.note("ende", "regulär beendet"); config.ytLoading = null; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
   discordSocial?.close();
   if (strata.ownProcess()) strata.stop(); watch?.stop(); stopAnim(); clearInterval(moveTimer); });
 app.on("window-all-closed", () => app.quit());
