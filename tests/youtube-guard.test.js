@@ -17,6 +17,8 @@ test("a video still marked as loading at start is blocked and not reopened", () 
   assert.equal(g.reason, "video");
   assert.deepEqual(g.patch.ytBad, ["abcDEF12345"]);
   assert.equal(g.patch.ytLoading, null); assert.equal(g.patch.ytLast, null); assert.equal(g.patch.ytOpen, "");
+  assert.equal(g.patch.ytHwDecode, false, "full crash while a video loads turns hardware decoding off");
+  assert.equal(guard.startup({ ytLoading: { url: V }, ytHwDecode: false }, true).patch.ytHwDecode, undefined);
   const next = { ...cfg, ...g.patch, ytLast: { url: V, t: 0 } };
   assert.equal(guard.resume(next, V), guard.HOME);
   assert.equal(yt.target("", guard.resume(next, V)), "https://www.youtube.com/");

@@ -27,6 +27,8 @@
       bad = loading; reason = "video";
       const k = key(loading);
       if (k) patch.ytBad = [k, ...list(config).filter((x) => x !== k)].slice(0, KEEP);
+      // 0.59.6: Argus ist komplett mit einem Video abgestürzt (meist Grafiktreiber beim Dekodieren) → ab jetzt ohne Hardware-Dekodierung
+      if (config.ytHwDecode !== false) { patch.ytHwDecode = false; patch.ytHwDecodeAuto = true; }
     } else if (unclean && key(config.ytLast?.url)) reason = "unclean";
     if (config.ytLoading !== undefined && config.ytLoading !== null) patch.ytLoading = null;
     // Nach einem Absturz YouTube nicht von selbst öffnen und nicht mitten im letzten Video weitermachen

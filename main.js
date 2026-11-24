@@ -83,7 +83,8 @@ const CONFIG_PATH = path.join(app.getPath("userData"), process.env.ARGUS_OLD_DAT
 // Muss vor dem Start feststehen, darum direkt aus der Datei gelesen
 try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")).gfxSafe === true) app.disableHardwareAcceleration(); } catch {}
 // 0.59.4: Videos ohne Hardware-Dekodierung abspielen (Option, schaltet sich nach einem Grafikabsturz bei YouTube selbst ein). Muss vor dem Start feststehen
-try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")).ytHwDecode === false) app.commandLine.appendSwitch("disable-accelerated-video-decode"); } catch {}
+// 0.59.6: auch sofort, wenn Argus beim letzten Mal mitten im Laden eines Videos komplett abgestürzt ist (ytLoading stand noch da)
+try { const c0 = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")); if (c0.ytHwDecode === false || (c0.ytLoading?.url && crash.lastRunUnclean())) app.commandLine.appendSwitch("disable-accelerated-video-decode"); } catch {}
 const DEFAULTS = {
   gfxSafe: false,
   ytHwDecode: true, ytBad: [], ytLoading: null, // YouTube: Hardware-Videodekodierung, Videos mit Absturz, gerade ladendes Video (Absturz-Bremse)
@@ -181,6 +182,7 @@ let config = { ...DEFAULTS };
 // unlesbar, bleibt sie als argus-config.unlesbar-<Zeit>.json erhalten und die letzte lesbare Sicherung (.bak) wird geladen.
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8").replace(/^\uFEFF/, ""));
 let configLoadedOk = false;
+const ytGuard0 = (u) => { try { return require("./app/youtube-guard").key(u) || ""; } catch { return ""; } };
 let ytStartNote = null; // Ergebnis der YouTube-Absturz-Bremse beim Start (nur einmal je Lauf)
 function loadConfig() {
   let had = false, raw = {};
@@ -244,6 +246,7 @@ function loadConfig() {
   if (!ytStartNote) try {
     const g = require("./app/youtube-guard").startup(config, crash.lastRunUnclean());
     Object.assign(config, g.patch); ytStartNote = g;
+    if (g.reason === "video") diag.note("youtube", "voriger Lauf mit Video abgestürzt", ytGuard0(g.bad), g.patch.ytHwDecodeAuto ? "Hardware-Dekodierung jetzt aus" : "");
     if (g.reason === "video") crash.add("YouTube-Video vor Absturz", "Argus endete, während dieses Video geladen wurde. Es wird nicht mehr automatisch geöffnet.", String(g.bad).slice(0, 200));
   } catch (e) { logError(e); }
   Object.assign(config, require("./app/appearance").migrate(config));
@@ -1828,7 +1831,7 @@ ipcMain.on("notes-flush", (event, snapshot) => {
   catch (error) { console.warn("Notizen-Abschluss fehlgeschlagen:", error.code || "write"); }
 });
 ipcMain.handle("set-config", (_e, patch) => {
-  if (process.uptime() > 20) try { diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
+  try { if (process.uptime() > 20) diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
   if (patch && typeof patch.updateUrl === "string" && patch.updateUrl.trim() && !/^https:\/\//i.test(patch.updateUrl.trim())) delete patch.updateUrl; // Update-Adresse nur verschlüsselt (https)
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -2083,7 +2086,7 @@ app.whenReady().then(async () => {
       if (config.ytOpen || config.twOpen) { config.ytOpen = ""; config.twOpen = ""; saveConfig(); }
       return;
     }
-    if (ytStartNote?.reason === "video") sendUI("notice", "Argus ist zuletzt beim Laden eines YouTube-Videos abgestürzt. Das Video wird nicht mehr automatisch geöffnet, YouTube startet auf der Startseite.");
+    if (ytStartNote?.reason === "video") sendUI("notice", "Argus ist zuletzt beim Laden eines YouTube-Videos abgestürzt. Das Video wird nicht mehr automatisch geöffnet, YouTube startet auf der Startseite." + (ytStartNote.patch?.ytHwDecodeAuto ? " Videos laufen ab jetzt ohne Hardware-Dekodierung (Einstellungen › System › Leistung)." : ""));
     else if (ytStartNote?.reason === "unclean") sendUI("notice", "Argus wurde zuletzt nicht normal beendet. YouTube öffnet sich diesmal nicht von selbst und startet auf der Startseite.");
     if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
   strata.init(() => config, (s) => {
