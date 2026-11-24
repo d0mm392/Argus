@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "version": "0.59.4",
+  "source": "3d1af6f36e672c1d43b28fac67e2f29d7dccfd4f",
+  "manifestFiles": 4857,
+  "installerSHA256": "f3eeb7648f24209398e355a709bc0ae667a6495e405bcaf9592c7f90e6fc3bde",
+  "channel": "updates",
+  "sourceArchiveSHA256": "ab9958af6334f852970ca4d813923d716d58fd94876c35cf0f3bcd33213b918b",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.59.3",
+  "tests": {
+    "unitPlusSensorsPlusGuard": "PASS",
+    "configSafety": "PASS",
+    "ui": "65/65",
+    "eco": "PASS",
+    "settings": "PASS",
+    "friendsSetupHint": "PASS",
+    "youtubeMode": "PASS",
+    "youtubeCrash": "PASS"
+  },
+  "installerDiffTo0.59.3": ["+ resources/app/app/youtube-guard.js"],
+  "notTested": "Keine Windows-VM-Prüfung; echter Video-/Grafikabsturz nur auf Windows prüfbar."
+}

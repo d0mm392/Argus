@@ -1,9 +1,9 @@
-# Argus 0.59.3 – Testkanal
+# Argus 0.59.4 – Testkanal
 
-[Windows-Installer](Argus-Setup-0.59.3.exe) · [Versionshinweise](RELEASE-NOTES-0.59.3.md) · [Bauinfo](BUILD-INFO-0.59.3.json)
+[Windows-Installer](Argus-Setup-0.59.4.exe) · [Versionshinweise](RELEASE-NOTES-0.59.4.md) · [Bauinfo](BUILD-INFO-0.59.4.json)
 
-Einstellungen in neun klare Reiter neu sortiert, Hinweis mit Einrichten-Knopf bei leerer Freundesliste, Temperaturmessung wieder vollständig (Sensor-Dateien im Setup). Stable bleibt unverändert.
+YouTube: Stürzt Argus bei einem Video ab, wird dieses Video nicht mehr automatisch wieder geladen (keine Absturzschleife beim Start). Absturz der YouTube-Ansicht lädt die Startseite, Grafikabsturz beim Video schaltet die Hardware-Dekodierung ab. Stable bleibt unverändert.
 
-SHA-256: `730726af16563455f5a0dadf41b182a3305ccbdfcdd64a5472bf7470562054a5`
+SHA-256: `f3eeb7648f24209398e355a709bc0ae667a6495e405bcaf9592c7f90e6fc3bde`
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/6d69767561a685736b35c830f4fb2c19a48de65b) · [Quellarchiv](Argus-Source-0.59.3.zip) · [Prüfsummen](SHA256SUMS.txt)
+[Quellstand](https://github.com/d0mm392/Argus/tree/3d1af6f36e672c1d43b28fac67e2f29d7dccfd4f) · [Quellarchiv](Argus-Source-0.59.4.zip) · [Prüfsummen](SHA256SUMS.txt)
