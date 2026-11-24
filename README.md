@@ -1,9 +1,9 @@
-# Argus 0.59.5 – Testkanal
+# Argus 0.59.6 – Testkanal
 
-[Windows-Installer](Argus-Setup-0.59.5.exe) · [Versionshinweise](RELEASE-NOTES-0.59.5.md) · [Bauinfo](BUILD-INFO-0.59.5.json)
+[Windows-Installer](Argus-Setup-0.59.6.exe) · [Versionshinweise](RELEASE-NOTES-0.59.6.md) · [Bauinfo](BUILD-INFO-0.59.6.json)
 
-Selbstdiagnose: Blackbox der letzten Schritte, lokale Absturz-Abbilder, Sicherheitsstart nach zwei Abstürzen in Folge, Knopf „Diagnose speichern“ (Zip auf dem Desktop). Enthält die YouTube-Absturzbremse aus 0.59.4. Stable bleibt unverändert.
+Diagnose vollständig: Absturz-Abbilder in der Diagnose-Zip, Chromium-Protokoll, mehr YouTube-Spuren in der Blackbox. Stable bleibt unverändert.
 
-SHA-256: `4a5be116c740ee0d7a1d651b07254b921342d5081ef525d2edbe5cec14d0bc9a`
+SHA-256: `b1b23e7f8574b90e2c8377cbc2085021c4883f25536a1e5d7c4ac2ef23871b8c`
 
-[Quellstand](https://github.com/d0mm392/Argus/tree/6b36528a575af476670a7ffc9b9fce2eaf574936) · [Quellarchiv](Argus-Source-0.59.5.zip) · [Prüfsummen](SHA256SUMS.txt)
+[Quellstand](https://github.com/d0mm392/Argus/tree/8d67071de2439be9249b17aee0a66d53bb05e346) · [Quellarchiv](Argus-Source-0.59.6.zip) · [Prüfsummen](SHA256SUMS.txt)

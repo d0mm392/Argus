@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "0.59.6",
+  "source": "8d67071de2439be9249b17aee0a66d53bb05e346",
+  "manifestFiles": 4858,
+  "installerSHA256": "b1b23e7f8574b90e2c8377cbc2085021c4883f25536a1e5d7c4ac2ef23871b8c",
+  "channel": "updates",
+  "sourceArchiveSHA256": "db73f94dd798da7b629459bb2fb248bf3df713747acd5818eeb13bf9b11bb0ca",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.59.3",
+  "tests": { "unitGuardDiagConfigCrash": "61/61", "ui": "65/65", "eco": "3/3", "settings": "PASS", "friendsSetupHint": "PASS", "youtubeMode": "PASS", "youtubeCrash": "PASS", "smokeChromiumLog": "PASS" },
+  "installerDiffTo0.59.5": ["~ resources/app/diag.js", "~ resources/app/main.js"],
+  "notTested": "Keine Windows-VM-Prüfung; Abbilder in der Zip nur auf Windows endgültig prüfbar."
+}
