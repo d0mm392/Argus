@@ -7,7 +7,7 @@ const DEFAULTS_SRC = src.slice(src.indexOf("const DEFAULTS = {"), src.indexOf("\
 function load(dir) {
   const logs = [], ctx = { fs, path, require: (m) => require(m.startsWith("./") ? path.join(__dirname, "..", m) : m), console, Date, JSON, Object, Array, String, Number, Error, process: { env: {}, platform: process.platform },
     CONFIG_PATH: path.join(dir, "argus-config.json"), SEALED: [], seal: (x) => x, openSecrets: () => {}, cfgTimer: null, clearTimeout,
-    logError: (e) => logs.push(String(e?.message || e)), memory: { setUser() {} }, crash: { lastRunUnclean: () => false, add() {} }, diag: { note() {} }, saveConfig: () => {}, os, app: { getPath: () => dir } };
+    logError: (e) => logs.push(String(e?.message || e)), memory: { setUser() {} }, crash: { lastRunUnclean: () => false, add() {} }, saveConfig: () => {}, os, app: { getPath: () => dir } };
   vm.createContext(ctx);
   vm.runInContext(DEFAULTS_SRC.replace("const DEFAULTS", "var DEFAULTS") + "\nvar config = { ...DEFAULTS };\n" + slice.replace("let configLoadedOk", "var configLoadedOk") + "\nthis.loadConfig = loadConfig; this.writeConfigNow = writeConfigNow; this.get = () => config;", ctx);
   return { ctx, logs };
