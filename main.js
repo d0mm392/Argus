@@ -1,5 +1,5 @@
 // Argus Desktop: kleines, immer sichtbares Fenster mit der Neuronen-Kugel.
-const { app, desktopCapturer, BrowserWindow, WebContentsView, Tray, Menu, ipcMain, screen, globalShortcut, session, nativeImage, shell, Notification, powerMonitor, dialog, safeStorage } = require("electron");
+const { app, crashReporter, desktopCapturer, BrowserWindow, WebContentsView, Tray, Menu, ipcMain, screen, globalShortcut, session, nativeImage, shell, Notification, powerMonitor, dialog, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 // Linux als AppImage: ohne setuid-Helfer startet der Chromium-Sandbox-Prozess oft nicht (Ubuntu 24.04 und neuer sperren ihn); darum dort ohne ihn.
@@ -59,13 +59,24 @@ function logError(e) {
   try { fs.appendFileSync(path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), `${new Date().toISOString()} ${e?.stack || e}\n`); } catch {}
 }
 const crash = require("./crash");
+const diag = require("./diag"); // 0.59.5: Blackbox, Sicherheitsstart, Diagnose-Paket (nur lokal)
+// Absturz-Abbilder von Electron nur lokal sammeln (Ordner Crashpad), nie hochladen
+try { crashReporter.start({ uploadToServer: false, compress: true }); } catch {}
 // Fehlerberichte (siehe crash.js): bleiben lokal, bis der Nutzer selbst einen Bericht sendet. Geheimnisse werden vorher entfernt.
 crash.init(app.getPath("userData"), path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), () => {
   if (typeof config === "undefined" || !config) return [];
   return [config.iobPass, config.iobUser, config.iobUrl, config.steamKey, config.dcBotToken, config.anthropicApiKey, config.aiKey, config.foremanKey, config.steamId, ...(config.foremanAccounts || []).flatMap((a) => [a?.key, a?.client]),
     ...String(config.mineAddr || "").split(/[\s,;=:]+/).filter((w) => w.length > 20)];
 }, require("./package.json").version);
-process.on("uncaughtException", (e) => { logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
+{ const chromiumLog = diag.init(app.getPath("userData"));
+  // 0.59.6: Chromium schreibt Warnungen und Fehler in eine Datei; bei einem harten Absturz steht dort oft die letzte Meldung
+  try { app.commandLine.appendSwitch("enable-logging", "file"); app.commandLine.appendSwitch("log-file", chromiumLog); app.commandLine.appendSwitch("log-level", "1"); } catch {} }
+// Sicherheitsstart: zweimal hintereinander unerwartet beendet → ohne Grafikbeschleunigung und ohne YouTube/Twitch starten
+const safeBoot = diag.safeStart(crash.lastRunUnclean());
+if (safeBoot.safe) try { app.disableHardwareAcceleration(); } catch {}
+diag.note("start", "Argus " + require("./package.json").version, "Electron " + process.versions.electron, crash.lastRunUnclean() ? "voriger Lauf unerwartet beendet" : "voriger Lauf regulär", safeBoot.safe ? "SICHERHEITSSTART (" + safeBoot.fails + " Abstürze in Folge)" : "");
+diag.versions(require("./package.json").version);
+process.on("uncaughtException", (e) => { diag.note("fehler", e?.message || e); logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
 // 0.58.27: auch abgelehnte Promises protokollieren (vorher verschwanden Fehler im Startablauf ohne Spur)
 process.on("unhandledRejection", (e) => { logError(e); try { crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); } catch {} });
 
@@ -74,8 +85,11 @@ const CONFIG_PATH = path.join(app.getPath("userData"), process.env.ARGUS_OLD_DAT
 // Grafik-Kompatibilität (Option): ohne Grafikkarten-Beschleunigung, gegen Durchflackern des Desktops bei manchen Treibern.
 // Muss vor dem Start feststehen, darum direkt aus der Datei gelesen
 try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")).gfxSafe === true) app.disableHardwareAcceleration(); } catch {}
+// 0.59.4: Videos ohne Hardware-Dekodierung abspielen (Option, schaltet sich nach einem Grafikabsturz bei YouTube selbst ein). Muss vor dem Start feststehen
+try { if (JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8").replace(/^\uFEFF/, "")).ytHwDecode === false) app.commandLine.appendSwitch("disable-accelerated-video-decode"); } catch {}
 const DEFAULTS = {
   gfxSafe: false,
+  ytHwDecode: true, ytBad: [], ytLoading: null, // YouTube: Hardware-Videodekodierung, Videos mit Absturz, gerade ladendes Video (Absturz-Bremse)
   anthropicApiKey: "",
   aiProv: "openai", aiBase: "", aiModel: "", aiKey: "", // weitere KIs (ChatGPT, Gemini, Mistral, Groq, OpenRouter, eigener Server) über die OpenAI-kompatible Schnittstelle
   claudeModel: "claude-opus-5-5",
@@ -170,6 +184,7 @@ let config = { ...DEFAULTS };
 // unlesbar, bleibt sie als argus-config.unlesbar-<Zeit>.json erhalten und die letzte lesbare Sicherung (.bak) wird geladen.
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8").replace(/^\uFEFF/, ""));
 let configLoadedOk = false;
+let ytStartNote = null; // Ergebnis der YouTube-Absturz-Bremse beim Start (nur einmal je Lauf)
 function loadConfig() {
   let had = false, raw = {};
   try { raw = readJson(CONFIG_PATH); config = { ...DEFAULTS, ...raw }; openSecrets(config); had = true; }
@@ -228,6 +243,12 @@ function loadConfig() {
   }
   Object.assign(config, require("./app/notes-store").migrate(config, () => require("crypto").randomUUID()));
   Object.assign(config, require("./app/youtube-settings").migrate(config));
+  // 0.59.4: Absturz-Bremse. Ist Argus beim letzten Mal mit einem YouTube-Video abgestürzt, dieses Video nicht wieder von selbst laden
+  if (!ytStartNote) try {
+    const g = require("./app/youtube-guard").startup(config, crash.lastRunUnclean());
+    Object.assign(config, g.patch); ytStartNote = g;
+    if (g.reason === "video") crash.add("YouTube-Video vor Absturz", "Argus endete, während dieses Video geladen wurde. Es wird nicht mehr automatisch geöffnet.", String(g.bad).slice(0, 200));
+  } catch (e) { logError(e); }
   Object.assign(config, require("./app/appearance").migrate(config));
   memory.setUser?.(config.userName);
   saveConfig();
@@ -264,7 +285,7 @@ function writeConfigNow() {
   fs.renameSync(tmp, CONFIG_PATH);
 }
 function saveConfig() { if (cfgTimer) return; cfgTimer = setTimeout(() => { try { writeConfigNow(); } catch {} }, 300); }
-{ const realExit = app.exit.bind(app); app.exit = (c) => { try { if (cfgTimer) writeConfigNow(); } catch {} realExit(c); }; }
+{ const realExit = app.exit.bind(app); app.exit = (c) => { try { if (config.ytLoading) { config.ytLoading = null; writeConfigNow(); } else if (cfgTimer) writeConfigNow(); } catch {} realExit(c); }; }
 
 // Anrede des Nutzers aus der Einrichtung; ohne Namen neutral
 const userName = () => String(config.userName || "").trim().slice(0, 40);
@@ -922,7 +943,7 @@ ipcMain.handle("sensor-status", () => sensorState);
 ipcMain.on("sensor-setup", () => { config.sensors = true; saveConfig(); setupSensors(); });
 
 ipcMain.handle("game-info", (_e, name, appid) => require("./games").info(String(name || "").slice(0, 120), Number.isFinite(appid) ? appid : null).catch(() => ({ name, error: "Keine Daten" })));
-ipcMain.handle("get-config", () => ({ pageLooks: config.pageLooks && typeof config.pageLooks === "object" ? config.pageLooks : {}, nodeStyle: ["punkt", "ring", "leucht", "stern"].includes(config.nodeStyle) ? config.nodeStyle : "punkt", aura: ["aus", "weich", "stark"].includes(config.aura) ? config.aura : "aus", breath: !!config.breath, pulseStyle: ["punkte", "funken", "komet", "blitz", "welle", "licht"].includes(config.pulseStyle) ? config.pulseStyle : "punkte", iobOn: !!config.iobOn, iobUrl: config.iobUrl || "", iobUser: config.iobUser || "", hasIobPass: !!config.iobPass, iobPick: Array.isArray(config.iobPick) ? config.iobPick : [], iobWrite: !!config.iobWrite, iobAll: config.iobAll !== false, shapeRand: +config.shapeRand || 0, fmDashOn: !!config.fmDashOn, aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarShow !== "nie", taskbarShow: config.taskbarShow, hiddenFans: config.hiddenFans, afterHide: config.afterHide, taskbarFront: config.taskbarFront, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnTiltK: config.btnTiltK, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, flashT: config.flashT, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeRadii: config.holeRadii, friendsStill: config.friendsStill, ytFilterState, ytBackgroundAlpha: config.ytBackgroundAlpha ?? 100, ytFrame: config.ytFrame !== false, ytShadow: !!config.ytShadow, ytFilterOn: config.ytFilterOn !== false, uiSkin: "classic", reduceAnimations: !!config.reduceAnimations, backgroundPresentation: config.backgroundPresentation === "eco" ? "eco" : "fluid", notesScopeVersion: config.notesScopeVersion, pageIds: config.pageIds, notesByPage: config.notesByPage, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, ecoLook: config.ecoLook, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, warnDiskGB: config.warnDiskGB, warnRamPct: config.warnRamPct, warnCpuPct: config.warnCpuPct, warnInet: config.warnInet, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shape2d: config.shape2d, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordAlsoOnline: config.discordAlsoOnline, dcOnlyMarked: config.dcOnlyMarked, dcMarked: config.dcMarked, looks: config.looks, winStyle: config.winStyle, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine, voiceFallback: config.voiceFallback, donateUrl: config.donateUrl, lang: config.lang, portalOn: config.portalOn, portalUrl: config.portalUrl, briefOn: config.briefOn, briefTime: config.briefTime, briefLen: config.briefLen, briefParts: config.briefParts, customPages: config.customPages, autoFit: config.autoFit, tradeOn: config.tradeOn, tradeCur: config.tradeCur, tradeEvery: config.tradeEvery, tradeStock: config.tradeStock, tradeFng: config.tradeFng, tradeDom: config.tradeDom, tradeHalv: config.tradeHalv, tradeWatch: config.tradeWatch, tradePort: config.tradePort, hasFinnhubKey: !!config.finnhubKey, design: config.design, designSet: config.designSet, designBlk: config.designBlk, designType: config.designType, designBtn: config.designBtn,
+ipcMain.handle("get-config", () => ({ pageLooks: config.pageLooks && typeof config.pageLooks === "object" ? config.pageLooks : {}, nodeStyle: ["punkt", "ring", "leucht", "stern"].includes(config.nodeStyle) ? config.nodeStyle : "punkt", aura: ["aus", "weich", "stark"].includes(config.aura) ? config.aura : "aus", breath: !!config.breath, pulseStyle: ["punkte", "funken", "komet", "blitz", "welle", "licht"].includes(config.pulseStyle) ? config.pulseStyle : "punkte", iobOn: !!config.iobOn, iobUrl: config.iobUrl || "", iobUser: config.iobUser || "", hasIobPass: !!config.iobPass, iobPick: Array.isArray(config.iobPick) ? config.iobPick : [], iobWrite: !!config.iobWrite, iobAll: config.iobAll !== false, shapeRand: +config.shapeRand || 0, fmDashOn: !!config.fmDashOn, aiProv: config.aiProv, aiBase: config.aiBase, aiModel: config.aiModel, hasAiKey: !!config.aiKey, ballOn: config.ballOn, menuAlpha: config.menuAlpha, taskbarOn: config.taskbarShow !== "nie", taskbarShow: config.taskbarShow, hiddenFans: config.hiddenFans, afterHide: config.afterHide, taskbarFront: config.taskbarFront, twAlpha: config.twAlpha, twFeather: config.twFeather, twRound: config.twRound, twVideoOnly: config.twVideoOnly, twOnTop: config.twOnTop, twMode: config.twMode, twEmbedSize: config.twEmbedSize, gaugeTiltX: config.gaugeTiltX, gaugeTiltY: config.gaugeTiltY, btnTiltX: config.btnTiltX, btnTiltY: config.btnTiltY, btnTiltFollow: config.btnTiltFollow, btnTiltK: config.btnTiltK, btnShape: config.btnShape, btnLook: config.btnLook, palette: config.palette, loadShimmer: config.loadShimmer, ytAlpha: config.ytAlpha, ytFeather: config.ytFeather, ytRound: config.ytRound, flashK: config.flashK, flashT: config.flashT, statusOn: config.statusOn, miniMore: config.miniMore, look3dK: config.look3dK, uiFont: config.uiFont, uiScale: config.uiScale, structK: config.structK, edgeK: config.edgeK, nodeK: config.nodeK, steamOnX: config.steamOn, gamingOn: config.gamingOn, holeX: config.holeX, holeY: config.holeY, holeEdit: config.holeEdit, holeOn: config.holeOn, holeCorner: config.holeCorner, holeW: config.holeW, holeH: config.holeH, holeRound: config.holeRound, holeRadii: config.holeRadii, friendsStill: config.friendsStill, ytFilterState, ytBackgroundAlpha: config.ytBackgroundAlpha ?? 100, ytFrame: config.ytFrame !== false, ytShadow: !!config.ytShadow, ytFilterOn: config.ytFilterOn !== false, uiSkin: "classic", reduceAnimations: !!config.reduceAnimations, backgroundPresentation: config.backgroundPresentation === "eco" ? "eco" : "fluid", notesScopeVersion: config.notesScopeVersion, pageIds: config.pageIds, notesByPage: config.notesByPage, notesPages: config.notesPages, notesCur: config.notesCur, miningOn: config.miningOn, dcJoinBot: config.dcJoinBot, quickOn: config.quickOn, quickSize: config.quickSize, quickLabels: config.quickLabels, mirrorOn: config.mirrorOn, mirrorMatch: config.mirrorMatch, mirrorFps: config.mirrorFps, mirrorQ: config.mirrorQ, procKill: config.procKill, ballLabels: config.ballLabels, bgShoot: config.bgShoot, micId: config.micId, spkId: config.spkId, friendsSplit: config.friendsSplit, friendsHold: config.friendsHold, updateChannel: config.updateChannel, crashReport: config.crashReport, barMode: config.barMode, fpsIdle: config.fpsIdle, fpsMax: config.fpsMax, reportOn: config.reportOn, reportHour: config.reportHour, reportKeep: config.reportKeep, reportNotify: config.reportNotify, claudeAsk: config.claudeAsk, oceanNotify: config.oceanNotify, payoutNotify: config.payoutNotify, notifyPanel: config.notifyPanel, notifyWin: config.notifyWin, notifySound: config.notifySound, aiShare: config.aiShare, strataWake: config.strataWake, strata: strata.snapshot(), strataDir: config.strataDir, strataArgs: config.strataArgs, userName: config.userName, userInfo: config.userInfo, setupDone: config.setupDone, weatherOn: config.weatherOn, weather: wx, mineOn: config.mineOn, mineAddr: config.mineAddr, strataIdleMin: config.strataIdleMin, foremanOn: config.foremanOn, fmEvOn: config.fmEvOn, fmView: config.fmView, look3d: config.look3d, foremanPx: config.foremanPx, foremanAccts: fmAccts().map((a) => ({ name: a.name, client: a.client, hasKey: !!a.key })), farm: farmSt, expandedNow: expanded, ollamaOff: config.ollamaOff, pages: config.pages, page: config.page, liteMode: config.liteMode, ecoLook: config.ecoLook, pagesOn: config.pagesOn, mineOrb: config.mineOrb, pageFriends: config.pageFriends, mineView: config.mineView, mOverInit: config.mOverInit, mFxInit: config.mFxInit, mineFx: config.mineFx, oceanInTotal: config.oceanInTotal, profLast: config.profLast, layoutProfiles: config.layoutProfiles, wxPlaces: config.wxPlaces, hiddenBlocks: config.hiddenBlocks, mining: mine, clocksOn: config.clocksOn, clocks: config.clocks, gameMode: config.gameMode, snapGuides: config.snapGuides, blockFont: config.blockFont, chatH: config.chatH, dockFx: config.dockFx, setZoom: config.setZoom, extraVoice: config.extraVoice, friendsFold: config.friendsFold, ytAdblock: config.ytAdblock, ytNoAds: config.ytNoAds, ytVideoOnly: config.ytVideoOnly, notesOn: config.notesOn, notesText: config.notesText, venomRoam: config.venomRoam, gfxSafe: config.gfxSafe, ytHwDecode: config.ytHwDecode !== false, mediaBrowser: config.mediaBrowser, cpuHotC: config.cpuHotC, warnDiskGB: config.warnDiskGB, warnRamPct: config.warnRamPct, warnCpuPct: config.warnCpuPct, warnInet: config.warnInet, gpuHotC: config.gpuHotC, fmNotify: config.fmNotify, fmMinerUrl: config.fmMinerUrl, aiLogOn: config.aiLogOn, spin: config.spin, density: config.density, skin: config.skin, sensors: config.sensors, shape: config.shape, shape2d: config.shape2d, shapeRim: config.shapeRim, glow: config.glow, scales: config.scales, updateUrl: config.updateUrl, version: app.getVersion(), overlayMode: config.overlayMode, ytMode: config.ytMode, ytEmbedSize: config.ytEmbedSize, sway: config.sway, discordVoiceOnly: config.discordVoiceOnly, discordAlsoOnline: config.discordAlsoOnline, dcOnlyMarked: config.dcOnlyMarked, dcMarked: config.dcMarked, looks: config.looks, winStyle: config.winStyle, discordName: config.discordName, voiceOverlay: config.voiceOverlay, overlayCorner: config.overlayCorner, winColor: config.winColor, friendsBox: config.friendsBox, ytOnTop: config.ytOnTop, fileIndex: fileIndexInfo(), viz: config.viz, pins: config.pins, micFloat: config.micFloat, onTop: config.onTop, wakeFront: config.wakeFront, autoOpen: config.autoOpen, steamOn: config.steamOn, hasSteamKey: !!config.steamKey, hasDcBot: !!config.dcBotToken, steamDl: config.steamDl, mediaOn: config.mediaOn, dcIcons: config.dcIcons, sysBox: config.sysBox, pillOff: config.pillOff, ballOff: config.ballOff, panelLayout: config.panelLayout, dcBot: dcbot.snapshot(), steamId: config.steamId, discordOn: config.discordOn, discordServers: config.discordServers, newsOn: config.newsOn, newsCats: config.newsCats, newsOnTop: config.newsOnTop, btcCur: config.btcCur, coins: config.coins, bgFx: config.bgFx, market, memoryOn: config.memoryOn, claudeDesktopLink: config.claudeDesktopLink, memoryDir: memory.DIR(), hiddenApps: config.hiddenApps, opacity: config.opacity, gpuUse: config.gpuUse, widgets: config.widgets, claudeCodeModel: config.claudeCodeModel, claudeCode: !!findClaudeCode(), themeHue: config.themeHue, themeRegions: config.themeRegions, voiceEngine: config.voiceEngine, voiceFallback: config.voiceFallback, donateUrl: config.donateUrl, lang: config.lang, portalOn: config.portalOn, portalUrl: config.portalUrl, briefOn: config.briefOn, briefTime: config.briefTime, briefLen: config.briefLen, briefParts: config.briefParts, customPages: config.customPages, autoFit: config.autoFit, tradeOn: config.tradeOn, tradeCur: config.tradeCur, tradeEvery: config.tradeEvery, tradeStock: config.tradeStock, tradeFng: config.tradeFng, tradeDom: config.tradeDom, tradeHalv: config.tradeHalv, tradeWatch: config.tradeWatch, tradePort: config.tradePort, hasFinnhubKey: !!config.finnhubKey, design: config.design, designSet: config.designSet, designBlk: config.designBlk, designType: config.designType, designBtn: config.designBtn,
   autostart: config.autostart, backend: config.backend, ollamaModel: config.ollamaModel || localModel(), hasApiKey: !!config.anthropicApiKey,
   ballScale: config.ballScale, labelScale: config.labelScale, tempScale: config.tempScale, appScale: config.appScale, wakeWords: config.wakeWords, voiceOutput: config.voiceOutput, voiceId: config.voiceId, voiceRobot: config.voiceRobot, micOnStart: config.micOnStart, systemAlertsVoice: config.systemAlertsVoice, voice: voiceState, system: watch?.data.ts ? withIcons(watch.data) : null }));
 // Kurz-Lagebild für die KI, nur echte abgerufene Werte
@@ -1348,6 +1369,7 @@ async function createWindow(port) {
   win.on("move", () => { followDock(); }); win.on("resize", () => { followDock(); applyShape(); });
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
   win.on("blur", () => { blurAt = Date.now(); });
+  win.on("unresponsive", () => diag.note("oberfl", "reagiert nicht")); win.on("responsive", () => diag.note("oberfl", "reagiert wieder"));
   for (const ev of ["show", "hide", "minimize", "restore"]) win.on(ev, () => setTimeout(syncNews, 50));
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
@@ -1359,6 +1381,7 @@ async function createWindow(port) {
   // Oberfläche abgestürzt: für den Fehlerbericht merken und neu laden
   win.webContents.on("render-process-gone", (_e, d) => {
     if (d?.reason === "clean-exit") return;
+    diag.note("oberfl", "abgestürzt", d?.reason, d?.exitCode);
     crash.add("Oberfläche abgestürzt", `${d?.reason} (Code ${d?.exitCode})`);
     setTimeout(() => { if (alive()) win.webContents.reload(); }, 1500);
   });
@@ -1400,14 +1423,14 @@ function setupUpdater() {
   updater.autoDownload = true; updater.autoInstallOnAppQuit = true;
   updater.on("checking-for-update", () => { updState.text = "Suche nach Updates…"; });
   updater.on("update-not-available", () => { updState.text = "Argus ist aktuell (" + app.getVersion() + ")."; });
-  updater.on("update-available", (i) => { updState.text = "Lade Version " + i.version + "…"; });
+  updater.on("update-available", (i) => { updState.text = "Lade Version " + i.version + "…"; diag.note("update", "gefunden", i?.version); });
   updater.on("download-progress", (p) => { updState.text = "Lade Update: " + Math.round(p.percent) + " %"; });
   updater.on("update-downloaded", (i) => {
     updState = { text: "Version " + i.version + " ist geladen und wird beim Beenden installiert.", ready: true, version: i.version };
     sendUI("notice", `Update auf Version ${i.version} ist bereit. Es wird beim nächsten Beenden installiert, oder sofort über „Jetzt aktualisieren“ in den Einstellungen.`);
     tray?.setContextMenu(trayMenu());
   });
-  updater.on("error", (e) => { updState.text = "Update-Prüfung fehlgeschlagen: " + String(e?.message || e).split("\n")[0].slice(0, 160); });
+  updater.on("error", (e) => { updState.text = "Update-Prüfung fehlgeschlagen: " + String(e?.message || e).split("\n")[0].slice(0, 160); diag.note("update", "Fehler", String(e?.message || e).split("\n")[0].slice(0, 160)); });
   checkUpdates();
   // Nur beim Start prüfen (Nutzerwunsch): kein Zeitgeber; manuell über Einstellungen oder Tray-Menü
 }
@@ -1795,7 +1818,7 @@ ipcMain.on("win-mode", (_e, mode) => {
 ipcMain.on("quit", () => app.quit());
 // Einstellungen aus der Oberfläche speichern (nur bekannte Schlüssel)
 const SETTABLE = { pageLooks: "object", nodeStyle: "string", aura: "string", breath: "boolean", pulseStyle: "string", iobOn: "boolean", iobUrl: "string", iobUser: "string", iobPass: "string", iobPick: "object", iobWrite: "boolean", iobAll: "boolean", shapeRand: "number", fmDashOn: "boolean", aiProv: "string", aiBase: "string", aiModel: "string", aiKey: "string", ballOn: "boolean", menuAlpha: "number", taskbarOn: "boolean", taskbarShow: "string", hiddenFans: "object", afterHide: "string", miniPos: "object", taskbarFront: "boolean", btnShape: "string", btnLook: "string", btnTiltX: "number", btnTiltY: "number", btnTiltFollow: "boolean", btnTiltK: "number", gaugeTiltX: "number", gaugeTiltY: "number", twAlpha: "number", twFeather: "number", twRound: "number", twVideoOnly: "boolean", twOnTop: "boolean", twMode: "string", twEmbedSize: "string", palette: "string", loadShimmer: "boolean", ytBackgroundAlpha: "number", ytFrame: "boolean", ytShadow: "boolean", ytFilterOn: "boolean", ytAlpha: "number", ytFeather: "number", ytRound: "number", flashK: "number", flashT: "number", statusOn: "boolean", miniMore: "boolean", look3dK: "number", uiFont: "string", uiScale: "number", structK: "number", edgeK: "number", nodeK: "number", gamingOn: "boolean", quickOn: "boolean", quickSize: "number", quickLabels: "boolean", mirrorOn: "boolean", mirrorMatch: "string", mirrorFps: "number", mirrorQ: "number", procKill: "boolean", ballLabels: "string", bgShoot: "number", micId: "string", spkId: "string", friendsSplit: "boolean", friendsHold: "number", updateChannel: "string", crashReport: "boolean", barMode: "string", fpsIdle: "number", fpsMax: "number", reportOn: "boolean", reportHour: "number", reportKeep: "number", reportNotify: "boolean", claudeAsk: "boolean", oceanNotify: "boolean", payoutNotify: "boolean", notifyPanel: "boolean", notifyWin: "boolean", notifySound: "boolean", aiShare: "string", strataWake: "boolean", strataDir: "string", strataArgs: "string", userName: "string", userInfo: "string", setupDone: "boolean", weatherOn: "boolean", mineOn: "boolean", mineAddr: "string", strataIdleMin: "number", foremanOn: "boolean", fmEvOn: "boolean", fmView: "string", look3d: "boolean", foremanPx: "object", layoutProfiles: "object", pages: "object", page: "string", liteMode: "string", ecoLook: "string", ollamaOff: "boolean", pagesOn: "boolean", mineOrb: "boolean", pageFriends: "boolean", mineView: "string", mOverInit: "boolean", mFxInit: "boolean", mineFx: "object", oceanInTotal: "boolean", profLast: "string", wxPlaces: "string", hiddenBlocks: "object", clocksOn: "boolean", clocks: "object", gameMode: "boolean", snapGuides: "boolean", blockFont: "object", chatH: "number", dockFx: "boolean", setZoom: "number", themeHue: "number", themeRegions: "string", voiceEngine: "string", voiceFallback: "string", donateUrl: "string", lang: "string", portalOn: "boolean", voiceRobot: "boolean", portalUrl: "string", voiceServer: "string", voiceServerModel: "string", voiceServerVoice: "string", briefOn: "boolean", briefTime: "string", briefLen: "string", briefParts: "object", customPages: "object", autoFit: "boolean", tradeOn: "boolean", tradeCur: "string", tradeEvery: "number", tradeStock: "string", tradeFng: "boolean", tradeDom: "boolean", tradeHalv: "boolean", tradeWatch: "object", tradePort: "object", finnhubKey: "string", design: "string", designSet: "boolean", designBlk: "boolean", designType: "boolean", designBtn: "string", voiceOutput: "boolean", micOnStart: "boolean",
-  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeRadii: "object", friendsStill: "boolean", reduceAnimations: "boolean", backgroundPresentation: "string", pageIds: "object", notesByPage: "object", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", mediaBrowser: "boolean", cpuHotC: "number", warnDiskGB: "number", warnRamPct: "number", warnCpuPct: "number", warnInet: "boolean", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", shape2d: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytZoom: "number", looks: "object", winStyle: "object", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordAlsoOnline: "boolean", dcOnlyMarked: "boolean", dcMarked: "object", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
+  holeX: "number", holeY: "number", holeEdit: "boolean", holeOn: "boolean", holeCorner: "string", holeW: "number", holeH: "number", holeRound: "number", holeRadii: "object", friendsStill: "boolean", reduceAnimations: "boolean", backgroundPresentation: "string", pageIds: "object", notesByPage: "object", notesPages: "object", notesCur: "string", miningOn: "boolean", dcJoinBot: "boolean", systemAlertsVoice: "boolean", venomRoam: "boolean", gfxSafe: "boolean", ytHwDecode: "boolean", mediaBrowser: "boolean", cpuHotC: "number", warnDiskGB: "number", warnRamPct: "number", warnCpuPct: "number", warnInet: "boolean", gpuHotC: "number", fmNotify: "boolean", fmMinerUrl: "string", aiLogOn: "boolean", autostart: "boolean", memoryOn: "boolean", claudeDesktopLink: "boolean", newsOn: "boolean", newsCats: "object", newsOnTop: "boolean", btcCur: "string", coins: "object", bgFx: "object", shape: "string", shapeRim: "boolean", shape2d: "boolean", glow: "number", scales: "object", updateUrl: "string", sensors: "boolean", ytAdblock: "boolean", ytNoAds: "boolean", ytZoom: "number", looks: "object", winStyle: "object", ytVideoOnly: "boolean", notesOn: "boolean", notesText: "string", spin: "number", density: "number", skin: "string", friendsFold: "object", extraVoice: "object", sway: "string", discordVoiceOnly: "boolean", discordAlsoOnline: "boolean", dcOnlyMarked: "boolean", dcMarked: "object", discordName: "string", discordAuto: "boolean", voiceOverlay: "boolean", overlayMode: "string", ytEmbedSize: "string", overlayCorner: "string", winColor: "object", friendsBox: "object", ytOnTop: "boolean", viz: "object", pins: "object", micFloat: "boolean", onTop: "string", wakeFront: "boolean", autoOpen: "boolean", steamOn: "boolean", steamKey: "string", dcBotToken: "string", dcIcons: "boolean", steamDl: "boolean", mediaOn: "boolean", sysBox: "object", pillOff: "object", ballOff: "object", panelLayout: "object", steamId: "string", discordOn: "boolean", discordServers: "string", wakeWords: "object", widgets: "object", hiddenApps: "object", opacity: "object", claudeCodeModel: "string", gpuUse: "string", backend: "string", ollamaModel: "string", anthropicApiKey: "string" };
 function writeNotesBackup() {
   const f = path.join(path.dirname(CONFIG_PATH), "notizen-seiten-backup.json");
   fs.mkdirSync(path.dirname(f), { recursive: true });
@@ -1809,6 +1832,7 @@ ipcMain.on("notes-flush", (event, snapshot) => {
   catch (error) { console.warn("Notizen-Abschluss fehlgeschlagen:", error.code || "write"); }
 });
 ipcMain.handle("set-config", (_e, patch) => {
+  try { if (process.uptime() > 20) diag.note("einst", Object.keys(patch || {}).slice(0, 12).join(",")); } catch {} // beim Start setzt die Oberfläche viele Werte, das wäre nur Rauschen
   if (patch && typeof patch.updateUrl === "string" && patch.updateUrl.trim() && !/^https:\/\//i.test(patch.updateUrl.trim())) delete patch.updateUrl; // Update-Adresse nur verschlüsselt (https)
   for (const [k, v] of Object.entries(patch || {})) if (SETTABLE[k] && typeof v === SETTABLE[k] && v !== null) config[k] = k === "widgets" ? { ...config.widgets, ...v } : v;
   if ("widgets" in patch) { config.widgets = mergeWidgets(config.widgets); if (watch) { watch.appsOn = config.widgets.apps.on; if (watch.appsOn) watch.pollApps().then(() => watch.emit()).catch(() => {}); } }
@@ -1855,7 +1879,7 @@ ipcMain.handle("set-config", (_e, patch) => {
   if ("userInfo" in patch) config.userInfo = String(config.userInfo).slice(0, 500);
   if (("weatherOn" in patch || "wxPlaces" in patch) && config.weatherOn) { weatherService.refresh(); }
   if ("foremanPx" in patch) pollFarm();
-  if ("gfxSafe" in patch) restartSoon(800);
+  if ("gfxSafe" in patch || "ytHwDecode" in patch) restartSoon(800);
   if (["cpuHotC", "gpuHotC", "warnDiskGB", "warnRamPct", "warnCpuPct", "warnInet"].some((k) => k in patch) && watch) watch.limits = { cpu: config.cpuHotC, gpu: config.gpuHotC, diskGB: config.warnDiskGB, ramPct: config.warnRamPct, cpuPct: config.warnCpuPct, inet: config.warnInet }; // Grafikmodus gilt erst nach Neustart
   if ("foremanOn" in patch) { farmSt = null; farmPrev = {}; for (const k in farmConf) delete farmConf[k]; pollFarm(); }
   if ("aiShare" in patch || "strataWake" in patch || "claudeAsk" in patch) pushAiStatus();
@@ -2053,9 +2077,20 @@ app.whenReady().then(async () => {
   startStep("Tray", () => buildTray());
   startStep("Autostart", () => applyAutostart());
   startStep("Updater", () => setupUpdater());
+  setTimeout(() => { diag.stable(); diag.note("start", "läuft stabil"); }, 90e3);
+  diagWatch();
+  app.getGPUInfo("basic").then((g) => { const d = (g?.gpuDevice || []).map((x) => `${x.vendorId}:${x.deviceId}${x.active ? "*" : ""} ${x.driverVersion || ""}`).join(", "); diag.note("grafik", d, "Grafikbeschleunigung " + (safeBoot.safe || config.gfxSafe ? "aus" : "an"), config.ytHwDecode === false ? "Video-Dekodierung Software" : ""); }).catch(() => {});
   if (config.setupDone) startStep("Sensoren", () => startSensors());
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
-  setTimeout(() => { try { if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
+  setTimeout(() => { try {
+    if (safeBoot.safe) {
+      sendUI("notice", `Sicherheitsstart: Argus ist ${safeBoot.fails}-mal hintereinander abgestürzt. Diesmal ohne Grafikbeschleunigung und ohne YouTube/Twitch. Unter Einstellungen › System › Fehlerberichte kannst du eine Diagnose speichern.`);
+      if (config.ytOpen || config.twOpen) { config.ytOpen = ""; config.twOpen = ""; saveConfig(); }
+      return;
+    }
+    if (ytStartNote?.reason === "video") sendUI("notice", "Argus ist zuletzt beim Laden eines YouTube-Videos abgestürzt. Das Video wird nicht mehr automatisch geöffnet, YouTube startet auf der Startseite.");
+    else if (ytStartNote?.reason === "unclean") sendUI("notice", "Argus wurde zuletzt nicht normal beendet. YouTube öffnet sich diesmal nicht von selbst und startet auf der Startseite.");
+    if (config.ytOpen === "panel") ytEmbedShow(""); if (config.twOpen === "panel") twEmbedShow(""); else if (config.twOpen === "win") openTwitch(""); } catch (e) { logError(e); } }, 3000);
   strata.init(() => config, (s) => {
     if (s.state === "an" && strataPrev !== "an") { strataUsed = Date.now(); unloadOllama(); } // Strata übernimmt: kleines Modell aus dem Grafikspeicher werfen
     strataPrev = s.state; sendUI("strata", s); pushAiStatus();
@@ -2457,8 +2492,76 @@ ipcMain.on("media-cmd", (_e, c) => { if (["play", "next", "prev"].includes(c) ||
 app.on("will-quit", stopMedia);
 app.on("will-quit", () => weatherService.stop());
 app.on("will-quit", () => crash.clean()); // sauber beendet: keine „unerwartet beendet“-Meldung beim nächsten Start
-app.on("child-process-gone", (_e, d) => { if (d?.type === "GPU" && !["clean-exit", "killed"].includes(d.reason)) { crash.add("Grafikprozess abgestürzt", `${d.reason} (Code ${d.exitCode})`); setTimeout(() => sendUI("gpu-reset"), 1500); } });
+app.on("child-process-gone", (_e, d) => diag.note("prozess", d?.type, d?.name || d?.serviceName || "", d?.reason, d?.exitCode));
+app.on("child-process-gone", (_e, d) => { if (d?.type === "GPU" && !["clean-exit", "killed"].includes(d.reason)) { crash.add("Grafikprozess abgestürzt", `${d.reason} (Code ${d.exitCode})`, config.ytLoading?.url ? "Während YouTube-Video: " + config.ytLoading.url.slice(0, 200) : ""); ytGpuCrash(); setTimeout(() => sendUI("gpu-reset"), 1500); } });
+// 0.59.4: Stürzt der Grafikprozess ab, während ein YouTube-Video lädt, liegt es meist an der Hardware-Videodekodierung des Treibers.
+// Video merken, YouTube auf die Startseite, und ab dem nächsten Start ohne Hardware-Dekodierung (in den Einstellungen wieder einschaltbar)
+function ytGpuCrash() {
+  const u = config.ytLoading?.url; if (!u || !ytView) return;
+  ytMarkBad(u);
+  const wasOn = config.ytHwDecode !== false;
+  if (wasOn) { config.ytHwDecode = false; try { writeConfigNow(); } catch {} }
+  sendUI("notice", "Der Grafiktreiber ist bei diesem YouTube-Video abgestürzt." + (wasOn ? " Argus spielt Videos ab dem nächsten Start ohne Hardware-Dekodierung ab (Einstellungen › System)." : ""));
+  setTimeout(() => { const wc = ytView?.webContents; if (wc && !wc.isDestroyed()) wc.loadURL(ytGuard.HOME).catch(() => {}); }, 1500);
+}
 ipcMain.on("ui-error", (_e, msg, stack) => crash.add("Fehler in der Oberfläche", String(msg || "").slice(0, 500), String(stack || "").slice(0, 3000)));
+// 0.59.8: Laufende Beobachtung für spätere Analysen. Hänger des Hauptprozesses (Ereignisschleife steht), neue Absturz-Abbilder,
+// alle 10 Minuten Prozesse und Speicher kurz in die Blackbox. Kostet praktisch nichts (ein Zeitgeber pro Sekunde).
+function diagMetrics() {
+  try {
+    const ms = app.getAppMetrics(), by = {};
+    for (const m of ms) { const t = m.type + (m.name ? ":" + m.name : ""); const b = (by[t] ||= { anzahl: 0, mb: 0, cpu: 0 }); b.anzahl++; b.mb += Math.round((m.memory?.workingSetSize || 0) / 1024); b.cpu = Math.round((b.cpu + (m.cpu?.percentCPUUsage || 0)) * 10) / 10; }
+    return { prozesse: ms.length, gesamtMB: Object.values(by).reduce((a, b) => a + b.mb, 0), nachTyp: by, hauptprozessMB: Math.round(process.memoryUsage().rss / 1048576), laufzeitMin: Math.round(process.uptime() / 60) };
+  } catch (e) { return { fehler: e.message }; }
+}
+function diagWatch() {
+  let last = Date.now();
+  setInterval(() => { const now = Date.now(), lag = now - last - 1000; last = now; if (lag > 3000) diag.note("haenger", `Hauptprozess stand ${Math.round(lag / 100) / 10} s`); }, 1000).unref?.();
+  setInterval(() => { const m = diagMetrics(); diag.note("speicher", `${m.prozesse} Prozesse, ${m.gesamtMB} MB, Hauptprozess ${m.hauptprozessMB} MB`); }, 10 * 60e3).unref?.();
+  try {
+    const nd = diag.newDumps(app.getPath("crashDumps"));
+    if (nd.length) { diag.note("abbild", `${nd.length} neue Absturz-Abbild(er) seit dem letzten Start`, new Date(nd[0].t).toISOString()); crash.add("Absturz-Abbild gespeichert", `${nd.length} neue(s) Absturz-Abbild(er), zuletzt ${new Date(nd[0].t).toISOString()}. Mit „Diagnose speichern“ (Einstellungen › System › Fehlerberichte) mitschicken.`); }
+  } catch {}
+  try { diag.note("bildschirm", screen.getAllDisplays().map((d) => `${d.size.width}x${d.size.height}@${d.scaleFactor}${d.id === screen.getPrimaryDisplay().id ? "*" : ""}`).join(", ")); } catch {}
+}
+// Welche Funktionen sind an, eingerichtet und melden Fehler? Nur Ja/Nein und Zustände, keine Namen, Schlüssel oder Adressen
+function diagStatus() {
+  const t = (f) => { try { return f(); } catch (e) { return "Fehler: " + (e?.message || e); } };
+  const age = (f) => { try { return Math.round((Date.now() - fs.statSync(f).mtimeMs) / 1000) + " s alt"; } catch { return "fehlt"; } };
+  return {
+    einrichtungFertig: !!config.setupDone, sprache: config.lang, autostart: !!config.autostart, seiten: t(() => (config.pages || []).length),
+    ki: t(() => ({ anbieter: config.backend || "keiner", weitereKi: config.aiProv, weitereKiSchluessel: !!config.aiKey, claudeApiSchluessel: !!config.anthropicApiKey, claudeCodeGefunden: !!findClaudeCode(), strata: strata.snapshot()?.state, strataText: strata.snapshot()?.text, spracherkennung: voiceState?.text })),
+    sensoren: t(() => ({ an: config.sensors !== false, datei: age(sensorOut()), fehlendeDateien: sensorFilesMissing(), cpuTemp: watch?.data?.temp != null, gpuTemp: watch?.data?.gpuTemp != null, gpu: watch?.data?.gpuName || "", luefter: (watch?.data?.fans || []).length, zustand: watch?.data?.health, letzteMessung: watch?.data?.ts ? new Date(watch.data.ts).toISOString() : null })),
+    discord: t(() => ({ an: !!config.discordOn, botToken: !!config.dcBotToken, botStatus: dcbot.snapshot()?.status, server: (dcbot.snapshot()?.guilds || []).length })),
+    steam: t(() => ({ an: !!config.steamOn, schluessel: !!config.steamKey, steamId: !!config.steamId })),
+    mining: t(() => ({ an: !!config.mineOn, wallets: String(config.mineAddr || "").split(/\n/).filter((x) => x.trim()).length, foreman: !!config.foremanOn, foremanKonten: (config.foremanAccounts || []).length, foremanDashboard: !!config.fmDashOn, portal: !!config.portalOn, portalAdresse: !!config.portalUrl, farm: farmSt ? "Daten da" : "keine Daten", pool: mine?.pool ? "Daten da" : "keine Daten" })),
+    smartHome: t(() => ({ an: !!config.iobOn, adresse: !!config.iobUrl })),
+    wetter: t(() => ({ an: config.weatherOn !== false, orte: (config.wxPlaces || []).length })),
+    youtube: t(() => ({ filter: ytFilterState, filterAn: config.ytFilterOn !== false, hardwareDekodierung: config.ytHwDecode !== false, offen: config.ytOpen, gesperrteVideos: (config.ytBad || []).length, ansichtAktiv: !!ytView })),
+    update: t(() => ({ kanal: config.updateChannel, zustand: updState.text })),
+    grafik: { kompatibilitaetsmodus: !!config.gfxSafe, sicherheitsstart: safeBoot },
+    bildschirme: t(() => screen.getAllDisplays().map((d) => ({ breite: d.size.width, hoehe: d.size.height, skalierung: d.scaleFactor, haupt: d.id === screen.getPrimaryDisplay().id }))),
+    fehlerberichte: t(() => ({ offen: crash.pending().length, verlauf14Tage: (crash.history?.() || []).length }))
+  };
+}
+// Diagnose-Paket auf dem Desktop speichern (bereinigt), Ordner danach zeigen
+ipcMain.handle("diag-save", async () => {
+  try {
+    const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16);
+    let outDir = app.getPath("desktop"); try { fs.accessSync(outDir, fs.constants.W_OK); } catch { outDir = app.getPath("userData"); }
+    const outFile = path.join(outDir, `Argus-Diagnose-${stamp}.zip`);
+    let gpu = null; try { gpu = await app.getGPUInfo("basic"); } catch {}
+    const info = { argus: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, kanal: config.updateChannel,
+      sicherheitsstart: safeBoot, grafikbeschleunigung: !(safeBoot.safe || config.gfxSafe), kompatibilitaetsmodus: !!config.gfxSafe, videoHardwareDekodierung: config.ytHwDecode !== false,
+      grafikStatus: app.getGPUFeatureStatus?.(), grafik: gpu?.gpuDevice || null, grafikName: watch?.data?.gpuName || "",
+      youtube: { offen: config.ytOpen, gesperrteVideos: (config.ytBad || []).length, laedt: ytGuard.key(config.ytLoading?.url) || null } };
+    const extra = { "funktionen.json": diagStatus(), "einstellungen.json": diag.settings(config, SEALED), "prozesse.json": diagMetrics() };
+    const r = diag.bundle({ outFile, redact: crash.redact, info, extra, logFile: path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), dumpDir: app.getPath("crashDumps") });
+    diag.note("diagnose", "gespeichert", path.basename(outFile));
+    shell.showItemInFolder(outFile);
+    return { ok: true, file: outFile, name: path.basename(outFile), dumps: r.dumps };
+  } catch (e) { logError(e); return { ok: false, error: e?.message || String(e) }; }
+});
 ipcMain.handle("crash-get", (_e, manual) => {
   if (manual) crash.add("Bericht vom Nutzer", "Manuell erstellter Bericht. Beschreibe kurz, was passiert ist:", crash.lastLog());
   else if (config.crashReport === false) return null;
@@ -2671,8 +2774,32 @@ function ytTrack(wc) {
   wc.on("did-navigate-in-page", () => setTimeout(() => ytTrackNow(wc), 800));
   wc.on("destroyed", () => clearInterval(iv));
 }
-const ytResumeUrl = () => { const l = config.ytLast; if (!l?.url) return "https://www.youtube.com/"; try { const u = new URL(l.url); if (l.t > 5) u.searchParams.set("t", l.t + "s"); return u.toString(); } catch { return "https://www.youtube.com/"; } };
+const ytResumeUrl = () => { const l = config.ytLast; if (!l?.url || ytGuard.isBad(config, l.url)) return "https://www.youtube.com/"; try { const u = new URL(l.url); if (l.t > 5) u.searchParams.set("t", l.t + "s"); return u.toString(); } catch { return "https://www.youtube.com/"; } };
 const YT_HOST = /(^|\.)(youtube\.com|youtu\.be|google\.com|googlevideo\.com|ytimg\.com|accounts\.google\.[a-z.]+|gstatic\.com)$/i;
+// Absturz-Bremse: ein Video vor dem Laden synchron als „lädt“ vermerken, nach 30 s stabiler Wiedergabe wieder löschen.
+// Stürzt Argus dazwischen ab, steht der Vermerk beim nächsten Start noch da (siehe app/youtube-guard.js).
+const ytGuard = require("./app/youtube-guard");
+let ytArmT = null, ytViewCrashes = [];
+function ytArm(wc, url) {
+  const k = ytGuard.key(url);
+  if (!k) { if (config.ytLoading) { clearTimeout(ytArmT); config.ytLoading = null; saveConfig(); } return; }
+  if (ytGuard.key(config.ytLoading?.url) === k) return;
+  config.ytLoading = { url: String(url).slice(0, 300), at: Date.now() };
+  diag.note("youtube", "lädt Video", k);
+  try { writeConfigNow(); } catch {}
+  clearTimeout(ytArmT);
+  ytArmT = setTimeout(() => {
+    if (wc.isDestroyed() || ytGuard.key(config.ytLoading?.url) !== k) return;
+    diag.note("youtube", "Video läuft stabil", k);
+    config.ytLoading = null; config.ytBad = ytGuard.release(config, url); saveConfig();
+  }, ytGuard.STABLE_MS);
+}
+function ytMarkBad(url) {
+  const k = ytGuard.key(url); clearTimeout(ytArmT); config.ytLoading = null;
+  if (k) config.ytBad = [k, ...(config.ytBad || []).filter((x) => x !== k)].slice(0, 20);
+  if (ytGuard.key(config.ytLast?.url)) config.ytLast = null;
+  saveConfig();
+}
 // YouTube im Panel: eigene Ansicht über der Fläche, die die Oberfläche dafür freihält (unten links über der Statuszeile)
 let ytView = null, ytRect = null, ytShown = null;
 function ytViewMake() {
@@ -2685,6 +2812,30 @@ function ytViewMake() {
   wc.setWindowOpenHandler(({ url }) => { if (!external(url)) wc.loadURL(url).catch(() => {}); return { action: "deny" }; });
   wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); sendUI("notice", "Dieser externe Link wird nicht als YouTube-Popup geoeffnet."); } });
   wc.on("page-title-updated", (_e, t) => sendUI("yt-title", t.replace(/ - YouTube$/, "")));
+  wc.on("did-navigate", (_e, u) => ytArm(wc, u));
+  // 0.59.6: mehr Spuren in der Blackbox, damit nach einem harten Absturz der letzte Schritt sichtbar ist
+  const ytWhere = (u) => { try { const x = new URL(u); return ytGuard.key(u) || (x.hostname + x.pathname).slice(0, 80); } catch { return ""; } };
+  wc.on("did-start-navigation", (d) => { if (d?.isMainFrame) diag.note("youtube", "navigiert", ytWhere(d.url), d.isSameDocument ? "(in Seite)" : ""); });
+  wc.on("did-fail-load", (_e, code, desc, u, main) => { if (main && code !== -3) diag.note("youtube", "Laden fehlgeschlagen", code, desc, ytWhere(u)); });
+  wc.on("media-started-playing", () => diag.note("youtube", "Wiedergabe startet"));
+  wc.on("media-paused", () => diag.note("youtube", "Wiedergabe pausiert"));
+  wc.on("enter-html-full-screen", () => diag.note("youtube", "Vollbild an"));
+  wc.on("leave-html-full-screen", () => diag.note("youtube", "Vollbild aus"));
+  wc.on("unresponsive", () => diag.note("youtube", "reagiert nicht"));
+  wc.on("responsive", () => diag.note("youtube", "reagiert wieder"));
+  wc.on("did-navigate-in-page", (_e, u, main) => { if (main) ytArm(wc, u); });
+  // Seitenprozess von YouTube abgestürzt: Video merken, auf die Startseite statt in dieselbe Absturzschleife; zweimal in einer Minute → schließen
+  wc.on("render-process-gone", (_e, d) => {
+    if (d?.reason === "clean-exit") return;
+    const u = config.ytLoading?.url || config.ytLast?.url || "";
+    diag.note("youtube", "Ansicht abgestürzt", d?.reason, d?.exitCode, ytGuard.key(u) || u);
+    crash.add("YouTube-Ansicht abgestürzt", `${d?.reason} (Code ${d?.exitCode})`, u ? "Video: " + u.slice(0, 200) : "");
+    ytMarkBad(u);
+    ytViewCrashes = [...ytViewCrashes.filter((t) => Date.now() - t < 60e3), Date.now()];
+    if (ytViewCrashes.length >= 2) { sendUI("notice", "YouTube ist wiederholt abgestürzt und wurde geschlossen."); setTimeout(ytEmbedClose, 200); return; }
+    sendUI("notice", "YouTube ist bei diesem Video abgestürzt. Argus lädt die YouTube-Startseite.");
+    setTimeout(() => { if (ytView && ytView.webContents === wc && !wc.isDestroyed()) wc.loadURL(ytGuard.HOME).catch(() => {}); }, 1500);
+  });
   win.contentView.addChildView(ytView);
   return ytView;
 }
@@ -2693,7 +2844,9 @@ async function ytEmbedShow(query) {
   await Promise.race([ytAdblock(), new Promise((r) => setTimeout(r, 8000))]); // höchstens 8 s auf die Listen warten
   if (!expanded) setExpanded(true);
   const v = ytViewMake();
-  if (query || !v.webContents.getURL()) v.webContents.loadURL(require("./app/youtube-settings").target(query, ytResumeUrl())).catch((e) => { if (e.errno !== -3) sendUI("notice", "YouTube konnte nicht geladen werden (" + (e.code || "Netzwerk") + ")."); });
+  const ytTarget = require("./app/youtube-settings").target(query, ytResumeUrl());
+  diag.note("youtube", "öffnen", query ? "Suche/Link" : "fortsetzen", ytGuard.key(ytTarget) || new URL(ytTarget).pathname);
+  if (query || !v.webContents.getURL()) { ytArm(v.webContents, ytTarget); v.webContents.loadURL(ytTarget).catch((e) => { if (e.errno !== -3) sendUI("notice", "YouTube konnte nicht geladen werden (" + (e.code || "Netzwerk") + ")."); }); }
   sendUI("yt-embed", { on: true });
   if (config.ytOpen !== "panel") { config.ytOpen = "panel"; saveConfig(); }
 }
@@ -2701,7 +2854,8 @@ function ytEmbedClose() {
   if (!ytView) return;
   ytTrackNow(ytView.webContents);
   try { win?.contentView.removeChildView(ytView); } catch {}
-  ytView.webContents.close(); ytView = null; ytRect = null; ytShown = null;
+  ytView.webContents.close(); ytView = null; ytRect = null; ytShown = null; diag.note("youtube", "geschlossen");
+  clearTimeout(ytArmT); if (config.ytLoading) { config.ytLoading = null; saveConfig(); }
   if (!quitting && config.ytOpen === "panel") { config.ytOpen = ""; saveConfig(); }
   sendUI("yt-embed", { on: false });
 }
@@ -2736,6 +2890,7 @@ function ytAdblock() {
       // Network filtering only: no page scriptlets or cosmetic suppression of playback warnings.
       const b = await ElectronBlocker.fromLists(fetch, adsAndTrackingLists, { loadCosmeticFilters: false }, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
       if (config.ytFilterOn === false) { ytFilterStatus("off"); return; }
+      require("./app/youtube-guard").noRedirects(b); // 0.59.7: Umleitungen ließen Argus abstürzen, nur noch blockieren
       b.enableBlockingInSession(session.fromPartition("persist:youtube"));
       ytBlocker = b; ytFilterStatus("on");
     } catch (e) { ytFilterStatus("error"); console.warn("YouTube filter unavailable:", e.code || e.name || "filter"); }
@@ -2803,6 +2958,7 @@ function twSetup(wc) {
   wc.on("will-navigate", (e, u) => { if (external(u)) { e.preventDefault(); if (/^https:/i.test(u)) shell.openExternal(u); } });
 }
 function openTwitch(q) {
+  diag.note("twitch", "Fenster öffnen");
   const url = twUrl(q);
   if (twAlive()) { if (q) twWin.loadURL(url); twWin.show(); twWin.focus(); return; }
   const wa = screen.getPrimaryDisplay().workArea;
@@ -2869,7 +3025,8 @@ function startMarket() {
   setTimeout(pollSocial, 4000); setInterval(pollSocial, 120e3); setInterval(pollDiscordFast, 30e3);
   pollPrice().then(pollAlerts); setTimeout(pollFeeds, 3000);
   setTimeout(pollWeather, 5000);
-  powerMonitor.on("shutdown", () => crash.clean()); // Windows fährt herunter: kein Absturz
+  powerMonitor.on("shutdown", () => { diag.note("ende", "Windows fährt herunter"); crash.clean(); }); // Windows fährt herunter: kein Absturz
+  powerMonitor.on("suspend", () => diag.note("strom", "Standby")); powerMonitor.on("resume", () => diag.note("strom", "aufgewacht"));
   powerMonitor.on("resume", () => { setTimeout(() => weatherService.refresh(), 10e3); }); // nach Standby evtl. woanders
   setTimeout(pollFarm, 3000); setInterval(pollFarm, 60e3);
   // Miner-Report vom Vortag: ab der eingestellten Stunde einmal am Tag als Fenster (reportOn, reportHour)
@@ -3115,7 +3272,7 @@ function linkClaudeDesktop() {
 app.on("second-instance", () => { win?.showInactive(); setExpanded(true); });
 app.on("will-quit", () => globalShortcut.unregisterAll());
 let quitting = false; // beim Beenden geschlossenes YouTube nicht als „zu“ merken, damit es beim nächsten Start wiederkommt
-app.on("before-quit", () => { quitting = true; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
+app.on("before-quit", () => { quitting = true; diag.note("ende", "regulär beendet"); config.ytLoading = null; try { writeConfigNow(); } catch {} // letzte YouTube-Stelle u. a. sichern
   discordSocial?.close();
   if (strata.ownProcess()) strata.stop(); watch?.stop(); stopAnim(); clearInterval(moveTimer); });
 app.on("window-all-closed", () => app.quit());

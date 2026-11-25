@@ -501,6 +501,11 @@
   $("crSend").addEventListener("click", async () => { crDone = true; await window.argus.crashSend(crTitle, $("crText").value); $("crashPop").hidden = true; notice("GitHub öffnet sich, dort noch auf „Submit new issue“ klicken"); crRender(); });
   $("crDel").addEventListener("click", async () => { if (crHistId) await window.argus.crashDel(crHistId); $("crashPop").hidden = true; crRender(); });
   $("setCrashNow").addEventListener("click", async () => { showCrash(await window.argus.crashGet(true)); }); // Einstellungen bleiben offen
+  $("setDiagSave")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget; b.disabled = true;
+    try { const r = await window.argus.diagSave(); $("setDiagNote").textContent = r?.ok ? `Gespeichert: ${r.name} (Desktop). Die Datei kannst du z. B. per Discord weiterschicken.` : `Diagnose konnte nicht gespeichert werden: ${r?.error || "unbekannt"}`; }
+    finally { b.disabled = false; }
+  });
   crRender();
   $("setCrash").addEventListener("change", (e) => window.argus.setConfig({ crashReport: e.target.checked }));
   window.argus.getConfig?.().then((c) => { $("setCrash").checked = c.crashReport !== false; if (c.setupDone) setTimeout(() => window.argus.crashGet(false).then(showCrash).catch(() => {}), 6000); });

@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld("argus", {
   pickFolder: () => ipcRenderer.invoke("pick-folder"),
   uiError: (msg, stack) => ipcRenderer.send("ui-error", msg, stack),
   crashGet: (manual) => ipcRenderer.invoke("crash-get", manual),
+  diagSave: () => ipcRenderer.invoke("diag-save"),
   crashSend: (title, text) => ipcRenderer.invoke("crash-send", title, text),
   crashDismiss: (ignore, title, text) => ipcRenderer.invoke("crash-dismiss", ignore, title, text),
   crashArchive: (title, text, state) => ipcRenderer.invoke("crash-archive", title, text, state),

@@ -265,6 +265,8 @@
   window.argus.getConfig?.().then((c) => { $("setLite").value = c.liteMode || "auto"; applyLite(c.liteMode || "auto"); });
   $("setGfxSafe").addEventListener("change", (e) => { window.argus.setConfig({ gfxSafe: e.target.checked }); });
   window.argus.getConfig?.().then((c) => { $("setGfxSafe").checked = !!c.gfxSafe; });
+  $("setYtHwDecode")?.addEventListener("change", (e) => { window.argus.setConfig({ ytHwDecode: e.target.checked }); });
+  window.argus.getConfig?.().then((c) => { if ($("setYtHwDecode")) $("setYtHwDecode").checked = c.ytHwDecode !== false; });
   $("setVenomRoam").addEventListener("change", (e) => { venomRoam = e.target.checked; window.argus.setConfig({ venomRoam }); });
   $("setFlash").addEventListener("input", (e) => { flashK = +e.target.value; });
   $("setFlash").addEventListener("change", (e) => window.argus.setConfig({ flashK: +e.target.value }));

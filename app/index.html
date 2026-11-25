@@ -442,9 +442,12 @@
       <label class="row">Animationen reduzieren <input type="checkbox" id="setReduceAnimations"></label>
       <label class="row">Kompatibilitätsmodus (gegen Flackern) <input type="checkbox" id="setGfxSafe"></label>
       <div class="set-note">Schaltet die Grafikkarten-Beschleunigung für Argus ab. Hilft, wenn der Desktop durch das Fenster blitzt, kostet aber etwas mehr CPU. Argus startet dafür neu.</div>
+      <label class="row">Videos mit Hardware-Dekodierung abspielen <input type="checkbox" id="setYtHwDecode"></label>
+      <div class="set-note">Spielt YouTube-Videos über die Grafikkarte ab. Stürzt der Grafiktreiber bei einem Video ab, schaltet Argus das selbst aus. Ohne kostet es etwas mehr CPU. Argus startet dafür neu.</div>
       <h4 data-tab="System">Fehlerberichte</h4>
       <label class="row" title="Schickt nichts von selbst. Nach einem Absturz fragt Argus, ob du einen Bericht senden willst, und zeigt ihn dir vorher.">Nach Abstürzen einen Fehlerbericht anbieten <input type="checkbox" id="setCrash"></label>
-      <div class="set-actions"><button class="btn primary" type="button" id="setCrashNow" title="Bericht mit den letzten Fehlermeldungen erstellen, zum Beispiel wenn etwas nicht klappt">Problem melden …</button></div>
+      <div class="set-actions"><button class="btn primary" type="button" id="setCrashNow" title="Bericht mit den letzten Fehlermeldungen erstellen, zum Beispiel wenn etwas nicht klappt">Problem melden …</button> <button class="btn" type="button" id="setDiagSave" title="Packt Blackbox, Fehlerprotokoll, Berichte, Absturz-Abbilder und Systemangaben bereinigt in eine Zip-Datei auf dem Desktop">Diagnose speichern</button></div>
+      <div class="set-note" id="setDiagNote">Argus schreibt laufend mit, was es gerade tut (Blackbox), und sammelt Absturz-Abbilder nur auf diesem PC. „Diagnose speichern“ legt alles bereinigt als Zip auf den Desktop, zum Weiterschicken an jemanden, der helfen kann. Nach zwei Abstürzen in Folge startet Argus im Sicherheitsstart (ohne Grafikbeschleunigung, ohne YouTube/Twitch).</div>
       <div class="set-note">Nichts wird ohne dein Klicken gesendet. Benutzername, Pfade, Schlüssel und Wallet-Adressen werden vorher entfernt.</div>
       <div class="set-note">Deine Berichte bleiben 14 Tage nur auf diesem PC und werden danach automatisch gelöscht.</div>
       <div class="cr-list" id="crList"></div>
