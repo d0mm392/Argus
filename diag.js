@@ -50,7 +50,7 @@ function dumps(dumpDir) {
 }
 
 // Diagnose-Paket als Zip. redact entfernt Benutzernamen, Pfade, Schlüssel (crash.redact). info: Systemangaben als Objekt
-function bundle({ outFile, redact = (s) => s, info = {}, logFile = "", dumpDir = "" }) {
+function bundle({ outFile, redact = (s) => s, info = {}, logFile = "", dumpDir = "", extra = {} }) {
   const AdmZip = require("adm-zip"), zip = new AdmZip();
   const text = (name, f) => { try { if (f && fs.existsSync(f)) zip.addFile(name, Buffer.from(redact(fs.readFileSync(f, "utf8")), "utf8")); } catch {} };
   text("blackbox.log", file); text("blackbox-voriger-lauf.log", prev); text("fehlerprotokoll.log", logFile);
@@ -67,9 +67,40 @@ function bundle({ outFile, redact = (s) => s, info = {}, logFile = "", dumpDir =
   }
   const sys = { erstellt: new Date().toISOString(), system: `${os.platform()} ${os.release()} ${os.arch()}`, ramGB: Math.round(os.totalmem() / 1024 ** 3), cpu: os.cpus()?.[0]?.model || "", absturzAbbilder: ds.length, abbilderImPaket: packed, ...info };
   zip.addFile("system.json", Buffer.from(redact(JSON.stringify(sys, null, 2)), "utf8"));
+  text("versionen.json", path.join(dir, "versionen.json"));
+  for (const [name, obj] of Object.entries(extra)) { try { zip.addFile(name, Buffer.from(redact(JSON.stringify(obj, null, 2)), "utf8")); } catch {} }
   zip.addFile("LIESMICH.txt", Buffer.from("Argus-Diagnose. Benutzername, Pfade, Schlüssel und Wallet-Adressen wurden aus den Textdateien entfernt.\nAbsturz-Abbilder (.dmp) sind Binärdateien von Electron und können Programmpfade enthalten.\nBitte nur an Personen schicken, denen du vertraust.\n", "utf8"));
   zip.writeZip(outFile);
   return { file: outFile, dumps: ds.length };
 }
 
-module.exports = { init, note, safeStart, stable, dumps, bundle, SAFE_AFTER };
+// 0.59.8: Versionsverlauf (wann lief welche Version zuerst), um „seit dem Update …“ belegen zu können
+function versions(v) {
+  const f = path.join(dir, "versionen.json"); let a = [];
+  try { a = JSON.parse(fs.readFileSync(f, "utf8")); } catch {}
+  if (!Array.isArray(a)) a = [];
+  if (v && a[a.length - 1]?.v !== v) { a.push({ v: String(v), ab: new Date().toISOString() }); a = a.slice(-30); try { fs.writeFileSync(f, JSON.stringify(a)); } catch {} }
+  return a;
+}
+// Neue Absturz-Abbilder seit dem letzten Start (für Hinweis und Fehlerbericht)
+function newDumps(dumpDir) {
+  const f = path.join(dir, "abbilder-gesehen.json"); let seen = 0;
+  try { seen = Number(JSON.parse(fs.readFileSync(f, "utf8")).t) || 0; } catch {}
+  const ds = dumps(dumpDir), fresh = ds.filter((d) => d.t > seen);
+  if (ds.length) try { fs.writeFileSync(f, JSON.stringify({ t: ds[0].t })); } catch {}
+  return seen ? fresh : []; // beim allerersten Mal nichts melden, alte Abbilder sind schon bekannt
+}
+// Einstellungen ohne Geheimnisse und ohne persönliche Texte: Schlüssel, Adressen, Namen und lange Texte nur als „gesetzt/leer“
+const PRIVATE = /key|token|pass|secret|addr|wallet|url|user|name|mail|steamid|client|invite|notes|text|info|places|clocks|accounts|portal|iob|mineaddr|profile|layout|ytlast|ytloading|ytbad|twlast|history|custompages|pagelooks/i;
+function settings(config = {}, sealed = []) {
+  const out = {};
+  for (const [k, v] of Object.entries(config)) {
+    if (sealed.includes(k) || PRIVATE.test(k)) { out[k] = v === "" || v == null || (Array.isArray(v) && !v.length) ? "leer" : "gesetzt"; continue; }
+    if (typeof v === "string") out[k] = v.length > 40 ? `(Text, ${v.length} Zeichen)` : v;
+    else if (v && typeof v === "object") { const n = Array.isArray(v) ? v.length : Object.keys(v).length; out[k] = JSON.stringify(v).length > 300 ? `(${Array.isArray(v) ? "Liste" : "Objekt"}, ${n} Einträge)` : v; }
+    else out[k] = v;
+  }
+  return out;
+}
+
+module.exports = { init, note, safeStart, stable, dumps, bundle, versions, newDumps, settings, SAFE_AFTER };

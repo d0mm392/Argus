@@ -75,6 +75,7 @@ crash.init(app.getPath("userData"), path.join(app.getPath("userData"), process.e
 const safeBoot = diag.safeStart(crash.lastRunUnclean());
 if (safeBoot.safe) try { app.disableHardwareAcceleration(); } catch {}
 diag.note("start", "Argus " + require("./package.json").version, "Electron " + process.versions.electron, crash.lastRunUnclean() ? "voriger Lauf unerwartet beendet" : "voriger Lauf regulär", safeBoot.safe ? "SICHERHEITSSTART (" + safeBoot.fails + " Abstürze in Folge)" : "");
+diag.versions(require("./package.json").version);
 process.on("uncaughtException", (e) => { diag.note("fehler", e?.message || e); logError(e); crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); });
 // 0.58.27: auch abgelehnte Promises protokollieren (vorher verschwanden Fehler im Startablauf ohne Spur)
 process.on("unhandledRejection", (e) => { logError(e); try { crash.add("Fehler im Hauptprozess", e?.message || String(e), e?.stack || ""); } catch {} });
@@ -1368,6 +1369,7 @@ async function createWindow(port) {
   win.on("move", () => { followDock(); }); win.on("resize", () => { followDock(); applyShape(); });
   // Angedockt sind Panel und Lagebild ein Fenster: holt man eins nach vorn, kommt das andere mit
   win.on("blur", () => { blurAt = Date.now(); });
+  win.on("unresponsive", () => diag.note("oberfl", "reagiert nicht")); win.on("responsive", () => diag.note("oberfl", "reagiert wieder"));
   for (const ev of ["show", "hide", "minimize", "restore"]) win.on(ev, () => setTimeout(syncNews, 50));
   win.on("focus", () => { if (config.newsDock && expanded && newsAlive() && !config.newsOnTop) newsWin.moveTop(); });
   // Windows verwirft die Fensterform beim Ausblenden/Einblenden: Aussparung danach neu setzen (Einblenden über Tray oder Strg+Umschalt+J)
@@ -1421,14 +1423,14 @@ function setupUpdater() {
   updater.autoDownload = true; updater.autoInstallOnAppQuit = true;
   updater.on("checking-for-update", () => { updState.text = "Suche nach Updates…"; });
   updater.on("update-not-available", () => { updState.text = "Argus ist aktuell (" + app.getVersion() + ")."; });
-  updater.on("update-available", (i) => { updState.text = "Lade Version " + i.version + "…"; });
+  updater.on("update-available", (i) => { updState.text = "Lade Version " + i.version + "…"; diag.note("update", "gefunden", i?.version); });
   updater.on("download-progress", (p) => { updState.text = "Lade Update: " + Math.round(p.percent) + " %"; });
   updater.on("update-downloaded", (i) => {
     updState = { text: "Version " + i.version + " ist geladen und wird beim Beenden installiert.", ready: true, version: i.version };
     sendUI("notice", `Update auf Version ${i.version} ist bereit. Es wird beim nächsten Beenden installiert, oder sofort über „Jetzt aktualisieren“ in den Einstellungen.`);
     tray?.setContextMenu(trayMenu());
   });
-  updater.on("error", (e) => { updState.text = "Update-Prüfung fehlgeschlagen: " + String(e?.message || e).split("\n")[0].slice(0, 160); });
+  updater.on("error", (e) => { updState.text = "Update-Prüfung fehlgeschlagen: " + String(e?.message || e).split("\n")[0].slice(0, 160); diag.note("update", "Fehler", String(e?.message || e).split("\n")[0].slice(0, 160)); });
   checkUpdates();
   // Nur beim Start prüfen (Nutzerwunsch): kein Zeitgeber; manuell über Einstellungen oder Tray-Menü
 }
@@ -2076,6 +2078,7 @@ app.whenReady().then(async () => {
   startStep("Autostart", () => applyAutostart());
   startStep("Updater", () => setupUpdater());
   setTimeout(() => { diag.stable(); diag.note("start", "läuft stabil"); }, 90e3);
+  diagWatch();
   app.getGPUInfo("basic").then((g) => { const d = (g?.gpuDevice || []).map((x) => `${x.vendorId}:${x.deviceId}${x.active ? "*" : ""} ${x.driverVersion || ""}`).join(", "); diag.note("grafik", d, "Grafikbeschleunigung " + (safeBoot.safe || config.gfxSafe ? "aus" : "an"), config.ytHwDecode === false ? "Video-Dekodierung Software" : ""); }).catch(() => {});
   if (config.setupDone) startStep("Sensoren", () => startSensors());
   // war YouTube beim Beenden offen, wieder öffnen (an der gemerkten Stelle), im Panel oder als eigenes Fenster
@@ -2502,6 +2505,45 @@ function ytGpuCrash() {
   setTimeout(() => { const wc = ytView?.webContents; if (wc && !wc.isDestroyed()) wc.loadURL(ytGuard.HOME).catch(() => {}); }, 1500);
 }
 ipcMain.on("ui-error", (_e, msg, stack) => crash.add("Fehler in der Oberfläche", String(msg || "").slice(0, 500), String(stack || "").slice(0, 3000)));
+// 0.59.8: Laufende Beobachtung für spätere Analysen. Hänger des Hauptprozesses (Ereignisschleife steht), neue Absturz-Abbilder,
+// alle 10 Minuten Prozesse und Speicher kurz in die Blackbox. Kostet praktisch nichts (ein Zeitgeber pro Sekunde).
+function diagMetrics() {
+  try {
+    const ms = app.getAppMetrics(), by = {};
+    for (const m of ms) { const t = m.type + (m.name ? ":" + m.name : ""); const b = (by[t] ||= { anzahl: 0, mb: 0, cpu: 0 }); b.anzahl++; b.mb += Math.round((m.memory?.workingSetSize || 0) / 1024); b.cpu = Math.round((b.cpu + (m.cpu?.percentCPUUsage || 0)) * 10) / 10; }
+    return { prozesse: ms.length, gesamtMB: Object.values(by).reduce((a, b) => a + b.mb, 0), nachTyp: by, hauptprozessMB: Math.round(process.memoryUsage().rss / 1048576), laufzeitMin: Math.round(process.uptime() / 60) };
+  } catch (e) { return { fehler: e.message }; }
+}
+function diagWatch() {
+  let last = Date.now();
+  setInterval(() => { const now = Date.now(), lag = now - last - 1000; last = now; if (lag > 3000) diag.note("haenger", `Hauptprozess stand ${Math.round(lag / 100) / 10} s`); }, 1000).unref?.();
+  setInterval(() => { const m = diagMetrics(); diag.note("speicher", `${m.prozesse} Prozesse, ${m.gesamtMB} MB, Hauptprozess ${m.hauptprozessMB} MB`); }, 10 * 60e3).unref?.();
+  try {
+    const nd = diag.newDumps(app.getPath("crashDumps"));
+    if (nd.length) { diag.note("abbild", `${nd.length} neue Absturz-Abbild(er) seit dem letzten Start`, new Date(nd[0].t).toISOString()); crash.add("Absturz-Abbild gespeichert", `${nd.length} neue(s) Absturz-Abbild(er), zuletzt ${new Date(nd[0].t).toISOString()}. Mit „Diagnose speichern“ (Einstellungen › System › Fehlerberichte) mitschicken.`); }
+  } catch {}
+  try { diag.note("bildschirm", screen.getAllDisplays().map((d) => `${d.size.width}x${d.size.height}@${d.scaleFactor}${d.id === screen.getPrimaryDisplay().id ? "*" : ""}`).join(", ")); } catch {}
+}
+// Welche Funktionen sind an, eingerichtet und melden Fehler? Nur Ja/Nein und Zustände, keine Namen, Schlüssel oder Adressen
+function diagStatus() {
+  const t = (f) => { try { return f(); } catch (e) { return "Fehler: " + (e?.message || e); } };
+  const age = (f) => { try { return Math.round((Date.now() - fs.statSync(f).mtimeMs) / 1000) + " s alt"; } catch { return "fehlt"; } };
+  return {
+    einrichtungFertig: !!config.setupDone, sprache: config.lang, autostart: !!config.autostart, seiten: t(() => (config.pages || []).length),
+    ki: t(() => ({ anbieter: config.backend || "keiner", weitereKi: config.aiProv, weitereKiSchluessel: !!config.aiKey, claudeApiSchluessel: !!config.anthropicApiKey, claudeCodeGefunden: !!findClaudeCode(), strata: strata.snapshot()?.state, strataText: strata.snapshot()?.text, spracherkennung: voiceState?.text })),
+    sensoren: t(() => ({ an: config.sensors !== false, datei: age(sensorOut()), fehlendeDateien: sensorFilesMissing(), cpuTemp: watch?.data?.temp != null, gpuTemp: watch?.data?.gpuTemp != null, gpu: watch?.data?.gpuName || "", luefter: (watch?.data?.fans || []).length, zustand: watch?.data?.health, letzteMessung: watch?.data?.ts ? new Date(watch.data.ts).toISOString() : null })),
+    discord: t(() => ({ an: !!config.discordOn, botToken: !!config.dcBotToken, botStatus: dcbot.snapshot()?.status, server: (dcbot.snapshot()?.guilds || []).length })),
+    steam: t(() => ({ an: !!config.steamOn, schluessel: !!config.steamKey, steamId: !!config.steamId })),
+    mining: t(() => ({ an: !!config.mineOn, wallets: String(config.mineAddr || "").split(/\n/).filter((x) => x.trim()).length, foreman: !!config.foremanOn, foremanKonten: (config.foremanAccounts || []).length, foremanDashboard: !!config.fmDashOn, portal: !!config.portalOn, portalAdresse: !!config.portalUrl, farm: farmSt ? "Daten da" : "keine Daten", pool: mine?.pool ? "Daten da" : "keine Daten" })),
+    smartHome: t(() => ({ an: !!config.iobOn, adresse: !!config.iobUrl })),
+    wetter: t(() => ({ an: config.weatherOn !== false, orte: (config.wxPlaces || []).length })),
+    youtube: t(() => ({ filter: ytFilterState, filterAn: config.ytFilterOn !== false, hardwareDekodierung: config.ytHwDecode !== false, offen: config.ytOpen, gesperrteVideos: (config.ytBad || []).length, ansichtAktiv: !!ytView })),
+    update: t(() => ({ kanal: config.updateChannel, zustand: updState.text })),
+    grafik: { kompatibilitaetsmodus: !!config.gfxSafe, sicherheitsstart: safeBoot },
+    bildschirme: t(() => screen.getAllDisplays().map((d) => ({ breite: d.size.width, hoehe: d.size.height, skalierung: d.scaleFactor, haupt: d.id === screen.getPrimaryDisplay().id }))),
+    fehlerberichte: t(() => ({ offen: crash.pending().length, verlauf14Tage: (crash.history?.() || []).length }))
+  };
+}
 // Diagnose-Paket auf dem Desktop speichern (bereinigt), Ordner danach zeigen
 ipcMain.handle("diag-save", async () => {
   try {
@@ -2513,7 +2555,8 @@ ipcMain.handle("diag-save", async () => {
       sicherheitsstart: safeBoot, grafikbeschleunigung: !(safeBoot.safe || config.gfxSafe), kompatibilitaetsmodus: !!config.gfxSafe, videoHardwareDekodierung: config.ytHwDecode !== false,
       grafikStatus: app.getGPUFeatureStatus?.(), grafik: gpu?.gpuDevice || null, grafikName: watch?.data?.gpuName || "",
       youtube: { offen: config.ytOpen, gesperrteVideos: (config.ytBad || []).length, laedt: ytGuard.key(config.ytLoading?.url) || null } };
-    const r = diag.bundle({ outFile, redact: crash.redact, info, logFile: path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), dumpDir: app.getPath("crashDumps") });
+    const extra = { "funktionen.json": diagStatus(), "einstellungen.json": diag.settings(config, SEALED), "prozesse.json": diagMetrics() };
+    const r = diag.bundle({ outFile, redact: crash.redact, info, extra, logFile: path.join(app.getPath("userData"), process.env.ARGUS_OLD_DATA ? "jarvis-error.log" : "argus-error.log"), dumpDir: app.getPath("crashDumps") });
     diag.note("diagnose", "gespeichert", path.basename(outFile));
     shell.showItemInFolder(outFile);
     return { ok: true, file: outFile, name: path.basename(outFile), dumps: r.dumps };
