@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "version": "0.59.7",
+  "source": "fcc50ef919cf7ab305e2dfde1a32aa630fa4874b",
+  "manifestFiles": 4858,
+  "installerSHA256": "d7b410ce5c8f9effce02ea0bd88a145c0e6198ea6cab662d4b00e7f020c5a0b5",
+  "channel": "updates",
+  "sourceArchiveSHA256": "af35e1b1304d01fa2b56534f78bcb6c2b29a5252f12f84538af713b58d3ea852",
+  "builtOn": "Linux (electron-builder 25.1.8 + wine), Discord-Helfer unverändert aus 0.59.3",
+  "rootCause": "Minidumps (4/4): ACCESS_VIOLATION in URLLoaderClientProxy::OnReceiveRedirect via electron::ProxyingURLLoaderFactory::InProgressRequest::HandleBeforeRequestRedirect (Ghostery redirectURL)",
+  "tests": { "unitGuardDiagConfigCrash": "63/63", "ui": "65/65", "eco": "3/3", "settings": "PASS", "friendsSetupHint": "PASS", "youtubeMode": "PASS", "youtubeCrash": "PASS" },
+  "installerDiffTo0.59.6": ["~ resources/app/main.js", "~ resources/app/app/youtube-guard.js"],
+  "notTested": "Keine Windows-VM-Prüfung; Bestätigung mit dem Absturz-Video auf dem betroffenen PC steht aus."
+}

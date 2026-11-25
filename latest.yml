@@ -1,19 +1,20 @@
-version: 0.59.6
+version: 0.59.7
 files:
-  - url: Argus-Setup-0.59.6.exe
-    sha512: S8qx+oaJr0alyLrCKl0xQWnS5gfpO+4FOorp/LLH4C6mx0LWbiTKn2OcXY5DDiEM/YBzL9fVKotQXlNBM3e2zw==
-    size: 98312201
-path: Argus-Setup-0.59.6.exe
-sha512: S8qx+oaJr0alyLrCKl0xQWnS5gfpO+4FOorp/LLH4C6mx0LWbiTKn2OcXY5DDiEM/YBzL9fVKotQXlNBM3e2zw==
-releaseDate: '2026-11-24T21:47:23.064Z'
-releaseName: "Argus 0.59.6 – Diagnose vollständig"
+  - url: Argus-Setup-0.59.7.exe
+    sha512: Dz4EFwB6VoVp1Kj+hzSFjw/LGJtzLSGW+jGDVnXvJ1KdkzWe+DWsboOxsup6CxYGn+tLk/8xfhNByvnQofwisQ==
+    size: 98312640
+path: Argus-Setup-0.59.7.exe
+sha512: Dz4EFwB6VoVp1Kj+hzSFjw/LGJtzLSGW+jGDVnXvJ1KdkzWe+DWsboOxsup6CxYGn+tLk/8xfhNByvnQofwisQ==
+releaseDate: '2026-11-25T18:06:51.165Z'
+releaseName: "Argus 0.59.7 – YouTube-Absturz behoben"
 releaseNotes: |
-  # Argus 0.59.6 – Diagnose vollständig
+  # Argus 0.59.7 – YouTube-Absturz behoben (Werbefilter)
   
   **Behoben**
-  - „Diagnose speichern“ hat in 0.59.5 die Absturz-Abbilder nicht in die Zip gepackt. Jetzt sind die drei neuesten dabei, und `system.json` nennt Größe und Zeit jedes Abbilds bzw. warum eines fehlt.
+  - Bei manchen YouTube-Videos stürzte Argus komplett ab. Ursache war der Werbe- und Trackingfilter: Er ersetzte einzelne Werbeskripte durch einen leeren Platzhalter, also eine Umleitung. Trifft so eine Umleitung auf eine Anfrage, die YouTube gerade selbst weiterleitet, stürzt Electron (der Unterbau von Argus) im Hauptprozess ab. Das zeigten die Absturz-Abbilder aus der Diagnose eindeutig.
+  - Der Filter leitet jetzt nichts mehr um, er blockiert solche Anfragen nur noch. Werbung und Tracking bleiben draußen, der Absturzweg ist weg.
   
-  **Neu**
-  - Argus schreibt zusätzlich das Protokoll des Browser-Unterbaus (Chromium, nur Warnungen und Fehler) in `chromium.log`. Der vorige Lauf bleibt als `chromium.prev.log` erhalten. Bei harten Abstürzen steht dort oft die letzte Meldung. Beides ist in der Diagnose-Zip enthalten.
-  - Die Blackbox vermerkt mehr YouTube-Schritte: Navigation, fehlgeschlagenes Laden, Wiedergabe startet oder pausiert, Vollbild und „reagiert nicht“.
+  **Hinweis**
+  - Wer den Filter wegen des Absturzes ausgeschaltet hat, kann ihn unter Einstellungen › Freunde und Medien › YouTube wieder einschalten.
+  - Hat Argus nach einem Absturz die Hardware-Videodekodierung abgeschaltet, lässt sie sich unter Einstellungen › System › Leistung wieder einschalten.
   - Veröffentlichung im Testkanal `updates`; Stable bleibt unverändert.
