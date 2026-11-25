@@ -37,6 +37,16 @@
   const resume = (config, url) => (url && isBad(config, url) ? HOME : url);
   // Vom Nutzer bewusst erneut geöffnet und stabil gelaufen: wieder freigeben
   const release = (config, url) => { const k = key(url); return k ? list(config).filter((x) => x !== k) : list(config); };
-  const api = { key, isBad, startup, resume, release, HOME, STABLE_MS };
+  // 0.59.7: Werbefilter ohne Umleitungen. Electron 33 stürzt im Hauptprozess ab (ProxyingURLLoaderFactory::
+  // HandleBeforeRequestRedirect → OnReceiveRedirect, Nullzeiger), wenn onBeforeRequest eine redirectURL liefert und die
+  // Anfrage gerade weitergeleitet wird. Ghostery ersetzt manche Skripte durch data:-Platzhalter: daraus wird hier „blockieren“.
+  function noRedirects(blocker) {
+    const orig = blocker && blocker.onBeforeRequest;
+    if (typeof orig !== "function" || orig.argusNoRedirect) return blocker;
+    const wrapped = (details, callback) => orig.call(blocker, details, (res) => callback(res && res.redirectURL ? { cancel: true } : (res || {})));
+    wrapped.argusNoRedirect = true; blocker.onBeforeRequest = wrapped;
+    return blocker;
+  }
+  const api = { key, isBad, startup, resume, release, noRedirects, HOME, STABLE_MS };
   if (typeof module === "object" && module.exports) module.exports = api; else root.argusYoutubeGuard = api;
 })(globalThis);

@@ -2847,6 +2847,7 @@ function ytAdblock() {
       // Network filtering only: no page scriptlets or cosmetic suppression of playback warnings.
       const b = await ElectronBlocker.fromLists(fetch, adsAndTrackingLists, { loadCosmeticFilters: false }, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
       if (config.ytFilterOn === false) { ytFilterStatus("off"); return; }
+      require("./app/youtube-guard").noRedirects(b); // 0.59.7: Umleitungen ließen Argus abstürzen, nur noch blockieren
       b.enableBlockingInSession(session.fromPartition("persist:youtube"));
       ytBlocker = b; ytFilterStatus("on");
     } catch (e) { ytFilterStatus("error"); console.warn("YouTube filter unavailable:", e.code || e.name || "filter"); }

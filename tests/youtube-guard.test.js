@@ -35,3 +35,18 @@ test("explicitly reopened video that ran stable is released; list stays bounded"
   assert.equal(g.patch.ytBad.length, 20); assert.equal(g.patch.ytBad[0], "abcDEF12345");
   assert.deepEqual(guard.release({ ytBad: ["abcDEF12345", "x"] }, V), ["x"]);
 });
+test("ad filter never answers with a redirect (Electron 33 crashed on it), blocks instead", () => {
+  const calls = [], b = { onBeforeRequest(d, cb) { calls.push(this === b); cb(d.r); } };
+  guard.noRedirects(b); guard.noRedirects(b);
+  const out = []; for (const r of [{ redirectURL: "data:text/javascript,;" }, { cancel: true }, {}, undefined]) b.onBeforeRequest({ r }, (x) => out.push(x));
+  assert.deepEqual(out, [{ cancel: true }, { cancel: true }, {}, {}]); assert.deepEqual(calls, [true, true, true, true]);
+});
+test("wrapper works with the real Ghostery blocker and its session context", () => {
+  const { ElectronBlocker } = require("@ghostery/adblocker-electron");
+  const b = ElectronBlocker.parse("||ads.example^$script,redirect=noopjs\n||track.example^");
+  guard.noRedirects(b);
+  const ask = (url) => new Promise((r) => b.onBeforeRequest({ id: 1, url, resourceType: "script", referrer: "https://www.youtube.com/", webContentsId: 1 }, r));
+  return Promise.all([ask("https://ads.example/x.js"), ask("https://track.example/t.js"), ask("https://ok.example/a.js")]).then(([a, t, ok]) => {
+    assert.deepEqual(a, { cancel: true }); assert.deepEqual(t, { cancel: true }); assert.deepEqual(ok, {});
+  });
+});
